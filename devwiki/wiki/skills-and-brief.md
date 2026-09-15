@@ -3,7 +3,7 @@ type: subsystem
 title: "Skills and the brief"
 description: "The two shipped skills copied into a vault under a stamp the engine can audit, the generated brief rendered from the verb registry and the loaded constitution, and the machine-local findings that say when either is behind the binary."
 tags: [cli]
-pin: fbfce1e0c2829ba0bb4bde092946d056ba494ef9
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/cli/src/skills.ts, packages/cli/src/brief.ts, packages/cli/src/shipped.ts, packages/cli/src/verbs/skills.ts, packages/cli/src/verbs/brief.ts, packages/cli/src/artifacts.ts, packages/cli/skills/]
 ---

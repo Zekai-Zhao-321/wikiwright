@@ -3,7 +3,7 @@ type: testing-guide
 title: "Testing the engine"
 description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install and grant the code kit in a store the test owns."
 tags: [repo]
-pin: 06c9b7b9f5d601d7106e7674b0750374e9796d10
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts]
 ---

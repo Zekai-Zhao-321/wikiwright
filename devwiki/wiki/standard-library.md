@@ -3,7 +3,7 @@ type: subsystem
 title: "The standard library"
 description: "Three first-party modules — claims, relations, entries — registered through the same API a domain kit uses, composed by standardLibrary(), and never imported by the kernel."
 tags: [stdlib]
-pin: 309d7803464bd22e9db7dc54beff14a1c27802c4
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/core/src/stdlib/]
 ---

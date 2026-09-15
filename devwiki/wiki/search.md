@@ -3,7 +3,7 @@ type: subsystem
 title: "Search"
 description: "Deterministic lexical retrieval: an identity ladder fused with BM25 by reciprocal rank fusion, a CJK-capable tokenizer over explicit code-point ranges, a per-invocation index, and a coverage block on every answer."
 tags: [kernel, cli]
-pin: 869444ed94e955fb7f3e51ac4d7495ee9d58aa03
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/core/src/search/, packages/cli/src/verbs/search.ts]
 ---

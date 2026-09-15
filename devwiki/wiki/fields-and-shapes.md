@@ -3,7 +3,7 @@ type: subsystem
 title: "Fields and shapes"
 description: "The closed shape vocabulary a frontmatter field is declared in, the value check every field runs, the one pin shape, and the derivation of a title or description from the page."
 tags: [kernel]
-pin: fbfce1e0c2829ba0bb4bde092946d056ba494ef9
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/core/src/fields/, packages/core/src/shapes/]
 ---

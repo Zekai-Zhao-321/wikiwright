@@ -3,7 +3,7 @@ type: subsystem
 title: "The parser and the names it binds"
 description: "Bytes become one ParsedDoc through the mdast and yaml seams; identity is one normalization; the name index resolves basenames and aliases; the path law says what a vault path may spell."
 tags: [kernel]
-pin: fbfce1e0c2829ba0bb4bde092946d056ba494ef9
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/core/src/parse/, packages/core/src/text/, packages/core/src/names/, packages/core/src/identity/, packages/core/src/paths/]
 ---

@@ -3,7 +3,7 @@ type: code-concept
 title: "The trust law"
 description: "Module code runs inside the judge, so a module is admitted by a machine-local grant pinned to the sha256 over every file of the installed package, for one vault or for its path in every linked worktree of one clone, taken only after a purity scan and a determinism fixture, and revoked by any edit; a stranger's bug is one attributed finding, never a crash."
 tags: [cli, kit]
-pin: 293c3a7d897f28d6a9c7df717998cc29ef9dce7e
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/core/src/modules/purity.ts, packages/cli/src/moduleload.ts, packages/cli/src/trust.ts, packages/cli/src/modulefixture.ts, packages/cli/src/verbs/trust.ts, packages/kit-code/, packages/core/src/grammar/index.ts, packages/core/src/lint/index.ts]
 ---

@@ -3,7 +3,7 @@ type: subsystem
 title: "Freshness and pins"
 description: "Every pin is measured against the origin its page names — the enclosing repository for origin dot, ls-remote or a blobless cache for a URL — into one of six states, with a covering diff deciding stale from unchanged, every repository path the page cites held to the pin, and a fast-forward that advances only clean pins through the Writer."
 tags: [cli]
-pin: 9baddb474faae0ffe8d74495ce18c0411045e193
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/cli/src/freshness.ts, packages/cli/src/verbs/freshness.ts]
 ---

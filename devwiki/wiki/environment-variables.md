@@ -3,7 +3,7 @@ type: ops-reference
 title: "Environment variables"
 description: "The four WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes."
 tags: [cli]
-pin: 293c3a7d897f28d6a9c7df717998cc29ef9dce7e
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/cli/src/clock.ts, packages/cli/src/main.ts, packages/cli/src/trust.ts, packages/cli/src/hooks.ts, packages/cli/src/git.ts]
 ---

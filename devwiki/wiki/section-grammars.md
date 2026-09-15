@@ -3,7 +3,7 @@ type: code-concept
 title: "Section grammars"
 description: "A section binds a heading at a depth to a grammar and its parameters; the kernel parses the section's top-level items through the grammar's dispatch chain and runs the arms the grammar's module declared, never knowing what a claim or a relation is."
 tags: [kernel, stdlib]
-pin: 429a4152c23082762e79d76e98c28c67cbd0dca7
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/core/src/grammar/, packages/core/src/modules/index.ts, packages/core/src/lint/index.ts, packages/kit-code/index.js]
 ---

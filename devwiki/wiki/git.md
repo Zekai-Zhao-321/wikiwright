@@ -3,7 +3,7 @@ type: integration
 title: "Git"
 description: "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, remote heads and blobless origin caches; never a library, never a prompt."
 tags: [cli]
-pin: 12ad91d5f0c07ec83fc0a7831050c6b59fe18e01
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/cli/src/git.ts, packages/cli/src/state.ts, packages/cli/src/buildinfo.ts]
 ---

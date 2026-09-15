@@ -3,7 +3,7 @@ type: ops-reference
 title: "The envelope and exit codes"
 description: "Every verb prints one JSON envelope on stdout; the exit code is one of seven, each mapped to one error type; the judging verbs share one verdict block."
 tags: [cli]
-pin: fbfce1e0c2829ba0bb4bde092946d056ba494ef9
+pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
 origin: .
 covers: [packages/cli/src/envelope.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts]
 ---
