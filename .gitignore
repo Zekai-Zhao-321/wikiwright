@@ -1,0 +1,17 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# freshness's report: it derives from origin state outside the vault
+# snapshot, so it is a machine-local measurement, never committed.
+generated/freshness.json
+devwiki/generated/freshness.json
+
+# Scratch kept beside the repository: drafts, notes, probes. Never source,
+# never a fixture; a stray `git add -A` must not land it.
+temp/
+
+# An agent's local configuration and the worktrees it keeps there. Not
+# source: an unignored worktree puts a second biome.json under the root,
+# which halts `biome check` with a nested-configuration error.
+.claude/

@@ -1,0 +1,35 @@
+{
+  "constitution": {
+    "schema": "wikiwright/constitution",
+    "schema_version": 3,
+    "vocabularies": {
+      "tags": {
+        "mode": "registered",
+        "entries": {}
+      },
+      "@wikiwright-fixture/probe/sizes": {
+        "mode": "registered",
+        "entries": {
+          "small": {
+            "description": "The fixture's only size.",
+            "limit": 1
+          }
+        }
+      }
+    },
+    "types": {
+      "probe-page": {
+        "extends": "@wikiwright-fixture/probe/subject",
+        "description": "The type this module's own fixture judges."
+      }
+    }
+  },
+  "pages": {
+    "wiki/Fixture.md": "---\ntype: probe-page\ntitle: Fixture\ndescription: The module's own determinism fixture.\ntags: []\nprobe_id: F-1\n---\n\n# Fixture\n\nThe module's own determinism fixture.\n\n## Measures\n\n- size: small\n- size: enormous\n"
+  },
+  "expected": [
+    "@wikiwright-fixture/probe/measured|wiki/Fixture.md|15|info",
+    "@wikiwright-fixture/probe/measured|wiki/Fixture.md|16|info",
+    "@wikiwright-fixture/probe/unknown-size|wiki/Fixture.md|16|warning"
+  ]
+}

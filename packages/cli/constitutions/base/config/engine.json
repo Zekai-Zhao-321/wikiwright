@@ -1,0 +1,6 @@
+{
+  "content_roots": ["wiki", "meta"],
+  "folder_tags": {
+    "mode": "validate"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "schema": "wikiwright/okf-pin",
+  "repo": "GoogleCloudPlatform/open-knowledge-format",
+  "commit": "ad30107c31c06aec8a7d5636e0d1058118604e6f",
+  "fetched": "2026-09-01",
+  "grounding": "SPEC.md line 187 at this commit: `type` is the only always-required key — the rule `okf check` enforces (D-085).",
+  "policy": "The pin is a reviewed decision: a locator and a commit, checked by a human when someone schedules it. No mirror of the upstream text is kept and nothing reads this file; all conformance claims are fixture-scoped: conformant with OKF at this commit."
+}

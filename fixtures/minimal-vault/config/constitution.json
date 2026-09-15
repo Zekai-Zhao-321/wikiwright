@@ -1,0 +1,51 @@
+{
+  "schema": "wikiwright/constitution",
+  "schema_version": 3,
+  "vocabularies": {
+    "tags": {
+      "mode": "registered",
+      "entries": {
+        "reset": {
+          "description": "Reset behavior, recovery, or validation."
+        },
+        "cycling": {
+          "description": "Repeated execution across state transitions."
+        },
+        "test-execution": {
+          "description": "Running tests on real hardware or rigs."
+        }
+      }
+    }
+  },
+  "types": {
+    "test-case": {
+      "extends": "procedure",
+      "description": "One executable validation case with expected results.",
+      "use_when": "A single runnable or externally identified case.",
+      "avoid_when": "Aggregated results or narrative debugging.",
+      "template": "templates/wiki/test-case.md",
+      "fields": {
+        "case_id": {
+          "kind": "any",
+          "required": true
+        }
+      },
+      "sections": {
+        "depth": 2,
+        "list": [
+          {
+            "heading": "Purpose",
+            "min": 1
+          },
+          {
+            "heading": "Execution",
+            "min": 1
+          }
+        ]
+      },
+      "body": {
+        "lifecycle": "append-only"
+      }
+    }
+  }
+}

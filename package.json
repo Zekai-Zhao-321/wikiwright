@@ -1,0 +1,33 @@
+{
+  "name": "wikiwright-monorepo",
+  "description": "A typed wiki engine for LLM agents: Markdown pages in git, one JSON constitution, one judge at every write path.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zekai-Zhao-321/wikiwright.git"
+  },
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "devwiki"
+  ],
+  "engines": {
+    "node": ">=22.12.0",
+    "bun": ">=1.3.11"
+  },
+  "scripts": {
+    "build": "tsc -b && bun tools/write-build-info.ts",
+    "clean": "tsc -b --clean",
+    "test": "bun run build && bun tools/run-suite.ts",
+    "test:node": "bun run build && node --test \"packages/core/test/*.test.ts\" \"packages/cli/test/*.test.ts\"",
+    "typecheck": "bun run build && tsc -p tsconfig.test.json",
+    "lint": "biome check .",
+    "check": "biome check . && bun run build && tsc -p tsconfig.test.json && bun tools/run-suite.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@types/node": "^22.18.0",
+    "typescript": "^5.9.0"
+  }
+}

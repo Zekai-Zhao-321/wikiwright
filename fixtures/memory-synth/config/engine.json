@@ -1,0 +1,16 @@
+{
+  "content_roots": [
+    "wiki",
+    "journal"
+  ],
+  "field_sources": {
+    "title": "basename",
+    "description": "lede"
+  },
+  "folder_tag_aliases": {
+    "daily": "diary-days"
+  },
+  "folder_tags": {
+    "mode": "validate"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "types": ["node"],
+    "composite": false
+  },
+  "include": ["packages/*/test/**/*.ts", "tools/**/*.ts"]
+}

@@ -1,0 +1,4 @@
+{
+  "content_roots": ["wiki"],
+  "modules": [{ "package": "@wikiwright-fixture/probe", "version": "^1.0.0" }]
+}

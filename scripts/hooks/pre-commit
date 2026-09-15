@@ -1,0 +1,38 @@
+#!/bin/sh
+# The development gate. It runs `bun run check` — biome, the build, the
+# test-project typecheck and the whole suite — before every commit, so a
+# mistake is caught on the machine that made it. The workflow under
+# .github/workflows/check.yml runs the same command, and the node runner,
+# on every push and pull request on Linux and macOS.
+#
+# Install once, from the repository root:
+#   git config core.hooksPath scripts/hooks
+#
+# What this hook cannot do, stated so nobody assumes otherwise: it runs on
+# one machine under one runtime, and it does not run the node runner or
+# reach Windows. Before a release, run
+#   bun run test:node
+# and `sh scripts/release-matrix.sh`, and think about the platforms nobody
+# is testing.
+set -e
+
+if ! command -v bun >/dev/null 2>&1; then
+  echo "pre-commit: bun not on PATH — gate skipped, and that is not a pass" >&2
+  exit 0
+fi
+
+# git exports GIT_INDEX_FILE, GIT_DIR and the author/committer identity into a
+# hook. This repository's own suite creates temporary repositories and runs git
+# against them, so those variables leak in and produce failures that have
+# nothing to do with the change being committed ("index file open failed",
+# an assertion on the commit author). Run the gate in a clean git environment.
+echo "pre-commit: bun run check" >&2
+if ! env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE -u GIT_PREFIX \
+        -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL -u GIT_AUTHOR_DATE \
+        -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL -u GIT_COMMITTER_DATE \
+        bun run check; then
+  echo "" >&2
+  echo "pre-commit: the gate failed. Fix it, or state a reason and use --no-verify" >&2
+  echo "deliberately; an unexplained bypass is how a red main happens." >&2
+  exit 1
+fi

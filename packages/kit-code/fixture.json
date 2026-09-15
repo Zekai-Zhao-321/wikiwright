@@ -1,0 +1,53 @@
+{
+  "constitution": {
+    "schema": "wikiwright/constitution",
+    "schema_version": 3,
+    "vocabularies": {
+      "tags": {
+        "mode": "registered",
+        "entries": {}
+      },
+      "relations": {
+        "mode": "registered",
+        "entries": {}
+      }
+    },
+    "types": {
+      "fx-overview": {
+        "extends": "code/architecture-overview",
+        "description": "The fixture's overview type."
+      },
+      "fx-subsystem": {
+        "extends": "code/subsystem",
+        "description": "The fixture's subsystem type."
+      },
+      "fx-concept": {
+        "extends": "code/concept",
+        "description": "The fixture's concept type."
+      },
+      "fx-source-map": {
+        "extends": "code/source-map",
+        "description": "The fixture's source map type."
+      },
+      "fx-decision": {
+        "extends": "code/decision",
+        "description": "The fixture's decision type."
+      }
+    }
+  },
+  "pages": {
+    "wiki/Arch.md": "---\ntype: fx-overview\ntitle: Arch\ndescription: The top of the part_of tree.\ntags: []\npin: 0123456789abcdef0123456789abcdef01234567\norigin: .\ncovers: [src/]\n---\n\n# Arch\n\n## System shape\n\nOne.\n\n## Layers\n\nOne.\n",
+    "wiki/Core.md": "---\ntype: fx-subsystem\ntitle: Core\ndescription: A subsystem anchored to its directory, located in the source map and placed in the tree.\ntags: []\npin: 0123456789abcdef0123456789abcdef01234567\norigin: .\ncovers: [src/core/]\n---\n\n# Core\n\n## Responsibilities\n\nOne.\n\n## Entry points\n\nOne.\n\n## State\n\nNone.\n\n## Invariants\n\nOne.\n\n## Failure modes\n\nOne.\n\n## Relations\n\n- mapped_in [[Map]]\n- part_of [[Arch]]\n",
+    "wiki/Map.md": "---\ntype: fx-source-map\ntitle: Map\ndescription: The fixture's source map.\ntags: []\npin: 0123456789abcdef0123456789abcdef01234567\norigin: .\ncovers: [src/]\n---\n\n# Map\n\n## Layout\n\n| Path | Purpose |\n| --- | --- |\n| `src/core/` | The core. |\n",
+    "wiki/Adrift.md": "---\ntype: fx-subsystem\ntitle: Adrift\ndescription: A subsystem no source map locates, with a relation pointed outside its range.\ntags: []\npin: 0123456789abcdef0123456789abcdef01234567\norigin: .\ncovers: [src/adrift/]\n---\n\n# Adrift\n\n## Responsibilities\n\nOne.\n\n## Entry points\n\nOne.\n\n## State\n\nNone.\n\n## Invariants\n\nOne.\n\n## Failure modes\n\nOne.\n\n## Relations\n\n- part_of [[Core]]\n- decided_by [[Map]]\n",
+    "wiki/Escaped.md": "---\ntype: fx-subsystem\ntitle: Escaped\ndescription: A subsystem whose covers leaves the repository.\ntags: []\npin: 0123456789abcdef0123456789abcdef01234567\norigin: .\ncovers: [../outside/]\n---\n\n# Escaped\n\n## Responsibilities\n\nOne.\n\n## Entry points\n\nOne.\n\n## State\n\nNone.\n\n## Invariants\n\nOne.\n\n## Failure modes\n\nOne.\n\n## Relations\n\n- mapped_in [[Map]]\n- part_of [[Arch]]\n",
+    "wiki/Loose.md": "---\ntype: fx-concept\ntitle: Loose\ndescription: A concept that lives nowhere in the tree.\ntags: []\npin: 0123456789abcdef0123456789abcdef01234567\norigin: .\ncovers: [src/]\n---\n\n# Loose\n\n## Mechanism\n\nOne.\n\n## Where it lives\n\nEverywhere.\n\n## Relations\n\n- mapped_in [[Map]]\n",
+    "wiki/D-001.md": "---\ntype: fx-decision\ntitle: D-001\ndescription: The fixture's decision record.\ntags: []\ndecision_id: D-001\ndecided: 2026-01-01\n---\n\n# D-001\n\n## Context\n\nA choice.\n\n## Decision\n\nTaken.\n\n## Consequences\n\n- 2026-01-01 — recorded.\n"
+  },
+  "expected": [
+    "relation-require|wiki/Adrift.md|33|warning",
+    "relation-range|wiki/Adrift.md|36|warning",
+    "field-shape|wiki/Escaped.md|8|error",
+    "relation-require|wiki/Loose.md|21|warning"
+  ]
+}

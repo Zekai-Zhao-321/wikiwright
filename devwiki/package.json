@@ -1,0 +1,9 @@
+{
+  "name": "wikiwright-devwiki",
+  "private": true,
+  "version": "0.0.0",
+  "description": "This repository's own bundle: wikiwright documented by wikiwright, over the code kit. A workspace member so `bun install` links the kit into devwiki/node_modules; the grant is this machine's.",
+  "dependencies": {
+    "@wikiwright/kit-code": "workspace:*"
+  }
+}

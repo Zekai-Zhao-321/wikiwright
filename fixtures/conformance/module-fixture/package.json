@@ -1,0 +1,17 @@
+{
+  "name": "@wikiwright-fixture/probe",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Test infrastructure: a domain-neutral module that exercises every extension surface. Not a domain model and not a product kit.",
+  "license": "MIT",
+  "wikiwright": {
+    "module": "./index.js",
+    "fixture": "./fixture.json",
+    "engine": ">=0.1.0 <1.0.0"
+  },
+  "files": [
+    "index.js",
+    "fixture.json"
+  ]
+}

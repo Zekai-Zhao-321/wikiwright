@@ -1,0 +1,5 @@
+{
+  "content_roots": ["wiki", "journal", "meta"],
+  "field_sources": { "title": "basename", "description": "lede" },
+  "folder_tags": { "mode": "validate" }
+}

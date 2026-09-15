@@ -1,0 +1,13 @@
+The file CaseFolding.txt in this directory is Unicode Character Database data:
+
+  © Unicode, Inc. All rights reserved.
+
+It is distributed under the Unicode License v3 (SPDX identifier: Unicode-3.0),
+a permissive license allowing commercial use with attribution. The authoritative
+license text and terms of use:
+
+  https://www.unicode.org/license.txt
+  https://www.unicode.org/terms_of_use.html
+
+The generated file packages/core/src/identity/casefold-data.ts is derived from
+this data and carries the same attribution.

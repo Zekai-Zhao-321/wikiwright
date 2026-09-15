@@ -1,0 +1,7 @@
+{
+  "content_roots": ["wiki", "meta"],
+  "folder_tags": {
+    "mode": "validate"
+  },
+  "modules": [{ "package": "@wikiwright/kit-code", "version": "^0.1.0" }]
+}

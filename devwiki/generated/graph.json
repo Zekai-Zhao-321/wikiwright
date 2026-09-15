@@ -1,0 +1,1348 @@
+{
+  "schema": "wikiwright/graph",
+  "nodes": [
+    {
+      "id": "meta/D-001.md",
+      "kind": "page",
+      "type": "decision",
+      "title": "D-001 — Generated artifacts are tracked"
+    },
+    {
+      "id": "meta/D-002.md",
+      "kind": "page",
+      "type": "decision",
+      "title": "D-002 — One trust law: the digest over the package is the boundary"
+    },
+    {
+      "id": "meta/D-003.md",
+      "kind": "page",
+      "type": "decision",
+      "title": "D-003 — The code kit is unpublished"
+    },
+    {
+      "id": "meta/D-004.md",
+      "kind": "page",
+      "type": "decision",
+      "title": "D-004 — No lane and no check in the code kit"
+    },
+    {
+      "id": "meta/D-005.md",
+      "kind": "page",
+      "type": "decision",
+      "title": "D-005 — A relation is a labelled edge, and coverage is a graph query"
+    },
+    {
+      "id": "meta/D-006.md",
+      "kind": "page",
+      "type": "decision",
+      "title": "D-006 — A grant may cover a vault's path in every linked worktree of one clone"
+    },
+    {
+      "id": "meta/charter.md",
+      "kind": "page",
+      "type": "charter",
+      "title": "Charter"
+    },
+    {
+      "id": "tag:cli",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:kernel",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:kit",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:meta",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:repo",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:stdlib",
+      "kind": "tag"
+    },
+    {
+      "id": "wiki/command-runtime.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "The command runtime"
+    },
+    {
+      "id": "wiki/deterministic-artifacts.md",
+      "kind": "page",
+      "type": "code-concept",
+      "title": "Determinism of artifacts"
+    },
+    {
+      "id": "wiki/envelope-and-exit-codes.md",
+      "kind": "page",
+      "type": "ops-reference",
+      "title": "The envelope and exit codes"
+    },
+    {
+      "id": "wiki/environment-variables.md",
+      "kind": "page",
+      "type": "ops-reference",
+      "title": "Environment variables"
+    },
+    {
+      "id": "wiki/fields-and-shapes.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "Fields and shapes"
+    },
+    {
+      "id": "wiki/findings-and-routing.md",
+      "kind": "page",
+      "type": "code-concept",
+      "title": "Findings and total routing"
+    },
+    {
+      "id": "wiki/fixers.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "Fixers and routing"
+    },
+    {
+      "id": "wiki/freshness.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "Freshness and pins"
+    },
+    {
+      "id": "wiki/generated-artifacts.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "Generated artifacts"
+    },
+    {
+      "id": "wiki/git.md",
+      "kind": "page",
+      "type": "integration",
+      "title": "Git"
+    },
+    {
+      "id": "wiki/judge.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "The judge and its passes"
+    },
+    {
+      "id": "wiki/modules-and-trust.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "Modules, trust and the fixture"
+    },
+    {
+      "id": "wiki/one-judge-five-states.md",
+      "kind": "page",
+      "type": "code-concept",
+      "title": "One judge, five states"
+    },
+    {
+      "id": "wiki/parser-and-names.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "The parser and the names it binds"
+    },
+    {
+      "id": "wiki/registry-pipeline.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "Registry pipeline"
+    },
+    {
+      "id": "wiki/repository-layout.md",
+      "kind": "page",
+      "type": "source-map",
+      "title": "Repository layout"
+    },
+    {
+      "id": "wiki/repository-scripts.md",
+      "kind": "page",
+      "type": "ops-reference",
+      "title": "Repository scripts"
+    },
+    {
+      "id": "wiki/search.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "Search"
+    },
+    {
+      "id": "wiki/section-grammars.md",
+      "kind": "page",
+      "type": "code-concept",
+      "title": "Section grammars"
+    },
+    {
+      "id": "wiki/skills-and-brief.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "Skills and the brief"
+    },
+    {
+      "id": "wiki/standard-library.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "The standard library"
+    },
+    {
+      "id": "wiki/testing-guide.md",
+      "kind": "page",
+      "type": "testing-guide",
+      "title": "Testing the engine"
+    },
+    {
+      "id": "wiki/trust-law.md",
+      "kind": "page",
+      "type": "code-concept",
+      "title": "The trust law"
+    },
+    {
+      "id": "wiki/wikiwright-architecture.md",
+      "kind": "page",
+      "type": "architecture-overview",
+      "title": "wikiwright architecture"
+    },
+    {
+      "id": "wiki/wikiwright-quickstart.md",
+      "kind": "page",
+      "type": "quickstart",
+      "title": "wikiwright quickstart"
+    },
+    {
+      "id": "wiki/writer-and-staged-gate.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "The Writer and the staged gate"
+    }
+  ],
+  "edges": [
+    {
+      "from": "meta/D-001.md",
+      "to": "tag:meta",
+      "kind": "tagged"
+    },
+    {
+      "from": "meta/D-002.md",
+      "to": "tag:meta",
+      "kind": "tagged"
+    },
+    {
+      "from": "meta/D-003.md",
+      "to": "tag:meta",
+      "kind": "tagged"
+    },
+    {
+      "from": "meta/D-004.md",
+      "to": "tag:meta",
+      "kind": "tagged"
+    },
+    {
+      "from": "meta/D-005.md",
+      "to": "tag:meta",
+      "kind": "tagged"
+    },
+    {
+      "from": "meta/D-006.md",
+      "to": "meta/D-002.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "meta/D-006.md",
+      "to": "tag:meta",
+      "kind": "tagged"
+    },
+    {
+      "from": "meta/charter.md",
+      "to": "tag:meta",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/command-runtime.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/command-runtime.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/command-runtime.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/command-runtime.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/command-runtime.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/command-runtime.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/command-runtime.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "meta/D-001.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "meta/D-001.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "wiki/generated-artifacts.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "wiki/modules-and-trust.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "wiki/parser-and-names.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "wiki/search.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "wiki/skills-and-brief.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/envelope-and-exit-codes.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/envelope-and-exit-codes.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/envelope-and-exit-codes.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/envelope-and-exit-codes.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/envelope-and-exit-codes.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/environment-variables.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/environment-variables.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/environment-variables.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/environment-variables.md",
+      "to": "wiki/git.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/environment-variables.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/environment-variables.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/environment-variables.md",
+      "to": "wiki/repository-scripts.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/fields-and-shapes.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/fields-and-shapes.md",
+      "to": "wiki/judge.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/fields-and-shapes.md",
+      "to": "wiki/judge.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/fields-and-shapes.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/fields-and-shapes.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/fields-and-shapes.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/fields-and-shapes.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/findings-and-routing.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/findings-and-routing.md",
+      "to": "wiki/fixers.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/findings-and-routing.md",
+      "to": "wiki/standard-library.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/findings-and-routing.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/findings-and-routing.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/fixers.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/fixers.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/fixers.md",
+      "to": "wiki/judge.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/fixers.md",
+      "to": "wiki/judge.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/fixers.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/fixers.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/fixers.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/fixers.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/freshness.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/freshness.md",
+      "to": "wiki/git.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/freshness.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/freshness.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/freshness.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/freshness.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/freshness.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/freshness.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "meta/D-001.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "meta/D-001.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "meta/D-005.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "meta/D-005.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "wiki/skills-and-brief.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "wiki/freshness.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "wiki/freshness.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "wiki/writer-and-staged-gate.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "wiki/writer-and-staged-gate.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/judge.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/judge.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/judge.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/judge.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/judge.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/judge.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/judge.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "meta/D-002.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "meta/D-002.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "meta/D-003.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "meta/D-003.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "meta/D-006.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "meta/D-006.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "wiki/judge.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "wiki/judge.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "wiki/writer-and-staged-gate.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/parser-and-names.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/parser-and-names.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/parser-and-names.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/parser-and-names.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/parser-and-names.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/parser-and-names.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/parser-and-names.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/repository-layout.md",
+      "to": "tag:repo",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/repository-layout.md",
+      "to": "wiki/registry-pipeline.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/repository-scripts.md",
+      "to": "tag:repo",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/repository-scripts.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/repository-scripts.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/repository-scripts.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/repository-scripts.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/search.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/search.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/search.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/search.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/search.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/search.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/search.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/search.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/section-grammars.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/section-grammars.md",
+      "to": "tag:stdlib",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/section-grammars.md",
+      "to": "wiki/judge.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/section-grammars.md",
+      "to": "wiki/modules-and-trust.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/section-grammars.md",
+      "to": "wiki/standard-library.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/section-grammars.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/section-grammars.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/skills-and-brief.md",
+      "to": "meta/D-001.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/skills-and-brief.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/skills-and-brief.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/skills-and-brief.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/skills-and-brief.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/skills-and-brief.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/skills-and-brief.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/skills-and-brief.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/standard-library.md",
+      "to": "tag:stdlib",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/standard-library.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/standard-library.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/standard-library.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/standard-library.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/standard-library.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/standard-library.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/testing-guide.md",
+      "to": "tag:repo",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/testing-guide.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/testing-guide.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "meta/D-002.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "meta/D-002.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "meta/D-004.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "meta/D-006.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "meta/D-006.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "tag:kit",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "wiki/judge.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "wiki/modules-and-trust.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "meta/D-004.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "meta/D-004.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "tag:kit",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "tag:stdlib",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "wiki/registry-pipeline.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "wiki/wikiwright-quickstart.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "wiki/wikiwright-quickstart.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/wikiwright-quickstart.md",
+      "to": "meta/D-003.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/wikiwright-quickstart.md",
+      "to": "meta/D-003.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/wikiwright-quickstart.md",
+      "to": "meta/D-006.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/wikiwright-quickstart.md",
+      "to": "meta/D-006.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/wikiwright-quickstart.md",
+      "to": "tag:repo",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/wikiwright-quickstart.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/wikiwright-quickstart.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "wiki/git.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    }
+  ]
+}

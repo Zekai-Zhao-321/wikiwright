@@ -1,0 +1,9 @@
+{
+  "name": "code-wiki",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A wikiwright bundle over the code kit. The kit is on no registry: replace /path/to/wikiwright below with a checkout of the engine repository (or use the workspace link inside it), then install and grant it.",
+  "dependencies": {
+    "@wikiwright/kit-code": "file:/path/to/wikiwright/packages/kit-code"
+  }
+}

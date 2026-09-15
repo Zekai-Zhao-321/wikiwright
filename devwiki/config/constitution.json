@@ -1,0 +1,132 @@
+{
+  "schema": "wikiwright/constitution",
+  "schema_version": 3,
+  "vocabularies": {
+    "tags": {
+      "mode": "registered",
+      "entries": {
+        "cli": {
+          "description": "The wikiwright binary under packages/cli: verbs, envelopes, the shell half of the Writer, modules and trust, freshness."
+        },
+        "kernel": {
+          "description": "The kernel of @wikiwright/core: parse, identity, types, shapes, the judge, routing, the Writer, generation, search."
+        },
+        "kit": {
+          "description": "The shipped domain kit @wikiwright/kit-code, and this bundle as its consumer."
+        },
+        "meta": {
+          "description": "The wiki about the wiki: charter, decisions, reviews."
+        },
+        "repo": {
+          "description": "The repository around the packages: the scripts, the tools, the gate, the tests."
+        },
+        "stdlib": {
+          "description": "The standard library under packages/core/src/stdlib: claims, relations, entries."
+        }
+      }
+    },
+    "relations": {
+      "mode": "registered",
+      "entries": {}
+    }
+  },
+  "types": {
+    "architecture-overview": {
+      "extends": "code/architecture-overview",
+      "description": "The engine's shape: the four layers and how a verdict flows through them; anchored to the entry points that define them. This bundle lives in the repository it documents, so origin is `.`.",
+      "fields": {
+        "origin": {
+          "kind": "string",
+          "pattern": "^\\.$"
+        }
+      }
+    },
+    "charter": {
+      "extends": "hub",
+      "description": "The bundle's charter: pure intention and scope, loaded every session.",
+      "use_when": "Exactly one page \u2014 meta/charter.md: the bundle's intention and scope, loaded every session. Not the agent operating manual (CLAUDE.md / AGENTS.md).",
+      "avoid_when": "Anything that is a setting, a decision record, or content."
+    },
+    "code-concept": {
+      "extends": "code/concept",
+      "description": "A cross-cutting mechanism of the engine that lives in many places: an invariant, a law, a data shape spanning subsystems.",
+      "fields": {
+        "origin": {
+          "kind": "string",
+          "pattern": "^\\.$"
+        }
+      }
+    },
+    "decision": {
+      "extends": "code/decision",
+      "description": "A decision record of the engine, numbered D-nnn, citing the documents and pages that carry its evidence.",
+      "fields": {
+        "decision_id": {
+          "kind": "string",
+          "required": true,
+          "pattern": "^D-[0-9]{3}$"
+        }
+      }
+    },
+    "integration": {
+      "extends": "code/integration",
+      "description": "An external system the engine talks to, and the contract with it; anchored to the code that speaks it.",
+      "fields": {
+        "origin": {
+          "kind": "string",
+          "pattern": "^\\.$"
+        }
+      }
+    },
+    "ops-reference": {
+      "extends": "code/ops-reference",
+      "description": "Lookup tables for the engine: the envelope and exit codes, environment variables, repository scripts; anchored to the code that defines them.",
+      "fields": {
+        "origin": {
+          "kind": "string",
+          "pattern": "^\\.$"
+        }
+      }
+    },
+    "quickstart": {
+      "extends": "code/quickstart",
+      "description": "Install, build, and verify the engine from a fresh clone; anchored to the files its commands come from.",
+      "fields": {
+        "origin": {
+          "kind": "string",
+          "pattern": "^\\.$"
+        }
+      }
+    },
+    "source-map": {
+      "extends": "code/source-map",
+      "description": "Directory-to-purpose lookup for the wikiwright repository, anchored to the paths it lists.",
+      "fields": {
+        "origin": {
+          "kind": "string",
+          "pattern": "^\\.$"
+        }
+      }
+    },
+    "subsystem": {
+      "extends": "code/subsystem",
+      "description": "One owned system of the engine, read at the pin and anchored to the directory it covers.",
+      "fields": {
+        "origin": {
+          "kind": "string",
+          "pattern": "^\\.$"
+        }
+      }
+    },
+    "testing-guide": {
+      "extends": "code/testing-guide",
+      "description": "How the engine's tests are organized, run, and written: the two runners, temp copies, the kit-code helper.",
+      "fields": {
+        "origin": {
+          "kind": "string",
+          "pattern": "^\\.$"
+        }
+      }
+    }
+  }
+}

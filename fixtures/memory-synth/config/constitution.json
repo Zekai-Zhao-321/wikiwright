@@ -1,0 +1,802 @@
+{
+  "schema": "wikiwright/constitution",
+  "schema_version": 3,
+  "vocabularies": {
+    "tags": {
+      "mode": "registered",
+      "entries": {
+        "admin": {
+          "description": "The wiki about the wiki."
+        },
+        "craft": {
+          "description": "Standing subjects about making things."
+        },
+        "diary": {
+          "description": "Dated diary capture."
+        },
+        "diary-days": {
+          "description": "One-day diary notes."
+        },
+        "dossier": {
+          "description": "A pointer page for a paper."
+        },
+        "fauna": {
+          "description": "Household animals."
+        },
+        "folk": {
+          "description": "Pages standing for persons and household animals."
+        },
+        "gear": {
+          "description": "A durable owned object."
+        },
+        "guild": {
+          "description": "Organisations, and the persons met through them."
+        },
+        "happening": {
+          "description": "A happening page."
+        },
+        "haunt": {
+          "description": "A location page."
+        },
+        "kin": {
+          "description": "The kin sub-group inside the persons workspace."
+        },
+        "ledger": {
+          "description": "Holdings and owned gear."
+        },
+        "persona": {
+          "description": "Any page standing for a named person."
+        },
+        "roaming": {
+          "description": "Locations and dated happenings away from home."
+        },
+        "routing": {
+          "description": "A page whose job is routing: concise overview plus curated links onward."
+        },
+        "schooling": {
+          "description": "Standing subjects about study."
+        },
+        "strand": {
+          "description": "A standing topic."
+        },
+        "vault": {
+          "description": "A financial holding."
+        },
+        "venture": {
+          "description": "A venture page."
+        },
+        "wellbeing": {
+          "description": "Standing subjects about the body and its upkeep."
+        },
+        "workshop": {
+          "description": "Ventures and the organisations that host them."
+        }
+      }
+    },
+    "categories": {
+      "mode": "registered",
+      "entries": {
+        "category-01": {
+          "class": "supersede"
+        },
+        "category-02": {
+          "class": "supersede"
+        },
+        "category-03": {
+          "class": "supersede"
+        },
+        "category-04": {
+          "class": "supersede"
+        },
+        "category-05": {
+          "class": "supersede"
+        },
+        "category-06": {
+          "class": "supersede"
+        },
+        "category-07": {
+          "class": "supersede"
+        },
+        "category-08": {
+          "class": "supersede"
+        },
+        "category-09": {
+          "class": "supersede"
+        },
+        "category-10": {
+          "class": "supersede"
+        },
+        "category-11": {
+          "class": "supersede"
+        },
+        "category-12": {
+          "class": "supersede"
+        },
+        "category-13": {
+          "class": "supersede"
+        },
+        "category-14": {
+          "class": "supersede"
+        },
+        "category-15": {
+          "class": "supersede"
+        },
+        "category-16": {
+          "class": "supersede"
+        },
+        "category-17": {
+          "class": "supersede"
+        },
+        "category-18": {
+          "class": "supersede"
+        },
+        "category-19": {
+          "class": "supersede"
+        },
+        "category-20": {
+          "class": "supersede"
+        },
+        "category-21": {
+          "class": "supersede"
+        },
+        "category-22": {
+          "class": "supersede"
+        },
+        "category-23": {
+          "class": "accumulate"
+        },
+        "category-24": {
+          "class": "accumulate"
+        },
+        "category-25": {
+          "class": "accumulate"
+        },
+        "category-26": {
+          "class": "accumulate"
+        },
+        "category-27": {
+          "class": "accumulate"
+        },
+        "category-28": {
+          "class": "journal-only"
+        },
+        "category-29": {
+          "class": "journal-only"
+        }
+      }
+    }
+  },
+  "fragments": {
+    "claim-classes": {
+      "description": "Per-fact lifecycle: supersede categories hold one truth, accumulate categories collect dated observations, journal-only categories never become standing facts.",
+      "sections": {
+        "depth": 2,
+        "list": [
+          {
+            "heading": "Facts",
+            "grammar": "claims",
+            "history": "History",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "History",
+            "grammar": "claims",
+            "role": "history",
+            "vocabulary": "categories"
+          }
+        ]
+      }
+    },
+    "dated-log": {
+      "description": "Dated entries; existing entries are never silently changed."
+    }
+  },
+  "types": {
+    "account": {
+      "extends": "record",
+      "description": "A bank, brokerage, or financial-service holding.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 1,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "asset": {
+      "extends": "record",
+      "description": "A durable owned object worth tracking.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 1,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "charter": {
+      "extends": "reference",
+      "description": "The one page that says what this wiki is for and how facts are ruled in or out.",
+      "use_when": "Exactly one page.",
+      "avoid_when": "Settings, ruling records, content."
+    },
+    "daily": {
+      "extends": "reference",
+      "description": "One day of diary capture.",
+      "fragments": [
+        "dated-log"
+      ],
+      "fields": {
+        "created": {
+          "kind": "any"
+        },
+        "updated": {
+          "kind": "any"
+        },
+        "sensitivity": {
+          "kind": "any"
+        },
+        "cjk_name": {
+          "kind": "any"
+        },
+        "sources": {
+          "kind": "any"
+        }
+      },
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Notes",
+            "min": 0
+          },
+          {
+            "heading": "Captured",
+            "min": 0
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          }
+        ]
+      },
+      "body": {
+        "lifecycle": "append-only"
+      }
+    },
+    "doc": {
+      "extends": "record",
+      "description": "A pointer page for a permit or an official paper.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 0,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "entity": {
+      "extends": "concept",
+      "description": "Abstract base for every page standing for one thing in the owner's life.",
+      "use_when": "Never directly; author a concrete descendant.",
+      "avoid_when": "Diary entries and pointer records.",
+      "fragments": [
+        "claim-classes"
+      ],
+      "fields": {
+        "created": {
+          "kind": "any"
+        },
+        "updated": {
+          "kind": "any"
+        },
+        "sensitivity": {
+          "kind": "any"
+        },
+        "cjk_name": {
+          "kind": "any"
+        },
+        "sources": {
+          "kind": "any"
+        }
+      }
+    },
+    "event": {
+      "extends": "entity",
+      "description": "A bounded happening with dates.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 0,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "org": {
+      "extends": "entity",
+      "description": "A company, school, employer, club, or institution.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 1,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "person": {
+      "extends": "entity",
+      "description": "One human being the owner knows or who matters to the record.",
+      "use_when": "Independent identity, own relationships, substantial content about one named person.",
+      "avoid_when": "Mentioned in passing; a group (topic); an animal (pet).",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 1,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "pet": {
+      "extends": "entity",
+      "description": "An animal in the household.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 1,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "place": {
+      "extends": "entity",
+      "description": "A city, neighbourhood, or dwelling that anchors a period of the owner's life.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 1,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "project": {
+      "extends": "entity",
+      "description": "A body of work with an aim and a lifecycle.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 0,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "record": {
+      "extends": "reference",
+      "description": "Abstract base for pointer records.",
+      "use_when": "Never directly; author a concrete descendant.",
+      "avoid_when": "Anything with its own relationships and narrative (entity).",
+      "fragments": [
+        "claim-classes"
+      ],
+      "fields": {
+        "created": {
+          "kind": "any"
+        },
+        "updated": {
+          "kind": "any"
+        },
+        "sensitivity": {
+          "kind": "any"
+        },
+        "cjk_name": {
+          "kind": "any"
+        },
+        "sources": {
+          "kind": "any"
+        }
+      }
+    },
+    "review": {
+      "extends": "reference",
+      "description": "One ISO week built from daily notes and the git log.",
+      "fragments": [
+        "dated-log"
+      ],
+      "fields": {
+        "created": {
+          "kind": "any"
+        },
+        "updated": {
+          "kind": "any"
+        },
+        "sensitivity": {
+          "kind": "any"
+        },
+        "cjk_name": {
+          "kind": "any"
+        }
+      },
+      "body": {
+        "lifecycle": "append-only"
+      }
+    },
+    "self": {
+      "extends": "entity",
+      "description": "The owner's hub: identity and contact channels, the life Timeline, a grouped Relations map. Domain facts live on domain pages.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 0,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    },
+    "topic": {
+      "extends": "entity",
+      "description": "A standing subject, including the domain pages that own facts about the owner.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "min": 0,
+            "grammar": "claims",
+            "history": "History",
+            "provenance": "optional",
+            "vocabulary": "categories"
+          },
+          {
+            "heading": "Relations",
+            "min": 1,
+            "grammar": "relations"
+          },
+          {
+            "heading": "Timeline",
+            "min": 0,
+            "max": 1,
+            "grammar": "entries",
+            "date": "optional"
+          },
+          {
+            "heading": "Notes",
+            "min": 0,
+            "max": 1
+          },
+          {
+            "heading": "History",
+            "min": 0,
+            "max": 1,
+            "grammar": "claims",
+            "role": "history"
+          }
+        ]
+      }
+    }
+  }
+}

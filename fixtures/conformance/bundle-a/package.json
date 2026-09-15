@@ -1,0 +1,9 @@
+{
+  "name": "wikiwright-conformance-bundle-a",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Test infrastructure: one of two bundles consuming the same locally installed fixture module.",
+  "dependencies": {
+    "@wikiwright-fixture/probe": "file:../module-fixture"
+  }
+}

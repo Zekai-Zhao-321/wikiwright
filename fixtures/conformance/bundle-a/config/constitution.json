@@ -1,0 +1,26 @@
+{
+  "schema": "wikiwright/constitution",
+  "schema_version": 3,
+  "vocabularies": {
+    "tags": {
+      "mode": "registered",
+      "entries": { "probe": { "description": "Pages this bundle measures." } }
+    },
+    "@wikiwright-fixture/probe/sizes": {
+      "mode": "registered",
+      "entries": {
+        "small": { "description": "Bundle A's small.", "limit": 10 },
+        "medium": { "description": "Bundle A alone declares this one.", "limit": 100 }
+      }
+    }
+  },
+  "types": {
+    "widget": {
+      "extends": "@wikiwright-fixture/probe/subject",
+      "description": "Bundle A's own subtype of the module's contributed type.",
+      "checks": [
+        { "use": "@wikiwright-fixture/probe/has-id", "config": { "prefix": "A-" } }
+      ]
+    }
+  }
+}

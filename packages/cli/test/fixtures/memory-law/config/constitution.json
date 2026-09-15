@@ -1,0 +1,310 @@
+{
+  "schema": "wikiwright/constitution",
+  "schema_version": 3,
+  "vocabularies": {
+    "tags": {
+      "mode": "registered",
+      "form": "^[a-z0-9][a-z0-9-]*$",
+      "entries": {
+        "admin": { "description": "The record about the record: charter, reviews, decisions." },
+        "craft": { "description": "Standing subjects about making things." },
+        "diary": { "description": "Dated capture — daily notes and weekly reviews." },
+        "diary-days": { "description": "One-day diary notes." },
+        "dossier": {
+          "description": "A pointer page for an identity document, permit, or credential."
+        },
+        "fauna": { "description": "Household animals." },
+        "folk": { "description": "The people workspace: persons and the animals they keep." },
+        "gear": { "description": "A durable owned thing worth tracking." },
+        "guild": { "description": "Organisations, and the people met through them." },
+        "happening": { "description": "A bounded, dated occurrence." },
+        "haunt": { "description": "A place that anchors a period of a life." },
+        "kin": { "description": "Immediate family — parents, siblings, the household." },
+        "ledger": { "description": "Holdings and the things they buy." },
+        "persona": { "description": "Any page standing for a named person." },
+        "roaming": { "description": "Places and happenings away from home." },
+        "routing": {
+          "description": "A page whose job is routing: a concise overview plus curated links onward."
+        },
+        "schooling": { "description": "Standing subjects about study." },
+        "strand": {
+          "description": "A standing topic — a domain page that owns facts about its subject."
+        },
+        "vault": { "description": "Money: accounts, spending, and the institutions behind them." },
+        "venture": { "description": "A body of work with an aim and a lifecycle." },
+        "wellbeing": { "description": "Standing subjects about the body and its upkeep." },
+        "workshop": { "description": "Ventures and the organisations that host them." }
+      }
+    },
+    "sources": {
+      "mode": "registered",
+      "entries": {
+        "mail": { "description": "Anything that arrived as email." },
+        "chat": { "description": "A messaging app's history." },
+        "phone": { "description": "The phone's own stores: contacts, photos, notes, reminders." },
+        "school": { "description": "A school or university system." },
+        "drive": { "description": "A cloud file store." },
+        "registry": { "description": "An official register or issuing authority." },
+        "web": { "description": "A page on the open web, snapshotted before it was cited." },
+        "raw": { "description": "An item already captured into this record's archive." },
+        "photo": { "description": "A photograph, read for what it shows." }
+      }
+    },
+    "categories": {
+      "mode": "registered",
+      "entries": {
+        "identity": {
+          "class": "supersede",
+          "description": "Who or what the entity is — full name, birth date, the naming facts."
+        },
+        "contact": {
+          "class": "supersede",
+          "description": "How the entity is reached: phone, handle, email."
+        },
+        "address": {
+          "class": "supersede",
+          "description": "Where something is: a home, a workplace, a shop."
+        },
+        "housing": {
+          "class": "supersede",
+          "description": "Where the entity lives, at the granularity the record keeps."
+        },
+        "role": { "class": "supersede", "description": "Job, position, or membership role." },
+        "education": {
+          "class": "supersede",
+          "description": "Degrees, schools, programmes. Multi-valued in practice; a reclassification candidate once the census says so."
+        },
+        "event": {
+          "class": "supersede",
+          "description": "A dated occurrence; recurring ones belong on the Timeline."
+        },
+        "account": {
+          "class": "supersede",
+          "description": "An account or membership held with an institution."
+        },
+        "finance": {
+          "class": "supersede",
+          "description": "Money facts: balances, obligations, instruments."
+        },
+        "date": {
+          "class": "supersede",
+          "description": "A standing date that is not itself an event — a renewal, an anniversary."
+        },
+        "language": { "class": "supersede", "description": "Languages spoken, and at what level." },
+        "family": {
+          "class": "supersede",
+          "description": "Household and kinship facts stated as facts, not as relations."
+        },
+        "health": {
+          "class": "supersede",
+          "description": "Standing health facts. Sensitive by default."
+        },
+        "plan": { "class": "supersede", "description": "A stated intention with a target period." },
+        "preference": {
+          "class": "accumulate",
+          "owned_by": { "not_on": { "types": ["self"], "tags": ["routing"] } },
+          "description": "Taste, stated or inferred. Observations accumulate; hedges are kept verbatim."
+        },
+        "opinion": {
+          "class": "accumulate",
+          "owned_by": { "not_on": { "types": ["self"], "tags": ["routing"] } },
+          "description": "A stated view. Record the variance; a later contrary view never overwrites an earlier one."
+        },
+        "habit": {
+          "class": "accumulate",
+          "owned_by": { "not_on": { "types": ["self"], "tags": ["routing"] } },
+          "description": "Observed behaviour, described as behaviour and never as taste."
+        },
+        "context": {
+          "class": "accumulate",
+          "description": "The circumstance around a statement — where, with whom, in what register."
+        },
+        "misconception": {
+          "class": "accumulate",
+          "description": "Checked and false: what was believed, what is true, and the source. Written so it is never reasserted."
+        },
+        "volatile": {
+          "class": "journal-only",
+          "description": "Mood, venting, hyperbole. Daily notes only; promote on a second occasion or on confirmation."
+        }
+      }
+    },
+    "relations": { "mode": "census" }
+  },
+  "fragments": {
+    "page-fields": {
+      "description": "The frontmatter every page of this record carries.",
+      "fields": {
+        "created": { "kind": "date", "auto": "on-create" },
+        "updated": { "kind": "date", "auto": "on-write" },
+        "sensitivity": { "kind": "enum", "values": ["S0", "S1", "S2"] },
+        "status": { "kind": "enum", "values": ["active", "draft", "retired"] },
+        "sources": { "kind": "list", "item": { "kind": "string", "min_length": 1 } },
+        "cjk_name": { "kind": "string" },
+        "locked": { "kind": "boolean" }
+      }
+    },
+    "entity-body": {
+      "description": "The five-section body: what is known, who it touches, when it happened, what is unsaid, what it used to be.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          {
+            "heading": "Facts",
+            "grammar": "claims",
+            "vocabulary": "categories",
+            "history": "History",
+            "provenance": "required",
+            "forms": ["stated", "stated-by", "inferred", "sourced", "recorded", "legacy"],
+            "sources": [
+              "mail",
+              "chat",
+              "phone",
+              "school",
+              "drive",
+              "registry",
+              "web",
+              "raw",
+              "photo"
+            ],
+            "inferred_ref": "optional",
+            "max": 1
+          },
+          {
+            "heading": "Relations",
+            "grammar": "relations",
+            "vocabulary": "relations",
+            "min": 1,
+            "max": 1
+          },
+          {
+            "heading": "Timeline",
+            "grammar": "entries",
+            "date": "required",
+            "lifecycle": "append-only",
+            "max": 1
+          },
+          { "heading": "Notes", "grammar": "prose", "aliases": ["备注"], "max": 1 },
+          {
+            "heading": "History",
+            "grammar": "claims",
+            "role": "history",
+            "items": ["claim", "entry"],
+            "vocabulary": "categories",
+            "max": 1
+          }
+        ]
+      }
+    }
+  },
+  "types": {
+    "entity": {
+      "extends": "concept",
+      "abstract": true,
+      "fragments": ["page-fields", "entity-body"],
+      "description": "Abstract base for people, animals, organisations, places, ventures, happenings and standing subjects.",
+      "use_when": "Never directly; author one of its concrete descendants.",
+      "avoid_when": "Dated capture (daily, review) and pointer records (account, doc, asset)."
+    },
+    "record": {
+      "extends": "reference",
+      "abstract": true,
+      "fragments": ["page-fields", "entity-body"],
+      "description": "Abstract base for the pointer pages: accounts, documents, owned things.",
+      "use_when": "Never directly; author one of its concrete descendants.",
+      "avoid_when": "Anything with its own relationships and narrative (entity)."
+    },
+    "person": {
+      "extends": "entity",
+      "description": "One human being who is known, or who matters to the record.",
+      "use_when": "Independent identity, own relationships, and substantial content about one named person.",
+      "avoid_when": "Mentioned in passing (a bullet elsewhere); a group (topic); an animal (pet).",
+      "sections": { "list": [{ "heading": "Facts", "min": 1 }] }
+    },
+    "pet": {
+      "extends": "entity",
+      "description": "An animal in the household.",
+      "sections": { "list": [{ "heading": "Facts", "min": 1 }] }
+    },
+    "org": {
+      "extends": "entity",
+      "description": "A company, school, employer, club, or institution.",
+      "sections": { "list": [{ "heading": "Facts", "min": 1 }] }
+    },
+    "place": {
+      "extends": "entity",
+      "description": "A city, neighbourhood, or dwelling that anchors a period of the owner's life.",
+      "sections": { "list": [{ "heading": "Facts", "min": 1 }] }
+    },
+    "project": {
+      "extends": "entity",
+      "description": "A body of work with an aim and a lifecycle."
+    },
+    "event": {
+      "extends": "entity",
+      "description": "A bounded happening with dates."
+    },
+    "topic": {
+      "extends": "entity",
+      "description": "A standing subject — including the domain pages that own facts about the owner."
+    },
+    "self": {
+      "extends": "entity",
+      "description": "The owner's hub: identity and contact channels that have no other home, the life Timeline, and a grouped Relations map. Domain facts live on domain pages.",
+      "use_when": "Exactly one page, and only for what has no domain page to live on.",
+      "avoid_when": "Anything a domain page owns — food, fitness, money, tooling, school.",
+      "sections": {
+        "list": [
+          { "heading": "Facts", "only": ["identity", "contact", "account", "date", "language"] },
+          { "heading": "Timeline", "min": 1 }
+        ]
+      }
+    },
+    "account": {
+      "extends": "record",
+      "description": "A bank, brokerage, or financial-service account.",
+      "sections": { "list": [{ "heading": "Facts", "min": 1 }] }
+    },
+    "doc": {
+      "extends": "record",
+      "description": "A pointer page for an identity document, permit, visa, or credential."
+    },
+    "asset": {
+      "extends": "record",
+      "description": "A durable owned thing worth tracking.",
+      "sections": { "list": [{ "heading": "Facts", "min": 1 }] }
+    },
+    "daily": {
+      "extends": "reference",
+      "fragments": ["page-fields"],
+      "description": "One day: what happened, what was captured, what is worth a second look.",
+      "use_when": "journal/daily/YYYY-MM-DD.md — the day's own page.",
+      "avoid_when": "A fact that will still matter in two weeks; that belongs on a page.",
+      "sections": {
+        "depth": 2,
+        "ordered": false,
+        "additional": true,
+        "list": [
+          { "heading": "Timeline", "grammar": "entries", "date": "optional", "max": 1 },
+          { "heading": "Captured", "grammar": "prose", "max": 1 },
+          { "heading": "Notes", "grammar": "prose", "aliases": ["备注"], "max": 1 }
+        ]
+      }
+    },
+    "review": {
+      "extends": "reference",
+      "fragments": ["page-fields"],
+      "description": "One ISO week, built from the daily notes and the commit log."
+    },
+    "charter": {
+      "extends": "reference",
+      "fragments": ["page-fields"],
+      "description": "The one page that says what this record is for and how facts are ruled in or out.",
+      "use_when": "Exactly one page — meta/charter.md: what this record remembers and how facts are ruled in or out, loaded every session. Not the agent operating manual (CLAUDE.md / AGENTS.md).",
+      "avoid_when": "Anything that is a setting; the constitution is the settings surface.",
+      "instances": { "min": 1, "max": 1, "severity": "warning" }
+    }
+  }
+}

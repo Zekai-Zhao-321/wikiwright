@@ -1,0 +1,22 @@
+{
+  "schema": "wikiwright/constitution",
+  "schema_version": 3,
+  "vocabularies": {
+    "tags": {
+      "mode": "registered",
+      "entries": {
+        "meta": {
+          "description": "The wiki about the wiki: charter, decisions, reviews."
+        }
+      }
+    }
+  },
+  "types": {
+    "charter": {
+      "extends": "hub",
+      "description": "The bundle's charter: pure intention and scope, loaded every session.",
+      "use_when": "Exactly one page — meta/charter.md: the bundle's intention and scope, loaded every session. Not the agent operating manual (CLAUDE.md / AGENTS.md).",
+      "avoid_when": "Anything that is a setting, a decision record, or content."
+    }
+  }
+}

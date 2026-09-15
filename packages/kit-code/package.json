@@ -1,0 +1,17 @@
+{
+  "name": "@wikiwright/kit-code",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A wikiwright domain kit for the wiki of a code repository: the page kinds a code wiki carries, the anchored fragment that pins a page to a commit and the paths it covers, the relation labels between them, their templates and the reading discipline. Domain software, not a bundle; the bundle supplies its concrete types, tags and tightenings.",
+  "license": "MIT",
+  "wikiwright": {
+    "module": "./index.js",
+    "fixture": "./fixture.json",
+    "engine": ">=0.1.0 <1.0.0"
+  },
+  "files": [
+    "index.js",
+    "fixture.json"
+  ]
+}

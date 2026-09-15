@@ -1,0 +1,69 @@
+{
+  "schema": "wikiwright/constitution",
+  "schema_version": 3,
+  "vocabularies": {
+    "tags": {
+      "mode": "registered",
+      "entries": {
+        "meta": {
+          "description": "The wiki about the wiki: charter, decisions, reviews."
+        }
+      }
+    },
+    "relations": {
+      "mode": "registered",
+      "entries": {}
+    }
+  },
+  "types": {
+    "architecture-overview": {
+      "extends": "code/architecture-overview",
+      "description": "This codebase's shape: layers, boundaries, and how data flows; anchored to the entry points that define them."
+    },
+    "charter": {
+      "extends": "hub",
+      "description": "The bundle's charter: pure intention and scope, loaded every session.",
+      "use_when": "Exactly one page \u2014 meta/charter.md: the bundle's intention and scope, loaded every session. Not the agent operating manual (CLAUDE.md / AGENTS.md).",
+      "avoid_when": "Anything that is a setting, a decision record, or content."
+    },
+    "code-concept": {
+      "extends": "code/concept",
+      "description": "A cross-cutting mechanism of this codebase that lives in many places."
+    },
+    "decision": {
+      "extends": "code/decision",
+      "description": "A decision record of this codebase, numbered D-nnn.",
+      "fields": {
+        "decision_id": {
+          "kind": "string",
+          "required": true,
+          "pattern": "^D-[0-9]{3}$"
+        }
+      }
+    },
+    "integration": {
+      "extends": "code/integration",
+      "description": "An external system this codebase talks to, and the contract with it."
+    },
+    "ops-reference": {
+      "extends": "code/ops-reference",
+      "description": "Lookup tables for this codebase: commands, configuration keys, environment, exit codes."
+    },
+    "quickstart": {
+      "extends": "code/quickstart",
+      "description": "Install, run, and verify this codebase in minutes; anchored to the files its commands come from."
+    },
+    "source-map": {
+      "extends": "code/source-map",
+      "description": "Directory-to-purpose lookup for this repository's layout."
+    },
+    "subsystem": {
+      "extends": "code/subsystem",
+      "description": "One owned system of this codebase, read at the pin and anchored to the directory it covers."
+    },
+    "testing-guide": {
+      "extends": "code/testing-guide",
+      "description": "How this codebase's tests are organized, run, and written."
+    }
+  }
+}
