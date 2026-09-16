@@ -1,15 +1,36 @@
 # wikiwright
 
-wikiwright is a typed wiki engine for LLM agents. A bundle is a directory of
+A typed wiki engine for LLM agents: the wiki stays Markdown in git, and one
+judge holds every write to a constitution you declare.
+
+An agent writing into a wiki drifts. Rarely inside a single page — it shows in
+the shape of the hundredth one: a heading renamed, a relation labelled a new
+way, a field that quietly stopped being filled. Reading the prose catches that
+late, and a Markdown linter catches spelling, not structure.
+
+wikiwright puts the structure under a type system. A bundle is a directory of
 Markdown pages in git, which Obsidian opens unchanged, plus one JSON
 constitution that says what a page of each type must look like: its fields and
 their shapes, the sections its body carries, the grammar each section's items
 are written in, the vocabularies those items draw from. One function judges
 every change against that constitution at every moment a change can happen: a
-draft on stdin, a write, the pre-commit gate, a replay of history. Every verb
-prints one JSON envelope and every finding carries either a runnable fix or a
-queue lane, so the agent driving the CLI always knows the next instruction.
-The engine checks conformance, not truth, and it never calls a model.
+draft on stdin, a write, the pre-commit gate, a replay of history. A type
+system is only as good as its narrowest write path, so there is one judge and
+nothing goes around it.
+
+Every verb prints one JSON envelope, and every finding carries either a
+runnable fix or a queue lane, so the agent driving the CLI always knows its
+next instruction. The engine checks conformance, not truth, and it never calls
+a model.
+
+The law is data: one JSON file, and a domain kit installed like any other
+package. Two teams can share how their wikis are built without sharing a page
+of what is in them.
+
+The gate is `bun run check`: biome, the build, a test-project typecheck and
+the whole suite, on Bun and on Node. This repository documents itself in
+`devwiki/`, a bundle over the shipped code kit, judged by that same gate.
+`docs/roadmap.md` states what is missing, deferred or unverified.
 
 ## The four layers
 
@@ -35,6 +56,8 @@ repository's own `devwiki` (`docs/extending.md`, "The code kit").
 Requires Bun 1.3 or later, or Node 22.12 or later, to run the built binary.
 
 ```sh
+git clone https://github.com/Zekai-Zhao-321/wikiwright.git
+cd wikiwright
 bun install
 bun run build
 node packages/cli/dist/bin.js version
