@@ -211,7 +211,7 @@
         "concept"
       ],
       "title": "The command runtime",
-      "description": "One spec-driven registry of 22 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the one clock, and the place a loaded vault becomes the judge's law.",
+      "description": "One spec-driven registry of 24 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the `--bundle` target and the bundle every vault envelope names, the one clock, and the place a loaded vault becomes the judge's law.",
       "tags": [
         "cli"
       ],
@@ -294,7 +294,7 @@
         "reference"
       ],
       "title": "The envelope and exit codes",
-      "description": "Every verb prints one JSON envelope on stdout; the exit code is one of seven, each mapped to one error type; the judging verbs share one verdict block.",
+      "description": "Every verb prints one JSON envelope on stdout, and a vault verb's names the bundle it read; the exit code is one of seven, each mapped to one error type; the judging verbs share one verdict block.",
       "tags": [
         "cli"
       ],
@@ -953,7 +953,7 @@
         "concept"
       ],
       "title": "Skills and the brief",
-      "description": "The two shipped skills copied into a vault under a stamp the engine can audit, the generated brief rendered from the verb registry and the loaded constitution, and the machine-local findings that say when either is behind the binary.",
+      "description": "The three shipped skills copied into a vault under a stamp the engine can audit, the per-role brief rendered from the verb registry and the loaded constitution under its law digest, and the machine-local findings that say when either is behind the binary.",
       "tags": [
         "cli"
       ],

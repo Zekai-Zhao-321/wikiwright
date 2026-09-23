@@ -52,7 +52,7 @@ packages/cli/src/
   storelock.ts the lock a machine-local store is read, changed and written under
   connections.ts   the machine-local bundles registry `bundles` and `--bundle` read
   hooks.ts, staged.ts   the installed hooks and the staged gate
-  verbs/<name>.ts   one CommandSpec per verb
+  verbs/<name>.ts   one CommandSpec per verb; verbs/bundles.ts keeps the connections, verbs/read.ts is the consumer's read
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit
 packages/cli/skills/          the three shipped skills (consume, write, maintain) and the generated playbook
 packages/cli/.claude-plugin/  the plugin manifest: the package root is a Claude Code plugin
@@ -98,6 +98,7 @@ by name when it breaks. Test files live under `packages/core/test` and
 | The command registry is the only surface | `--help`, `schema`, the brief and the parser render one table; every documented invocation in a shipped skill parses; every writer verb has a brief workflow slot and every slot names a verb; the playbook is byte-identical to its generator's output | `per-command-help`, `schema-walk`, `skills`, `skills-update`, `verbs`, `role-enforcement` |
 | The starters are fixtures | the `code` starter's types over `devwiki`'s own vocabularies yield the error set devwiki's constitution yields; `init` on an empty directory is green on its first `check`, and a starter that declares modules is green once the envelope's named steps are run; every copy a test judges installs the kit from the shipped package and grants it in a store the test owns, never the developer's | `starter-fixtures`, `fixture-verdicts`, `init`, `kit-code` |
 | Identity is Unicode-aware | NFC and full case folding through one seam, with CJK cases; unique basenames, aliases and titles | `identity`, `names-graph` |
+| Every vault envelope names its bundle | a verb that reads a vault's law adds `metadata.bundle` — label, real root, head, dirty, the law digest over the constitution, `engine.json` and each installed module, the content digest over every page's bytes — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs; the brief's header prints the same law digest | `bundle-identity` |
 | Connected bundles are told apart | from a directory that is no vault, two bundles connected by name hold one page path with different guidance, and every answer carries the bundle that gave it and the page's digest; an installed copy refuses every write to it, a consumer session reads and is refused a write, and a child handed a section's address reads the same bytes under the same digest | `multi-bundle` (the scenario, end to end), `bundles`, `read-verb`, `bundle-identity` |
 
 Two more properties are stated rather than tested, so a reader meets them:
@@ -109,8 +110,9 @@ converges).
 ## How a verdict is produced
 
 1. `main.ts` finds the verb in `COMMANDS`, applies `WIKIWRIGHT_ROLE`,
-   intercepts `--help`, preloads any modules `engine.json` declares for a verb
-   that declares it reads the vault's law, and parses argv under the registry.
+   intercepts `--help`, parses argv under the registry, resolves `--bundle` to
+   a connection's root, and preloads any modules `engine.json` declares for a
+   verb that declares it reads the vault's law.
 2. `vaultio.ts` loads `engine.json`, composes the module registry (the standard
    library plus the loaded packages), loads `constitution.json` through it, and
    refuses by name if anything did not load.
@@ -119,7 +121,9 @@ converges).
    the grammar arms through the loaded registry, the vault passes and the
    transition arms where a base exists, then routes, applies exceptions, the
    gate rule and the cap, and builds the coverage block.
-5. The verb prints `verdictEnvelope(verdict)` and exits by `summary.errors`.
+5. The verb prints `verdictEnvelope(verdict)` and exits by `summary.errors`;
+   `main.ts` adds `metadata.bundle`, the bundle it read, to the envelope of
+   every verb that reads a vault's law.
 
 `check` reads the content into one state and uses it for generation and
 judging alike: `parsedPages` keeps each page's parse on the state beside the

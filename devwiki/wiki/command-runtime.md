@@ -1,11 +1,11 @@
 ---
 type: subsystem
 title: "The command runtime"
-description: "One spec-driven registry of 22 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the one clock, and the place a loaded vault becomes the judge's law."
+description: "One spec-driven registry of 24 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the `--bundle` target and the bundle every vault envelope names, the one clock, and the place a loaded vault becomes the judge's law."
 tags: [cli]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 6b5175410c22ee543057ec18fdd74154d0dd9025
 origin: .
-covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/verbs/]
+covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/bundle.ts, packages/cli/src/connections.ts, packages/cli/src/verbs/]
 ---
 
 # The command runtime
@@ -13,37 +13,52 @@ covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/arg
 ## Responsibilities
 
 `packages/cli/src/main.ts` is the entry point: `help` and no command print the
-verb list (`:35-44`, `:119-120`); `--version` and `-v` reach the `version`
-verb (`:72-74`, `:122`); an unknown command is refused with the valid set
-(`:123-129`); the role is read from `WIKIWRIGHT_ROLE` and an unrecognised
-value refuses rather than falling back (`:78-90`, `:131-137`); a verb above
+verb list (`:47-56`, `:240-241`); `--version` and `-v` reach the `version`
+verb (`:193-195`, `:243`); an unknown command is refused with the valid set
+(`:244-250`); the role is read from `WIKIWRIGHT_ROLE` and an unrecognised
+value refuses rather than falling back (`:199-211`, `:252-258`); a verb above
 the caller's rank is refused before `--help` and before parsing, with the
-verbs the caller may run listed (`:92-115`, `:139-146`); `--help` prints the
-spec's own row and is never a usage error (`:17-33`); `runCommand` parses
-under the registry, preloads the modules `engine.json` declares for a verb
-that declares it reads the vault's law — the shell's one asynchronous step —
-runs the verb and turns a throw into `unexpected-error` (`:46-70`, `:55-60`); `emit` writes one envelope to stdout, the
-verb's UX text to stderr and sets the exit code (`:10-15`).
+verbs the caller may run listed (`:213-236`, `:260-267`); `--help` prints the
+spec's own row and is never a usage error (`:29-45`). `runCommand` parses
+under the registry and resolves `--bundle` to the connection's root before
+anything else, refusing `one-target` beside `--root`, a name no connection
+carries, and a writing verb aimed at an installed copy unless its writes are
+this machine's own stores (`:109-158`, `:160-170`); it preloads the modules
+`engine.json` declares for a verb that declares it reads the vault's law —
+the shell's one asynchronous step — runs the verb, turns a throw into
+`unexpected-error`, or into the store's own refusal when a machine-local
+store does not parse (`:79-94`, `:171-187`), and for a vault verb attaches
+the bundle it read as `metadata.bundle` (`:58-75`, `:188-190`); `emit` writes
+one envelope to stdout, the verb's UX text to stderr and sets the exit code
+(`:22-27`). `packages/cli/src/bundle.ts` computes that block without loading
+anything — label, real root, head and dirty from one `git status`, the law
+digest over the config and each installed module's digest, the content digest
+over every page's bytes (`:38-54`, `:70-76`, `:99-114`) — and
+`packages/cli/src/connections.ts` is the registry `--bundle` reads, beside
+`MACHINE_LOCAL_WRITERS`, the two verbs an installed copy answers (`:72-102`,
+`:104-113`).
 
 `packages/cli/src/commands.ts` is the registry, the `COMMANDS` array and
-nothing else, one module per verb under `verbs/` (`:2-6`, `:31-54`).
+nothing else, one module per verb under `verbs/` (`:2-6`, `:33-58`).
 `packages/cli/src/spec.ts` is the vocabulary they share: `CommandSpec` with a
 required `writes`, a required `needsVaultModules` and a `plan` for every
-writing verb (`:104-140`), the
-global flags `--root` and `--help` (`:28-39`), the `CommandArgs` that carries
-the registry the invocation ran under, so a verb renders the verb list without
-importing the array that imports it (`:46-57`), `flagsOf` rendering `--dry-run`
-from the registry for a writing verb (`:157-171`), `isDryRun` and `listFlag`
-as the one reader each (`:59-64`, `:173-176`), the closed `PlanOp` kinds and
-`planOf` (`:66-98`), and `ROLE_RANK` — consumer, writer, maintainer
-(`:100-109`). `packages/cli/src/argv.ts` builds `parseArgs` options from the
+writing verb (`:131-175`), the global flags `--root`, `--bundle` and `--help`
+(`:28-48`), the `CommandArgs` that carries the registry the invocation ran
+under, so a verb renders the verb list without importing the array that
+imports it (`:55-66`), `flagsOf` rendering `--dry-run` from the registry for a
+writing verb (`:177-191`), `isDryRun` and `listFlag` as the one reader each
+(`:68-73`, `:193-196`), the closed `PlanOp` kinds and `planOf` (`:75-107`),
+`ROLE_RANK` — consumer, writer, maintainer (`:109-118`) — and `declaredRole`,
+the one reader of `WIKIWRIGHT_ROLE`, which `main.ts` bounds the surface by
+and `brief` takes as its default role (`:120-129`). `packages/cli/src/argv.ts` builds `parseArgs` options from the
 same list and refuses an unknown flag with the valid flags, extra positionals,
 a missing or unknown subcommand, each with the legal domain in `details`
 (`:68-150`); `scanInvocation` finds `--help` without reading a string flag's
 value as one (`:35-61`). `packages/cli/src/envelope.ts` fixes the exit table
-(`:8-20`), the engine version (`:24`), the `ok` and `fail` constructors
-(`:60-84`), the verdict block every judging verb prints (`:87-98`) and the cap
-flags read once (`:101-119`).
+(`:8-20`), the engine version (`:24`), the shape of `metadata.bundle`
+(`:26-50`), the `ok` and `fail` constructors (`:81-105`), the verdict block
+every judging verb prints (`:107-119`) and the cap flags read once
+(`:121-140`).
 
 `packages/cli/src/law.ts` is where a loaded vault becomes the judge's second
 argument: `lawFor` (`:63-84`) carries the registry, the module set the loader
@@ -88,11 +103,11 @@ and `directory-not-found` names the directory it looked in as
   switches on Node's compile cache for the engine's own JavaScript and then
   loads `dist/main.js`, the engine's entry, which also runs directly
   (`packages/cli/src/bin.ts:1-14`; `docs/architecture.md`, "Developing").
-- `COMMANDS` (`packages/cli/src/commands.ts:31`) — `brief`, `check`,
-  `freshness`, `gate`, `graph`, `hook`, `init`, `fix`, `lint`, `modules`,
-  `move`, `new`, `okf`, `retire`, `schema`, `search`, `skills`, `trust`,
-  `type`, `version`, `vocabulary`, `write` — each exporting its
-  `CommandSpec` with `run` and, when it writes, `plan`.
+- `COMMANDS` (`packages/cli/src/commands.ts:33`) — `brief`, `bundles`,
+  `check`, `freshness`, `gate`, `graph`, `hook`, `init`, `fix`, `lint`,
+  `modules`, `move`, `new`, `okf`, `read`, `retire`, `schema`, `search`,
+  `skills`, `trust`, `type`, `version`, `vocabulary`, `write` — each exporting
+  its `CommandSpec` with `run` and, when it writes, `plan`.
 - `parseInvocation`, `scanInvocation` (`packages/cli/src/argv.ts:68`, `:41`);
   `ok`, `fail`, `verdictEnvelope`, `capOptions`
   (`packages/cli/src/envelope.ts`); `lawFor` (`packages/cli/src/law.ts:68`);
@@ -104,7 +119,7 @@ Per process: the clock's one read (`packages/cli/src/clock.ts:8-9`), the
 module preload cache (`packages/cli/src/moduleload.ts:522`), each vault
 root's real path (`packages/cli/src/paths.ts:18`) and each vault root's
 worktree scope for a trust grant, read from git at most once
-(`packages/cli/src/trust.ts:386-407`). Nothing of a vault between
+(`packages/cli/src/trust.ts:280-301`). Nothing of a vault between
 processes; between them Node keeps its compile cache of the engine's
 JavaScript, which `bin.ts` switches on and `NODE_DISABLE_COMPILE_CACHE=1`
 turns off.
@@ -112,27 +127,30 @@ turns off.
 ## Invariants
 
 - One envelope on stdout, UX on stderr, one writer each
-  (`packages/cli/src/main.ts:10-15`); every `fail(` uses a kebab-case code
+  (`packages/cli/src/main.ts:22-27`); every `fail(` uses a kebab-case code
   mapped to exactly one exit type (`packages/cli/src/envelope.ts:1-2`,
   `:8-20`), and a usage error and a constitution error share exit 2 with
   different types (`:12-15`).
 - The registry is the only surface: `--help`, `schema`, the brief and the
-  parser render one table (`packages/cli/src/spec.ts:1-5`, `:157-171`), and
-  the dry-run flag is rendered, never declared by a verb (`:163-171`).
+  parser render one table (`packages/cli/src/spec.ts:1-5`, `:177-191`), and
+  the dry-run flag is rendered, never declared by a verb (`:183-191`).
 - A verb declares whether it writes, and a writing verb answers `--dry-run`
   with exactly the plan it would apply, and the pair is one union, so a
-  writing verb without a plan does not compile (`:144-155`); the meta-test
-  scans each
-  verb module for reachable writes (`:128-131`).
+  writing verb without a plan does not compile (`:166-175`); the meta-test
+  scans each verb module for reachable writes (`:145-151`).
 - A verb declares whether it reads the vault's law, and only one that does
   makes the entry point preload a bundle's modules; the meta-test holds each
   declaration against what that verb's imports reach, the registry's own edge
-  excluded (`packages/cli/src/spec.ts:132-142`;
-  `packages/cli/src/main.ts:55-60`;
+  excluded (`packages/cli/src/spec.ts:152-162`;
+  `packages/cli/src/main.ts:180-183`;
   `packages/cli/test/module-loading.test.ts:1-6`).
 - The role bound is a rank comparison, `consumer ⊂ writer ⊂ maintainer`, and
   a bounded caller cannot learn the shape of a verb it may not run
-  (`:93-102`; `packages/cli/src/main.ts:139-142`).
+  (`packages/cli/src/spec.ts:109-118`; `packages/cli/src/main.ts:260-267`).
+- Every envelope of a verb that reads a vault's law names the bundle it read
+  when the root holds a constitution, ok or refused; an envelope answered
+  before the verb runs names none (`packages/cli/src/main.ts:58-75`,
+  `:188-190`).
 - The shell has one clock and the judge never reads a date it computed
   (`packages/cli/src/clock.ts:1-4`); a malformed `WIKIWRIGHT_TODAY` refuses
   before anything moves (`:18-20`).
@@ -143,14 +161,18 @@ turns off.
 ## Failure modes
 
 - `unknown-command`, `role-unknown`, `role-forbidden`
-  (`packages/cli/src/main.ts:123-146`, `:98-115`); `unknown-flag`,
+  (`packages/cli/src/main.ts:244-267`, `:213-236`); `unknown-flag`,
   `invalid-arguments`, `unexpected-argument`, `missing-argument`,
   `unknown-subcommand` (`packages/cli/src/argv.ts:92-151`).
 - `invalid-value` when a `--set` value is not the JSON its field's kind takes
   (`packages/cli/src/verbs/new.ts:126-147`); `draft-invalid` at exit 5 with
   `pages` and `preview` (`packages/cli/src/verbs/write.ts:563-585`);
   `directory-not-found` at exit 3 with `details.resolved` (`:849-857`).
-- `unexpected-error` at exit 1 when a verb throws (`packages/cli/src/main.ts:62-69`).
+- `one-target`, `bundle-not-found` and `bundle-readonly`, each before
+  anything runs (`packages/cli/src/main.ts:109-158`);
+  `trust-store-malformed` and `bundles-registry-malformed` at exit 4 when a
+  machine-local store does not parse, and `unexpected-error` at exit 1 when a
+  verb throws anything else (`:79-94`).
 - `engine-pin-mismatch` when the running engine falls outside the bundle's
   declared range (`packages/cli/src/law.ts:100-118`).
 - A path that escapes the vault throws in the shell's resolvers and is refused

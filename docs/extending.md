@@ -252,8 +252,10 @@ names the module.
 The entry point loads a bundle's declared modules once, before a verb that
 declares it reads the vault's law, so a bundle judged without a law it
 declares is refused rather than judged under a quieter one. A verb that
-answers about the engine — `schema`, `version` — or about the one module it
-loads itself — `trust` — declares it reads no vault law and loads none.
+answers about the engine — `schema`, `version` —, about the one module it
+loads itself — `trust` — or about this machine's registry of connected
+bundles — `bundles`, which reads a connected bundle's files for its identity
+and no law — declares it reads no vault law and loads none.
 
 A bundle names the package in `config/engine.json` and installs it in its own
 `node_modules`, by a workspace link, a `file:` dependency or a local tarball;

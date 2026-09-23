@@ -405,6 +405,60 @@ prints any role's without writing). `wikiwright freshness` writes
 origin outside the vault. Every artifact has one generator and is byte-reproducible;
 a hand edit is overwritten by the next run.
 
+## Roles, the brief and the skills
+
+A session declares its **role** in `WIKIWRIGHT_ROLE`: `consumer`, `writer` or
+`maintainer`, the default. The roles are ordered, and a role may run every
+verb of its rank and below; a verb above it is refused `role-forbidden` with
+the verbs the role may run. The role is a guardrail on the command line, not a
+security boundary.
+
+Each role has its **brief**, which `wikiwright brief` prints for the session's
+role (the writer's when none is declared, any role's with `--role`), under a
+header naming the bundle's law digest. The consumer's lists only the verbs a
+consumer may run; its loop names none — choose the bundle and pass its root,
+search every name form before saying a thing is absent, read the sections a
+task needs and keep each answer's bundle beside what was taken, hand a
+subagent the words with their source, report a problem as a proposal — and
+its findings paragraph runs nothing, since a `fix` is a writer's and a `queue`
+a maintainer's. The writer's loop is the five steps from a search to a commit
+through `write`. The maintainer's is the writer's five and two more: a queued
+finding is a judgment to adjudicate or a law to change, never a severity to
+lower, and `generated/` is committed with the pages it describes.
+
+Three **skills** carry what no engine can check, one per way of working with a
+bundle: `wikiwright-consume` for using what it knows, `wikiwright-write` for
+writing into it, `wikiwright-maintain` for answering its findings and changing
+its law. None names a verb: the brief does.
+
+## Connected bundles
+
+A **connection** names a bundle by a short name in this machine's registry,
+`~/.config/wikiwright/bundles.json`: its root, its **kind** — `maintained`, a
+checkout the caller may write to within its role, or `installed`, a copy that
+is read only — where a problem with it is reported, and the page to read
+first. `wikiwright bundles` adds, lists and removes connections, and
+`--bundle <name>` names the target of any verb in place of `--root`. A verb
+that writes the vault or its repository, aimed at an installed copy, is
+refused `bundle-readonly` with where a change goes instead; like the role,
+this is a guardrail on the command line, and `--root` names the same directory
+without it.
+
+Every envelope of a verb that reads a vault's law names the bundle it read in
+`metadata.bundle`: its **label** (the root directory's name, not an
+identity), its real root, the commit `head` names and whether the tree is
+`dirty` against it, and two digests. `law` covers the constitution,
+`engine.json` and each installed module; `content` covers every page's path
+and bytes as the working tree holds them. Two answers from two bundles are told
+apart by it, and an uncommitted edit shows in `content` and `dirty` while
+`head` stays where it was.
+
+`wikiwright read <page>` is the consumer's read: a page's sections, each the
+page's own lines with its address, beside the page's type, frontmatter and
+**digest** — the sha256 the content digest holds for that page — under a byte
+budget that lists what it leaves out by address. A subagent handed an address
+reads the same bytes under the same digest.
+
 ## The four layers
 
 ```text

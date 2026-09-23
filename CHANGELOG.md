@@ -9,64 +9,6 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
-- The package is a Claude Code plugin: `.claude-plugin/plugin.json` beside
-  the three skills, and `hooks/hooks.json` with two plain-Node scripts. At
-  session start one names each connected bundle that is present — kind,
-  label, head, dirty, the page to read first — and how a command names one,
-  saying so again after a compaction or a resume. After an Edit or a Write to
-  a connected bundle's page the other says what the edit means there: an
-  installed copy is read only and its changes go to its feedback
-  destination; a session whose role may not write is told so; otherwise the
-  page's findings, each with its route. Both print nothing when there is
-  nothing to say or anything goes wrong, and exit 0. They are tested against
-  the documented hook input and output; host behaviour is not verified here.
-
-- A third shipped skill, `wikiwright-consume`: the judgment for using what a
-  bundle knows rather than writing it. Choose the bundle and say which one
-  every answer came from; read the coherent section, qualifications with
-  their claims; hand a subagent the words verbatim with the bundle, the path
-  and the digest, never an alias; report a knowledge problem as a proposal to
-  the connection's feedback destination, never an edit to an installed copy.
-  It names no verb: the engine prints the brief for any connected bundle, from
-  any directory. `init` and `skills update` install it beside the other two.
-
-- `read <page> [--section <heading>] [--budget <bytes>]` returns a page's
-  sections verbatim, cut at its type's section depth, each with its address,
-  lines and byte length, beside the page's type, chain, frontmatter and
-  digest — sha256 over its raw bytes, the same one the content digest holds
-  for it. A page is named by path, basename, alias or title, and
-  `resolved_via` says which; a miss names no page. Its title and description
-  are the manifest's, derived under `field_sources` where the frontmatter
-  carries none. Under `--budget` the
-  sections come in page order while they fit and the rest are listed by
-  address. A consumer's verb: the envelope's bundle block says which bundle
-  every passage came from.
-
-- `bundles add <root> --name <n> | list | remove <name>` connects a vault by
-  name in a machine-local registry (`~/.config/wikiwright/bundles.json`, or
-  `WIKIWRIGHT_BUNDLES_FILE`), written under the trust store's lock. A
-  connection carries its root, a `kind` — `maintained`, a checkout the caller
-  may write to within its role, or `installed`, a copy that is read only — the
-  place a problem with it is reported, and a page to read first. `list` shows
-  every connection with the identity the envelope's bundle block carries and
-  loads no law and no module, so a bundle whose modules are not approved on
-  this machine still lists. The verb is a consumer's: the registry is outside
-  every vault, and connecting a bundle grants nothing. A registry this engine
-  cannot read is refused `bundles-registry-malformed`, and a trust store it
-  cannot read `trust-store-malformed`, where both were an `unexpected-error`:
-  exit 4, with the file and the failing record in `details`, from the verb and
-  from the module load that checks a grant.
-- `--bundle <name>` names the target of any verb by its connection, in place
-  of `--root`, so an agent working in an unrelated directory reads two
-  handbooks by name and every answer says which one it came from. It refuses
-  `one-target` beside `--root`, `bundle-not-found` with the connected names,
-  and `bundle-readonly` for a verb that writes the vault or its repository,
-  dry run included, aimed at an installed copy, with the connection's feedback
-  destination in the refusal. `bundles` and `trust`, whose writes are this
-  machine's stores, are answered.
-  That refusal is a guardrail on the CLI, not filesystem isolation: `--root`
-  reaches the same directory by design.
-
 - Every envelope of a verb that reads a vault's law names the bundle it read,
   in `metadata.bundle`, on an ok envelope and a refusal alike: `label` (the
   basename of the root's real path), `root` (that real path), `head` and
@@ -81,6 +23,54 @@ version` prints the engine version and the commit a binary was built from.
   none. The brief's header prints the law digest in place of a digest of the
   sorted type names, which did not move when a type's contract, the engine
   policy or a module changed.
+- `bundles add <root> --name <n> | list | remove <name>` connects a vault by
+  name in a machine-local registry (`~/.config/wikiwright/bundles.json`, or
+  `WIKIWRIGHT_BUNDLES_FILE`), written under the trust store's lock. A
+  connection carries its root, a `kind` — `maintained`, a checkout the caller
+  may write to within its role, or `installed`, a copy that is read only — the
+  place a problem with it is reported, and a page to read first. `list` shows
+  every connection with the identity the envelope's bundle block carries and
+  loads no law and no module, so a bundle whose modules are not approved on
+  this machine still lists. The verb is a consumer's: the registry is outside
+  every vault, and connecting a bundle grants nothing.
+- `--bundle <name>` names the target of any verb by its connection, in place
+  of `--root`, so an agent working in an unrelated directory reads two
+  handbooks by name and every answer says which one it came from. It refuses
+  `one-target` beside `--root`, `bundle-not-found` with the connected names,
+  and `bundle-readonly` for a verb that writes the vault or its repository,
+  dry run included, aimed at an installed copy, with the connection's feedback
+  destination in the refusal; `bundles` and `trust`, whose writes are this
+  machine's stores, are answered. That refusal is a guardrail on the CLI, not
+  filesystem isolation: `--root` reaches the same directory by design.
+- `read <page> [--section <heading>] [--budget <bytes>]` returns a page's
+  sections verbatim, cut at its type's section depth, each with its address,
+  lines and byte length, beside the page's type, chain, frontmatter and
+  digest — sha256 over its raw bytes, the same one the content digest holds
+  for it. A page is named by path, basename, alias or title, and
+  `resolved_via` says which; a miss names no page. Its title and description
+  are the manifest's, derived under `field_sources` where the frontmatter
+  carries none. Under `--budget` the sections come in page order while they
+  fit and the rest are listed by address. A consumer's verb: the envelope's
+  bundle block says which bundle every passage came from.
+- A third shipped skill, `wikiwright-consume`: the judgment for using what a
+  bundle knows rather than writing it. Choose the bundle and say which one
+  every answer came from; read the coherent section, qualifications with
+  their claims; hand a subagent the words verbatim with the bundle, the path
+  and the digest, never an alias; report a knowledge problem as a proposal to
+  the connection's feedback destination, never an edit to an installed copy.
+  It names no verb: the engine prints the brief for any connected bundle, from
+  any directory. `init` and `skills update` install it beside the other two.
+- The package is a Claude Code plugin: `.claude-plugin/plugin.json` beside
+  the three skills, and `hooks/hooks.json` with two plain-Node scripts. At
+  session start one names each connected bundle that is present — kind,
+  label, head, dirty, the page to read first — and how a command names one,
+  saying so again after a compaction or a resume. After an Edit or a Write to
+  a connected bundle's page the other says what the edit means there: an
+  installed copy is read only and its changes go to its feedback
+  destination; a session whose role may not write is told so; otherwise the
+  page's findings, each with its route. Both print nothing when there is
+  nothing to say or anything goes wrong, and exit 0. They are tested against
+  the documented hook input and output; host behaviour is not verified here.
 
 - `trust list --all` prints every record in this machine's store: its
   identity, its scope, the path it is keyed by, its digest, when it was
@@ -106,15 +96,6 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
-- `wikiwright-write` no longer carries the two-week test with promotion on
-  repetition, nor the rule that an inference describes behaviour rather than
-  taste. Both are retention conventions of one kind of wiki, a personal
-  memory, and belong to a kit that serves it, not to the engine's skill for
-  every bundle; the evidence discipline stays (the hedge kept verbatim, the
-  context envelope, a contrary observation added rather than overwritten).
-  `wikiwright-maintain` gains one section: a bundle's guidance governs that
-  bundle alone, a connection's kind and a session's role are guardrails on
-  the command line and not isolation, and no skill grants trust.
 - The brief renders one loop per role. The consumer's names no verb: select
   the bundle and pass its root explicitly, search every name form before
   saying a thing is absent, keep each answer's `metadata.bundle` beside what
@@ -128,6 +109,15 @@ version` prints the engine version and the commit a binary was built from.
   "Findings" paragraph is the role's too: the consumer's runs nothing, since a
   `fix` argv is a writer's to run and a `queue` a maintainer's to judge; the
   writer's and the maintainer's paragraph is unchanged.
+- `wikiwright-write` no longer carries the two-week test with promotion on
+  repetition, nor the rule that an inference describes behaviour rather than
+  taste. Both are retention conventions of one kind of wiki, a personal
+  memory, and belong to a kit that serves it, not to the engine's skill for
+  every bundle; the evidence discipline stays (the hedge kept verbatim, the
+  context envelope, a contrary observation added rather than overwritten).
+  `wikiwright-maintain` gains one section: a bundle's guidance governs that
+  bundle alone, a connection's kind and a session's role are guardrails on
+  the command line and not isolation, and no skill grants trust.
 - The shell's modules import in one direction, and a test holds them to it.
   The registry imported every verb while `schema` and the brief imported the
   registry back, and the artifact writer imported the brief *verb*: eight
@@ -168,6 +158,30 @@ version` prints the engine version and the commit a binary was built from.
   and `init`'s next steps no longer print a `trust grant` command: the
   approval is a maintainer's decision, and an agent follows a printed command
   literally. AGENTS.md says an agent must not grant trust to unblock its work.
+- `gate` and `lint --staged` read the index once: the staged diff and the
+  index listing were each spawned again for the second pass, the one over the
+  roots the staged constitution names, and the diff a third time before both.
+  A one-page commit now spawns 8 git processes, one of them the `git status`
+  of the envelope's bundle block. Interleaved against the previous build,
+  the gate over a small repository fell from 172 ms to 154 ms and over the
+  embedded devwiki from 270 ms to 252 ms; the envelopes are identical.
+- The gate reads the HEAD bytes of every changed and deleted page with one
+  `cat-file --batch-check` and the batch read the staged pages already use,
+  where it spawned one `git show` per page. A commit of 100 changed pages in
+  a 1,000-page repository spawned 106 git processes and spawns 8, and gates
+  in 0.52 s instead of 1.13 s; a one-page commit is unchanged, and the
+  envelopes are identical. The batch parser now reads a `missing` line
+  whose name holds a space.
+- The `wikiwright` executable is `dist/bin.js`, which switches on Node's
+  compile cache for the engine's own JavaScript before loading
+  `dist/main.js`: ES module imports load before a module's body runs, so the
+  cache has to be switched on one module ahead of the engine. It holds V8
+  bytecode keyed by source under the temporary directory, nothing of a
+  vault, and cannot change a verdict; `NODE_DISABLE_COMPILE_CACHE=1` turns
+  it off. A small vault's `lint` took 87.9 ms and takes 77.0 ms, the
+  devwiki's 178.5 ms and 167.3 ms, interleaved on one build; every agent call
+  and git hook that runs `wikiwright` pays the lower figure. `main.js` still
+  runs directly, without the cache.
 
 ### Fixed
 
@@ -178,6 +192,11 @@ version` prints the engine version and the commit a binary was built from.
   without it the brief is the session's `WIKIWRIGHT_ROLE`, or the writer's
   when the session declares none: a consumer session that asked for its
   brief was handed the writer's.
+- A trust store or a bundles registry this engine cannot read — not JSON, not
+  the store's schema, a version it does not read, a record of no known shape —
+  is refused by name, `trust-store-malformed` or `bundles-registry-malformed`,
+  at exit 4 with the file and the failing record in `details`, from the verb
+  and from the module load that checks a grant; it was an `unexpected-error`.
 - Every file the shell writes outside a content page — the generated
   artifacts, the machine-local trust store, the shipped skills' files and
   stamps, the freshness report — lands through the Writer's staged replace:
@@ -237,9 +256,8 @@ version` prints the engine version and the commit a binary was built from.
 - `fixtures/handbooks/orchard` and `fixtures/handbooks/allotment`: two small
   gardening handbooks, each a `procedure-page` type with a required climate
   and a `guide-page` for the page to read first, and a page with one title
-  and different steps in both. The
-  connection tests read them; both are clean under `check`, their
-  `generated/` included.
+  and different steps in both. The connection tests read them; both are
+  clean under `check`, their `generated/` included.
 - `bun run check` and `bun run test` run the suite through
   `tools/run-suite.ts`: one `bun test` process per file, as many at once as
   the machine has cores, where `bun test` ran every file one after another
@@ -251,33 +269,6 @@ version` prints the engine version and the commit a binary was built from.
   rather than Bun's 5: the first release of the runner kept 5, and a `before`
   hook that packs three tarballs and runs `bun install` timed out under load
   and failed a gate.
-
-### Changed
-
-- `gate` and `lint --staged` read the index once: the staged diff and the
-  index listing were each spawned again for the second pass, the one over the
-  roots the staged constitution names, and the diff a third time before both.
-  A one-page commit now spawns 8 git processes, one of them the `git status`
-  of the envelope's bundle block. Interleaved against the previous build,
-  the gate over a small repository fell from 172 ms to 154 ms and over the
-  embedded devwiki from 270 ms to 252 ms; the envelopes are identical.
-- The gate reads the HEAD bytes of every changed and deleted page with one
-  `cat-file --batch-check` and the batch read the staged pages already use,
-  where it spawned one `git show` per page. A commit of 100 changed pages in
-  a 1,000-page repository spawned 106 git processes and spawns 8, and gates
-  in 0.52 s instead of 1.13 s; a one-page commit is unchanged, and the
-  envelopes are identical. The batch parser now reads a `missing` line
-  whose name holds a space.
-- The `wikiwright` executable is `dist/bin.js`, which switches on Node's
-  compile cache for the engine's own JavaScript before loading
-  `dist/main.js`: ES module imports load before a module's body runs, so the
-  cache has to be switched on one module ahead of the engine. It holds V8
-  bytecode keyed by source under the temporary directory, nothing of a
-  vault, and cannot change a verdict; `NODE_DISABLE_COMPILE_CACHE=1` turns
-  it off. A small vault's `lint` took 87.9 ms and takes 77.0 ms, the
-  devwiki's 178.5 ms and 167.3 ms, interleaved on one build; every agent call
-  and git hook that runs `wikiwright` pays the lower figure. `main.js` still
-  runs directly, without the cache.
 
 ## 0.1.0 — 2026-09-07
 

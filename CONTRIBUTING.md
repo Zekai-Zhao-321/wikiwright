@@ -98,13 +98,16 @@ else is not covered.
   `it` per verb, or state `{ timeout }` on a deliberately sequential walk.
 - `packages/core` is a pure library with no Node typings in its tsconfig, so
   a filesystem call does not typecheck there; the shell is `packages/cli`.
-- The three corpora are fixtures. A change to `devwiki`'s pages or
+- The corpora are fixtures. A change to `devwiki`'s pages or
   constitution is judged by `starter-fixtures` (under the `code` starter's
   types merged with devwiki's own vocabularies, the error set must equal
   devwiki's own — a concrete type devwiki adds must exist in the starter,
   while a tag or a label is devwiki's to register), `routing-xor` (its
   `lint` must be clean) and `generated-tracked` (its `generated/` must be
-  what this build renders).
+  what this build renders). The two handbooks under `fixtures/handbooks`
+  are held at zero findings of any severity under `check` by
+  `fixture-verdicts`, their tracked `generated/` by `generated-tracked`, and
+  the connected-bundles scenario over them by `multi-bundle`.
 
 ## Measuring command performance
 

@@ -3,9 +3,9 @@ type: source-map
 title: Repository layout
 description: Directory-to-purpose lookup for the wikiwright repository.
 tags: [repo]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 6b5175410c22ee543057ec18fdd74154d0dd9025
 origin: .
-covers: [package.json, tsconfig.json, packages/cli/constitutions/, packages/cli/skills/, packages/kit-code/, fixtures/, tools/, scripts/, .github/]
+covers: [package.json, tsconfig.json, packages/cli/constitutions/, packages/cli/skills/, packages/cli/.claude-plugin/, packages/cli/hooks/, packages/kit-code/, fixtures/, tools/, scripts/, .github/]
 ---
 
 # Repository layout
@@ -18,9 +18,11 @@ covers: [package.json, tsconfig.json, packages/cli/constitutions/, packages/cli/
 | `packages/core/` | `@wikiwright/core`: the kernel and the standard library (see [[registry-pipeline]]) |
 | `packages/cli/` | The `wikiwright` binary: one module per verb, envelopes, the shell half of the Writer |
 | `packages/cli/constitutions/` | The starters `init` scaffolds: `base`, and `code`, a bundle over the code kit |
-| `packages/cli/skills/` | The two shipped skills and the generated lint-response playbook |
+| `packages/cli/skills/` | The three shipped skills — for using, writing and maintaining a bundle — and the generated lint-response playbook |
+| `packages/cli/.claude-plugin/` | The plugin manifest: the package root is also a Claude Code plugin |
+| `packages/cli/hooks/` | `hooks.json` and its two scripts, run at session start and after an edit |
 | `packages/kit-code/` | `@wikiwright/kit-code`: the shipped domain kit — the types, relation labels, templates and discipline of a code wiki, consumed by the `code` starter and by this bundle |
-| `fixtures/` | The corpora the suite judges (`memory-synth`, `minimal-vault`), the conformance module fixture with its two bundles, and the OKF pin |
+| `fixtures/` | The corpora the suite judges (`memory-synth`, `minimal-vault`, and the two gardening handbooks under `handbooks/` the connection tests read), the conformance module fixture with its two bundles, and the OKF pin |
 | `tools/` | Repository scripts: the build-info writer, the playbook renderer, the case-fold table generator, the uncovered-directory lister, the suite runner the gate uses, and the benchmark of `check` and `lint --staged` |
 | `scripts/hooks/` | The development gate, `pre-commit` |
 | `.github/workflows/` | The workflow `check.yml`: the gate and the node runner on every push and pull request, on Linux and macOS |

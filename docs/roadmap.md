@@ -10,19 +10,32 @@ that would close the gap, rather than left for a reader to discover.
 
 wikiwright 0.1.0 is two packages and a kit. `@wikiwright/core` is the
 kernel and the standard library (claims, relations, entries), a pure
-library over bytes. `wikiwright` is the binary: one module per verb, one
-JSON envelope per invocation, `docs/cli.md` lists every verb and flag.
-`@wikiwright/kit-code` is the shipped domain kit for the wiki of a code
-repository, consumed by the `code` starter and by this repository's own
-`devwiki`.
+library over bytes. `wikiwright` is the binary: 24 verbs, one module each,
+one JSON envelope per invocation; `docs/cli.md` lists every verb and flag.
+Every envelope of a verb that reads a vault's law names the bundle it read —
+its label, real root, head, whether it is dirty, and digests of its law and
+its content. `bundles` connects vaults by name in a machine-local registry,
+`--bundle` names the target of any verb, and `read` returns a page's sections
+verbatim with the page's digest, under a byte budget. Three skills ship
+beside the binary, for using, writing and maintaining a bundle, and each role
+prints its own brief; the package root is also a Claude Code plugin with two
+hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
+a code repository, consumed by the `code` starter and by this repository's
+own `devwiki`.
 
-The suite is 1,357 tests across 91 files, green under Bun and under the
-node runner. It judges three corpora (`devwiki`, `fixtures/memory-synth`,
-`fixtures/minimal-vault`) and proves the module ladder end to end twice:
-with a neutral module fixture under `fixtures/conformance` and with the
-shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
+The suite is 1,499 tests across 102 files, green under Bun and under the
+node runner. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
+`fixtures/minimal-vault`, and the two gardening handbooks under
+`fixtures/handbooks`, which the connection tests read end to end) and proves
+the module ladder end to end twice: with a neutral module fixture under
+`fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
-`freshness --root devwiki` holds every citation to its pin.
+`freshness --root devwiki` holds every citation to its pin. Eleven of its 26
+pinned pages read `stale`: the connected-bundles work changed files they
+cover, and they have not yet been re-read and re-pinned; the four pages that
+describe that work (the command runtime, the envelope, the repository layout,
+the skills and the brief) were, and are clean against their pin. The
+`stale-source-cited` warnings on other pages follow from the eleven.
 
 The gate is `bun run check` (biome, the build, the test-project typecheck,
 the whole suite). `scripts/hooks/pre-commit` runs it on the machine that
@@ -227,6 +240,115 @@ hand, and nothing reaches Windows. A known Windows shape: `bun install
 the engine no longer reads lockfiles, but anything that classifies a
 package spelling needs both forms tested.
 
+### A bundle cannot declare the bundles it relies on
+
+A connection is this machine's: `bundles add` names a root here, and nothing
+in a bundle says which other bundles it depends on, at which law and content
+digest a maintainer reviewed them, or which of its pages rest on which of
+theirs.
+
+Wanted: a declaration in `config/engine.json` naming another bundle and the
+digests it was reviewed at, which `check` holds against the connected copy.
+
+### The graph knows which pages link, not where
+
+`generated/graph.json` and the name index are identity-level: a page's links
+by target, with no record of the line each occurrence sits on. No verb lists
+every place a page is referenced, prints a page's headings without its text,
+resolves a name to its page without reading the page, or offers completion
+candidates for a partial name; `read` resolves a name only as part of reading,
+and `search` ranks candidates for a query.
+
+Wanted: `references <page>`, `outline <page>`, `resolve <name>` and a
+completion listing over the one name index, with occurrences recorded by the
+parser.
+
+### No filter by the conditions a page applies to
+
+A bundle can give its pages a field such as the climate a procedure is
+written for, and `read` returns it in `page.frontmatter`, but no verb selects
+pages by the conditions a caller states: telling which of two handbooks'
+pages applies to one situation is the caller's reading.
+
+Wanted: a declaration naming which fields state applicability, and a flag on
+`search` and `read` that filters by them.
+
+### A problem is reported to a destination the engine only names
+
+A connection records where a problem with its bundle is reported;
+`bundles list`, a `bundle-readonly` refusal and the post-edit hook show it,
+and the consume skill says a proposal goes there. The engine sends nothing,
+and no bundle declares the shape a proposal must take.
+
+Wanted: a report type a bundle declares in its constitution, and a verb that
+writes a proposal in it to the connection's feedback destination.
+
+### No editor protocol, no transaction across writes, no model of time
+
+There is no language-server adapter; no transaction spans more than one
+`write --from` batch, which lands all its drafts or none; and a bundle's
+history is git's and its dated entries, so no verb answers what a bundle said
+on a given date.
+
+Wanted, each when a bundle asks for it: an adapter that serves findings and
+names over the language-server protocol, a transaction across verbs, and a
+verb that reads a page as it stood at a revision.
+
+### The hook scripts are tested against a document, not a host
+
+`hooks-scripts.test.ts` drives both scripts with synthetic stdin and holds
+their output to the input and output shapes the Claude Code hooks reference
+documents, read on 2026-09-24. No host has run them in this repository:
+whether and when a session shows their context is unverified.
+
+Wanted: a recorded run inside a host, kept beside the test.
+
+### `bundle-readonly` is a guardrail on the CLI
+
+An `installed` connection refuses a verb that writes the vault or its
+repository when the verb names it with `--bundle`. `--root` names the same
+directory and is not refused, by design, and a process that does not go
+through the engine is not stopped at all.
+
+Wanted: nothing in the engine. Isolation is the filesystem's: a read-only
+mount or permissions.
+
+### The suite is sensitive to machine load
+
+The runner runs twelve files at a time and gives a test or a hook twenty
+seconds. Under load from outside the suite — observed on one machine as
+Spotlight indexing the test runs' temporary directories, a malware scan and a
+location daemon together, at a load average above forty on twelve cores —
+spawned processes slow down, single tests time out, and a `before` hook's
+`bun install` can exceed its budget. On 2026-09-23 the gate ran five times
+at this slice's head and five times at the commit before the slice,
+unsandboxed: no failure on either side, so the sensitivity predates the
+slice rather than being caused by it.
+
+Wanted: nothing in the engine. Run the gate on a quiet machine, or keep the
+temporary directory out of indexing.
+
+### `lint --staged` has thrown under load, cause unknown
+
+Twice, under load, `lint --staged` exited 1 with `unexpected-error`: once
+reporting that the index names a blob for a page and `git cat-file --batch`
+did not return it, once with no message kept. Neither failure reproduced
+alone, in twenty isolated runs, or in 960 runs of `gate` and `lint --staged`
+sixteen at a time under load. `staged-gate.test.ts` and
+`staged-gate-reads.test.ts` now print a failing run's stdout and stderr, so
+the next occurrence names itself.
+
+Wanted: that envelope, and the fix it points at.
+
+### `read` resolves a title the way the manifest renders it
+
+`read`'s title form matches the title the manifest renders, derived under
+`field_sources` where the frontmatter carries none. The one derivation is the
+basename, so a derived title is the page's name and resolves through the name
+form first; the title form reaches only a title the frontmatter states.
+
+Wanted: nothing until a second derivation exists.
+
 ### Not built, on purpose
 
 The engine never calls a model, so there is no review tier that judges
@@ -281,8 +403,11 @@ alternative is to carry the history with the tree.
    carry the gate to Windows, which nothing reaches.
 2. Close the limitations above in the order a bundle asks for them: the
    asynchronous plan for `init`, `freshness --shift`, the ledger layout
-   for `code/decision`, a published kit.
-3. The capture verb, the connector layer, rich-content checks, publication
+   for `code/decision`, a published kit; for connected bundles, a declared
+   dependency between bundles, `references` and `outline`, a report type a
+   proposal is written in, and a filter by applicability.
+3. Run the two hook scripts inside a host and record what a session sees.
+4. The capture verb, the connector layer, rich-content checks, publication
    and access control are candidates, none scheduled.
 
 ## Developing against it
@@ -309,7 +434,7 @@ alternative is to carry the history with the tree.
 - **A test that stamps a date reads the clock.** Set `WIKIWRIGHT_TODAY` in
   any test that spawns `write`, `new` or `trust grant`, or the stamp moves
   with the day.
-- **The three corpora are fixtures.** A change to `devwiki`'s pages or
+- **The corpora are fixtures.** A change to `devwiki`'s pages or
   constitution is judged by `starter-fixtures` (under the `code` starter's
   types merged with devwiki's own vocabularies the error set must equal
   devwiki's own, so a concrete type devwiki adds must exist in the starter,
@@ -317,4 +442,9 @@ alternative is to carry the history with the tree.
   `lint` must be clean) and `generated-tracked` (its `generated/` must be
   what this build renders). Regenerate `devwiki/generated`, the brief
   included, with `wikiwright check --write --root devwiki` after any page
-  edit or an engine change that moves the brief.
+  edit or an engine change that moves the brief. The two handbooks under
+  `fixtures/handbooks` are held at zero findings under `check` by
+  `fixture-verdicts` and their tracked `generated/` by `generated-tracked`;
+  an engine change that moves the writer's brief moves theirs too, and
+  `wikiwright check --write --root fixtures/handbooks/<name>` regenerates each,
+  with no grant, since they declare no module.

@@ -63,7 +63,9 @@ Before a release run `bun run test:node` (the node runner) and
 - **Every test writes under `os.tmpdir()`.** A test that spawns a verb that
   stamps a date sets `WIKIWRIGHT_TODAY`.
 - **Generated files have one generator.** `devwiki/generated`, the brief
-  included, from `wikiwright check --write --root devwiki`; the playbook from
+  included, from `wikiwright check --write --root devwiki`; the two
+  handbooks' `generated/`, their briefs included, from
+  `wikiwright check --write --root fixtures/handbooks/<name>`; the playbook from
   `bun tools/render-playbook.ts`; `docs/cli.md`'s verb block from
   `bun docs/render-cli.ts --write`.
 - **Describe what exists.** A document, a help string or a skill line names
