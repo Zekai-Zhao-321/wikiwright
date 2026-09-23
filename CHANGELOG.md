@@ -9,6 +9,16 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- `read <page> [--section <heading>] [--budget <bytes>]` returns a page's
+  sections verbatim, cut at its type's section depth, each with its address,
+  lines and byte length, beside the page's type, chain, frontmatter and
+  digest — sha256 over its raw bytes, the same one the content digest holds
+  for it. A page is named by path, basename, alias or title, and
+  `resolved_via` says which; a miss names no page. Under `--budget` the
+  sections come in page order while they fit and the rest are listed by
+  address. A consumer's verb: the envelope's bundle block says which bundle
+  every passage came from.
+
 - `bundles add <root> --name <n> | list | remove <name>` connects a vault by
   name in a machine-local registry (`~/.config/wikiwright/bundles.json`, or
   `WIKIWRIGHT_BUNDLES_FILE`), written under the trust store's lock. A

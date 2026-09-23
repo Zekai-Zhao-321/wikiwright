@@ -19,6 +19,7 @@ import { modulesCommand } from "./verbs/modules.ts";
 import { moveCommand } from "./verbs/move.ts";
 import { newCommand } from "./verbs/new.ts";
 import { okfCommand } from "./verbs/okf.ts";
+import { readCommand } from "./verbs/read.ts";
 import { retireCommand } from "./verbs/retire.ts";
 import { schemaCommand } from "./verbs/schema.ts";
 import { searchCommand } from "./verbs/search.ts";
@@ -44,6 +45,7 @@ export const COMMANDS: CommandSpec[] = [
   moveCommand,
   newCommand,
   okfCommand,
+  readCommand,
   retireCommand,
   schemaCommand,
   searchCommand,

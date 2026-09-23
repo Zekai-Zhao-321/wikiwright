@@ -1,6 +1,6 @@
 # The CLI
 
-`wikiwright` is one binary with 23 verbs. Every verb prints exactly one JSON
+`wikiwright` is one binary with 24 verbs. Every verb prints exactly one JSON
 envelope on stdout and reserves stderr for text a human at a terminal needs.
 The verb reference below is rendered from the binary's own command registry by
 `bun docs/render-cli.ts --write`, and `bun docs/render-cli.ts --check` fails
@@ -259,6 +259,31 @@ What the registry rows below do not say.
   bigram-tokenized. Every answer carries a `coverage` block; `caps.hit` says the
   cap cut the list, and a not-found is only as good as that block. `--near`
   adds an advisory near-name list that never changes ranks.
+- **`read <page> [--section <heading>] [--budget <bytes>]`** returns one page's
+  sections, verbatim. `<page>` is tried, in order, as a vault path under a
+  content root, a basename or an alias through the name index, and a `title`
+  with the same identity; `page.resolved_via` says which (`path`, `name`,
+  `alias`, `title`). A miss is `page-not-found` with `details.tried` and names
+  no page. `data` is `{ page, sections, omitted, coverage }`. `page` carries
+  `path`, `name`, `resolved_via`, `type`, `chain`, `title`, `description`,
+  `status` (`active` or `retired`), `digest` and the parsed `frontmatter`;
+  `digest` is sha256 over the page's raw bytes, the same sha256 the content
+  digest's line for that page holds. Sections are cut at the type's section
+  depth (2 when it declares none): the lead, from the line after the
+  frontmatter to the line before the first heading at that depth, comes first
+  with `heading: null`, and each heading at that depth runs to the line before
+  the next. Each carries `address` (`<path>` for the lead, `<path>#<heading>`
+  otherwise), `line`, `end_line`, `bytes` (the UTF-8 length of `text`) and
+  `text`, the page's own lines with their line endings. `--budget` returns
+  sections in page order while their running total fits; the first that would
+  not, and every one after it, goes to `omitted` with its address and
+  `reason: "budget"`, to be asked for by `--section`. `--section` returns that
+  one section, the budget still applied, or refuses `section-not-found` with
+  the page's headings at that depth in `details.valid_values`; a `--budget`
+  that is not a whole number is `invalid-value`. `coverage` counts the page's
+  sections, the returned ones and their bytes, beside the budget. The
+  envelope's `metadata.bundle` is the attribution; nothing of it is repeated
+  in `data`.
 - **`type show <name> [--brief]`**, **`type list`** are the introspection
   surface for types; see [concepts.md](concepts.md). Under `--brief` the
   `section_lines` follow the template's order where the type has one, as
@@ -439,6 +464,7 @@ Global flags, accepted by every verb:
 | [`move`](#move) | maintainer | yes | Move a page with a stated reason; surfaces tag findings, never edits tags. |
 | [`new`](#new) | writer | yes | Create a page of a registered type from its template; the typed write-path gate. |
 | [`okf`](#okf) | consumer | no | Base-OKF conformance as its own verdict, independent of the constitution. |
+| [`read`](#read) | consumer | no | Return a page's sections verbatim, with its digest and the bundle it came from, under a byte budget. |
 | [`retire`](#retire) | maintainer | yes | Standard end-of-life: status retired + banner + optional successor pointer. |
 | [`schema`](#schema) | consumer | no | Print the generated command registry: names, roles, flags, examples. |
 | [`search`](#search) | consumer | no | Deterministic lexical search with match reasons and a coverage block. |
@@ -739,6 +765,25 @@ Role: `consumer`. Writes: no.
 
 ```text
 wikiwright okf check
+```
+
+### read
+
+`wikiwright read <page>`
+
+Return a page's sections verbatim, with its digest and the bundle it came from, under a byte budget.
+
+Role: `consumer`. Writes: no.
+
+| Flag | Meaning |
+|---|---|
+| `--section <value>` | return only the section under this heading |
+| `--budget <value>` | the most bytes of section text to return; the rest are listed by address |
+
+```text
+wikiwright read wiki/pruning-roses.md
+wikiwright read pruning-roses --section Steps
+wikiwright read "Pruning roses" --budget 800
 ```
 
 ### retire

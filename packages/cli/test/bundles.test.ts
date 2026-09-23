@@ -483,7 +483,7 @@ describe("a verb that loads a vault names its target or refuses (docs/cli.md §b
     const elsewhere = join(tmp, "elsewhere");
     mkdirSync(elsewhere, { recursive: true });
     const { env } = registry("elsewhere");
-    for (const argv of [["search", "pruning"], ["lint"]]) {
+    for (const argv of [["search", "pruning"], ["lint"], ["read", "pruning-roses"]]) {
       const r = run(elsewhere, argv, env);
       assert.equal(r.status, 3, `${argv[0]}: ${JSON.stringify(r.envelope)}`);
       assert.equal(r.envelope.error?.code, "registry-not-found");

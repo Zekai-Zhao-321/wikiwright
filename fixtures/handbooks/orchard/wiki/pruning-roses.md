@@ -2,6 +2,7 @@
 type: procedure-page
 title: Pruning roses
 description: Cut roses back in late winter so they flower on strong new wood.
+aliases: [Rose pruning]
 tags: [pruning]
 applies_to: temperate
 ---

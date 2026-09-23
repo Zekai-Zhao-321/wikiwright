@@ -31,6 +31,7 @@ export const BRIEF_PATH = "generated/BRIEF.md";
 export const WORKFLOW_SLOTS: Readonly<Record<string, string>> = {
   brief: "once per session: read this file",
   bundles: "which bundles are connected, and which one an answer came from",
+  read: "the sections a task needs, with the page's digest, under a budget",
   search: "before creating anything: search both scripts",
   type: "before writing: read the contract you are about to satisfy",
   vocabulary: "when a category or label is in doubt: read what the vocabulary admits",

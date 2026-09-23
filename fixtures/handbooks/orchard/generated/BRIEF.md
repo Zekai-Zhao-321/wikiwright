@@ -90,6 +90,14 @@ wikiwright new architecture-overview "Architecture" --dest wiki/architecture.md
 wikiwright okf check
 ```
 
+### `read` — the sections a task needs, with the page's digest, under a budget
+
+`wikiwright read <page>` — flags: --section <v> --budget <v>
+
+```text
+wikiwright read wiki/pruning-roses.md
+```
+
 ### `schema` — the whole generated registry, when a flag is in doubt
 
 `wikiwright schema`
