@@ -3,7 +3,7 @@ type: code-concept
 title: "One judge, five states"
 description: "Every write path — the working tree, the staged gate, a draft on stdin, a write, a replay of history — constructs a state and calls the one judge under the one law, so no verb can be told one thing at write time and another at the gate."
 tags: [kernel, cli]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
 origin: .
 covers: [packages/core/src/judge/index.ts, packages/cli/src/state.ts, packages/cli/src/writer.ts, packages/cli/src/staged.ts, packages/cli/src/law.ts, packages/cli/src/verbs/lint.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/fix.ts, packages/cli/src/verbs/write.ts]
 ---
@@ -44,6 +44,19 @@ every fix argv say `--staged` (`packages/core/src/judge/index.ts:93-99`,
 A verb that reports findings without judging — `okf check`, `move`, `new`,
 `freshness` — routes them through the same xor with `routeFindings`
 (`:264-277`).
+
+Whichever state a verb builds, its envelope names the bundle it was built
+over: `metadata.bundle` carries the root, the checkout, a digest of the
+pages and the law digest over the config and module bytes the law is built
+from (`packages/cli/src/bundle.ts:38-54`, `:99-114`;
+`packages/cli/src/main.ts:58-75`, `:188-190`). A bundle named by `--bundle`
+is resolved to the root `--root` would name before any module loads, so it is
+judged by the same constructors under the same law; the runtime's refusals —
+`one-target`, `bundle-not-found`, `bundle-readonly`, and
+`trust-store-malformed` or `bundles-registry-malformed` for a machine-local
+store that does not parse — are answered before a verb builds a state, and
+are envelope errors, not findings (`packages/cli/src/main.ts:79-158`; see
+[[envelope-and-exit-codes]]).
 
 The property is held by a test that judges one fixture through every
 constructor and asserts the per-page findings agree, under Bun and under

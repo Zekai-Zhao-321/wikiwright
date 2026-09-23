@@ -3,9 +3,9 @@ type: architecture-overview
 title: wikiwright architecture
 description: The four-layer shape of the engine and how a page's obligations flow through it.
 tags: [kernel, stdlib, cli, kit]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
 origin: .
-covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/law.ts, packages/kit-code/]
+covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/connections.ts, packages/cli/src/law.ts, packages/kit-code/]
 ---
 
 # wikiwright architecture
@@ -25,6 +25,16 @@ revision) and the core judges it, so `write --dry-run`, `lint --staged` and
 the pre-commit gate cannot disagree. Every finding carries either a runnable
 fix or a queue lane. See [[registry-pipeline]] for the load path and
 [[wikiwright-quickstart]] to run it.
+
+The shell reads a vault's files through `vaultfiles.ts`, below the loader in
+`vaultio.ts`, so the bundle identity can read them without loading the law.
+Before a verb runs, `main.ts` resolves `--bundle <name>` through this
+machine's bundles registry (`connections.ts`, a JSON file outside every vault)
+to the root `--root` would have named, and every verb that reads a vault's
+law names the bundle it read on its envelope, with a digest of its law and of
+its pages. Two verbs serve an agent reading a bundle it does not maintain:
+`bundles` keeps the registry of connections, and `read` returns a page's
+sections verbatim with the page's digest.
 
 ## Layers
 

@@ -1,9 +1,9 @@
 ---
 type: integration
 title: "Git"
-description: "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, remote heads and blobless origin caches; never a library, never a prompt."
+description: "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt."
 tags: [cli]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
 origin: .
 covers: [packages/cli/src/git.ts, packages/cli/src/state.ts, packages/cli/src/buildinfo.ts]
 ---
@@ -19,7 +19,8 @@ printed beside an envelope: `execFileSync("git", …)` with a 64 MiB output
 buffer for a call that answers in one piece (`:13-28`), `spawnSync` with the
 object names on stdin for the batch reads (`:334-348`), and `spawnSync`
 without the variables a git hook exports for a vault's worktree identity
-(`:431-474`). What the engine asks of it:
+and for its checkout state (`:431-474`, `:484-528`). What the engine asks of
+it:
 
 | Call | Where | For |
 | --- | --- | --- |
@@ -31,7 +32,8 @@ without the variables a git hook exports for a vault's worktree identity
 | `cat-file --batch-check` over `HEAD:./<path>` | `git.ts:406-429` | the blob HEAD holds at every path a changed or deleted page is judged against, in one process; a path HEAD does not hold is `missing` |
 | `rev-parse HEAD` | `git.ts:90-92` | the head of origin `.` |
 | `rev-parse --show-toplevel` | `git.ts:101-114` | the repository enclosing the vault |
-| `rev-parse --is-inside-work-tree --git-common-dir --show-prefix` | `git.ts:431-474` | a vault's worktree scope for a trust grant: the common directory every linked worktree of one clone shares, and the vault's path inside its own worktree; asked only when a worktree grant could apply, once per process (`packages/cli/src/trust.ts:221-242`, `:250-298`) |
+| `rev-parse --is-inside-work-tree --git-common-dir --show-prefix` | `git.ts:431-474` | a vault's worktree scope for a trust grant: the common directory every linked worktree of one clone shares, and the vault's path inside its own worktree; asked only when a worktree grant could apply, once per process (`packages/cli/src/trust.ts:280-301`, `:308-357`) |
+| `--no-optional-locks status --porcelain=v2 --branch --untracked-files=all -- .` | `git.ts:476-528` | the checkout a vault root sits in, for the bundle block every vault envelope carries: the `# branch.oid` header is the head, any entry makes it dirty; one process (`packages/cli/src/bundle.ts:105`) |
 | `rev-parse --verify --quiet HEAD` | `git.ts:124-137` | whether the repository has a commit |
 | `ls-remote --quiet <origin> HEAD` | `git.ts:182-190` | a remote head with no clone |
 | `init --bare`, `fetch --filter=blob:none --no-tags <origin> +HEAD:refs/wikiwright/head` | `git.ts:199-224` | the blobless cache per origin, retried whole when a server refuses filters |
@@ -79,7 +81,12 @@ directory of the repository it documents pins to that repository's commits
   every work tree, and any failure of git, is thrown; the loader refuses `module-scope-unresolved` and
   `trust` answers `scope-unresolved`, never a quieter verdict
   (`packages/cli/src/moduleload.ts:223-267`;
-  `packages/cli/src/verbs/trust.ts:66-76`).
+  `packages/cli/src/verbs/trust.ts:102-112`).
+- The checkout state is read the same way, the hook's variables removed, and
+  with `--no-optional-locks`, so it never refreshes the index a dry run must
+  leave alone; any exit but 0, and a git that does not run, answers
+  `undefined`, which the bundle block reports as a `null` head and dirt
+  (`git.ts:484-528`; `packages/cli/src/bundle.ts:105-110`).
 - The 1 MiB default buffer would crash on a large page and silently disarm
   the append-only base lookup, which is why the buffer is 64 MiB
   (`git.ts:13-15`); a batch read's buffer is its chunk's measured bytes plus

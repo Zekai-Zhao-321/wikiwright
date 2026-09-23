@@ -30,12 +30,11 @@ node runner. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
-`freshness --root devwiki` holds every citation to its pin. Eleven of its 26
-pinned pages read `stale`: the connected-bundles work changed files they
-cover, and they have not yet been re-read and re-pinned; the four pages that
-describe that work (the command runtime, the envelope, the repository layout,
-the skills and the brief) were, and are clean against their pin. The
-`stale-source-cited` warnings on other pages follow from the eleven.
+`freshness --root devwiki` holds every citation to its pin. Measured at
+`49fe223`, on a clone with the kit granted in a temporary store because the
+kit is ungranted on the development machine, `freshness` reads all 26 pinned
+pages `current` (11) or `unchanged` (15) and none `stale`, with no
+`stale-capture`, `stale-source-cited` or `citation-unresolved` finding.
 
 The gate is `bun run check` (biome, the build, the test-project typecheck,
 the whole suite). `scripts/hooks/pre-commit` runs it on the machine that

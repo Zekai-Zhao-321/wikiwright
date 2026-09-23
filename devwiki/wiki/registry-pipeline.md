@@ -3,9 +3,9 @@ type: subsystem
 title: Registry pipeline
 description: Loads, validates and flattens config/constitution.json and config/engine.json into the effective contracts every pass reads.
 tags: [kernel, cli]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
 origin: .
-covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts]
+covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts]
 ---
 
 # Registry pipeline
@@ -37,14 +37,24 @@ the document and the composed module registry in, `{ok, registry}` or
 the bootstrap through a closed zod schema (`:113`) and returns the config or
 `schema-invalid` issues (`:146-156`); `ENGINE_CONFIG_CONSUMERS` (`:120-138`)
 names the reader of every key so the meta-test can resolve each. The CLI's
-`loadVault` in `packages/cli/src/vaultio.ts:71` wraps both with file reading
-through `loadVaultVia` (`:104`): the constitution must exist (`:109-120`),
-`engine.json` loads first because the modules it declares compose the
-registry the constitution is validated under (`:135-169`), the module set is
-the preloaded one or a refusal (`:178-242`), `content_roots` is required
-(`:244-258`), and every declared template or example must exist and, for an
-example, pass its own type (`:265-362`). Every verb that needs types goes
-through it.
+`loadVault` in `packages/cli/src/vaultio.ts:70` wraps both with file reading
+through `loadVaultVia` (`:100`), which reads the config through a
+`VaultReader`, the working tree's or the git index's; the two config paths,
+the reader, the page walk and the page reads live below the loader, in
+`packages/cli/src/vaultfiles.ts` (`:1-5`, `:11-36`). The constitution must
+exist (`packages/cli/src/vaultio.ts:105-116`), `engine.json` loads first
+because the modules it declares compose the registry the constitution is
+validated under (`:133-168`), the module set is the preloaded one or a
+refusal (`:177-241`), `content_roots` is required (`:243-257`), and every
+declared template or example must exist and, for an example, pass its own
+type (`:264-361`); a loaded vault keeps the two config texts as they were
+read, the inputs of the law digest (`:49-55`, `:369`). Every verb that needs
+types goes through it, `read` among them
+(`packages/cli/src/verbs/read.ts:135`), and a root `--bundle` names is
+resolved to a directory before any verb runs, so the loader reads it as it
+reads `--root` (`packages/cli/src/main.ts:96-158`); the `bundles` verb reads
+no law, only whether a root holds a constitution and its bundle identity
+(`packages/cli/src/verbs/bundles.ts:62-66`, `:194-198`).
 
 ## State
 
@@ -84,7 +94,7 @@ path below it (`packages/core/src/registry/model.ts:12-27`): `schema-invalid`
 constitution that does not load as `constitution-invalid` at exit 2 with the
 issues in `data.issues` (`packages/cli/src/vaultio.ts:373-381`), and judges no
 page under it; a declared module that did not load is refused by its own code
-before the constitution is read (`:200-217`).
+before the constitution is read (`:199-216`).
 
 ## Relations
 

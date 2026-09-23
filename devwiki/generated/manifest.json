@@ -2,12 +2,12 @@
   "schema": "wikiwright/manifest",
   "totals": {
     "pages": 33,
-    "edges": 210
+    "edges": 212
   },
   "by_kind": {
     "relation": 69,
     "tagged": 46,
-    "wikilink": 95
+    "wikilink": 97
   },
   "by_label": {
     "relation": {
@@ -311,6 +311,12 @@
           "wiki/command-runtime.md",
           "wiki/repository-layout.md"
         ]
+      },
+      "inbound": {
+        "wikilink": [
+          "wiki/findings-and-routing.md",
+          "wiki/one-judge-five-states.md"
+        ]
       }
     },
     {
@@ -323,7 +329,7 @@
         "reference"
       ],
       "title": "Environment variables",
-      "description": "The four WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes.",
+      "description": "The five WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes.",
       "tags": [
         "cli"
       ],
@@ -398,6 +404,7 @@
           ]
         },
         "wikilink": [
+          "wiki/envelope-and-exit-codes.md",
           "wiki/fixers.md",
           "wiki/standard-library.md",
           "wiki/wikiwright-architecture.md"
@@ -543,7 +550,7 @@
         "concept"
       ],
       "title": "Git",
-      "description": "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, remote heads and blobless origin caches; never a library, never a prompt.",
+      "description": "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt.",
       "tags": [
         "cli"
       ],
@@ -693,6 +700,7 @@
         },
         "wikilink": [
           "wiki/command-runtime.md",
+          "wiki/envelope-and-exit-codes.md",
           "wiki/judge.md",
           "wiki/wikiwright-architecture.md",
           "wiki/writer-and-staged-gate.md"

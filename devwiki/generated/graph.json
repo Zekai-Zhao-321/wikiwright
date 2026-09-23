@@ -469,6 +469,11 @@
     },
     {
       "from": "wiki/findings-and-routing.md",
+      "to": "wiki/envelope-and-exit-codes.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/findings-and-routing.md",
       "to": "wiki/fixers.md",
       "kind": "wikilink"
     },
@@ -814,6 +819,11 @@
     {
       "from": "wiki/one-judge-five-states.md",
       "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "wiki/envelope-and-exit-codes.md",
       "kind": "wikilink"
     },
     {
