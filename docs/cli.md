@@ -10,7 +10,7 @@ registry as JSON, and `wikiwright <verb> --help` prints one verb's row.
 ## The envelope
 
 ```json
-{ "ok": true,  "data": { … }, "metadata": { "command": "check", "engine": "0.1.0" } }
+{ "ok": true,  "data": { … }, "metadata": { "command": "check", "engine": "0.1.0", "bundle": { … } } }
 { "ok": false, "data": { … }, "error": { "code": "findings", "exit_code": 5, "type": "findings", "message": "2 error finding(s)", "hint": "…", "details": { … } }, "metadata": { … } }
 ```
 
@@ -21,6 +21,48 @@ verbs (`unknown-type` from `new`, `type` and `vocabulary` alike).
 conflicting paths, the digests that disagreed. Prose is never load-bearing. A
 refusal that carries a verdict, such as a `write` refused by its findings, puts
 the verdict in `data` beside `error`.
+
+Every verb that reads a vault's law names the bundle it read in
+`metadata.bundle`, when its root holds `config/constitution.json`, on an ok
+envelope and a refusal alike. `version` and `schema` answer about the engine
+and `trust` about this machine's grants, so they carry none.
+
+```json
+"bundle": {
+  "label": "orchard",
+  "root": "/srv/handbooks/orchard",
+  "head": "3f2a9c…",
+  "dirty": false,
+  "law": "4439120…",
+  "content": "62bcc6d…"
+}
+```
+
+| Key | Meaning |
+|---|---|
+| `label` | the basename of the root's real path: a name for a reader, not an identity; two bundles can share one |
+| `root` | the root's real path |
+| `head` | the commit HEAD names in the repository enclosing the root; `null` when git names none: no repository encloses the root, it has no commit yet, or git cannot answer there |
+| `dirty` | whether `git status` lists any change under the root, untracked files included and ignored ones not; `null` when no repository answers |
+| `law` | the law this run read: `config/constitution.json`, `config/engine.json` and the digest of each module the entry point loaded before the verb ran, in declaration order |
+| `content` | every page under the content roots, path and bytes, as the working tree holds them: an uncommitted edit moves it, and `head` does not move |
+
+Both digests are sha256 over newline-joined lines, and neither reads git or
+parses a page. `law` is over `config/constitution.json <sha256>`,
+`config/engine.json <sha256>` (of the empty text when the file is absent) and
+`module:<package> <digest>` per loaded module, the digest a trust grant pins;
+a declared module that did not load contributes no line. `content` is over
+`<path> <sha256 of the page's bytes>`, one line per page under the content
+roots `config/engine.json` declares, in code-unit path order. Two directories
+holding the same bytes carry the same `law` and `content`, and `root` tells
+them apart. The brief's header prints the same `law`.
+
+The block is computed after the verb returns, so it describes the tree the verb
+left. It is absent when the root holds no constitution, and when a file the
+identity reads resolves outside the root, which every read of a vault refuses;
+the engine states no partial identity. An envelope answered before the verb
+runs names no bundle either: `--help`, a refusal of the arguments, a
+`role-forbidden`.
 
 The judging verbs (`lint`, `check`, `gate`, `write`, `fix`, `new`) share one
 verdict block:
@@ -223,8 +265,9 @@ What the registry rows below do not say.
   vocabulary whose module declares a type-valued property: the entries whose
   declared property names the type or an ancestor, with the path it did so
   through; on a vocabulary that declares none it is `target-not-applicable`.
-- **`brief --role <r>`** prints the role's verb list, the bundle's types,
-  every declared vocabulary's entries with their properties, its
+- **`brief --role <r>`** prints, under a header naming the law digest the
+  envelope's `metadata.bundle.law` carries, the role's verb list, the bundle's
+  types, every declared vocabulary's entries with their properties, its
   vocabularies' census, the loaded modules' skill fragments and the naming
   rules. The writer's brief is a generated artifact: `check --write` lands
   it at `generated/BRIEF.md` beside the other three, `init` lands it the same

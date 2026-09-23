@@ -1,5 +1,8 @@
-// docs/roadmap.md: check reads each content page once per invocation; the
-// artifacts, brief and judge use that snapshot. Count reads, not wall time.
+// docs/roadmap.md: check reads each content page once per invocation for its
+// verdict; the artifacts, brief and judge use that snapshot. The envelope's
+// bundle block reads each page's bytes once more, unparsed, for the content
+// digest (docs/cli.md §The envelope), so a page is read exactly twice: a third
+// read is the verb reading the tree again. Count reads, not wall time.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
@@ -12,7 +15,7 @@ import { documentOf } from "../../core/test/helpers/constitution.ts";
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
 describe("check shares its content snapshot (docs/roadmap.md)", () => {
-  it("reads each page once for check and check --write, preserving the original bytes", () => {
+  it("reads each page once for the verdict and once for the content digest, preserving the original bytes", () => {
     const root = realpathSync(mkdtempSync(join(tmpdir(), "ww-check-reads-")));
     try {
       mkdirSync(join(root, "config"));
@@ -56,7 +59,7 @@ process.on("exit", () => fs.writeFileSync(${JSON.stringify(log)}, JSON.stringify
         );
         assert.equal(result.status, 0, result.stdout + result.stderr);
         const counts: unknown = JSON.parse(readFileSync(log, "utf8"));
-        assert.deepEqual(counts, Object.fromEntries([...source.keys()].map((path) => [path, 1])));
+        assert.deepEqual(counts, Object.fromEntries([...source.keys()].map((path) => [path, 2])));
         for (const [path, text] of source) assert.equal(readFileSync(path, "utf8"), text);
       }
     } finally {

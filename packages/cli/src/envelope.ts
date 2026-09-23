@@ -23,9 +23,30 @@ export type ErrorType = Exclude<keyof typeof EXIT, "ok">;
 
 export const ENGINE_VERSION = "0.1.0";
 
+/**
+ * docs/cli.md §The envelope: which bundle a vault verb read, beside its answer.
+ * Declared here rather than beside `bundleIdentity` so the envelope, which
+ * every verb imports, reaches no module that reads a vault.
+ */
+export interface BundleIdentity {
+  /** The basename of the root's real path: a label for a reader, never an identity. */
+  label: string;
+  /** The root's real path. */
+  root: string;
+  /** The commit HEAD names in the enclosing repository, or null when git names none. */
+  head: string | null;
+  /** Whether `git status` lists any change under the root, or null when no repository answers. */
+  dirty: boolean | null;
+  /** sha256 over the constitution, engine.json and each loaded module's digest. */
+  law: string;
+  /** sha256 over every page under the content roots, path and bytes. */
+  content: string;
+}
+
 export interface Metadata {
   command: string;
   engine: string;
+  bundle?: BundleIdentity;
 }
 
 export interface OkEnvelope {

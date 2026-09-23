@@ -33,6 +33,13 @@ export type VaultLoad =
       /** docs/extending.md §Declaring a module: the declared modules, as resolved, pinned and proved. */
       loadedModules: readonly LoadedModule[];
       engine: EngineConfig;
+      /**
+       * docs/cli.md §The envelope: the two config files as this reader read
+       * them, the inputs of the law digest beside the modules' digests. Kept
+       * from the one read the loader makes, so a law rendered before its files
+       * land (`init`'s plan) digests the bytes it was loaded from.
+       */
+      lawText: { constitution: string; engine: string | undefined };
     }
   | { ok: false; result: CommandResult };
 
@@ -101,6 +108,9 @@ export function loadVault(command: string, root: string, options?: VaultLoadOpti
 /** docs/constitution.md §config/constitution.json: the one law a bundle is written in. */
 export const CONSTITUTION_PATH = "config/constitution.json";
 
+/** docs/constitution.md §config/engine.json: the bundle's policy beside its law. */
+export const ENGINE_PATH = "config/engine.json";
+
 export function loadVaultVia(
   command: string,
   reader: VaultReader,
@@ -118,9 +128,11 @@ export function loadVaultVia(
       ),
     };
   }
+  let constitutionText: string;
   let constitutionJson: unknown;
   try {
-    constitutionJson = JSON.parse(normalizeInput(reader.read(CONSTITUTION_PATH)).text);
+    constitutionText = reader.read(CONSTITUTION_PATH);
+    constitutionJson = JSON.parse(normalizeInput(constitutionText).text);
   } catch (e) {
     return {
       ok: false,
@@ -136,11 +148,12 @@ export function loadVaultVia(
   // loudly. Loaded FIRST because the modules it declares compose the registry
   // the constitution is validated under.
   let engine: EngineConfig = {};
-  const enginePath = "config/engine.json";
-  if (reader.exists(enginePath)) {
+  let engineText: string | undefined;
+  if (reader.exists(ENGINE_PATH)) {
     let engineJson: unknown;
     try {
-      engineJson = JSON.parse(normalizeInput(reader.read(enginePath)).text);
+      engineText = reader.read(ENGINE_PATH);
+      engineJson = JSON.parse(normalizeInput(engineText).text);
     } catch (e) {
       return {
         ok: false,
@@ -367,6 +380,7 @@ export function loadVaultVia(
     modules: loaded.modules,
     loadedModules,
     engine,
+    lawText: { constitution: constitutionText, engine: engineText },
   };
 }
 
@@ -414,13 +428,18 @@ export function walkPages(root: string, roots: readonly string[]): string[] {
 }
 
 export function readPage(root: string, relPath: string): string {
+  return readPageBytes(root, relPath).toString("utf8");
+}
+
+/** A page's bytes, undecoded: what the content digest reads (docs/cli.md §The envelope). */
+export function readPageBytes(root: string, relPath: string): Buffer {
   try {
-    return readFileSync(vaultReadAbsolute(root, relPath), "utf8");
+    return readFileSync(vaultReadAbsolute(root, relPath));
   } catch (e) {
     // Walk stores NFC paths; on NFD-preserving filesystems the on-disk name may
     // be the decomposed form (normalization seam).
     const nfd = relPath.normalize("NFD");
-    if (nfd !== relPath) return readFileSync(vaultReadAbsolute(root, nfd), "utf8");
+    if (nfd !== relPath) return readFileSync(vaultReadAbsolute(root, nfd));
     throw e;
   }
 }

@@ -472,3 +472,57 @@ export function gitWorktreeIdentity(dir: string): { commonDir: string; prefix: s
   if (common === "") throw new Error("git rev-parse --git-common-dir printed no directory");
   return { commonDir: resolve(dir, common), prefix };
 }
+
+/** What `bundleIdentity` reports about the checkout a vault sits in. */
+export interface CheckoutState {
+  /** The commit HEAD names, or null in a repository with no commit yet. */
+  head: string | null;
+  /** Whether `git status` lists any change under the directory, untracked files included. */
+  dirty: boolean;
+}
+
+/**
+ * docs/cli.md §The envelope: the checkout a vault root sits in, from one
+ * process. `status --porcelain=v2 --branch` prints the head as its
+ * `# branch.oid` header (`(initial)` before the first commit) and one entry
+ * per change, and the pathspec keeps the entries to the directory, so the
+ * header answers `head` and any entry makes it `dirty`. Untracked files count;
+ * ignored ones do not.
+ *
+ * A reader, never a writer: `--no-optional-locks` keeps `status` from
+ * refreshing the index, which it otherwise does whenever it can take the
+ * lock, and which a dry run must not move. A hook's exported variables are
+ * removed, as for the worktree identity, so the repository is the one git
+ * discovers from the directory. Undefined when git gives no answer: no
+ * repository encloses the directory, or git cannot run there.
+ */
+export function gitCheckoutState(dir: string): CheckoutState | undefined {
+  const env = { ...process.env };
+  for (const key of HOOK_VARIABLES) delete env[key];
+  const result = spawnSync(
+    "git",
+    [
+      "--no-optional-locks",
+      "status",
+      "--porcelain=v2",
+      "--branch",
+      "--untracked-files=all",
+      "--",
+      ".",
+    ],
+    { cwd: dir, env, encoding: "utf8", maxBuffer: MAX_BUFFER, stdio: ["ignore", "pipe", "pipe"] },
+  );
+  if (result.error !== undefined || result.status !== 0) return undefined;
+  let head: string | null = null;
+  let dirty = false;
+  for (const line of result.stdout.split("\n")) {
+    if (line === "") continue;
+    if (!line.startsWith("# ")) {
+      dirty = true;
+      continue;
+    }
+    const oid = /^# branch\.oid ([0-9a-f]{40,64})$/u.exec(line)?.[1];
+    if (oid !== undefined) head = oid;
+  }
+  return { head, dirty };
+}

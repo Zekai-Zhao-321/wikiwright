@@ -34,7 +34,7 @@ packages/core/src/
   prefixes/    the commit-prefix verdict
   version/     the engine range grammar
 packages/cli/src/
-  main.ts      dispatch, the role bound, --help, the module preload, one stderr writer
+  main.ts      dispatch, the role bound, --help, the module preload, the bundle block, one stderr writer
   commands.ts  the COMMANDS array and nothing else
   spec.ts      CommandSpec, FlagSpec, Plan, ROLE_RANK, DRY_RUN_FLAG
   brief.ts     the brief's renderer, below every verb that renders one
@@ -43,6 +43,7 @@ packages/cli/src/
   clock.ts     today(): WIKIWRIGHT_TODAY or the wall clock, read once
   state.ts     fsState, indexState, overlayState, revisionState
   vaultio.ts   the page walk, the loader, its refusals
+  bundle.ts    the bundle an envelope names: label, root, head, dirty, the law and content digests
   law.ts       the loaded vault to a Law; the engine.json consumers
   writer.ts    the shell half of the Writer: prove, then temp-and-rename
   atomicwrite.ts   the one staged replace every non-page write lands through

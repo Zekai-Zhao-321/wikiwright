@@ -9,6 +9,19 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- Every envelope of a verb that reads a vault's law names the bundle it read,
+  in `metadata.bundle`, on an ok envelope and a refusal alike: `label` (the
+  basename of the root's real path), `root` (that real path), `head` and
+  `dirty` from the enclosing repository (`null` where git names none), `law`
+  (sha256 over `config/constitution.json`, `config/engine.json` and each loaded
+  module's digest) and `content` (sha256 over every page under the content
+  roots, path and bytes, as the working tree holds them). An answer read from
+  one bundle can be told from an answer read from another, and an uncommitted
+  edit shows in `content` and `dirty` while `head` stays where it was.
+  `version`, `schema` and `trust` carry none. The brief's header prints the law
+  digest in place of a digest of the sorted type names, which did not move when
+  a type's contract, the engine policy or a module changed.
+
 - `trust list --all` prints every record in this machine's store: its
   identity, its scope, the path it is keyed by, its digest, when it was
   granted, and whether that path is still present. `trust revoke --record

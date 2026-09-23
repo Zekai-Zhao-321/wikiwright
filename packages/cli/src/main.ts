@@ -2,9 +2,10 @@
 // docs/cli.md §The envelope (stdout = one envelope; stderr = UX; parseArgs
 // strict under the command registry; generated help) · JSON-only v1.
 import { parseInvocation, scanInvocation } from "./argv.ts";
+import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
-import { type CommandResult, fail, ok } from "./envelope.ts";
-import { declaredModulesOf, preloadModules } from "./moduleload.ts";
+import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
+import { declaredModulesOf, type LoadedModule, preloadModules } from "./moduleload.ts";
 import { type CommandSpec, flagsOf, GLOBAL_FLAGS, ROLE_RANK, type Role } from "./spec.ts";
 
 function emit(result: CommandResult): void {
@@ -43,9 +44,36 @@ function helpResult(): CommandResult {
   });
 }
 
+/**
+ * docs/cli.md §The envelope: the bundle a vault verb read, on the envelope it
+ * returned, ok or not. Computed after the verb, so it describes the state the
+ * verb left. An identity the engine cannot read inside the vault (a file under
+ * it resolves outside) is left off rather than half-stated; the reads that
+ * refuse it are the same ones every verb makes.
+ */
+function withBundle(
+  result: CommandResult,
+  root: string,
+  modules: readonly LoadedModule[],
+): CommandResult {
+  let bundle: BundleIdentity | undefined;
+  try {
+    bundle = bundleIdentity(root, modules);
+  } catch {
+    return result;
+  }
+  if (bundle === undefined) return result;
+  const metadata = { ...result.envelope.metadata, bundle };
+  return { ...result, envelope: { ...result.envelope, metadata } };
+}
+
 async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandResult> {
   const parsed = parseInvocation(spec, rest, COMMANDS);
   if (!parsed.ok) return parsed.result;
+  // The modules the law digest names, captured before the verb runs: a verb
+  // may empty the preload cache before it returns (`modules plan` does).
+  let loaded: readonly LoadedModule[] = [];
+  let result: CommandResult;
   try {
     // docs/extending.md §Declaring a module: loading a module is the shell's one
     // asynchronous step, and it happens HERE — once, before the verb runs —
@@ -56,17 +84,22 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
     // about the engine, and `trust` loads the one module it is about, itself.
     if (spec.needsVaultModules) {
       const declarations = declaredModulesOf(parsed.args.root);
-      if (declarations.length > 0) await preloadModules(parsed.args.root, declarations);
+      if (declarations.length > 0) {
+        loaded = (await preloadModules(parsed.args.root, declarations)).loaded;
+      }
     }
-    return await spec.run(parsed.args);
+    result = await spec.run(parsed.args);
   } catch (e) {
-    return fail(
+    result = fail(
       spec.name,
       "internal",
       "unexpected-error",
       e instanceof Error ? e.message : String(e),
     );
   }
+  // The same switch decides it: a verb that reads the vault's law names the
+  // bundle it read, and one that answers about the engine names none.
+  return spec.needsVaultModules ? withBundle(result, parsed.args.root, loaded) : result;
 }
 
 // The conventional spellings reach the `version` verb — one
