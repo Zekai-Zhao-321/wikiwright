@@ -53,14 +53,23 @@ export function lawDigest(
 }
 
 /**
+ * One page's digest: sha256 over its raw bytes. The content digest's line for
+ * a page holds it, and `read` reports it as `page.digest`, so the two are one
+ * value by construction.
+ */
+export function pageDigest(bytes: Buffer): string {
+  return sha256Of(bytes);
+}
+
+/**
  * The content digest: sha256 over one line per page under the content roots,
- * in the walk's code-unit order — the page's path and the sha256 of its bytes.
- * The bytes are read, never parsed, and git is not asked: an uncommitted edit
+ * in the walk's code-unit order — the page's path and its `pageDigest`. The
+ * bytes are read, never parsed, and git is not asked: an uncommitted edit
  * moves it.
  */
 export function contentDigest(root: string, contentRoots: readonly string[]): string {
   const lines = walkPages(root, contentRoots).map(
-    (path) => `${path} ${sha256Of(readPageBytes(root, path))}`,
+    (path) => `${path} ${pageDigest(readPageBytes(root, path))}`,
   );
   return sha256Of(lines.join("\n"));
 }

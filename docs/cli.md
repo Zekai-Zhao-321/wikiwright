@@ -261,8 +261,10 @@ What the registry rows below do not say.
   adds an advisory near-name list that never changes ranks.
 - **`read <page> [--section <heading>] [--budget <bytes>]`** returns one page's
   sections, verbatim. `<page>` is tried, in order, as a vault path under a
-  content root, a basename or an alias through the name index, and a `title`
-  with the same identity; `page.resolved_via` says which (`path`, `name`,
+  content root, a basename or an alias through the name index, and a title
+  with the same identity, the title as the manifest spells it (derived under
+  `field_sources` where the frontmatter carries none, as `page.title` and
+  `page.description` are); `page.resolved_via` says which (`path`, `name`,
   `alias`, `title`). A miss is `page-not-found` with `details.tried` and names
   no page. `data` is `{ page, sections, omitted, coverage }`. `page` carries
   `path`, `name`, `resolved_via`, `type`, `chain`, `title`, `description`,

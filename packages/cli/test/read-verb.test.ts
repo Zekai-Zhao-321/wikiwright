@@ -272,6 +272,41 @@ describe("read returns a page's sections with attribution (docs/cli.md §read)",
     }
   });
 
+  it("a title the bundle derives is the title read reports and resolves, as the manifest spells it", () => {
+    // A bundle whose `field_sources` derive the title from the basename and the
+    // description from the lede, and a page that carries neither.
+    const vault = join(tmp, "derived");
+    cpSync(ORCHARD, vault, { recursive: true });
+    writeFileSync(
+      join(vault, "config", "engine.json"),
+      `${JSON.stringify({
+        content_roots: ["wiki"],
+        field_sources: { title: "basename", description: "lede" },
+      })}\n`,
+    );
+    writeFileSync(
+      join(vault, "wiki", "Mulching beds.md"),
+      "---\ntype: procedure-page\ntags: [fruit]\napplies_to: temperate\n---\n\nSpread a mulch over bare soil in late spring.\n\n## Steps\n\n1. Weed the bed.\n2. Spread the mulch.\n",
+    );
+    const written = spawnSync(process.execPath, [CLI, "check", "--write", "--root", vault], {
+      encoding: "utf8",
+    });
+    assert.equal(written.status, 0, written.stdout);
+    const manifest = JSON.parse(
+      readFileSync(join(vault, "generated", "manifest.json"), "utf8"),
+    ) as { pages: { path: string; title: string; description: string }[] };
+    const listed = manifest.pages.find((p) => p.path === "wiki/Mulching beds.md");
+    assert.ok(listed !== undefined);
+
+    const { page } = dataOf([listed.title, "--root", vault]);
+    assert.equal(page["path"], "wiki/Mulching beds.md");
+    // The one derivation is the basename, which the name form finds first.
+    assert.equal(page["resolved_via"], "name");
+    assert.equal(page["title"], listed.title);
+    assert.equal(page["description"], listed.description);
+    assert.equal(page["description"], "Spread a mulch over bare soil in late spring.");
+  });
+
   it("one path in two handbooks: two digests, two bundles, told apart by the envelope", () => {
     const registry = join(tmp, "registry");
     mkdirSync(registry, { recursive: true });

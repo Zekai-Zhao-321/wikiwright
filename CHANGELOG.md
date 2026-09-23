@@ -14,7 +14,9 @@ version` prints the engine version and the commit a binary was built from.
   lines and byte length, beside the page's type, chain, frontmatter and
   digest — sha256 over its raw bytes, the same one the content digest holds
   for it. A page is named by path, basename, alias or title, and
-  `resolved_via` says which; a miss names no page. Under `--budget` the
+  `resolved_via` says which; a miss names no page. Its title and description
+  are the manifest's, derived under `field_sources` where the frontmatter
+  carries none. Under `--budget` the
   sections come in page order while they fit and the rest are listed by
   address. A consumer's verb: the envelope's bundle block says which bundle
   every passage came from.

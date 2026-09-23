@@ -5,17 +5,20 @@
 // A reader: it loads the law to know the page's type and the depth its
 // sections are cut at, and writes nothing. The text it returns is the page's
 // own bytes, line for line, never a rendering of them.
-import { createHash } from "node:crypto";
 import {
   basenameOf,
   buildNameIndex,
+  type FieldSources,
   type Heading,
   normalizeIdentity,
   type PageInput,
   parseDoc,
+  resolveDescription,
+  resolveTitle,
 } from "@wikiwright/core";
+import { pageDigest } from "../bundle.ts";
 import { type CommandResult, fail, ok } from "../envelope.ts";
-import { rootsOf } from "../law.ts";
+import { generateOptionsFor, rootsOf } from "../law.ts";
 import { collectPages } from "../pages.ts";
 import type { CommandArgs, CommandSpec } from "../spec.ts";
 import { loadVault, readPageBytes, walkPages } from "../vaultio.ts";
@@ -39,13 +42,16 @@ interface Section {
 /**
  * The page a `<page>` argument names: an exact vault path under a content root,
  * else a basename or an alias through the name index the judge builds, else a
- * page whose `title` has the same identity. A title shared by two pages
- * resolves to the first in path order, as the walk lists them.
+ * page whose title has the same identity — the title as the manifest spells it,
+ * derived under `field_sources` where the frontmatter carries none. A title
+ * shared by two pages resolves to the first in path order, as the walk lists
+ * them.
  */
 function resolvePage(
   root: string,
   paths: readonly string[],
   wanted: string,
+  fieldSources: FieldSources | undefined,
 ): { path: string; via: ResolvedVia } | undefined {
   const asPath = wanted.normalize("NFC");
   if (paths.includes(asPath)) return { path: asPath, via: "path" };
@@ -54,8 +60,8 @@ function resolvePage(
   if (named !== undefined) return { path: named.path, via: named.viaAlias ? "alias" : "name" };
   const identity = normalizeIdentity(wanted);
   for (const page of pages) {
-    const title = page.doc.frontmatter.value["title"];
-    if (typeof title === "string" && normalizeIdentity(title) === identity) {
+    const title = resolveTitle(page.doc, page.path, fieldSources);
+    if (title !== null && normalizeIdentity(title) === identity) {
       return { path: page.path, via: "title" };
     }
   }
@@ -129,7 +135,8 @@ function run(args: CommandArgs): CommandResult {
   const vault = loadVault("read", args.root);
   if (!vault.ok) return vault.result;
 
-  const found = resolvePage(args.root, walkPages(args.root, rootsOf(vault)), wanted);
+  const fieldSources = generateOptionsFor(vault)?.fieldSources;
+  const found = resolvePage(args.root, walkPages(args.root, rootsOf(vault)), wanted, fieldSources);
   if (found === undefined) {
     // What was tried, never what exists: a list of the pages that do would make
     // a refusal a way to enumerate the vault.
@@ -188,8 +195,6 @@ function run(args: CommandArgs): CommandResult {
     omitted.push({ ...located, reason: "budget" });
   }
 
-  const title = frontmatter["title"];
-  const description = frontmatter["description"];
   return ok("read", {
     page: {
       path,
@@ -197,11 +202,13 @@ function run(args: CommandArgs): CommandResult {
       resolved_via: found.via,
       type: typeName,
       chain: effective?.chain ?? [],
-      title: typeof title === "string" ? title : null,
-      description: typeof description === "string" ? description : null,
+      // The one effective page model the manifest renders: derived under
+      // `field_sources` where the frontmatter is silent.
+      title: resolveTitle(doc, path, fieldSources),
+      description: resolveDescription(doc, fieldSources),
       status: frontmatter["status"] === "retired" ? "retired" : "active",
-      // The page's raw bytes, as the content digest's line for this page reads them.
-      digest: createHash("sha256").update(bytes).digest("hex"),
+      // The content digest's line for this page holds the same value.
+      digest: pageDigest(bytes),
       frontmatter,
     },
     sections,
