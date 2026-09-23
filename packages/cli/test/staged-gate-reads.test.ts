@@ -27,15 +27,36 @@ function git(cwd: string, ...args: string[]): string {
 interface Run {
   status: number;
   envelope: Record<string, unknown>;
+  stdout: string;
+  stderr: string;
 }
 
+/**
+ * One run of the CLI, with what it printed kept whole. Under a loaded machine
+ * `lint --staged` has thrown before a verdict, and an
+ * assertion on the exit code alone said only "1 !== 0"; every status check
+ * below names the envelope and stderr instead, and a stdout that is not an
+ * envelope is kept rather than thrown on.
+ */
 function run(cwd: string, args: string[], env?: NodeJS.ProcessEnv): Run {
   const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env: env ?? process.env,
   });
-  return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Record<string, unknown> };
+  const stdout = r.stdout ?? "";
+  let envelope: Record<string, unknown> = {};
+  try {
+    envelope = JSON.parse(stdout) as Record<string, unknown>;
+  } catch {
+    // Not an envelope; `said` prints it as it came.
+  }
+  return { status: r.status ?? -1, envelope, stdout, stderr: r.stderr ?? "" };
+}
+
+/** What a run printed, for an assertion message. */
+function said(r: Run): string {
+  return `exit ${r.status}\nstdout: ${r.stdout}\nstderr: ${r.stderr}`;
 }
 
 function page(title: string, body = ""): string {
@@ -109,7 +130,7 @@ function spawned(count: number, argv: (tmp: string) => string[], changed = 1): s
   try {
     const { env, log } = countingGit(tmp);
     const r = run(tmp, argv(tmp), env);
-    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    assert.equal(r.status, 0, said(r));
     return calls(log);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
@@ -207,7 +228,7 @@ describe("the gate reads the index's bytes exactly (docs/cli.md §lint --staged)
       git(tmp, "add", "-A");
       const staged = run(tmp, ["lint", "--staged"]);
       const tree = run(tmp, ["lint"]);
-      assert.equal(staged.status, 0, JSON.stringify(staged.envelope));
+      assert.equal(staged.status, 0, said(staged));
       assert.deepEqual(dataOf(staged.envelope)["findings"], []);
       assert.deepEqual(dataOf(tree.envelope)["findings"], []);
       // All five pages parsed from the index's bytes, as from the tree's; the

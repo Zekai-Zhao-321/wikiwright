@@ -21,9 +21,35 @@ function git(cwd: string, ...args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 }
 
-function run(cwd: string, args: string[]): { status: number; envelope: Record<string, unknown> } {
+interface Run {
+  status: number;
+  envelope: Record<string, unknown>;
+  stdout: string;
+  stderr: string;
+}
+
+/**
+ * One run of the CLI, with what it printed kept whole. Under a loaded machine
+ * `lint --staged` has thrown before a verdict, and an
+ * assertion on the exit code alone said only "1 !== 5"; every status check
+ * below names the envelope and stderr instead, and a stdout that is not an
+ * envelope is kept rather than thrown on.
+ */
+function run(cwd: string, args: string[]): Run {
   const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
-  return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Record<string, unknown> };
+  const stdout = r.stdout ?? "";
+  let envelope: Record<string, unknown> = {};
+  try {
+    envelope = JSON.parse(stdout) as Record<string, unknown>;
+  } catch {
+    // Not an envelope; `said` prints it as it came.
+  }
+  return { status: r.status ?? -1, envelope, stdout, stderr: r.stderr ?? "" };
+}
+
+/** What a run printed, for an assertion message. */
+function said(r: Run): string {
+  return `exit ${r.status}\nstdout: ${r.stdout}\nstderr: ${r.stderr}`;
 }
 
 function findingsOf(envelope: Record<string, unknown>): Array<Record<string, unknown>> {
@@ -76,7 +102,7 @@ describe("lint --staged — the pre-commit gate (docs/cli.md §lint)", () => {
       writeFileSync(join(tmp, PAGE), `${current}\n2026-08-31: run 1 green.\n`);
       git(tmp, "add", PAGE);
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 0);
+      assert.equal(r.status, 0, said(r));
       const data = r.envelope["data"] as { summary: { pages: number } };
       assert.equal(data.summary.pages, 1);
     } finally {
@@ -95,7 +121,7 @@ describe("lint --staged — the pre-commit gate (docs/cli.md §lint)", () => {
       writeFileSync(join(tmp, PAGE), edited);
       git(tmp, "add", PAGE);
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 5);
+      assert.equal(r.status, 5, said(r));
       const data = r.envelope["data"] as {
         findings: Array<{ ruleId: string; contributedBy?: string }>;
       };
@@ -128,7 +154,7 @@ describe("lint --staged — the pre-commit gate (docs/cli.md §lint)", () => {
       writeFileSync(join(tmp, hot), `${readFileSync(join(tmp, hot), "utf8")}2026-08-31: run 1.\n`);
       git(tmp, "add", "-A");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 5, JSON.stringify(r.envelope));
+      assert.equal(r.status, 5, said(r));
       const data = r.envelope["data"] as { findings: Array<{ ruleId: string; path: string }> };
       const appendOnly = data.findings.filter((f) => f.ruleId === "body-append-only");
       assert.deepEqual(
@@ -150,7 +176,7 @@ describe("lint --staged — the pre-commit gate (docs/cli.md §lint)", () => {
       );
       git(tmp, "add", "wiki/rogue.md");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 5);
+      assert.equal(r.status, 5, said(r));
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -165,7 +191,7 @@ describe("lint --staged — the pre-commit gate (docs/cli.md §lint)", () => {
       // Working tree then diverges with a violation that is NOT staged.
       writeFileSync(join(tmp, PAGE), current.replace("## Execution", "## Renamed"));
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 0);
+      assert.equal(r.status, 0, said(r));
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -175,7 +201,7 @@ describe("lint --staged — the pre-commit gate (docs/cli.md §lint)", () => {
     const tmp = gitVault();
     try {
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 0);
+      assert.equal(r.status, 0, said(r));
       const data = r.envelope["data"] as { summary: { pages: number } };
       assert.equal(data.summary.pages, 0);
     } finally {
@@ -205,7 +231,7 @@ describe("the staged gate judges the complete virtual vault (docs/cli.md §lint)
       assert.match(staged, /^R\d+\tsources\/alpha\.md\traw\/source\/alpha\.md$/u);
 
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 0, JSON.stringify(r.envelope));
+      assert.equal(r.status, 0, said(r));
       assert.equal(
         findingsOf(r.envelope).some((f) => f["ruleId"] === "renamed-without-alias"),
         false,
@@ -224,7 +250,7 @@ describe("the staged gate judges the complete virtual vault (docs/cli.md §lint)
       );
       git(tmp, "add", "wiki/beta.md");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 5);
+      assert.equal(r.status, 5, said(r));
       assert.equal(
         findingsOf(r.envelope).some(
           (f) => f["ruleId"] === "identity-collision" && String(f["message"]).includes("Alpha"),
@@ -246,7 +272,7 @@ describe("the staged gate judges the complete virtual vault (docs/cli.md §lint)
       );
       git(tmp, "add", "wiki/beta.md");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 5);
+      assert.equal(r.status, 5, said(r));
       assert.equal(
         findingsOf(r.envelope).some((f) => f["ruleId"] === "identity-collision"),
         true,
@@ -275,7 +301,7 @@ describe("the staged gate judges the complete virtual vault (docs/cli.md §lint)
       );
       git(tmp, "add", "config/constitution.json");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 5);
+      assert.equal(r.status, 5, said(r));
       assert.equal(
         findingsOf(r.envelope).some(
           (f) => f["ruleId"] === "sections" && f["path"] === "wiki/alpha.md",
@@ -300,7 +326,7 @@ describe("the staged gate judges the complete virtual vault (docs/cli.md §lint)
       );
       git(tmp, "add", "wiki/alpha.md");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 0, JSON.stringify(r.envelope));
+      assert.equal(r.status, 0, said(r));
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -324,7 +350,11 @@ describe("the staged gate judges the complete virtual vault (docs/cli.md §lint)
       );
       git(tmp, "add", "wiki/alpha.md");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 0, "old debt on untouched pages is check's job, not the gate's");
+      assert.equal(
+        r.status,
+        0,
+        `old debt on untouched pages is check's job, not the gate's: ${said(r)}`,
+      );
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -335,7 +365,8 @@ describe("the gate judges generated-drift over the staged state (docs/cli.md §g
   /** minimal-vault with its artifacts tracked: `check --write`, then commit. */
   function trackedVault(): string {
     const tmp = gitVault();
-    assert.equal(run(tmp, ["check", "--write"]).status, 0);
+    const written = run(tmp, ["check", "--write"]);
+    assert.equal(written.status, 0, said(written));
     git(tmp, "add", "-A");
     git(tmp, "commit", "-q", "-m", "track generated/");
     return tmp;
@@ -354,14 +385,15 @@ describe("the gate judges generated-drift over the staged state (docs/cli.md §g
     const tmp = trackedVault();
     try {
       const one = newCase(tmp, "op-one", "TC-0101");
-      assert.equal(run(tmp, ["check", "--write"]).status, 0);
+      const written = run(tmp, ["check", "--write"]);
+      assert.equal(written.status, 0, said(written));
       git(tmp, "add", one, "generated");
       // The second op lands in the working tree AFTER the first was staged, so
       // the tree's generated/ no longer describes the tree — `check` would say
       // drift — while the index is consistent with itself.
       newCase(tmp, "op-two", "TC-0102");
       const r = run(tmp, ["gate"]);
-      assert.equal(r.status, 0, JSON.stringify(r.envelope));
+      assert.equal(r.status, 0, said(r));
       const coverage = (
         r.envelope["data"] as {
           coverage: { passes: Record<string, { evaluated: number; reason?: string }> };
@@ -379,7 +411,7 @@ describe("the gate judges generated-drift over the staged state (docs/cli.md §g
     try {
       git(tmp, "add", newCase(tmp, "op-one", "TC-0101"));
       const r = run(tmp, ["gate"]);
-      assert.equal(r.status, 5, JSON.stringify(r.envelope));
+      assert.equal(r.status, 5, said(r));
       const drift = findingsOf(r.envelope).filter((f) => f["ruleId"] === "generated-drift");
       assert.deepEqual(drift.map((f) => f["path"]).sort(), [
         "generated/graph.json",
@@ -390,7 +422,8 @@ describe("the gate judges generated-drift over the staged state (docs/cli.md §g
         applicability: "MachineApplicable",
       });
       // And the same envelope from the agent's preview of the gate.
-      assert.equal(run(tmp, ["lint", "--staged"]).status, 5);
+      const preview = run(tmp, ["lint", "--staged"]);
+      assert.equal(preview.status, 5, said(preview));
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -401,7 +434,7 @@ describe("the gate judges generated-drift over the staged state (docs/cli.md §g
     try {
       git(tmp, "add", newCase(tmp, "op-one", "TC-0101"));
       const r = run(tmp, ["gate"]);
-      assert.equal(r.status, 0, JSON.stringify(r.envelope));
+      assert.equal(r.status, 0, said(r));
       const coverage = (
         r.envelope["data"] as { coverage: { passes: Record<string, { reason?: string }> } }
       ).coverage.passes;
@@ -450,7 +483,7 @@ describe("the staged gate gates the index, not the worktree (docs/cli.md §lint)
       );
       git(tmp, "add", "raw/warm-reset.md");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 5);
+      assert.equal(r.status, 5, said(r));
       assert.equal(
         findingsOf(r.envelope).some((f) => f["ruleId"] === "identity-collision"),
         true,
@@ -478,7 +511,7 @@ describe("the staged gate gates the index, not the worktree (docs/cli.md §lint)
       const merge = spawnSync("git", ["merge", "side"], { cwd: tmp, encoding: "utf8" });
       assert.notEqual(merge.status, 0, "merge must conflict for this test");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 4);
+      assert.equal(r.status, 4, said(r));
       assert.equal(((r.envelope["error"] ?? {}) as Record<string, unknown>)["type"], "conflict");
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -543,7 +576,7 @@ describe("claim transitions are judged on the staged diff at the gate", () => {
       );
       git(tmp, "add", "wiki/zhang.md");
       const r = run(tmp, ["lint", "--staged"]);
-      assert.equal(r.status, 5, JSON.stringify(r.envelope));
+      assert.equal(r.status, 5, said(r));
       assert.equal(
         findingsOf(r.envelope).some((f) => f["ruleId"] === "claims-transition"),
         true,
