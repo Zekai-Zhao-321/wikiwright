@@ -72,7 +72,7 @@ export const checkCommand: CommandSpec = {
     const names = buildNameIndex(pages);
     const shellFindings: Finding[] = [...templateFindings(args.root, vault)];
     const plans = generateArtifacts(vault.registry, pages, names, generateOptionsFor(vault));
-    const brief = briefPlan(vault, pages, args.commands);
+    const brief = briefPlan(args.root, vault, pages, args.commands);
     // The brief lands with the artifacts, through the one write loop;
     // its drift is `brief-stale` below, the artifacts' is `generated-drift`.
     if (args.flags["write"] === true) {

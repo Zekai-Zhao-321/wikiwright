@@ -5,7 +5,7 @@ import { parseInvocation, scanInvocation } from "./argv.ts";
 import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
-import { declaredModulesOf, type LoadedModule, preloadModules } from "./moduleload.ts";
+import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import {
   type CommandSpec,
   declaredRole,
@@ -58,14 +58,10 @@ function helpResult(): CommandResult {
  * it resolves outside) is left off rather than half-stated; the reads that
  * refuse it are the same ones every verb makes.
  */
-function withBundle(
-  result: CommandResult,
-  root: string,
-  modules: readonly LoadedModule[],
-): CommandResult {
+function withBundle(result: CommandResult, root: string): CommandResult {
   let bundle: BundleIdentity | undefined;
   try {
-    bundle = bundleIdentity(root, modules);
+    bundle = bundleIdentity(root);
   } catch {
     return result;
   }
@@ -77,9 +73,6 @@ function withBundle(
 async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandResult> {
   const parsed = parseInvocation(spec, rest, COMMANDS);
   if (!parsed.ok) return parsed.result;
-  // The modules the law digest names, captured before the verb runs: a verb
-  // may empty the preload cache before it returns (`modules plan` does).
-  let loaded: readonly LoadedModule[] = [];
   let result: CommandResult;
   try {
     // docs/extending.md §Declaring a module: loading a module is the shell's one
@@ -91,9 +84,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
     // about the engine, and `trust` loads the one module it is about, itself.
     if (spec.needsVaultModules) {
       const declarations = declaredModulesOf(parsed.args.root);
-      if (declarations.length > 0) {
-        loaded = (await preloadModules(parsed.args.root, declarations)).loaded;
-      }
+      if (declarations.length > 0) await preloadModules(parsed.args.root, declarations);
     }
     result = await spec.run(parsed.args);
   } catch (e) {
@@ -106,7 +97,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
   }
   // The same switch decides it: a verb that reads the vault's law names the
   // bundle it read, and one that answers about the engine names none.
-  return spec.needsVaultModules ? withBundle(result, parsed.args.root, loaded) : result;
+  return spec.needsVaultModules ? withBundle(result, parsed.args.root) : result;
 }
 
 // The conventional spellings reach the `version` verb — one

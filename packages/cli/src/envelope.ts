@@ -37,7 +37,7 @@ export interface BundleIdentity {
   head: string | null;
   /** Whether `git status` lists any change under the root, or null when no repository answers. */
   dirty: boolean | null;
-  /** sha256 over the constitution, engine.json and each loaded module's digest. */
+  /** sha256 over the constitution, engine.json and each installed module's digest, trusted or not. */
   law: string;
   /** sha256 over every page under the content roots, path and bytes. */
   content: string;

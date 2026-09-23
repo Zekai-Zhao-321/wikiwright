@@ -25,7 +25,7 @@ export function briefFor(
   if (!vault.ok) return { ok: false };
   return {
     ok: true,
-    text: briefOf(vault, collectPages(root, walkPages(root, rootsOf(vault))), role, commands),
+    text: briefOf(root, vault, collectPages(root, walkPages(root, rootsOf(vault))), role, commands),
   };
 }
 

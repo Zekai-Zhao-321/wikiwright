@@ -277,6 +277,7 @@ export function renderBrief(input: BriefInput): string {
  * plan can say whether the installed brief would change (docs/cli.md §The dry-run law).
  */
 export function briefOf(
+  root: string,
   vault: VaultOk,
   pages: PageInput[],
   role: Role,
@@ -300,8 +301,14 @@ export function briefOf(
     registry: vault.registry,
     moduleSkills: vault.modules.skills,
     observed,
-    // The texts this vault was loaded from and the modules it loaded, so a plan
-    // rendered before its files land (`init`) digests the law it will carry.
-    lawDigest: lawDigest(vault.lawText.constitution, vault.lawText.engine, vault.loadedModules),
+    // The texts this vault was loaded from and the modules it declares, so a
+    // plan rendered before its files land (`init`) digests the law it will
+    // carry; the same function the envelope's `bundle.law` comes from.
+    lawDigest: lawDigest(
+      root,
+      vault.lawText.constitution,
+      vault.lawText.engine,
+      vault.engine.modules ?? [],
+    ),
   });
 }

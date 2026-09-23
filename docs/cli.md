@@ -44,14 +44,18 @@ and `trust` about this machine's grants, so they carry none.
 | `root` | the root's real path |
 | `head` | the commit HEAD names in the repository enclosing the root; `null` when git names none: no repository encloses the root, it has no commit yet, or git cannot answer there |
 | `dirty` | whether `git status` lists any change under the root, untracked files included and ignored ones not; `null` when no repository answers |
-| `law` | the law this run read: `config/constitution.json`, `config/engine.json` and the digest of each module the entry point loaded before the verb ran, in declaration order |
+| `law` | the law the bundle declares and has installed: `config/constitution.json`, `config/engine.json` and the digest of each declared module installed under its `node_modules`, in declaration order, whether or not this machine trusts it |
 | `content` | every page under the content roots, path and bytes, as the working tree holds them: an uncommitted edit moves it, and `head` does not move |
 
 Both digests are sha256 over newline-joined lines, and neither reads git or
 parses a page. `law` is over `config/constitution.json <sha256>`,
 `config/engine.json <sha256>` (of the empty text when the file is absent) and
-`module:<package> <digest>` per loaded module, the digest a trust grant pins;
-a declared module that did not load contributes no line. `content` is over
+`module:<package> <digest>` per declared module installed under the bundle's
+`node_modules`, the digest a trust grant pins; a declared module that is not
+installed contributes no line. Trust does not enter: the law is what the
+bundle declares and has installed, and a grant decides whether this machine
+will judge under it without changing what it is, so a `module-untrusted`
+refusal carries the `law` the run after the grant carries. `content` is over
 `<path> <sha256 of the page's bytes>`, one line per page under the content
 roots `config/engine.json` declares, in code-unit path order. Two directories
 holding the same bytes carry the same `law` and `content`, and `root` tells

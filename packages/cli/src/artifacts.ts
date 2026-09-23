@@ -24,11 +24,12 @@ export interface ArtifactPlan {
  * beside them through the one write loop. `brief-stale` names `check --write`.
  */
 export function briefPlan(
+  root: string,
   vault: VaultOk,
   pages: PageInput[],
   commands: readonly CommandSpec[],
 ): ArtifactPlan {
-  return { path: BRIEF_PATH, content: briefOf(vault, pages, "writer", commands) };
+  return { path: BRIEF_PATH, content: briefOf(root, vault, pages, "writer", commands) };
 }
 
 /** The writer's brief alone, through the same write loop — what `skills update` re-renders. */
@@ -36,7 +37,7 @@ export function writeBrief(root: string, commands: readonly CommandSpec[]): stri
   const vault = loadVault("brief", root);
   if (!vault.ok) return undefined;
   const pages = collectPages(root, walkPages(root, rootsOf(vault)));
-  return writeArtifacts(root, [briefPlan(vault, pages, commands)])[0];
+  return writeArtifacts(root, [briefPlan(root, vault, pages, commands)])[0];
 }
 
 export function writeArtifacts(root: string, plans: readonly ArtifactPlan[]): string[] {
@@ -67,7 +68,7 @@ export function regenerate(
     buildNameIndex(pages),
     generateOptionsFor(vault),
   );
-  return writeArtifacts(root, [...plans, briefPlan(vault, pages, commands)]);
+  return writeArtifacts(root, [...plans, briefPlan(root, vault, pages, commands)]);
 }
 
 /**

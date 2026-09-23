@@ -242,7 +242,7 @@ function inspectInit(args: CommandArgs): Inspection {
     });
   }
   // docs/cli.md §brief: the install lands the brief too.
-  const brief = briefOf(vault, pages, "writer", args.commands);
+  const brief = briefOf(args.root, vault, pages, "writer", args.commands);
   files.push({
     path: BRIEF_PATH,
     source: { text: brief },

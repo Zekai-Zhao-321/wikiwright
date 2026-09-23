@@ -6,9 +6,11 @@
 // law digest.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   appendFileSync,
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -94,6 +96,20 @@ function git(cwd: string, ...args: string[]): string {
 
 const HEX = /^[0-9a-f]{64}$/u;
 
+const sha256 = (bytes: string | Buffer): string => createHash("sha256").update(bytes).digest("hex");
+
+/** docs/cli.md §The envelope's law digest, recomputed from the files: the spelling the docs give. */
+function lawFormula(root: string, moduleLines: readonly string[]): string {
+  const engine = join(root, "config", "engine.json");
+  return sha256(
+    [
+      `config/constitution.json ${sha256(readFileSync(join(root, "config", "constitution.json")))}`,
+      `config/engine.json ${sha256(existsSync(engine) ? readFileSync(engine) : "")}`,
+      ...moduleLines,
+    ].join("\n"),
+  );
+}
+
 describe("every envelope over a vault names the bundle it read (docs/cli.md §The envelope)", () => {
   let tmp = "";
   before(() => {
@@ -172,6 +188,14 @@ describe("every envelope over a vault names the bundle it read (docs/cli.md §Th
     assert.notEqual(constitutionMoved.law, engineMoved.law, "the constitution is part of the law");
     assert.notEqual(constitutionMoved.law, first.law);
     assert.equal(constitutionMoved.content, first.content);
+  });
+
+  it("law and content are the digests docs/cli.md spells out", () => {
+    const root = layBundle(join(tmp, "formula"), "orchard");
+    const bundle = bundleOf(root, ["lint"]);
+    assert.equal(bundle.law, lawFormula(root, []));
+    const page = "wiki/pruning-roses.md";
+    assert.equal(bundle.content, sha256(`${page} ${sha256(readFileSync(join(root, page)))}`));
   });
 
   it("identical bytes in two directories give identical content and law", () => {
@@ -266,14 +290,14 @@ describe("every envelope over a vault names the bundle it read (docs/cli.md §Th
   });
 });
 
-describe("the law digest names the loaded modules (docs/cli.md §The envelope)", () => {
+describe("the law digest names every installed module, trusted or not (docs/cli.md §The envelope)", () => {
   let tmp = "";
   let root = "";
   let env: NodeJS.ProcessEnv = {};
   const installed = (): string => join(root, "node_modules", ...PROBE.split("/"));
   before(() => {
     // The neutral module fixture, placed in the bundle's own node_modules by
-    // copy and granted in a store this test owns.
+    // copy; a grant, where a case makes one, goes in a store this test owns.
     tmp = mkdtempSync(join(tmpdir(), "ww-bundle-module-"));
     root = join(tmp, "bundle-a");
     for (const part of ["config", "wiki", "package.json"]) {
@@ -291,22 +315,44 @@ describe("the law digest names the loaded modules (docs/cli.md §The envelope)",
     assert.equal(r.envelope.ok, true, JSON.stringify(r.envelope));
   };
 
-  it("a module's bytes move the law, and a verb that empties the preload still names it", () => {
+  it("an ungranted module is in the law: the refusal names the law the grant then admits", () => {
+    const refused = run(root, ["type", "list"], env);
+    assert.equal(refused.envelope.error?.["code"], "module-untrusted");
+    const untrusted = refused.envelope.metadata.bundle;
+    assert.ok(untrusted !== undefined, JSON.stringify(refused.envelope));
+    grant();
+    const granted = bundleOf(root, ["type", "list"], env);
+    assert.equal(granted.law, untrusted.law, "a grant does not change what the law is");
+
+    // The module's line is the digest the grant pinned, as docs/cli.md spells it.
+    const listed = run(root, ["modules", "list"], env);
+    const loaded = (listed.envelope.data?.["loaded"] ?? []) as { digest: string }[];
+    const digest = loaded[0]?.digest ?? "";
+    assert.match(digest, HEX);
+    assert.equal(granted.law, lawFormula(root, [`module:${PROBE} ${digest}`]));
+  });
+
+  it("a module's bytes move the law, granted or not", () => {
     grant();
     const first = bundleOf(root, ["type", "list"], env);
-    // `modules plan` forgets the preloaded set before it returns; the law it
-    // names is the one the verb ran under, not the empty cache it left.
-    const planned = bundleOf(
-      root,
-      ["modules", "plan", "--package", PROBE, "--candidate", root],
-      env,
-    );
-    assert.equal(planned.law, first.law);
-
     writeFileSync(join(installed(), "NOTES.txt"), "a file the grant did not see\n");
-    grant();
-    const moved = bundleOf(root, ["type", "list"], env);
+    const modified = run(root, ["type", "list"], env);
+    assert.equal(modified.envelope.error?.["code"], "module-modified");
+    const moved = modified.envelope.metadata.bundle;
+    assert.ok(moved !== undefined, JSON.stringify(modified.envelope));
     assert.notEqual(moved.law, first.law, "the module digest is part of the law");
     assert.equal(moved.content, first.content);
+    grant();
+    assert.equal(bundleOf(root, ["type", "list"], env).law, moved.law);
+  });
+
+  it("a declared module that is not installed contributes no line", () => {
+    const bare = join(tmp, "bare");
+    for (const part of ["config", "wiki"]) {
+      cpSync(join(root, part), join(bare, part), { recursive: true });
+    }
+    const r = run(bare, ["type", "list"], env);
+    assert.equal(r.envelope.error?.["code"], "module-unresolved");
+    assert.equal(r.envelope.metadata.bundle?.law, lawFormula(bare, []));
   });
 });

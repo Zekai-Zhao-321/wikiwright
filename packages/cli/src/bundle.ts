@@ -3,35 +3,46 @@
 // that commit, and a digest of its law and of its content) · docs/cli.md §brief
 // (the brief's header prints the law digest).
 //
-// Reads only. Nothing here writes, parses a page or loads a module: the
-// module digests arrive from the preload that already ran, and the pages are
-// read as bytes.
+// Reads only. Nothing here writes, parses a page or loads a module: a
+// module's digest is read off its installed bytes, and the pages are read as
+// bytes.
 import { existsSync, realpathSync } from "node:fs";
 import { basename, join } from "node:path";
 import { loadEngineConfig, normalizeInput } from "@wikiwright/core";
 import type { BundleIdentity } from "./envelope.ts";
 import { gitCheckoutState } from "./git.ts";
-import type { LoadedModule } from "./moduleload.ts";
+import { declaredModulesOf, type ModuleDeclaration, moduleDigest } from "./moduleload.ts";
 import { sha256Of } from "./trust.ts";
 import { CONSTITUTION_PATH, ENGINE_PATH, fsReader, readPageBytes, walkPages } from "./vaultio.ts";
 
 /**
  * The law digest: sha256 over one line per input, in a fixed order — the
  * constitution's sha256, engine.json's (the empty text's when the file is
- * absent), then each loaded module's digest in declaration order. The texts
- * are the ones the loader reads, so a brief and an envelope rendered from the
- * same files print the same digest.
+ * absent), then one line per declared module installed under the bundle's
+ * `node_modules`, in declaration order, with the digest a trust grant pins. A
+ * declared module that is not installed contributes no line.
+ *
+ * Trust does not enter. The law is what the bundle declares and has
+ * installed; a grant decides whether this machine will judge under it, and
+ * does not change what it is. So the digest is the same on every machine that
+ * holds the same bytes, and the same before a grant and after it. The texts
+ * are the ones the loader reads, and the envelope and the brief both call
+ * this, so the two print one digest.
  */
 export function lawDigest(
+  root: string,
   constitution: string,
   engine: string | undefined,
-  modules: readonly Pick<LoadedModule, "package" | "digest">[],
+  declarations: readonly ModuleDeclaration[],
 ): string {
   const lines = [
     `${CONSTITUTION_PATH} ${sha256Of(constitution)}`,
     `${ENGINE_PATH} ${sha256Of(engine ?? "")}`,
-    ...modules.map((module) => `module:${module.package} ${module.digest}`),
   ];
+  for (const declaration of declarations) {
+    const installed = moduleDigest(root, declaration.package);
+    if (installed !== undefined) lines.push(`module:${declaration.package} ${installed.sha256}`);
+  }
   return sha256Of(lines.join("\n"));
 }
 
@@ -65,16 +76,12 @@ function contentRootsOf(engine: string | undefined): readonly string[] {
 
 /**
  * docs/cli.md §The envelope: the bundle at `root`, or undefined when the root
- * holds no constitution. `modules` are the ones the entry point loaded before
- * the verb ran; a verb may empty the preload cache before it returns
- * (`modules plan` does), so they are captured by the caller rather than read
- * back here. A file that resolves outside the vault is thrown, as every read
- * of the vault throws it.
+ * holds no constitution. It loads nothing and asks no trust store, so it
+ * answers the same for a bundle whose modules this machine has not approved.
+ * A file that resolves outside the vault is thrown, as every read of the vault
+ * throws it.
  */
-export function bundleIdentity(
-  root: string,
-  modules: readonly Pick<LoadedModule, "package" | "digest">[],
-): BundleIdentity | undefined {
+export function bundleIdentity(root: string): BundleIdentity | undefined {
   if (!existsSync(join(root, CONSTITUTION_PATH))) return undefined;
   const real = realpathSync(root);
   const reader = fsReader(root);
@@ -86,7 +93,7 @@ export function bundleIdentity(
     root: real,
     head: checkout?.head ?? null,
     dirty: checkout?.dirty ?? null,
-    law: lawDigest(constitution, engine, modules),
+    law: lawDigest(root, constitution, engine, declaredModulesOf(root)),
     content: contentDigest(root, contentRootsOf(engine)),
   };
 }
