@@ -46,6 +46,16 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- The brief renders one loop per role. The consumer's names no verb: select
+  the bundle and pass its root explicitly, search every name form before
+  saying a thing is absent, keep each answer's `metadata.bundle` beside what
+  was taken from it, hand a child verbatim passages with their source, and
+  report a knowledge problem as a proposal rather than an edit. The writer's
+  five steps are unchanged, byte for byte, so a writer's generated brief does
+  not move. The maintainer's adds two to them: a queued finding is a judgment
+  to adjudicate or a law to change, never a severity to lower, and
+  `generated/` is committed with the pages it describes. Every role had been
+  handed the writer's loop, which walks a consumer into `write`.
 - The shell's modules import in one direction, and a test holds them to it.
   The registry imported every verb while `schema` and the brief imported the
   registry back, and the artifact writer imported the brief *verb*: eight
@@ -89,6 +99,10 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
+- `brief` is a consumer verb. It was ranked writer, so a session under
+  `WIKIWRIGHT_ROLE=consumer` was refused `role-forbidden` when it asked for
+  the brief `--role consumer` renders for it: the one role bounded to reading
+  could not read its own manual. `--role` still takes all three roles.
 - Every file the shell writes outside a content page — the generated
   artifacts, the machine-local trust store, the shipped skills' files and
   stamps, the freshness report — lands through the Writer's staged replace:

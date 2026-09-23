@@ -10,8 +10,9 @@ import { collectPages } from "../pages.ts";
 import type { CommandSpec, Role } from "../spec.ts";
 import { loadVault, walkPages } from "../vaultio.ts";
 
-// docs/cli.md §brief: every role has a brief, including the consumer's — a bounded reader
-// with no manual is the unrefreshed-skills defect one role down.
+// docs/cli.md §brief: every role has a brief with a loop of its own, and every
+// role may print one, the consumer included — the verb is ranked consumer, so a
+// bounded reader is never refused its own manual.
 const ROLES = ["consumer", "writer", "maintainer"] as const;
 
 /** The one renderer, so `init`, `skills update` and `check` cannot disagree. */
@@ -59,14 +60,18 @@ export function briefFindings(root: string, expected: string): Finding[] {
 
 export const briefCommand: CommandSpec = {
   name: "brief",
-  role: "writer",
+  role: "consumer",
   summary:
     "Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/.",
   positionals: [],
   flags: [
     { name: "role", type: "string", summary: "consumer | writer | maintainer (default: writer)" },
   ],
-  examples: ["wikiwright brief --role writer", "wikiwright brief --role maintainer"],
+  examples: [
+    "wikiwright brief --role writer",
+    "wikiwright brief --role maintainer",
+    "wikiwright brief --role consumer",
+  ],
   writes: false,
   needsVaultModules: true,
   run: (args) => {

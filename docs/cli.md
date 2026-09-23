@@ -266,12 +266,22 @@ What the registry rows below do not say.
   declared property names the type or an ancestor, with the path it did so
   through; on a vocabulary that declares none it is `target-not-applicable`.
 - **`brief --role <r>`** prints, under a header naming the law digest the
-  envelope's `metadata.bundle.law` carries, the role's verb list, the bundle's
-  types, every declared vocabulary's entries with their properties, its
-  vocabularies' census, the loaded modules' skill fragments and the naming
-  rules. The writer's brief is a generated artifact: `check --write` lands
-  it at `generated/BRIEF.md` beside the other three, `init` lands it the same
-  way, and `skills update` re-renders it; the verb itself writes nothing.
+  envelope's `metadata.bundle.law` carries, the role's loop and verb list, the
+  bundle's types, every declared vocabulary's entries with their properties,
+  its vocabularies' census, the loaded modules' skill fragments and the naming
+  rules. The verb is a consumer verb, so every role may print its
+  own brief; `--role` takes any of the three. The consumer's loop names no
+  verb: select the bundle and pass its root explicitly, search every name form
+  before saying a thing is absent, keep each answer's `metadata.bundle` beside
+  what was taken from it, hand a child verbatim passages with their source,
+  and report a knowledge problem as a proposal rather than an edit. The
+  writer's loop is the five steps from a search to a commit through `write`.
+  The maintainer's is the writer's five, then two: a queued finding is a
+  judgment to adjudicate or a law to change, never a severity to lower, and
+  `generated/` is committed with the pages it describes. The writer's brief
+  is a generated artifact: `check --write` lands it at `generated/BRIEF.md`
+  beside the other three, `init` lands it the same way, and `skills update`
+  re-renders it; the verb itself writes nothing.
 - **`skills status | update [--force]`** compares the installed skill files
   under `.claude/skills/` with the shipped ones by the stamp the engine wrote
   and reinstalls them; a file the bundle edited is refused unless `--force`.
@@ -355,7 +365,7 @@ Global flags, accepted by every verb:
 
 | Verb | Role | Writes | Summary |
 |---|---|---|---|
-| [`brief`](#brief) | writer | no | Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/. |
+| [`brief`](#brief) | consumer | no | Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/. |
 | [`check`](#check) | writer | yes | The aggregate pass: registry + lint + generated-drift comparison. |
 | [`fix`](#fix) | writer | yes | Apply the mechanical ops one rule licenses, all-or-nothing, and prove them gone. |
 | [`freshness`](#freshness) | maintainer | yes | Measure every pin against the origin its page names: is it still the head (default), or how far behind and is the capture stale (--fetch); --fast-forward advances the clean pins. |
@@ -384,7 +394,7 @@ Global flags, accepted by every verb:
 
 Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/.
 
-Role: `writer`. Writes: no.
+Role: `consumer`. Writes: no.
 
 | Flag | Meaning |
 |---|---|
@@ -393,6 +403,7 @@ Role: `writer`. Writes: no.
 ```text
 wikiwright brief --role writer
 wikiwright brief --role maintainer
+wikiwright brief --role consumer
 ```
 
 ### check

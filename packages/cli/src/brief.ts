@@ -98,6 +98,39 @@ function observedLines(
   ];
 }
 
+/**
+ * docs/cli.md §brief: the writer's loop, the steps from a name to a landed page.
+ * The maintainer's extends it, so the two cannot drift apart.
+ */
+const WRITER_LOOP: readonly string[] = [
+  "1. `search` every name form, in both scripts, before you create anything.",
+  "2. `type show <type> --brief` — the contract, with live counts.",
+  "3. Draft the Markdown, then `write <path> --dry-run` and read the findings.",
+  "4. `write` for real; the engine stamps the dates and writes the History line.",
+  "5. Commit. The gate runs the same judge over what the commit would contain.",
+];
+
+/**
+ * docs/cli.md §brief: "The loop", one per role. The consumer's names no verb:
+ * its `## Verbs` section renders the only ones it may run, and a loop that
+ * named another would hand a reader a step the binary refuses.
+ */
+const LOOPS: Readonly<Record<Role, readonly string[]>> = {
+  consumer: [
+    "1. Select the bundle first, and pass its root explicitly with `--root` on every command.",
+    "2. Search every name form, in both scripts, before you say a thing is absent; read the coverage block.",
+    "3. Read the sections the task needs. Keep each answer's `metadata.bundle`, and a page's digest where the answer carries one, beside what you took from it; keep a qualification with the claim it qualifies.",
+    "4. Hand a child the passages it needs verbatim, with their bundle, path and digest, and addresses for the rest; never an alias.",
+    "5. Report a knowledge problem as a proposal to the bundle's feedback destination or to your caller, never by editing a copy you were given to read.",
+  ],
+  writer: WRITER_LOOP,
+  maintainer: [
+    ...WRITER_LOOP,
+    "6. A finding with `queue` is a judgment: adjudicate it or change the law, and never lower a severity to quiet it.",
+    "7. Commit `generated/` with the pages it describes.",
+  ],
+};
+
 export interface BriefInput {
   role: Role;
   /**
@@ -177,11 +210,7 @@ export function renderBrief(input: BriefInput): string {
     "",
     "## The loop",
     "",
-    "1. `search` every name form, in both scripts, before you create anything.",
-    "2. `type show <type> --brief` — the contract, with live counts.",
-    "3. Draft the Markdown, then `write <path> --dry-run` and read the findings.",
-    "4. `write` for real; the engine stamps the dates and writes the History line.",
-    "5. Commit. The gate runs the same judge over what the commit would contain.",
+    ...LOOPS[role],
     "",
     "## Findings",
     "",
