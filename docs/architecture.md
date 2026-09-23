@@ -48,6 +48,7 @@ packages/cli/src/
   writer.ts    the shell half of the Writer: prove, then temp-and-rename
   atomicwrite.ts   the one staged replace every non-page write lands through
   moduleload.ts, modulefixture.ts, trust.ts   the module ladder
+  storelock.ts the lock a machine-local store is read, changed and written under
   hooks.ts, staged.ts   the installed hooks and the staged gate
   verbs/<name>.ts   one CommandSpec per verb
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit

@@ -825,6 +825,8 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
     "the generated artifacts and the writer's brief — one generator, byte-reproducible",
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
   "skills.ts": "the shipped skills' install and its stamp",
+  "storelock.ts":
+    "the lock file beside a machine-local store, created exclusively and removed once the change lands",
   "trust.ts": "the machine-local trust store",
   "writer.ts": "THE Writer: every content page, temp-then-rename",
   // `init`'s tree copy is the one declared exception: it lands a starter,
