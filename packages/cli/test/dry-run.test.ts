@@ -386,7 +386,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
     try {
       const ops = opsOf(run(tmp, ["init", "--dry-run"]).envelope);
       const paths = plannedPaths(ops);
-      for (const skill of ["wikiwright-maintain", "wikiwright-write"]) {
+      for (const skill of ["wikiwright-consume", "wikiwright-maintain", "wikiwright-write"]) {
         assert.equal(
           paths.includes(`.claude/skills/${skill}/SKILL.md`),
           true,

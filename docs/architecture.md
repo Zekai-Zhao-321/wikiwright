@@ -54,7 +54,7 @@ packages/cli/src/
   hooks.ts, staged.ts   the installed hooks and the staged gate
   verbs/<name>.ts   one CommandSpec per verb
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit
-packages/cli/skills/          the two shipped skills and the generated playbook
+packages/cli/skills/          the three shipped skills (consume, write, maintain) and the generated playbook
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
 devwiki/                      this repository's own bundle, over the kit, judged by the suite
 fixtures/conformance/         the neutral module fixture and two bundles consuming it

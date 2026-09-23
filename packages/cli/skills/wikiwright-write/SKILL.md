@@ -43,23 +43,10 @@ the sentence reads better without it. The hedge is the fact.
 (weekday lunches, this project's UI), the condition, and how it was said — a
 casual aside, a repeated remark, an emphatic one, one said while venting.
 
-**An inference describes behaviour, not taste.** "Ordered delivery three times a
-week" is an observation; "likes delivery" is a conclusion you did not witness. If
-the taste is stated, mark it as stated. If it is inferred, write the behaviour the
-inference rests on.
-
 **A later contrary observation is not a correction.** For an accumulating
 category — a preference, an opinion, a habit — variance across time and mood *is*
 the signal. Add the new observation with its date; do not overwrite the old one.
 Only an explicit retraction retires it.
-
-## The two-week test, and promotion on repetition
-
-Write a fact only if it will still matter in two weeks. A mood, a piece of venting,
-a hyperbole said once — "I never want to see them again" — belongs in the day's
-journal as *what was said, when*, and never as a standing fact about a person.
-Promote it only when it recurs on a separate occasion, or when the person confirms
-it as a standing position.
 
 ## A citation is a relation
 

@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SHIPPED = fileURLToPath(new URL("../skills", import.meta.url));
 const STAMP = ".wikiwright-stamp.json";
-const SKILLS = ["wikiwright-maintain", "wikiwright-write"];
+const SKILLS = ["wikiwright-consume", "wikiwright-maintain", "wikiwright-write"];
 
 interface Outcome {
   status: number;
@@ -129,7 +129,7 @@ describe("init stamps what it installed (docs/cli.md §skills)", () => {
         skill: string;
         files: Array<{ state: string }>;
       }>;
-      assert.equal(skills.length, 2);
+      assert.equal(skills.length, SKILLS.length);
       for (const skill of skills) {
         assert.equal(skill.files.length > 0, true);
         for (const file of skill.files) assert.equal(file.state, "current");
@@ -227,6 +227,7 @@ describe("check reports the drift it can prove (docs/cli.md §skills)", () => {
       assert.deepEqual(
         findings(check).map((f) => [f.ruleId, f.severity, f.path]),
         [
+          ["skills-missing", "info", ".claude/skills/wikiwright-consume"],
           ["skills-missing", "info", ".claude/skills/wikiwright-maintain"],
           ["skills-missing", "info", ".claude/skills/wikiwright-write"],
         ],
@@ -333,11 +334,8 @@ describe("the skills root decides scope, not each directory (docs/cli.md §skill
       const before = findings(run(tmp, ["check"]));
       assert.deepEqual(
         before.map((f) => [f.ruleId, f.severity]),
-        [
-          ["skills-stale", "warning"],
-          ["skills-stale", "warning"],
-        ],
-        "both shipped skills are in scope because the root exists",
+        SKILLS.map(() => ["skills-stale", "warning"]),
+        "every shipped skill is in scope because the root exists",
       );
 
       const update = run(tmp, ["skills", "update"]);

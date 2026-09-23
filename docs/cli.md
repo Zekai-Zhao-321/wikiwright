@@ -323,6 +323,15 @@ What the registry rows below do not say.
 - **`skills status | update [--force]`** compares the installed skill files
   under `.claude/skills/` with the shipped ones by the stamp the engine wrote
   and reinstalls them; a file the bundle edited is refused unless `--force`.
+  Three skills ship, each the judgment half of one way of working with a
+  bundle, beside the brief that carries its verbs: `wikiwright-consume`, for
+  using what a bundle knows (which bundle answered, the section rather than the
+  sentence, a child handed the words with their source, a problem reported as
+  a proposal); `wikiwright-write`, for adding to one (what deserves a page, the
+  identity guard, the hedge kept verbatim, a citation as a relation);
+  `wikiwright-maintain`, for answering its findings and changing its law, with
+  the lint-response playbook the engine generates beside it. `init` installs
+  every skill the package ships.
 - **`modules list | plan`**, **`trust grant | list | revoke module:<pkg>`**
   are the module surface; see [extending.md](extending.md). A `modules list`
   row carries `contributes` (types, fragments, templates, skill fragments,

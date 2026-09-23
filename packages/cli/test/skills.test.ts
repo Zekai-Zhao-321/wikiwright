@@ -18,7 +18,7 @@ import { COMMANDS } from "../src/commands.ts";
 import { ROLE_RANK } from "../src/spec.ts";
 
 const SKILLS_DIR = fileURLToPath(new URL("../skills", import.meta.url));
-const SKILLS = ["wikiwright-maintain", "wikiwright-write"];
+const SKILLS = ["wikiwright-consume", "wikiwright-maintain", "wikiwright-write"];
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
 function skillFiles(skill: string): string[] {
@@ -62,9 +62,34 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
     });
   }
 
-  it("two hand-written files replace six (docs/cli.md §skills)", () => {
+  it("three hand-written files replace six (docs/cli.md §skills)", () => {
     const hand = SKILLS.flatMap((s) => handWritten(s));
-    assert.equal(hand.length, 2, `hand-written skill files: ${JSON.stringify(hand)}`);
+    assert.equal(hand.length, 3, `hand-written skill files: ${JSON.stringify(hand)}`);
+  });
+
+  it("the shipped skills are these three, one for each way of working with a bundle", () => {
+    assert.deepEqual(readdirSync(SKILLS_DIR).sort(), SKILLS);
+    // Each description opens on its own work, so reading, writing and
+    // maintaining a bundle each call for one skill and not the others.
+    const openings = SKILLS.map((skill) => {
+      const text = readFileSync(join(SKILLS_DIR, skill, "SKILL.md"), "utf8");
+      return /^description: Judgment for ([a-z]+) /mu.exec(text)?.[1];
+    });
+    assert.deepEqual(openings, ["using", "maintaining", "writing"]);
+  });
+
+  it("the consume skill says the brief is the engine's to print, for any connected bundle", () => {
+    const text = readFileSync(join(SKILLS_DIR, "wikiwright-consume", "SKILL.md"), "utf8");
+    assert.match(text, /generated\/BRIEF\.md/u);
+    assert.match(
+      text,
+      /engine prints the same brief for any connected bundle, from any directory/u,
+    );
+    assert.match(
+      text,
+      /Which bundle an answer came from, and at which version, is part of the answer/u,
+    );
+    assert.match(text, /## Loading this skill grants nothing/u);
   });
 });
 
@@ -158,7 +183,7 @@ describe("the reverse gate: every writer verb has a workflow slot (docs/architec
 });
 
 describe("init installs the skills into the vault (docs/cli.md §brief, docs/cli.md §init)", () => {
-  it("copies both skills under .claude/skills/", () => {
+  it("copies every shipped skill under .claude/skills/, the three of them", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-skill-"));
     try {
       const r = spawnSync(process.execPath, [CLI, "init", "--root", tmp], { encoding: "utf8" });
@@ -166,6 +191,8 @@ describe("init installs the skills into the vault (docs/cli.md §brief, docs/cli
       for (const skill of SKILLS) {
         assert.equal(existsSync(join(tmp, `.claude/skills/${skill}/SKILL.md`)), true);
       }
+      // init reads the shipped directory, so what lands is what ships.
+      assert.deepEqual(readdirSync(join(tmp, ".claude", "skills")).sort(), SKILLS);
       // docs/cli.md §brief: the install lands the verbs beside the judgment.
       assert.equal(existsSync(join(tmp, "generated/BRIEF.md")), true);
     } finally {

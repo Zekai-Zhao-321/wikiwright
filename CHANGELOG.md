@@ -9,6 +9,15 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- A third shipped skill, `wikiwright-consume`: the judgment for using what a
+  bundle knows rather than writing it. Choose the bundle and say which one
+  every answer came from; read the coherent section, qualifications with
+  their claims; hand a subagent the words verbatim with the bundle, the path
+  and the digest, never an alias; report a knowledge problem as a proposal to
+  the connection's feedback destination, never an edit to an installed copy.
+  It names no verb: the engine prints the brief for any connected bundle, from
+  any directory. `init` and `skills update` install it beside the other two.
+
 - `read <page> [--section <heading>] [--budget <bytes>]` returns a page's
   sections verbatim, cut at its type's section depth, each with its address,
   lines and byte length, beside the page's type, chain, frontmatter and
@@ -85,6 +94,15 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- `wikiwright-write` no longer carries the two-week test with promotion on
+  repetition, nor the rule that an inference describes behaviour rather than
+  taste. Both are retention conventions of one kind of wiki, a personal
+  memory, and belong to a kit that serves it, not to the engine's skill for
+  every bundle; the evidence discipline stays (the hedge kept verbatim, the
+  context envelope, a contrary observation added rather than overwritten).
+  `wikiwright-maintain` gains one section: a bundle's guidance governs that
+  bundle alone, a connection's kind and a session's role are guardrails on
+  the command line and not isolation, and no skill grants trust.
 - The brief renders one loop per role. The consumer's names no verb: select
   the bundle and pass its root explicitly, search every name form before
   saying a thing is absent, keep each answer's `metadata.bundle` beside what

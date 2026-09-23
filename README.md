@@ -87,7 +87,7 @@ wikiwright init
 ```
 
 `init` lands the `base` starter: `config/constitution.json` with one type,
-`config/engine.json`, `meta/charter.md`, the two skills under
+`config/engine.json`, `meta/charter.md`, the three skills under
 `.claude/skills/`, the generated artifacts, the writer's brief and the
 pre-commit hook. `check` is green on the first run.
 
@@ -287,7 +287,8 @@ does not cover.
 | [AGENTS.md](AGENTS.md) | the operating rules for an agent working in this repository |
 
 The bundle's own manual is the writer's brief, `generated/BRIEF.md`, and the
-two skills `init` installs under `.claude/skills/`.
+three skills `init` installs under `.claude/skills/`: one for using a bundle,
+one for writing into it and one for maintaining it.
 
 ## Contributing
 
