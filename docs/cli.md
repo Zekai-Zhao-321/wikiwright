@@ -128,6 +128,42 @@ the report it always writes.
 | `WIKIWRIGHT_TRUST_FILE` | `trust`, the module loader | the path of the machine-local grant store (default `~/.config/wikiwright/trust.json`) |
 | `WIKIWRIGHT_BUNDLES_FILE` | `bundles`, `--bundle` | the path of the machine-local bundles registry (default `~/.config/wikiwright/bundles.json`) |
 
+## The plugin and its hooks
+
+The package root, `packages/cli`, is also a Claude Code plugin.
+`.claude-plugin/plugin.json` names it `wikiwright` at the package's version;
+its skills are the three under `skills/`; `hooks/hooks.json` runs two scripts
+with `node`, `SessionStart` with no matcher and `PostToolUse` on
+`Edit|Write`. Each reads the hook's JSON on stdin, runs this package's own
+binary with the session's environment (so `WIKIWRIGHT_BUNDLES_FILE`,
+`WIKIWRIGHT_TRUST_FILE` and `WIKIWRIGHT_ROLE` apply), prints at most one JSON
+object whose `hookSpecificOutput` carries `hookEventName` and
+`additionalContext`, and exits 0 whatever happens: on stdin that is not a JSON
+object, a missing binary or any error, it prints nothing.
+
+- `hooks/session-start.mjs` runs `bundles list` and, when a connected bundle
+  is present, names each one: its name, kind, label, head (or `no commit`),
+  whether it is dirty, and the page to read first where the connection sets
+  one; then that every command takes `--bundle <name>` or `--root <dir>` and
+  that the brief prints for the session's role. When the hook's `source` is
+  `compact` or `resume`, the first line says the connections are being
+  re-established from current state. It prints no page content, and nothing
+  when no bundle is connected.
+- `hooks/post-edit.mjs` takes `tool_input.file_path` and finds the connection
+  whose root holds the file and whose content roots, read from
+  `config/engine.json`, hold its path; a file outside every connection gets
+  nothing. For an `installed` connection it says the page is in a read-only
+  copy and where a change goes. Otherwise it runs `lint --page` on the page:
+  under a role that may not lint, it says the session may not write the
+  bundle; else it names the finding count and each finding's rule, line,
+  message and route, and says that this judged the working-tree page against
+  the current law and is not the staged gate's verdict.
+
+`hooks-scripts.test.ts` holds the scripts to the input and output shapes the
+Claude Code hooks reference documents. Host behaviour — whether and how a host
+runs these hooks and uses their output — has not been verified in this
+repository.
+
 ## Notes per verb
 
 What the registry rows below do not say.

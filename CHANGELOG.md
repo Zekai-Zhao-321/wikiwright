@@ -9,6 +9,18 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- The package is a Claude Code plugin: `.claude-plugin/plugin.json` beside
+  the three skills, and `hooks/hooks.json` with two plain-Node scripts. At
+  session start one names each connected bundle that is present — kind,
+  label, head, dirty, the page to read first — and how a command names one,
+  saying so again after a compaction or a resume. After an Edit or a Write to
+  a connected bundle's page the other says what the edit means there: an
+  installed copy is read only and its changes go to its feedback
+  destination; a session whose role may not write is told so; otherwise the
+  page's findings, each with its route. Both print nothing when there is
+  nothing to say or anything goes wrong, and exit 0. They are tested against
+  the documented hook input and output; host behaviour is not verified here.
+
 - A third shipped skill, `wikiwright-consume`: the judgment for using what a
   bundle knows rather than writing it. Choose the bundle and say which one
   every answer came from; read the coherent section, qualifications with

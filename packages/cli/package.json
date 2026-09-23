@@ -15,7 +15,9 @@
   "files": [
     "dist",
     "skills",
-    "constitutions"
+    "constitutions",
+    ".claude-plugin",
+    "hooks"
   ],
   "engines": {
     "node": ">=22.12.0"
