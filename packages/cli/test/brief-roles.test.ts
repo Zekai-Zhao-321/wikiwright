@@ -1,7 +1,9 @@
 // docs/cli.md §brief: `brief` is a consumer verb, so every role may print its own
-// brief, and "The loop" is the role's: the consumer's names no verb and its
-// verb list holds no writing verb, the writer's is the five steps it has always
-// been, and the maintainer's is the writer's five and two more.
+// brief, and without `--role` it prints the session's. "The loop" and
+// "Findings" are the role's: the consumer's loop names no verb, its verb list
+// holds no writing verb and its Findings runs nothing; the writer's loop is the
+// five steps it has always been, and the maintainer's is the writer's five and
+// two more; the writer and the maintainer read one Findings paragraph.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { before, describe, it } from "node:test";
@@ -21,19 +23,47 @@ const WRITER_LOOP = [
   "5. Commit. The gate runs the same judge over what the commit would contain.",
 ];
 
+/** The writer's Findings paragraph as the brief printed it before it depended on the role. */
+const WRITER_FINDINGS = [
+  "If a finding has `fix`, run its `argv` (fill any placeholders first). If it has",
+  "`queue`, it is not yours — continue. A queued finding on a line you did not write",
+  "is a warning, not a block.",
+];
+
+/** Every role keeps these two in its Findings section. */
+const CAPS_SENTENCE = [
+  "One sentence on search: not-found is only as good as the coverage block. Never",
+  "claim absence while `caps.hit` is true — the cap cut the list before the end.",
+];
+
 const MAINTAINER_EXTRA = [
   "6. A finding with `queue` is a judgment: adjudicate it or change the law, and never lower a severity to quiet it.",
   "7. Commit `generated/` with the pages it describes.",
 ];
 
+/** `brief` over the minimal fixture, with the session's `WIKIWRIGHT_ROLE` set or removed. */
+function brief(
+  argv: readonly string[],
+  sessionRole: string | undefined,
+): { status: number; role: string; text: string } {
+  const env = { ...process.env };
+  if (sessionRole === undefined) delete env["WIKIWRIGHT_ROLE"];
+  else env["WIKIWRIGHT_ROLE"] = sessionRole;
+  const r = spawnSync(process.execPath, [CLI, "brief", ...argv, "--root", FIXTURE], {
+    encoding: "utf8",
+    env,
+  });
+  const envelope = JSON.parse(r.stdout) as { data?: { role?: string; brief?: string } };
+  return {
+    status: r.status ?? -1,
+    role: envelope.data?.role ?? "",
+    text: envelope.data?.brief ?? "",
+  };
+}
+
 /** The brief a role prints over the minimal fixture, under a session of that role. */
 function briefOf(role: string): { status: number; text: string } {
-  const r = spawnSync(process.execPath, [CLI, "brief", "--role", role, "--root", FIXTURE], {
-    encoding: "utf8",
-    env: { ...process.env, WIKIWRIGHT_ROLE: role },
-  });
-  const envelope = JSON.parse(r.stdout) as { data?: { brief?: string } };
-  return { status: r.status ?? -1, text: envelope.data?.brief ?? "" };
+  return brief(["--role", role], role);
 }
 
 /** The lines of one `## ` section, without its heading and blank lines. */
@@ -101,5 +131,41 @@ describe("every role prints its own brief (docs/cli.md §brief)", () => {
     const maintainer = briefOf("maintainer");
     assert.equal(maintainer.status, 0, maintainer.text);
     assert.deepEqual(section(maintainer.text, "The loop"), [...WRITER_LOOP, ...MAINTAINER_EXTRA]);
+  });
+
+  it("the consumer's Findings tells it to run nothing, and keeps the pass count and caps.hit", () => {
+    const findings = section(consumer.text, "Findings");
+    const text = findings.join("\n");
+    assert.equal(/\b[Rr]un (?:its|the|this|that) `?argv/u.test(text), false, text);
+    assert.equal(text.includes("run its `argv`"), false, text);
+    assert.match(text, /report the finding and run nothing/u);
+    assert.match(text, /^Of \d+ passes, \d+ name a fixer; the rest are queues or census rows\.$/mu);
+    assert.deepEqual(findings.slice(-2), CAPS_SENTENCE);
+  });
+
+  it("the writer's and the maintainer's Findings are the paragraph they always were", () => {
+    for (const role of ["writer", "maintainer"]) {
+      const findings = section(briefOf(role).text, "Findings");
+      assert.deepEqual(findings.slice(0, 3), WRITER_FINDINGS, role);
+      assert.deepEqual(findings.slice(-2), CAPS_SENTENCE, role);
+    }
+  });
+});
+
+describe("without --role, the brief is the session's (docs/cli.md §brief)", () => {
+  it("a consumer session gets the consumer's brief", () => {
+    const r = brief([], "consumer");
+    assert.equal(r.status, 0, r.text);
+    assert.equal(r.role, "consumer");
+    assert.match(r.text, /^# wikiwright — the consumer's brief$/mu);
+  });
+
+  it("a session that declares no role gets the writer's, and an explicit flag wins", () => {
+    const unset = brief([], undefined);
+    assert.equal(unset.status, 0, unset.text);
+    assert.equal(unset.role, "writer");
+    const flagged = brief(["--role", "maintainer"], "consumer");
+    assert.equal(flagged.status, 0, flagged.text);
+    assert.equal(flagged.role, "maintainer");
   });
 });

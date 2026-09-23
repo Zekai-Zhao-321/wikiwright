@@ -220,7 +220,6 @@ function plannedPaths(ops: readonly PlanOp[]): string[] {
 
 /** One dry-run invocation per writing verb, each one that succeeds on the fixture. */
 const DRY_RUNS: Record<string, string[]> = {
-  brief: ["brief", "--role", "writer", "--write", "--dry-run"],
   check: ["check", "--dry-run"],
   fix: [
     "fix",

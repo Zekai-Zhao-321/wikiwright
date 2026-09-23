@@ -7,7 +7,7 @@ import { BRIEF_PATH, briefOf } from "../brief.ts";
 import { fail, ok } from "../envelope.ts";
 import { rootsOf } from "../law.ts";
 import { collectPages } from "../pages.ts";
-import type { CommandSpec, Role } from "../spec.ts";
+import { type CommandSpec, declaredRole, type Role } from "../spec.ts";
 import { loadVault, walkPages } from "../vaultio.ts";
 
 // docs/cli.md §brief: every role has a brief with a loop of its own, and every
@@ -65,7 +65,11 @@ export const briefCommand: CommandSpec = {
     "Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/.",
   positionals: [],
   flags: [
-    { name: "role", type: "string", summary: "consumer | writer | maintainer (default: writer)" },
+    {
+      name: "role",
+      type: "string",
+      summary: "consumer | writer | maintainer (default: WIKIWRIGHT_ROLE when set, else writer)",
+    },
   ],
   examples: [
     "wikiwright brief --role writer",
@@ -75,8 +79,11 @@ export const briefCommand: CommandSpec = {
   writes: false,
   needsVaultModules: true,
   run: (args) => {
+    // docs/cli.md §brief: the flag, else the session's own role, else the
+    // writer's — a bounded session that asks for its brief gets its own, not
+    // one listing verbs it may not run.
     const raw = args.flags["role"];
-    const role = typeof raw === "string" ? raw : "writer";
+    const role = typeof raw === "string" ? raw : (declaredRole() ?? "writer");
     if (!(ROLES as readonly string[]).includes(role)) {
       return fail("brief", "usage", "unknown-role", `no brief for the role "${role}"`, {
         details: { valid_values: [...ROLES] },

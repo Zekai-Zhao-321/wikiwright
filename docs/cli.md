@@ -117,7 +117,7 @@ the report it always writes.
 
 | Variable | Read by | Effect |
 |---|---|---|
-| `WIKIWRIGHT_ROLE` | the shell, before parsing | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
+| `WIKIWRIGHT_ROLE` | the shell, before parsing; `brief`, as its default `--role` | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
 | `WIKIWRIGHT_TODAY` | `write`, `new`, `trust grant`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
 | `WIKIWRIGHT_TRUST_FILE` | `trust`, the module loader | the path of the machine-local grant store (default `~/.config/wikiwright/trust.json`) |
@@ -269,19 +269,24 @@ What the registry rows below do not say.
   envelope's `metadata.bundle.law` carries, the role's loop and verb list, the
   bundle's types, every declared vocabulary's entries with their properties,
   its vocabularies' census, the loaded modules' skill fragments and the naming
-  rules. The verb is a consumer verb, so every role may print its
-  own brief; `--role` takes any of the three. The consumer's loop names no
-  verb: select the bundle and pass its root explicitly, search every name form
-  before saying a thing is absent, keep each answer's `metadata.bundle` beside
-  what was taken from it, hand a child verbatim passages with their source,
-  and report a knowledge problem as a proposal rather than an edit. The
-  writer's loop is the five steps from a search to a commit through `write`.
-  The maintainer's is the writer's five, then two: a queued finding is a
-  judgment to adjudicate or a law to change, never a severity to lower, and
-  `generated/` is committed with the pages it describes. The writer's brief
-  is a generated artifact: `check --write` lands it at `generated/BRIEF.md`
-  beside the other three, `init` lands it the same way, and `skills update`
-  re-renders it; the verb itself writes nothing.
+  rules. The verb is a consumer verb, so every role may print its own brief;
+  `--role` takes any of the three and defaults to the session's
+  `WIKIWRIGHT_ROLE`, or to `writer` when the session declares none. The
+  consumer's loop names no verb: select the bundle and pass its root
+  explicitly, search every name form before saying a thing is absent, keep
+  each answer's `metadata.bundle` beside what was taken from it, hand a child
+  verbatim passages with their source, and report a knowledge problem as a
+  proposal rather than an edit. The writer's loop is the five steps from a
+  search to a commit through `write`. The maintainer's is the writer's five,
+  then two: a queued finding is a judgment to adjudicate or a law to change,
+  never a severity to lower, and `generated/` is committed with the pages it
+  describes. The "Findings" paragraph is the role's too: the writer and the
+  maintainer run a finding's `fix` argv and leave a `queue` alone; the
+  consumer runs nothing, reports a `fix` finding for a writer and leaves a
+  `queue` to a maintainer. The writer's brief is a generated artifact:
+  `check --write` lands it at `generated/BRIEF.md` beside the other three,
+  `init` lands it the same way, and `skills update` re-renders it; the verb
+  itself writes nothing.
 - **`skills status | update [--force]`** compares the installed skill files
   under `.claude/skills/` with the shipped ones by the stamp the engine wrote
   and reinstalls them; a file the bundle edited is refused unless `--force`.
@@ -398,7 +403,7 @@ Role: `consumer`. Writes: no.
 
 | Flag | Meaning |
 |---|---|
-| `--role <value>` | consumer \| writer \| maintainer (default: writer) |
+| `--role <value>` | consumer \| writer \| maintainer (default: WIKIWRIGHT_ROLE when set, else writer) |
 
 ```text
 wikiwright brief --role writer

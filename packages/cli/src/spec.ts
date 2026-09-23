@@ -108,6 +108,17 @@ export const ROLE_RANK = { consumer: 0, writer: 1, maintainer: 2 } as const;
 
 export type Role = keyof typeof ROLE_RANK;
 
+/**
+ * docs/cli.md §Environment: the role this session declares in `WIKIWRIGHT_ROLE`,
+ * or undefined when it declares none (unset or empty). The one reader of the
+ * variable: `main.ts` bounds the surface by it and refuses a value that is not a
+ * role before any verb runs, and `brief` takes it as its default `--role`.
+ */
+export function declaredRole(): string | undefined {
+  const declared = process.env["WIKIWRIGHT_ROLE"];
+  return declared === undefined || declared.length === 0 ? undefined : declared;
+}
+
 interface CommandBase {
   name: string;
   role: Role;

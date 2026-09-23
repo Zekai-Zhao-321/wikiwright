@@ -55,7 +55,10 @@ version` prints the engine version and the commit a binary was built from.
   not move. The maintainer's adds two to them: a queued finding is a judgment
   to adjudicate or a law to change, never a severity to lower, and
   `generated/` is committed with the pages it describes. Every role had been
-  handed the writer's loop, which walks a consumer into `write`.
+  handed the writer's loop, which walks a consumer into `write`. The
+  "Findings" paragraph is the role's too: the consumer's runs nothing, since a
+  `fix` argv is a writer's to run and a `queue` a maintainer's to judge; the
+  writer's and the maintainer's paragraph is unchanged.
 - The shell's modules import in one direction, and a test holds them to it.
   The registry imported every verb while `schema` and the brief imported the
   registry back, and the artifact writer imported the brief *verb*: eight
@@ -102,7 +105,10 @@ version` prints the engine version and the commit a binary was built from.
 - `brief` is a consumer verb. It was ranked writer, so a session under
   `WIKIWRIGHT_ROLE=consumer` was refused `role-forbidden` when it asked for
   the brief `--role consumer` renders for it: the one role bounded to reading
-  could not read its own manual. `--role` still takes all three roles.
+  could not read its own manual. `--role` still takes all three roles, and
+  without it the brief is the session's `WIKIWRIGHT_ROLE`, or the writer's
+  when the session declares none: a consumer session that asked for its
+  brief was handed the writer's.
 - Every file the shell writes outside a content page — the generated
   artifacts, the machine-local trust store, the shipped skills' files and
   stamps, the freshness report — lands through the Writer's staged replace:
@@ -176,14 +182,14 @@ version` prints the engine version and the commit a binary was built from.
 - `gate` and `lint --staged` read the index once: the staged diff and the
   index listing were each spawned again for the second pass, the one over the
   roots the staged constitution names, and the diff a third time before both.
-  A one-page commit now spawns 7 git processes. Interleaved against the
-  previous build, the gate over a small repository fell from 172 ms to
-  154 ms and over the embedded devwiki from 270 ms to 252 ms; the
-  envelopes are identical.
+  A one-page commit now spawns 8 git processes, one of them the `git status`
+  of the envelope's bundle block. Interleaved against the previous build,
+  the gate over a small repository fell from 172 ms to 154 ms and over the
+  embedded devwiki from 270 ms to 252 ms; the envelopes are identical.
 - The gate reads the HEAD bytes of every changed and deleted page with one
   `cat-file --batch-check` and the batch read the staged pages already use,
   where it spawned one `git show` per page. A commit of 100 changed pages in
-  a 1,000-page repository spawned 106 git processes and spawns 7, and gates
+  a 1,000-page repository spawned 106 git processes and spawns 8, and gates
   in 0.52 s instead of 1.13 s; a one-page commit is unchanged, and the
   envelopes are identical. The batch parser now reads a `missing` line
   whose name holds a space.

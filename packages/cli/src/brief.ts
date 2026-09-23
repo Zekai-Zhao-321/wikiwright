@@ -131,6 +131,27 @@ const LOOPS: Readonly<Record<Role, readonly string[]>> = {
   ],
 };
 
+/** docs/cli.md §brief: what the writer does with a finding, which the maintainer's brief keeps. */
+const WRITER_FINDINGS: readonly string[] = [
+  "If a finding has `fix`, run its `argv` (fill any placeholders first). If it has",
+  "`queue`, it is not yours — continue. A queued finding on a line you did not write",
+  "is a warning, not a block.",
+];
+
+/**
+ * docs/cli.md §brief: the "Findings" paragraph, one per role. A consumer runs no
+ * writing verb, so its paragraph says whose a finding is rather than how to act on it.
+ */
+const FINDINGS: Readonly<Record<Role, readonly string[]>> = {
+  consumer: [
+    "A finding with `fix` names an argv a writer runs: report the finding and run nothing.",
+    "A finding with `queue` is a judgment for a maintainer. A queued finding on a line you",
+    "did not write is a warning, not a block.",
+  ],
+  writer: WRITER_FINDINGS,
+  maintainer: WRITER_FINDINGS,
+};
+
 export interface BriefInput {
   role: Role;
   /**
@@ -214,9 +235,7 @@ export function renderBrief(input: BriefInput): string {
     "",
     "## Findings",
     "",
-    "If a finding has `fix`, run its `argv` (fill any placeholders first). If it has",
-    "`queue`, it is not yours — continue. A queued finding on a line you did not write",
-    "is a warning, not a block.",
+    ...FINDINGS[role],
     "",
     `Of ${rows.length} passes, ${fixRouted} name a fixer; the rest are queues or census rows.`,
     "",

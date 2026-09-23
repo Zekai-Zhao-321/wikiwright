@@ -36,7 +36,7 @@ packages/core/src/
 packages/cli/src/
   main.ts      dispatch, the role bound, --help, the module preload, the bundle block, one stderr writer
   commands.ts  the COMMANDS array and nothing else
-  spec.ts      CommandSpec, FlagSpec, Plan, ROLE_RANK, DRY_RUN_FLAG
+  spec.ts      CommandSpec, FlagSpec, Plan, ROLE_RANK, declaredRole, DRY_RUN_FLAG
   brief.ts     the brief's renderer, below every verb that renders one
   argv.ts      the parser built from the registry
   envelope.ts  ok, fail, EXIT, verdictEnvelope, capOptions

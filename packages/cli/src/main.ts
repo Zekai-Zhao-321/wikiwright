@@ -6,7 +6,14 @@ import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
 import { declaredModulesOf, type LoadedModule, preloadModules } from "./moduleload.ts";
-import { type CommandSpec, flagsOf, GLOBAL_FLAGS, ROLE_RANK, type Role } from "./spec.ts";
+import {
+  type CommandSpec,
+  declaredRole,
+  flagsOf,
+  GLOBAL_FLAGS,
+  ROLE_RANK,
+  type Role,
+} from "./spec.ts";
 
 function emit(result: CommandResult): void {
   process.stdout.write(`${JSON.stringify(result.envelope, null, 2)}\n`);
@@ -115,8 +122,8 @@ const ROLES = Object.keys(ROLE_RANK) as readonly Role[];
  * wrong, which is a fail-open on the one switch whose purpose is bounding.
  */
 function currentRole(): Role | { unknown: string } {
-  const declared = process.env["WIKIWRIGHT_ROLE"];
-  if (declared === undefined || declared.length === 0) return "maintainer";
+  const declared = declaredRole();
+  if (declared === undefined) return "maintainer";
   return (ROLES as readonly string[]).includes(declared)
     ? (declared as Role)
     : { unknown: declared };
