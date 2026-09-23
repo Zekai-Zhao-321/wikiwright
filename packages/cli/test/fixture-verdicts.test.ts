@@ -23,8 +23,8 @@ interface Verdict {
   summary: Record<string, unknown>;
 }
 
-function lint(fixture: string): Verdict {
-  const r = spawnSync(process.execPath, [CLI, "lint", "--root", `${FIXTURES}${fixture}`], {
+function lint(fixture: string, verb: "lint" | "check" = "lint"): Verdict {
+  const r = spawnSync(process.execPath, [CLI, verb, "--all", "--root", `${FIXTURES}${fixture}`], {
     encoding: "utf8",
   });
   const envelope = JSON.parse(r.stdout) as {
@@ -100,4 +100,19 @@ describe("the shipped fixtures lint to the verdict the spec records (docs/archit
     }
     assert.equal(v.status, 5);
   });
+
+  // docs/cli.md §bundles: the two handbooks the connection tests read, each one
+  // type with a required climate and the same page under the same title. They
+  // carry no defect, so a finding of any severity is rot; `check` holds their
+  // tracked generated/ too.
+  for (const handbook of ["handbooks/orchard", "handbooks/allotment"]) {
+    it(`${handbook}: three pages and no finding of any severity, under lint and check`, () => {
+      for (const verb of ["lint", "check"] as const) {
+        const v = lint(handbook, verb);
+        assert.equal(v.summary["pages"], 3, verb);
+        assert.deepEqual(v.findings, [], `${handbook} under ${verb}`);
+        assert.equal(v.status, 0, verb);
+      }
+    });
+  }
 });

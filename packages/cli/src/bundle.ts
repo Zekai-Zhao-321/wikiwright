@@ -13,7 +13,13 @@ import type { BundleIdentity } from "./envelope.ts";
 import { gitCheckoutState } from "./git.ts";
 import { declaredModulesOf, type ModuleDeclaration, moduleDigest } from "./moduleload.ts";
 import { sha256Of } from "./trust.ts";
-import { CONSTITUTION_PATH, ENGINE_PATH, fsReader, readPageBytes, walkPages } from "./vaultio.ts";
+import {
+  CONSTITUTION_PATH,
+  ENGINE_PATH,
+  fsReader,
+  readPageBytes,
+  walkPages,
+} from "./vaultfiles.ts";
 
 /**
  * The law digest: sha256 over one line per input, in a fixed order — the

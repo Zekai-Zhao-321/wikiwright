@@ -27,7 +27,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
-import { describe, it } from "node:test";
+import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { trustFilePath } from "../src/trust.ts";
@@ -127,8 +127,12 @@ function snapshot(root: string, trustStore: string): Map<string, string> {
     }
   };
   walk("");
-  if (existsSync(trustStore)) {
-    out.set(trustStore, createHash("sha256").update(readFileSync(trustStore)).digest("hex"));
+  // The two machine-local stores, each outside the vault: the trust store, and
+  // the bundles registry every run keeps beside it.
+  for (const store of [trustStore, registryBeside(trustStore)]) {
+    if (existsSync(store)) {
+      out.set(store, createHash("sha256").update(readFileSync(store)).digest("hex"));
+    }
   }
   return out;
 }
@@ -172,6 +176,20 @@ function vault(engine: Record<string, unknown> = FOLDER_MODE): string {
   return dir;
 }
 
+/**
+ * The bundles registry a run uses: beside the trust store the case passes, or,
+ * for a run that passes none, one under this file's scratch directory — never
+ * the developer's, which a dry run must not read its answer from either.
+ */
+const SCRATCH_REGISTRY = join(mkdtempSync(join(tmpdir(), "ww-dryrun-registry-")), "bundles.json");
+after(() => {
+  rmSync(dirname(SCRATCH_REGISTRY), { recursive: true, force: true });
+});
+
+function registryBeside(trustStore: string | undefined): string {
+  return trustStore === undefined ? SCRATCH_REGISTRY : join(dirname(trustStore), "bundles.json");
+}
+
 function run(
   cwd: string,
   args: string[],
@@ -180,6 +198,7 @@ function run(
 ): { status: number; envelope: Record<string, unknown> } {
   const env: Record<string, string | undefined> = { ...process.env, ...PINNED_CLOCK };
   if (trustStore !== undefined) env["WIKIWRIGHT_TRUST_FILE"] = trustStore;
+  env["WIKIWRIGHT_BUNDLES_FILE"] = registryBeside(trustStore);
   const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
@@ -220,6 +239,7 @@ function plannedPaths(ops: readonly PlanOp[]): string[] {
 
 /** One dry-run invocation per writing verb, each one that succeeds on the fixture. */
 const DRY_RUNS: Record<string, string[]> = {
+  bundles: ["bundles", "add", ".", "--name", "dry-run-vault", "--dry-run"],
   check: ["check", "--dry-run"],
   fix: [
     "fix",
@@ -325,6 +345,11 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
         assert.equal(treeHash(tmp), before, `${command.name} --dry-run changed the vault tree`);
         const storeAfter = existsSync(store) ? readFileSync(store, "utf8") : null;
         assert.equal(storeAfter, storeBefore, `${command.name} --dry-run wrote the trust store`);
+        assert.equal(
+          existsSync(SCRATCH_REGISTRY),
+          false,
+          `${command.name} --dry-run wrote the bundles registry`,
+        );
       } finally {
         rmSync(tmp, { recursive: true, force: true });
       }
@@ -451,6 +476,10 @@ const REFUSALS: Refusal[] = [
   { name: "hook with an unknown subcommand", argv: ["hook", "frobnicate"] },
   { name: "trust with an unknown action", argv: ["trust", "frobnicate"] },
   {
+    name: "bundles add under a name that is not one",
+    argv: ["bundles", "add", ".", "--name", "Not A Name"],
+  },
+  {
     name: "trust grant on a module that is not installed",
     argv: ["trust", "grant", "module:@nope/kit"],
   },
@@ -528,6 +557,11 @@ describe("a dry run answers a valid invocation, never a typo (docs/cli.md §The 
           `${refusal.name}: --dry-run and the run name different errors`,
         );
         assert.equal(existsSync(store), false, `${refusal.name}: the trust store was written`);
+        assert.equal(
+          existsSync(registryBeside(store)),
+          false,
+          `${refusal.name}: the bundles registry was written`,
+        );
       } finally {
         rmSync(tmp, { recursive: true, force: true });
         rmSync(dirname(store), { recursive: true, force: true });
@@ -555,6 +589,13 @@ interface Fidelity {
 }
 
 const FIDELITY: Fidelity[] = [
+  {
+    // The plan's one path is the machine-local registry, absolute, beside the
+    // case's trust store.
+    name: "bundles add",
+    argv: ["bundles", "add", ".", "--name", "fidelity-vault"],
+    writes: true,
+  },
   { name: "check (no --write writes nothing)", argv: ["check"], writes: false },
   { name: "check --write", argv: ["check", "--write"], writes: true },
   {
@@ -821,6 +862,7 @@ function source(rel: string): string {
 const DIRECT_WRITERS: Readonly<Record<string, string>> = {
   "atomicwrite.ts":
     "the shell's one staged replace: an exclusive temp beside the target, renamed into place",
+  "connections.ts": "the machine-local bundles registry, outside every vault",
   "artifacts.ts":
     "the generated artifacts and the writer's brief — one generator, byte-reproducible",
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",

@@ -42,13 +42,15 @@ packages/cli/src/
   envelope.ts  ok, fail, EXIT, verdictEnvelope, capOptions
   clock.ts     today(): WIKIWRIGHT_TODAY or the wall clock, read once
   state.ts     fsState, indexState, overlayState, revisionState
-  vaultio.ts   the page walk, the loader, its refusals
+  vaultfiles.ts   the config paths, the reader, the page walk and the page reads, below the loader
+  vaultio.ts   the loader, its refusals
   bundle.ts    the bundle an envelope names: label, root, head, dirty, the law and content digests
   law.ts       the loaded vault to a Law; the engine.json consumers
   writer.ts    the shell half of the Writer: prove, then temp-and-rename
   atomicwrite.ts   the one staged replace every non-page write lands through
   moduleload.ts, modulefixture.ts, trust.ts   the module ladder
   storelock.ts the lock a machine-local store is read, changed and written under
+  connections.ts   the machine-local bundles registry `bundles` and `--bundle` read
   hooks.ts, staged.ts   the installed hooks and the staged gate
   verbs/<name>.ts   one CommandSpec per verb
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit
@@ -56,6 +58,7 @@ packages/cli/skills/          the two shipped skills and the generated playbook
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
 devwiki/                      this repository's own bundle, over the kit, judged by the suite
 fixtures/conformance/         the neutral module fixture and two bundles consuming it
+fixtures/handbooks/           two small gardening handbooks the connection tests read, one page title in both
 fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories)
 fixtures/minimal-vault/       the smallest bundle that loads
 fixtures/okf-upstream/        the OKF pin: repository, commit, grounding line

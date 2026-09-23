@@ -1,6 +1,6 @@
 # The CLI
 
-`wikiwright` is one binary with 22 verbs. Every verb prints exactly one JSON
+`wikiwright` is one binary with 23 verbs. Every verb prints exactly one JSON
 envelope on stdout and reserves stderr for text a human at a terminal needs.
 The verb reference below is rendered from the binary's own command registry by
 `bun docs/render-cli.ts --write`, and `bun docs/render-cli.ts --check` fails
@@ -24,8 +24,9 @@ the verdict in `data` beside `error`.
 
 Every verb that reads a vault's law names the bundle it read in
 `metadata.bundle`, when its root holds `config/constitution.json`, on an ok
-envelope and a refusal alike. `version` and `schema` answer about the engine
-and `trust` about this machine's grants, so they carry none.
+envelope and a refusal alike. `version` and `schema` answer about the engine,
+`trust` about this machine's grants and `bundles` about its registry, so they
+carry none; a `bundles list` row carries each connection's identity instead.
 
 ```json
 "bundle": {
@@ -66,7 +67,7 @@ left. It is absent when the root holds no constitution, and when a file the
 identity reads resolves outside the root, which every read of a vault refuses;
 the engine states no partial identity. An envelope answered before the verb
 runs names no bundle either: `--help`, a refusal of the arguments, a
-`role-forbidden`.
+`role-forbidden`, a refusal of `--bundle`.
 
 The judging verbs (`lint`, `check`, `gate`, `write`, `fix`, `new`) share one
 verdict block:
@@ -125,6 +126,7 @@ the report it always writes.
 | `WIKIWRIGHT_TODAY` | `write`, `new`, `trust grant`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
 | `WIKIWRIGHT_TRUST_FILE` | `trust`, the module loader | the path of the machine-local grant store (default `~/.config/wikiwright/trust.json`) |
+| `WIKIWRIGHT_BUNDLES_FILE` | `bundles`, `--bundle` | the path of the machine-local bundles registry (default `~/.config/wikiwright/bundles.json`) |
 
 ## Notes per verb
 
@@ -319,6 +321,44 @@ What the registry rows below do not say.
   whose directory is gone is removed at all.
   [extending.md](extending.md#trust) says how a load is
   approved and what each scope's key can and cannot tell apart.
+- **`bundles add <root> --name <n> | list | remove <name>`** keeps this
+  machine's registry of connected bundles, `~/.config/wikiwright/bundles.json`
+  unless `WIKIWRIGHT_BUNDLES_FILE` names another file: a JSON document,
+  `schema` `wikiwright/bundles`, `schema_version` 1, whose `bundles` each
+  carry `name`, `root`, `kind`, `feedback` and `guide`. It is outside every
+  vault and every repository, and it is written under the same lock as the
+  trust store (`store-busy` when another process holds it), which is why the
+  verb is a consumer's: connecting a bundle changes no bundle and grants
+  nothing. `add` records the root as given, made absolute, and compares real
+  paths: it refuses `bundle-name-invalid` for a name outside
+  `^[a-z0-9][a-z0-9-]{0,63}$`, `invalid-kind`, `vault-not-found` for a root
+  with no `config/constitution.json`, `guide-not-found` when `--guide` names
+  no file under the root, `bundle-name-taken` when the name is connected, and
+  `bundle-root-registered` when the root is connected under another name,
+  named in `details.name`. `--kind` is `maintained`, the default, for a
+  checkout the caller may write to within its role, or `installed`, for a copy
+  that is read only; `--feedback` says where a problem with the bundle is
+  reported, and `--guide` which page to read first. `list` prints every
+  connection sorted by name with `root` as registered, `realpath`, `present`
+  (the root exists and holds a constitution), `kind`, `feedback`, `guide` and
+  `identity`: the envelope's bundle block without `root` (`label`, `head`,
+  `dirty`, `law`, `content`), or `null` when the root is not present or its
+  identity cannot be read. Listing loads no law and no module, so a bundle
+  whose modules this machine has not approved still lists. `remove` refuses a
+  name that is not connected with `bundle-not-found` and `details.valid_values`.
+  A plan's one path is the registry, absolute.
+- **`--bundle <name>`** names the target of any verb by its connection, in
+  place of `--root`: the shell resolves it before any module loads, and the
+  envelope's `metadata.bundle.label` says which bundle answered. It refuses
+  `one-target` beside `--root`, `bundle-not-found` with
+  `details.valid_values` for a name no connection carries, and
+  `bundle-readonly` for a verb that can write aimed at an `installed`
+  connection, `--dry-run` included, with `details.kind` and
+  `details.feedback`, where a change to that copy goes instead. The refusal is
+  a guardrail on this CLI, not filesystem isolation: `--root` names the same
+  directory and is not refused, by design, and nothing stops a process that
+  does not go through the CLI. `bundles` itself takes `--bundle` and reads
+  nothing of it beyond those refusals.
 - **`freshness [--fetch] [--fast-forward]`** measures every `pin` field
   against the origin its page names: `ls-remote` per origin by default;
   `--fetch` keeps a blobless bare cache under `.wikiwright/origins/` and
@@ -370,11 +410,13 @@ Global flags, accepted by every verb:
 | Flag | Meaning |
 |---|---|
 | `--root <value>` | vault root directory (default: current directory) |
+| `--bundle <value>` | a connected bundle's name (see `bundles`): its root is the target, in place of --root |
 | `--help` | print this command's spec and exit |
 
 | Verb | Role | Writes | Summary |
 |---|---|---|---|
 | [`brief`](#brief) | consumer | no | Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/. |
+| [`bundles`](#bundles) | consumer | yes | Connect a vault by name in this machine's registry, list the connections with their identity, or remove one. |
 | [`check`](#check) | writer | yes | The aggregate pass: registry + lint + generated-drift comparison. |
 | [`fix`](#fix) | writer | yes | Apply the mechanical ops one rule licenses, all-or-nothing, and prove them gone. |
 | [`freshness`](#freshness) | maintainer | yes | Measure every pin against the origin its page names: is it still the head (default), or how far behind and is the capture stale (--fetch); --fast-forward advances the clean pins. |
@@ -413,6 +455,29 @@ Role: `consumer`. Writes: no.
 wikiwright brief --role writer
 wikiwright brief --role maintainer
 wikiwright brief --role consumer
+```
+
+### bundles
+
+`wikiwright bundles <add|list|remove> [target]`
+
+Connect a vault by name in this machine's registry, list the connections with their identity, or remove one.
+
+Role: `consumer`. Writes: yes (accepts `--dry-run`).
+
+| Flag | Meaning |
+|---|---|
+| `--name <value>` | with `add`: the name the bundle is connected as |
+| `--kind <value>` | with `add`: maintained (the default) \| installed, a copy that is read only |
+| `--feedback <value>` | with `add`: where a problem with this bundle is reported |
+| `--guide <value>` | with `add`: the page to read first, relative to the bundle's root |
+| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
+
+```text
+wikiwright bundles list
+wikiwright bundles add ../handbooks/orchard --name orchard --guide wiki/start-here.md
+wikiwright bundles add /srv/handbooks/allotment --name allotment --kind installed --feedback "send a proposal to the handbook's maintainers"
+wikiwright bundles remove allotment
 ```
 
 ### check

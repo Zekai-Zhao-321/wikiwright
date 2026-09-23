@@ -133,6 +133,7 @@ logical change is one commit).
 | File | Generator |
 |---|---|
 | `devwiki/generated/*`, the brief included | `wikiwright check --write --root devwiki`, under the grant above |
+| `fixtures/handbooks/*/generated/*`, the briefs included | `wikiwright check --write --root fixtures/handbooks/orchard`, and the same for `allotment` |
 | `packages/cli/skills/wikiwright-maintain/lint-response.md` | `bun tools/render-playbook.ts` (`--check` verifies) |
 | the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies) |
 | `packages/core/src/identity/casefold-data.ts` | `bun tools/generate-casefold.ts` |

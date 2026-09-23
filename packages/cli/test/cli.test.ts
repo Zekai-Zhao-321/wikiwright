@@ -191,6 +191,12 @@ describe("schema declares the global flags the parser accepts (docs/cli.md §sch
         summary: "vault root directory (default: current directory)",
       },
       {
+        name: "bundle",
+        type: "string",
+        summary:
+          "a connected bundle's name (see `bundles`): its root is the target, in place of --root",
+      },
+      {
         name: "help",
         type: "boolean",
         summary: "print this command's spec and exit",

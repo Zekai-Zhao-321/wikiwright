@@ -9,6 +9,25 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- `bundles add <root> --name <n> | list | remove <name>` connects a vault by
+  name in a machine-local registry (`~/.config/wikiwright/bundles.json`, or
+  `WIKIWRIGHT_BUNDLES_FILE`), written under the trust store's lock. A
+  connection carries its root, a `kind` — `maintained`, a checkout the caller
+  may write to within its role, or `installed`, a copy that is read only — the
+  place a problem with it is reported, and a page to read first. `list` shows
+  every connection with the identity the envelope's bundle block carries and
+  loads no law and no module, so a bundle whose modules are not approved on
+  this machine still lists. The verb is a consumer's: the registry is outside
+  every vault, and connecting a bundle grants nothing.
+- `--bundle <name>` names the target of any verb by its connection, in place
+  of `--root`, so an agent working in an unrelated directory reads two
+  handbooks by name and every answer says which one it came from. It refuses
+  `one-target` beside `--root`, `bundle-not-found` with the connected names,
+  and `bundle-readonly` for a writing verb, dry run included, aimed at an
+  installed copy, with the connection's feedback destination in the refusal.
+  That refusal is a guardrail on the CLI, not filesystem isolation: `--root`
+  reaches the same directory by design.
+
 - Every envelope of a verb that reads a vault's law names the bundle it read,
   in `metadata.bundle`, on an ok envelope and a refusal alike: `label` (the
   basename of the root's real path), `root` (that real path), `head` and
@@ -19,10 +38,10 @@ version` prints the engine version and the commit a binary was built from.
   over every page under the content roots, path and bytes, as the working tree
   holds them). An answer read from one bundle can be told from an answer read
   from another, and an uncommitted edit shows in `content` and `dirty` while
-  `head` stays where it was. `version`, `schema` and `trust` carry none. The
-  brief's header prints the law digest in place of a digest of the sorted type
-  names, which did not move when a type's contract, the engine policy or a
-  module changed.
+  `head` stays where it was. `version`, `schema`, `trust` and `bundles` carry
+  none. The brief's header prints the law digest in place of a digest of the
+  sorted type names, which did not move when a type's contract, the engine
+  policy or a module changed.
 
 - `trust list --all` prints every record in this machine's store: its
   identity, its scope, the path it is keyed by, its digest, when it was
@@ -167,6 +186,11 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Developing
 
+- `fixtures/handbooks/orchard` and `fixtures/handbooks/allotment`: two small
+  gardening handbooks, one `procedure-page` type each with a required
+  climate, and a page with one title and different steps in both. The
+  connection tests read them; both are clean under `check`, their
+  `generated/` included.
 - `bun run check` and `bun run test` run the suite through
   `tools/run-suite.ts`: one `bun test` process per file, as many at once as
   the machine has cores, where `bun test` ran every file one after another

@@ -1,0 +1,52 @@
+{
+  "schema": "wikiwright/graph",
+  "nodes": [
+    {
+      "id": "tag:orientation",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:pruning",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:vegetables",
+      "kind": "tag"
+    },
+    {
+      "id": "wiki/pruning-roses.md",
+      "kind": "page",
+      "type": "procedure-page",
+      "title": "Pruning roses"
+    },
+    {
+      "id": "wiki/start-here.md",
+      "kind": "page",
+      "type": "procedure-page",
+      "title": "Start here"
+    },
+    {
+      "id": "wiki/watering-beans.md",
+      "kind": "page",
+      "type": "procedure-page",
+      "title": "Watering beans"
+    }
+  ],
+  "edges": [
+    {
+      "from": "wiki/pruning-roses.md",
+      "to": "tag:pruning",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/start-here.md",
+      "to": "tag:orientation",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/watering-beans.md",
+      "to": "tag:vegetables",
+      "kind": "tagged"
+    }
+  ]
+}

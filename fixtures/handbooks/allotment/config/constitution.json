@@ -1,0 +1,49 @@
+{
+  "schema": "wikiwright/constitution",
+  "schema_version": 3,
+  "vocabularies": {
+    "tags": {
+      "mode": "registered",
+      "entries": {
+        "orientation": {
+          "description": "How to find your way around this handbook."
+        },
+        "pruning": {
+          "description": "Cutting growth back to shape a plant or improve its crop."
+        },
+        "vegetables": {
+          "description": "Crops grown in beds for their roots, leaves, pods or fruit."
+        }
+      }
+    }
+  },
+  "types": {
+    "procedure-page": {
+      "extends": "procedure",
+      "description": "One gardening task as steps, for the climate this handbook covers.",
+      "use_when": "A task a gardener carries out from start to finish.",
+      "avoid_when": "Background about a plant with nothing to do.",
+      "fields": {
+        "applies_to": {
+          "kind": "enum",
+          "values": [
+            "arid"
+          ],
+          "required": true
+        }
+      },
+      "sections": {
+        "list": [
+          {
+            "heading": "Steps",
+            "min": 1
+          },
+          {
+            "heading": "Notes",
+            "min": 0
+          }
+        ]
+      }
+    }
+  }
+}

@@ -16,7 +16,12 @@ const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
 /** The shipped vaults that track `generated/`. */
-const TRACKED = ["devwiki", "fixtures/memory-synth"];
+const TRACKED = [
+  "devwiki",
+  "fixtures/memory-synth",
+  "fixtures/handbooks/orchard",
+  "fixtures/handbooks/allotment",
+];
 
 /**
  * A copy to render into. A vault that ships a package.json is a bundle over

@@ -1,9 +1,10 @@
 // docs/cli.md §brief: `brief` is a consumer verb, so every role may print its own
 // brief, and without `--role` it prints the session's. "The loop" and
 // "Findings" are the role's: the consumer's loop names no verb, its verb list
-// holds no writing verb and its Findings runs nothing; the writer's loop is the
-// five steps it has always been, and the maintainer's is the writer's five and
-// two more; the writer and the maintainer read one Findings paragraph.
+// holds no verb that writes a bundle and its Findings runs nothing; the
+// writer's loop is the five steps it has always been, and the maintainer's is
+// the writer's five and two more; the writer and the maintainer read one
+// Findings paragraph.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { before, describe, it } from "node:test";
@@ -94,12 +95,16 @@ describe("every role prints its own brief (docs/cli.md §brief)", () => {
     assert.match(consumer.text, /^# wikiwright — the consumer's brief$/mu);
   });
 
-  it("the consumer's verb list holds no writing verb, and only verbs a consumer may run", () => {
+  it("the consumer's verb list holds no verb that writes a bundle, and only verbs a consumer may run", () => {
     const listed = listedVerbs(consumer.text);
     const writing = COMMANDS.filter((c) => c.writes).map((c) => c.name);
+    // The one writing verb a consumer runs is `bundles`: its one write is this
+    // machine's registry, outside every vault, and connecting a bundle changes
+    // no bundle (docs/cli.md §bundles). Any other writing verb in the list
+    // fails here, so adding one is a decision.
     assert.deepEqual(
       listed.filter((name) => writing.includes(name)),
-      [],
+      ["bundles"],
     );
     assert.deepEqual(
       listed,

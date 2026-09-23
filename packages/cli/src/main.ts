@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 // docs/cli.md §The envelope (stdout = one envelope; stderr = UX; parseArgs
 // strict under the command registry; generated help) · JSON-only v1.
+import { codeUnitCompare } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
+import { readConnections } from "./connections.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import {
+  type CommandArgs,
   type CommandSpec,
   declaredRole,
   flagsOf,
@@ -70,9 +73,87 @@ function withBundle(result: CommandResult, root: string): CommandResult {
   return { ...result, envelope: { ...result.envelope, metadata } };
 }
 
+type Target = { ok: true; args: CommandArgs } | { ok: false; result: CommandResult };
+
+/**
+ * docs/cli.md §bundles: `--bundle <name>` names the target by a connection in
+ * this machine's registry, resolved here, before any module loads or the verb
+ * runs, into the root `--root` would have named. Three refusals come first, each
+ * before anything is read of the bundle: both flags at once (`one-target`), a
+ * name no connection carries (`bundle-not-found`), and a verb that can write
+ * aimed at an installed copy (`bundle-readonly`, `--dry-run` included, since a
+ * dry run of a forbidden write is still a forbidden write). The refusal names
+ * where a change to that copy goes instead. It is a guardrail on this CLI, not
+ * filesystem isolation: `--root` names the same directory and is not refused.
+ */
+function targetOf(spec: CommandSpec, args: CommandArgs): Target {
+  const name = args.flags["bundle"];
+  if (typeof name !== "string") return { ok: true, args };
+  const root = args.flags["root"];
+  if (typeof root === "string") {
+    return {
+      ok: false,
+      result: fail(spec.name, "usage", "one-target", "--bundle and --root both name the target", {
+        details: { bundle: name, root },
+        hint: "pass one: --bundle names a connected bundle, --root names a directory",
+      }),
+    };
+  }
+  const store = readConnections();
+  const connection = store.bundles.find((b) => b.name === name);
+  if (connection === undefined) {
+    return {
+      ok: false,
+      result: fail(
+        spec.name,
+        "not_found",
+        "bundle-not-found",
+        `no bundle is connected as "${name}"`,
+        {
+          details: { valid_values: store.bundles.map((b) => b.name).sort(codeUnitCompare) },
+          hint: "`bundles list` names every connection on this machine",
+        },
+      ),
+    };
+  }
+  if (connection.kind === "installed" && spec.writes) {
+    return {
+      ok: false,
+      result: fail(
+        spec.name,
+        "usage",
+        "bundle-readonly",
+        `"${name}" is an installed copy, read only, and "${spec.name}" can write`,
+        {
+          details: { bundle: name, kind: connection.kind, feedback: connection.feedback },
+          hint:
+            connection.feedback === null
+              ? "an installed copy is not changed in place; report the change to whoever maintains the bundle"
+              : `an installed copy is not changed in place; report the change as details.feedback says: ${connection.feedback}`,
+        },
+      ),
+    };
+  }
+  return { ok: true, args: { ...args, root: connection.root } };
+}
+
 async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandResult> {
   const parsed = parseInvocation(spec, rest, COMMANDS);
   if (!parsed.ok) return parsed.result;
+  let target: Target;
+  try {
+    target = targetOf(spec, parsed.args);
+  } catch (e) {
+    // A registry that is not one is named by its path in the message.
+    return fail(
+      spec.name,
+      "internal",
+      "unexpected-error",
+      e instanceof Error ? e.message : String(e),
+    );
+  }
+  if (!target.ok) return target.result;
+  const { args } = target;
   let result: CommandResult;
   try {
     // docs/extending.md §Declaring a module: loading a module is the shell's one
@@ -83,10 +164,10 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
     // Only for a verb that reads the vault's law: `version` and `schema` answer
     // about the engine, and `trust` loads the one module it is about, itself.
     if (spec.needsVaultModules) {
-      const declarations = declaredModulesOf(parsed.args.root);
-      if (declarations.length > 0) await preloadModules(parsed.args.root, declarations);
+      const declarations = declaredModulesOf(args.root);
+      if (declarations.length > 0) await preloadModules(args.root, declarations);
     }
-    result = await spec.run(parsed.args);
+    result = await spec.run(args);
   } catch (e) {
     result = fail(
       spec.name,
@@ -97,7 +178,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
   }
   // The same switch decides it: a verb that reads the vault's law names the
   // bundle it read, and one that answers about the engine names none.
-  return spec.needsVaultModules ? withBundle(result, parsed.args.root) : result;
+  return spec.needsVaultModules ? withBundle(result, args.root) : result;
 }
 
 // The conventional spellings reach the `version` verb — one
