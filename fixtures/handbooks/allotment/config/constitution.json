@@ -44,6 +44,20 @@
           }
         ]
       }
+    },
+    "guide-page": {
+      "extends": "hub",
+      "description": "The page to read first: what this handbook covers and how its pages are used.",
+      "use_when": "The handbook's front page, one per handbook.",
+      "avoid_when": "A task with steps to follow.",
+      "sections": {
+        "list": [
+          {
+            "heading": "How to use this handbook",
+            "min": 1
+          }
+        ]
+      }
     }
   }
 }

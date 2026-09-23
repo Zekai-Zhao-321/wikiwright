@@ -26,11 +26,11 @@
     },
     {
       "path": "wiki/start-here.md",
-      "type": "procedure-page",
-      "archetype": "procedure",
+      "type": "guide-page",
+      "archetype": "hub",
       "chain": [
-        "procedure-page",
-        "procedure"
+        "guide-page",
+        "hub"
       ],
       "title": "Start here",
       "description": "How to use the orchard handbook, and what it covers.",

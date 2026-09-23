@@ -18,13 +18,19 @@ version` prints the engine version and the commit a binary was built from.
   every connection with the identity the envelope's bundle block carries and
   loads no law and no module, so a bundle whose modules are not approved on
   this machine still lists. The verb is a consumer's: the registry is outside
-  every vault, and connecting a bundle grants nothing.
+  every vault, and connecting a bundle grants nothing. A registry this engine
+  cannot read is refused `bundles-registry-malformed`, and a trust store it
+  cannot read `trust-store-malformed`, where both were an `unexpected-error`:
+  exit 4, with the file and the failing record in `details`, from the verb and
+  from the module load that checks a grant.
 - `--bundle <name>` names the target of any verb by its connection, in place
   of `--root`, so an agent working in an unrelated directory reads two
   handbooks by name and every answer says which one it came from. It refuses
   `one-target` beside `--root`, `bundle-not-found` with the connected names,
-  and `bundle-readonly` for a writing verb, dry run included, aimed at an
-  installed copy, with the connection's feedback destination in the refusal.
+  and `bundle-readonly` for a verb that writes the vault or its repository,
+  dry run included, aimed at an installed copy, with the connection's feedback
+  destination in the refusal. `bundles` and `trust`, whose writes are this
+  machine's stores, are answered.
   That refusal is a guardrail on the CLI, not filesystem isolation: `--root`
   reaches the same directory by design.
 
@@ -187,8 +193,9 @@ version` prints the engine version and the commit a binary was built from.
 ### Developing
 
 - `fixtures/handbooks/orchard` and `fixtures/handbooks/allotment`: two small
-  gardening handbooks, one `procedure-page` type each with a required
-  climate, and a page with one title and different steps in both. The
+  gardening handbooks, each a `procedure-page` type with a required climate
+  and a `guide-page` for the page to read first, and a page with one title
+  and different steps in both. The
   connection tests read them; both are clean under `check`, their
   `generated/` included.
 - `bun run check` and `bun run test` run the suite through

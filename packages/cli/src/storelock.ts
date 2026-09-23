@@ -31,6 +31,39 @@ const LOCK_UNCLAIMED_MS = 2_000;
 /** Another process holds the store; the caller is told so by name, never overwritten. */
 export class StoreBusy extends Error {}
 
+/**
+ * A machine-local store this engine cannot read: not JSON, not the store's
+ * schema, a version it does not read, or a record of no shape it knows. `code`
+ * is the store's own refusal code, so the shell names which store it was;
+ * `record` is the index of the record that failed, where one did. The file is
+ * never rewritten: a store that did not parse is a person's to repair.
+ */
+export class StoreMalformed extends Error {
+  readonly code: string;
+  readonly file: string;
+  readonly record: number | undefined;
+  constructor(code: string, file: string, message: string, record?: number) {
+    super(message);
+    this.code = code;
+    this.file = file;
+    this.record = record;
+  }
+}
+
+/** A store file's JSON, or `StoreMalformed` under the store's code when it is not JSON. */
+export function parseStoreFile(file: string, code: string): unknown {
+  const text = readFileSync(file, "utf8");
+  try {
+    return JSON.parse(text) as unknown;
+  } catch (error) {
+    throw new StoreMalformed(
+      code,
+      file,
+      `${file} is not JSON: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
 /** A sleep with no runtime-specific API and no busy loop. */
 function pause(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);

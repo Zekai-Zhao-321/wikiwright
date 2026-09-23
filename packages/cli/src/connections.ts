@@ -6,12 +6,12 @@
 // trust store, and is updated under the same lock. Connecting a bundle grants
 // nothing: a connection names a root, and a verb run against it is judged
 // exactly as `--root` would judge it.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { codeUnitCompare } from "@wikiwright/core";
 import { replaceFile } from "./atomicwrite.ts";
-import { type StoreChange, updateStore } from "./storelock.ts";
+import { parseStoreFile, type StoreChange, StoreMalformed, updateStore } from "./storelock.ts";
 
 /** The two kinds of connection: a checkout the caller may write to, or a copy that is read only. */
 export const KINDS = ["maintained", "installed"] as const;
@@ -72,27 +72,45 @@ function connectionOf(value: unknown): Connection | string {
 export function readConnections(): ConnectionStore {
   const file = bundlesFilePath();
   if (!existsSync(file)) return { schema: "wikiwright/bundles", schema_version: 1, bundles: [] };
-  const parsed = JSON.parse(readFileSync(file, "utf8")) as {
+  const parsed = (parseStoreFile(file, MALFORMED) ?? {}) as {
     schema?: unknown;
     schema_version?: unknown;
     bundles?: unknown;
   };
   if (parsed.schema !== "wikiwright/bundles" || !Array.isArray(parsed.bundles)) {
-    throw new Error(`${file} is not a wikiwright bundles registry`);
+    throw new StoreMalformed(MALFORMED, file, `${file} is not a wikiwright bundles registry`);
   }
   if (parsed.schema_version !== 1) {
-    throw new Error(
+    throw new StoreMalformed(
+      MALFORMED,
+      file,
       `${file} is bundles registry version ${String(parsed.schema_version)}; this engine reads 1`,
     );
   }
   const bundles: Connection[] = [];
   parsed.bundles.forEach((value, i) => {
     const connection = connectionOf(value);
-    if (typeof connection === "string") throw new Error(`${file}: bundle ${i} ${connection}`);
+    if (typeof connection === "string") {
+      throw new StoreMalformed(MALFORMED, file, `${file}: bundle ${i} ${connection}`, i);
+    }
     bundles.push(connection);
   });
   return { schema: "wikiwright/bundles", schema_version: 1, bundles };
 }
+
+/** docs/cli.md §bundles: the refusal a registry this engine cannot read is named by. */
+const MALFORMED = "bundles-registry-malformed";
+
+/**
+ * docs/cli.md §bundles: the verbs whose writes land in this machine's stores,
+ * outside every vault — the registry, the trust store — and not in the vault or
+ * its repository. `--bundle` naming an installed copy refuses every other
+ * writing verb (`bundle-readonly`); these two write nothing of the copy, so
+ * they are answered. Closed: the dry-run test holds that each plans only
+ * absolute paths outside the vault, and that every other writing verb is
+ * refused.
+ */
+export const MACHINE_LOCAL_WRITERS: ReadonlySet<string> = new Set(["bundles", "trust"]);
 
 /** The registry, sorted by name, so the file's bytes are a function of its connections. */
 function writeConnections(store: ConnectionStore): void {

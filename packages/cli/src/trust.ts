@@ -4,12 +4,12 @@
 // pinned to the sha256 over the package's own bytes, and covers one vault, or
 // one vault path in every linked worktree of one clone — D-006).
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { replaceFile } from "./atomicwrite.ts";
 import { gitWorktreeIdentity } from "./git.ts";
-import { updateStore } from "./storelock.ts";
+import { parseStoreFile, StoreMalformed, updateStore } from "./storelock.ts";
 
 /** A grant for one vault, keyed by its real path: the record 0.1.0 wrote, in the same shape. */
 export interface VaultGrant {
@@ -101,26 +101,35 @@ function recordOf(value: unknown): TrustGrant | string {
 export function readTrustStore(): TrustStore {
   const file = trustFilePath();
   if (!existsSync(file)) return { schema: "wikiwright/trust", schema_version: 2, grants: [] };
-  const parsed = JSON.parse(readFileSync(file, "utf8")) as {
+  const parsed = (parseStoreFile(file, MALFORMED) ?? {}) as {
     schema?: unknown;
     schema_version?: unknown;
     grants?: unknown;
   };
   if (parsed.schema !== "wikiwright/trust" || !Array.isArray(parsed.grants)) {
-    throw new Error(`${file} is not a wikiwright trust store`);
+    throw new StoreMalformed(MALFORMED, file, `${file} is not a wikiwright trust store`);
   }
   const version = parsed.schema_version ?? 1;
   if (version !== 1 && version !== 2) {
-    throw new Error(`${file} is trust store version ${String(version)}; this engine reads 1 and 2`);
+    throw new StoreMalformed(
+      MALFORMED,
+      file,
+      `${file} is trust store version ${String(version)}; this engine reads 1 and 2`,
+    );
   }
   const grants: TrustGrant[] = [];
   parsed.grants.forEach((value, i) => {
     const record = recordOf(value);
-    if (typeof record === "string") throw new Error(`${file}: grant ${i} ${record}`);
+    if (typeof record === "string") {
+      throw new StoreMalformed(MALFORMED, file, `${file}: grant ${i} ${record}`, i);
+    }
     grants.push(record);
   });
   return { schema: "wikiwright/trust", schema_version: version, grants };
 }
+
+/** docs/cli.md §trust: the refusal a trust store this engine cannot read is named by. */
+const MALFORMED = "trust-store-malformed";
 
 /** An explicit write, the only thing that moves a store to version 2. */
 export function writeTrustStore(store: TrustStore): void {

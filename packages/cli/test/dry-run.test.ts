@@ -21,15 +21,18 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
+import { MACHINE_LOCAL_WRITERS } from "../src/connections.ts";
+import type { CommandArgs } from "../src/spec.ts";
 import { trustFilePath } from "../src/trust.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 
@@ -941,5 +944,56 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
     assert.equal(writesDirectly('import { replaceFile } from "./atomicwrite.ts";'), true);
     assert.equal(writesDirectly('import { writeFileSync as persist } from "node:fs";'), true);
     assert.equal(writesDirectly('import { readFileSync } from "node:fs";'), false);
+  });
+});
+
+describe("the writers the readonly guard exempts plan only this machine's stores (docs/cli.md §bundles)", () => {
+  // `--bundle` naming an installed copy refuses every writing verb but these:
+  // their one write is a machine-local store, outside every vault. The set is
+  // closed here, and each member's declared plan is held to that claim.
+  it("the set is bundles and trust, and each plans only absolute paths outside the vault", () => {
+    assert.deepEqual([...MACHINE_LOCAL_WRITERS].sort(), ["bundles", "trust"]);
+    const tmp = vault();
+    const stores = mkdtempSync(join(tmpdir(), "ww-dryrun-stores-"));
+    const saved = {
+      trust: process.env["WIKIWRIGHT_TRUST_FILE"],
+      bundles: process.env["WIKIWRIGHT_BUNDLES_FILE"],
+    };
+    process.env["WIKIWRIGHT_TRUST_FILE"] = join(stores, "trust.json");
+    process.env["WIKIWRIGHT_BUNDLES_FILE"] = join(stores, "bundles.json");
+    try {
+      const argsOf: Record<string, CommandArgs> = {
+        bundles: { root: tmp, positionals: ["add", tmp], flags: { name: "x" }, commands: COMMANDS },
+        trust: {
+          root: tmp,
+          positionals: ["grant", "module:@wikiwright-fixture/probe"],
+          flags: {},
+          commands: COMMANDS,
+        },
+      };
+      const inside = realpathSync(tmp);
+      for (const name of MACHINE_LOCAL_WRITERS) {
+        const spec = COMMANDS.find((c) => c.name === name);
+        const args = argsOf[name];
+        assert.ok(spec?.writes === true && args !== undefined, `${name} is a writer with a case`);
+        const ops = spec.plan(args).ops;
+        assert.notEqual(ops.length, 0, `${name}: a vacuous plan proves nothing`);
+        for (const op of ops) {
+          assert.equal(isAbsolute(op.path), true, `${name} plans ${op.path}`);
+          const real = join(realpathSync(dirname(op.path)), basename(op.path));
+          assert.equal(real.startsWith(inside + sep), false, `${name} plans a path in the vault`);
+        }
+      }
+    } finally {
+      for (const [key, value] of [
+        ["WIKIWRIGHT_TRUST_FILE", saved.trust],
+        ["WIKIWRIGHT_BUNDLES_FILE", saved.bundles],
+      ] as const) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+      rmSync(tmp, { recursive: true, force: true });
+      rmSync(stores, { recursive: true, force: true });
+    }
   });
 });

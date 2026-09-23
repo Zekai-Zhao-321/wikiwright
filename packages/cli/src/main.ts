@@ -5,7 +5,7 @@ import { codeUnitCompare } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
-import { readConnections } from "./connections.ts";
+import { MACHINE_LOCAL_WRITERS, readConnections } from "./connections.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import {
@@ -17,6 +17,7 @@ import {
   ROLE_RANK,
   type Role,
 } from "./spec.ts";
+import { StoreMalformed } from "./storelock.ts";
 
 function emit(result: CommandResult): void {
   process.stdout.write(`${JSON.stringify(result.envelope, null, 2)}\n`);
@@ -76,14 +77,33 @@ function withBundle(result: CommandResult, root: string): CommandResult {
 type Target = { ok: true; args: CommandArgs } | { ok: false; result: CommandResult };
 
 /**
+ * docs/cli.md §Exit codes: what a thrown error becomes. A machine-local store
+ * this engine cannot read — the trust store, the bundles registry — is the
+ * state refusing the operation, named by the store's own code with the file and
+ * the failing record, from whichever verb or preload reached it. Anything else
+ * is the engine breaking.
+ */
+function thrown(command: string, e: unknown): CommandResult {
+  if (e instanceof StoreMalformed) {
+    return fail(command, "conflict", e.code, e.message, {
+      details: { file: e.file, ...(e.record === undefined ? {} : { record: e.record }) },
+      hint: "the file is this machine's, outside every vault; repair it or move it aside — the engine does not rewrite a store it cannot read",
+    });
+  }
+  return fail(command, "internal", "unexpected-error", e instanceof Error ? e.message : String(e));
+}
+
+/**
  * docs/cli.md §bundles: `--bundle <name>` names the target by a connection in
  * this machine's registry, resolved here, before any module loads or the verb
  * runs, into the root `--root` would have named. Three refusals come first, each
  * before anything is read of the bundle: both flags at once (`one-target`), a
  * name no connection carries (`bundle-not-found`), and a verb that can write
- * aimed at an installed copy (`bundle-readonly`, `--dry-run` included, since a
- * dry run of a forbidden write is still a forbidden write). The refusal names
- * where a change to that copy goes instead. It is a guardrail on this CLI, not
+ * the vault or its repository aimed at an installed copy (`bundle-readonly`,
+ * `--dry-run` included, since a dry run of a forbidden write is still a
+ * forbidden write). `bundles` and `trust` write only this machine's stores
+ * (`MACHINE_LOCAL_WRITERS`), so they are answered. The refusal names where a
+ * change to that copy goes instead. It is a guardrail on this CLI, not
  * filesystem isolation: `--root` names the same directory and is not refused.
  */
 function targetOf(spec: CommandSpec, args: CommandArgs): Target {
@@ -116,7 +136,7 @@ function targetOf(spec: CommandSpec, args: CommandArgs): Target {
       ),
     };
   }
-  if (connection.kind === "installed" && spec.writes) {
+  if (connection.kind === "installed" && spec.writes && !MACHINE_LOCAL_WRITERS.has(spec.name)) {
     return {
       ok: false,
       result: fail(
@@ -144,13 +164,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
   try {
     target = targetOf(spec, parsed.args);
   } catch (e) {
-    // A registry that is not one is named by its path in the message.
-    return fail(
-      spec.name,
-      "internal",
-      "unexpected-error",
-      e instanceof Error ? e.message : String(e),
-    );
+    return thrown(spec.name, e);
   }
   if (!target.ok) return target.result;
   const { args } = target;
@@ -169,12 +183,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
     }
     result = await spec.run(args);
   } catch (e) {
-    result = fail(
-      spec.name,
-      "internal",
-      "unexpected-error",
-      e instanceof Error ? e.message : String(e),
-    );
+    result = thrown(spec.name, e);
   }
   // The same switch decides it: a verb that reads the vault's law names the
   // bundle it read, and one that answers about the engine names none.

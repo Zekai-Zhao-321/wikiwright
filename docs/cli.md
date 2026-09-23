@@ -90,7 +90,7 @@ verdict block:
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
 | 3 | `not_found` | the page, type, vocabulary entry, revision or grant asked for does not exist |
-| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove |
+| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a machine-local store this engine cannot read (`trust-store-malformed`, `bundles-registry-malformed`) |
 | 5 | `findings` | the tool worked and the subject failed: read `data.findings` |
 | 10 | `confirm_required` | an identity or blast-radius gate wants the plan pinned: `identity-candidates`, `open-claim-of-category` |
 
@@ -313,7 +313,11 @@ What the registry rows below do not say.
   it either.
   A grant or a revoke reads and writes the machine-local store as one
   operation under a lock beside it, and refuses `store-busy` when another
-  process holds it. `trust list --all` is the whole store rather than this
+  process holds it. A store this engine cannot read — not JSON, not the
+  store's schema, a version it does not read, a record of no known shape — is
+  `trust-store-malformed` (exit 4) with `details.file` and, for a record,
+  `details.record`, from `trust` and from any verb whose module load checks a
+  grant; the file is never rewritten. `trust list --all` is the whole store rather than this
   vault's share of it: every record with its identity, its scope, the path it
   is keyed by, its digest, when it was granted, and whether that path is still
   on this machine. `trust revoke --record <identity>` removes exactly that
@@ -346,19 +350,25 @@ What the registry rows below do not say.
   identity cannot be read. Listing loads no law and no module, so a bundle
   whose modules this machine has not approved still lists. `remove` refuses a
   name that is not connected with `bundle-not-found` and `details.valid_values`.
-  A plan's one path is the registry, absolute.
+  A plan's one path is the registry, absolute. A registry this engine cannot
+  read is `bundles-registry-malformed` (exit 4), with `details.file` and, for a
+  record, `details.record`, from `bundles` and from `--bundle`; the file is
+  never rewritten.
 - **`--bundle <name>`** names the target of any verb by its connection, in
   place of `--root`: the shell resolves it before any module loads, and the
   envelope's `metadata.bundle.label` says which bundle answered. It refuses
   `one-target` beside `--root`, `bundle-not-found` with
   `details.valid_values` for a name no connection carries, and
-  `bundle-readonly` for a verb that can write aimed at an `installed`
-  connection, `--dry-run` included, with `details.kind` and
-  `details.feedback`, where a change to that copy goes instead. The refusal is
-  a guardrail on this CLI, not filesystem isolation: `--root` names the same
-  directory and is not refused, by design, and nothing stops a process that
-  does not go through the CLI. `bundles` itself takes `--bundle` and reads
-  nothing of it beyond those refusals.
+  `bundle-readonly` for a verb that can write the vault or its repository
+  aimed at an `installed` connection, `--dry-run` included, with
+  `details.kind` and `details.feedback`, where a change to that copy goes
+  instead. `bundles` and `trust` are exempt: their writes are this machine's
+  registry and trust store, outside every vault, so they change nothing of
+  the copy and are answered. The refusal is a guardrail on this CLI, not
+  filesystem isolation: `--root` names the same directory and is not refused,
+  by design, and nothing stops a process that does not go through the CLI.
+  `bundles` itself takes `--bundle` and reads nothing of it beyond those
+  refusals.
 - **`freshness [--fetch] [--fast-forward]`** measures every `pin` field
   against the origin its page names: `ls-remote` per origin by default;
   `--fetch` keeps a blobless bare cache under `.wikiwright/origins/` and
