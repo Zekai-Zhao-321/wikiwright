@@ -83,9 +83,10 @@ version` prints the engine version and the commit a binary was built from.
   A caller keying on `wrote` read `false` from the dry run and nothing from
   the real one.
 - `search <query> --files` lists every page with a match, path and reasons
-  only, in code-unit order and uncapped: the pages the ranked search finds
-  plus every page holding a term inside a longer word, the set a line search
-  lists. `search --band identity|relevance` keeps one band of the ranked
+  only, in code-unit order and uncapped: the pages the ranked search finds,
+  identity matches included, plus every page whose normalized text holds a
+  query term inside a longer word — a tokenized, case-folded substring scan
+  plus the identity matches, not a literal line search. `search --band identity|relevance` keeps one band of the ranked
   results, and of `--files`, where it is applied after every match is
   classified, so no identity match is listed as a substring match.
 - A third shipped skill, `wikiwright-consume`: the judgment for using what a

@@ -23,9 +23,9 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,590 tests across 108 files. At `29dbfb9` the full gate,
-`bun run check`, passed them all with the test files under Bun and the CLI
-under Node (`tools/run-suite.ts`), and the full node runner,
+The suite is 1,593 tests across 108 files. At `29dbfb9`, when it held 1,590,
+the full gate, `bun run check`, passed them all with the test files under
+Bun and the CLI under Node (`tools/run-suite.ts`), and the full node runner,
 `bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
 judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
@@ -34,9 +34,9 @@ the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured at
-`29dbfb9`, on a clone with the kit granted in a temporary store because the
+`4a577f7`, on a clone with the kit granted in a temporary store because the
 kit is ungranted on the development machine, `freshness` reads all 26 pinned
-pages `current` (22) or `unchanged` (4) and none `stale`, with no
+pages `current` (4) or `unchanged` (22) and none `stale`, with no
 `stale-capture`, `stale-source-cited` or `citation-unresolved` finding.
 A citation into a file its page does not cover is held to the pin but not
 to the file's later changes, so such a reference either is covered or goes
@@ -419,7 +419,13 @@ fills either: a request cut inside its last path had made git answer
 read now also holds every row to the request it answers, in order: a row
 git could not resolve must echo its request, and a row it resolved must name
 the requested object, or be a blob where the request was a path; otherwise
-`git-inconsistent-read`. The checks
+`git-inconsistent-read`. Answer and request are therefore whole by
+construction; the file proves nothing more — not that git told the truth,
+nor that the repository held still between two reads. stderr is still a
+pipe and is read: a path HEAD does not hold, a directory in no repository
+and a server that refuses a filtered fetch are recognised from its text, and
+each, with its text lost, fails as `git-unavailable` or an unreachable
+origin rather than a smaller answer. The checks
 from before stay as a second line — every answer with a terminator is held to
 it, and one that ends short is `git-short-read` — and two cross-checks catch
 a listing cut at a record boundary wherever it came from: every path the
@@ -453,9 +459,14 @@ states it builds that way, asserts each state's pages before any verdict
 read from it, since an empty or short state judges clean. The shipped engine
 does not use Bun's synchronous spawn: `dist/bin.js` is a Node script.
 
-Left: the test files still run under Bun, so the envelope a test reads back
-from the CLI, and the test's own setup `git` calls, still come through Bun's
-piped spawn. A cut envelope does not parse and fails its test loudly; a cut
+Left: three readers are not converted, and none chooses a page the engine
+judges. `tools/write-build-info.ts` reads git through a pipe when it stamps a
+build, where a cut could misstate the build's commit, never a verdict; the
+plugin's
+hook scripts read the CLI's envelope through a pipe, best-effort feedback
+that judges nothing; and the test files still run under Bun, so the envelope
+a test reads back from the CLI, and the test's own setup `git` calls, still
+come through Bun's piped spawn. A cut envelope does not parse and fails its test loudly; a cut
 setup read is not checked. The tests that run Bun on purpose are
 `run-suite.test.ts`, which drives the runner, and the one `vocabulary show`
 case that compares Bun's output with Node's.

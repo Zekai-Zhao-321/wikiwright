@@ -383,6 +383,11 @@
     },
     {
       "from": "wiki/envelope-and-exit-codes.md",
+      "to": "wiki/fixers.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/envelope-and-exit-codes.md",
       "to": "wiki/git.md",
       "kind": "wikilink"
     },
@@ -395,6 +400,11 @@
     {
       "from": "wiki/envelope-and-exit-codes.md",
       "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/envelope-and-exit-codes.md",
+      "to": "wiki/writer-and-staged-gate.md",
       "kind": "wikilink"
     },
     {

@@ -1,9 +1,9 @@
 ---
 type: ops-reference
 title: "The envelope and exit codes"
-description: "Every verb prints one JSON envelope on stdout, and a vault verb's names the bundle it read; the exit code is one of seven, each mapped to one error type; the judging verbs share one verdict block."
+description: "Every verb prints one JSON envelope on stdout, and a vault verb's names the bundle it read; the exit code is one of seven, each mapped to one error type; lint, check and gate share one verdict block, and the writing verbs report the pages they wrote."
 tags: [cli]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: 4a577f7daa3be38151a0baa71985261cbabdbd36
 origin: .
 covers: [packages/cli/src/envelope.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts]
 ---
@@ -52,8 +52,8 @@ with `file` and, for a record, `record` (`:80-111`); `unknown-flag` with `valid_
 `missing-argument` and `unknown-subcommand` with `valid_values`
 (`:133-151`).
 
-The judging verbs — `lint`, `check`, `gate`, `write`, `fix`, `new` — share
-one verdict block rendered by `verdictEnvelope` (`envelope.ts:107-119`):
+`lint`, `check` and `gate` answer with one verdict block rendered by
+`verdictEnvelope` (`envelope.ts:107-119`), whole:
 
 | Key | Meaning |
 | --- | --- |
@@ -63,6 +63,15 @@ one verdict block rendered by `verdictEnvelope` (`envelope.ts:107-119`):
 | `unevaluated` | the passes a declaration turned on that this run could not judge, keyed by pass with a count and `no-base` (`:137-145`) |
 | `caps` | `limit` and `hit` (`:683`) |
 | `dispositions` | per page, the counted transition outcomes where a base exists (`:148-149`) |
+
+The writing verbs judge with the same judge and answer in their own shapes.
+`write` and `new` report the page they wrote — its `path`, `findings`,
+`dispositions`, `claims` and `digest`, beside the `unevaluated` passes —
+not the vault-wide `summary`, `coverage` and `caps`; `write --from` reports
+one row per draft under `pages` — `path`, `created`, `findings`,
+`dispositions`, `claims` and `digest` — with `unevaluated` once at the top
+level (see [[writer-and-staged-gate]]). `fix` reports what it changed, the
+ops it applied and whether the proof held (see [[fixers]]).
 
 A writing verb under `--dry-run` answers `{ ops: [{ kind, path, from?,
 summary }], wrote: false }` with `kind` one of `create`, `write`, `append`,

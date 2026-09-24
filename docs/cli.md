@@ -81,10 +81,13 @@ runs names no bundle either: `--help`, a refusal of the arguments, a
 | `dispositions` | per page, the counted transition outcomes where a base exists (`relation_added`, `relation_removed`, `superseded`, `corrected`, …) |
 
 The writing verbs judge with the same judge and answer in their own shapes.
-`write` and `new` report the page they wrote: its `findings`, its
-`dispositions`, its `claims`, the `unevaluated` passes and its `digest`,
-not the vault-wide `summary`, `coverage` and `caps`; `write --from` reports
-one such row per draft under `pages`. `fix` reports what it `changed`, the
+`write` and `new` report the page they wrote: its `path`, `findings`,
+`dispositions`, `claims` and `digest`, beside the `unevaluated` passes, not
+the vault-wide `summary`, `coverage` and `caps`. `write --from` reports one
+row per draft under `pages` — `path`, `created`, `findings`, `dispositions`,
+`claims` and `digest`, with `preview` in a dry run and `blob` in a real one —
+and `unevaluated` once, at the top level, beside `from`, `date` and
+`resolve_checked`. `fix` reports what it `changed`, the
 ops it applied and whether the proof held, and a refused proof carries the
 findings that refused it.
 
@@ -100,6 +103,20 @@ findings that refused it.
 | 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a machine-local store this engine cannot read (`trust-store-malformed`, `bundles-registry-malformed`) |
 | 5 | `findings` | the tool worked and the subject failed: read `data.findings` |
 | 10 | `confirm_required` | an identity or blast-radius gate wants the plan pinned: `identity-candidates`, `open-claim-of-category` |
+
+`git-short-read` and `git-inconsistent-read` are the engine refusing git's
+answer rather than judging from it. Every git read hands git a file for its
+stdout, and a batch read hands git its request as a file too, so the answer
+and the request are whole by construction under any runtime; the
+terminators, the counts, each batch row's name against its request, and the
+two cross-checks stay as a second line. stderr is still a pipe, and it is
+read for three recognitions — a path HEAD does not hold, a directory in no
+repository, a server that refuses a filtered fetch — each of which, with its
+text lost, fails as `git-unavailable` or reports the origin unreachable
+rather than giving a smaller answer. Three pipes are not converted, and none
+chooses a judged page: the build stamp `tools/write-build-info.ts` records
+at build time, the plugin's hook scripts reading the CLI's envelope, and the
+suite's own reads (`docs/roadmap.md`).
 
 A usage error and a constitution error share exit 2 so a hook that tests only
 the code sees one answer, and carry different types so an agent that reads
@@ -344,8 +361,9 @@ What the registry rows below do not say.
   lines (`lexical:bm25`), with statistics from every walked page's items; an
   item whose text holds a query term only inside a longer word follows,
   unranked, as a line search would find it (`text:contains`). An item on a
-  retired page keeps its place in the list with its score halved and
-  `status:retired` among its reasons, as a retired page does. The identity
+  retired page stays in the candidate set with its score halved before the
+  sort, so it may move down the list, and `status:retired` among its
+  reasons, as a retired page does. The identity
   ladder does not apply, a query is required, and `--near` is refused beside
   it. The coverage block counts `pages_considered` and `items_considered`.
   A multi-word query matches a page or an item that holds any one of its

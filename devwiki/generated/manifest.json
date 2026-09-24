@@ -2,12 +2,12 @@
   "schema": "wikiwright/manifest",
   "totals": {
     "pages": 33,
-    "edges": 235
+    "edges": 237
   },
   "by_kind": {
     "relation": 69,
     "tagged": 46,
-    "wikilink": 120
+    "wikilink": 122
   },
   "by_label": {
     "relation": {
@@ -302,7 +302,7 @@
         "reference"
       ],
       "title": "The envelope and exit codes",
-      "description": "Every verb prints one JSON envelope on stdout, and a vault verb's names the bundle it read; the exit code is one of seven, each mapped to one error type; the judging verbs share one verdict block.",
+      "description": "Every verb prints one JSON envelope on stdout, and a vault verb's names the bundle it read; the exit code is one of seven, each mapped to one error type; lint, check and gate share one verdict block, and the writing verbs report the pages they wrote.",
       "tags": [
         "cli"
       ],
@@ -317,8 +317,10 @@
         },
         "wikilink": [
           "wiki/command-runtime.md",
+          "wiki/fixers.md",
           "wiki/git.md",
-          "wiki/repository-layout.md"
+          "wiki/repository-layout.md",
+          "wiki/writer-and-staged-gate.md"
         ]
       },
       "inbound": {
@@ -461,6 +463,7 @@
       },
       "inbound": {
         "wikilink": [
+          "wiki/envelope-and-exit-codes.md",
           "wiki/findings-and-routing.md"
         ]
       }
@@ -1338,6 +1341,7 @@
           ]
         },
         "wikilink": [
+          "wiki/envelope-and-exit-codes.md",
           "wiki/generated-artifacts.md",
           "wiki/git.md",
           "wiki/judge.md",
