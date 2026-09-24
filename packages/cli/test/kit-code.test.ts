@@ -179,12 +179,11 @@ describe("the code kit registers declarations only (docs/extending.md §The code
 });
 
 describe("a bundle over the code kit: install, grant, judge (docs/extending.md §Declaring a module)", () => {
-  it("before the grant, every judging verb refuses by name and leaves the approval to a maintainer", () => {
-    const r = runKit(BUNDLE, ["check"]);
-    assert.equal(r.status, 2, JSON.stringify(r.envelope));
-    assert.equal(r.envelope.error?.["code"], "module-untrusted");
-    assert.match(String(r.envelope.error?.["hint"]), /maintainer/u);
-    assert.doesNotMatch(String(r.envelope.error?.["hint"]), /trust grant/u);
+  it("installed, the kit loads with no approval step, its fixture proved by the load", () => {
+    const r = runKit(BUNDLE, ["modules", "list"]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    const row = ((r.envelope.data?.["loaded"] ?? []) as Record<string, unknown>[])[0];
+    assert.deepEqual(row?.["fixture"], { package: KIT_PACKAGE, pages: 7, findings: 4 });
   });
 
   it("the grant proves the fixture, and the bundle is judged under the kit's law", {

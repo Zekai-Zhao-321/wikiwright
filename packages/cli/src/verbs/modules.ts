@@ -16,7 +16,6 @@ import {
 } from "@wikiwright/core";
 import { fail, ok } from "../envelope.ts";
 import { lawFor, rootsOf } from "../law.ts";
-import { runModuleFixture } from "../modulefixture.ts";
 import {
   declaredModulesOf,
   forgetPreloadedModules,
@@ -36,8 +35,8 @@ function shapeOf(finding: Finding): string {
 /**
  * How the bundle's own package.json names a declared module — a `file:`
  * path, a version range, a tarball — beside the version the install resolved
- * to. Read off the bundle's manifest, never the lockfile: the trust digest is
- * the pin, and this is the spelling a reader edits.
+ * to. Read off the bundle's manifest, never the lockfile: the module's digest
+ * is the pin, and this is the spelling a reader edits.
  */
 function packageSpecOf(root: string, name: string): string | null {
   const manifest = join(root, "package.json");
@@ -95,22 +94,17 @@ export const modulesCommand: CommandSpec = {
     const declarations = declaredModulesOf(args.root);
 
     if (action === "list") {
-      // docs/extending.md §Declaring a module: what the bundle declares, what resolved, what its
-      // grant is pinned to, and whether its fixture passes. A module that did not load is
+      // docs/extending.md §Declaring a module: what the bundle declares, what resolved, the digest
+      // of its bytes, and what its fixture proved when it loaded. A module that did not load is
       // reported WITH its refusal rather than omitted, because an absent row is
       // exactly what a reader would read as "fine".
       const outcome = await loadDeclaredModules(args.root, declarations);
-      const proved = new Map<string, unknown>();
-      for (const module of outcome.loaded) {
-        const result = runModuleFixture(module);
-        proved.set(module.package, result.ok ? result.result : { failed: result.issue.message });
-      }
       // The whole of what a module contributed — the declarations a kit
       // is mostly made of (types, fragments, templates, skill fragments,
       // entries into another module's vocabulary) beside the code it
       // registered (grammars, checks, lanes) — and how the bundle names the
-      // package: the spelling in its package.json, the resolved version, the
-      // digest the grant pins, and the grant's standing on this machine.
+      // package: the spelling in its package.json, the resolved version and
+      // the digest the law names.
       return ok("modules", {
         declared: declarations.length,
         loaded: outcome.loaded
@@ -124,8 +118,6 @@ export const modulesCommand: CommandSpec = {
               path: `node_modules/${m.package}`,
             },
             digest: m.digest,
-            grant: "granted",
-            grant_scope: m.authorizedBy ?? null,
             contributes: {
               types: Object.keys(m.manifest.types ?? {}).sort(codeUnitCompare),
               fragments: Object.keys(m.manifest.fragments ?? {}).sort(codeUnitCompare),
@@ -141,7 +133,7 @@ export const modulesCommand: CommandSpec = {
               checks: Object.keys(m.manifest.checks ?? {}).sort(codeUnitCompare),
               lanes: [...(m.manifest.lanes ?? [])].sort(codeUnitCompare),
             },
-            fixture: proved.get(m.package) ?? null,
+            fixture: m.fixtureResult,
           }))
           .sort((a, b) => codeUnitCompare(a.package, b.package)),
         refused: outcome.issues.map((issue) => ({
@@ -150,14 +142,6 @@ export const modulesCommand: CommandSpec = {
             spec: packageSpecOf(args.root, issue.package),
             path: `node_modules/${issue.package}`,
           },
-          grant:
-            issue.code === "module-untrusted"
-              ? "missing"
-              : issue.code === "module-modified"
-                ? "modified"
-                : issue.code === "module-scope-unresolved"
-                  ? "scope-unresolved"
-                  : "not-reached",
         })),
       });
     }
@@ -201,6 +185,9 @@ export const modulesCommand: CommandSpec = {
     // Candidate: the SAME bundle, under the candidate root's resolution of the
     // one package. Resolution is the only variable — the pages, the constitution
     // and every other module are this bundle's, so the delta is the version's.
+    // The load proves the candidate's own fixture, as every load does, so a
+    // candidate that fails it is `candidate-unresolved`, its issue naming the
+    // fixture's code.
     const candidateLoad = await loadDeclaredModules(candidateRoot, [{ package: name }]);
     const candidateModule = candidateLoad.loaded[0];
     if (candidateLoad.issues.length > 0 || candidateModule === undefined) {
@@ -211,17 +198,6 @@ export const modulesCommand: CommandSpec = {
         "candidate-unresolved",
         `"${name}" did not load from "${candidate}"`,
         { data: { issues: candidateLoad.issues } },
-      );
-    }
-    const fixture = runModuleFixture(candidateModule);
-    if (!fixture.ok) {
-      forgetPreloadedModules(args.root);
-      return fail(
-        "modules",
-        "constitution",
-        fixture.issue.code,
-        `the candidate of "${name}" fails its own determinism fixture`,
-        { data: { issue: fixture.issue } },
       );
     }
     const others = await loadDeclaredModules(

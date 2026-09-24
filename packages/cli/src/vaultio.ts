@@ -214,10 +214,10 @@ export function loadVaultVia(
         ),
       };
     }
-    // docs/extending.md §The determinism fixture: every module here passed the trust gate, and the grant
-    // that admitted it was written only after its determinism fixture passed on
-    // these exact bytes (`trust grant`). A load under the granted digest is the
-    // same proof; it is not run again on every read.
+    // docs/extending.md §The determinism fixture: every module here passed the purity scan and its
+    // determinism fixture on these exact bytes when the entry point loaded it,
+    // once per digest in this process; a read of the vault does not run either
+    // again.
     const composed = loadModules([...STANDARD_LIBRARY, ...outcome.loaded.map((m) => m.manifest)]);
     if (!composed.ok) {
       return {

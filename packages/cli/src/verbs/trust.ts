@@ -6,7 +6,6 @@ import { existsSync } from "node:fs";
 import { codeUnitCompare } from "@wikiwright/core";
 import { today } from "../clock.ts";
 import { type CommandResult, fail, ok } from "../envelope.ts";
-import { runModuleFixture } from "../modulefixture.ts";
 import { declaredModulesOf, loadDeclaredModules, moduleDigest } from "../moduleload.ts";
 import { type CommandArgs, type CommandSpec, isDryRun, type Plan, planOf } from "../spec.ts";
 import {
@@ -462,13 +461,12 @@ export const trustCommand: CommandSpec = {
         { hint: "a module's verdict is a function of the page it is handed" },
       );
     }
-    // docs/extending.md §The determinism fixture: the fixture runs ONCE, here, on the bytes the grant pins.
-    // Every later load under this digest is the same proof, so a vault read does
-    // not run it again; a module that fails its own fixture is not granted.
+    // docs/extending.md §The determinism fixture: the load runs the fixture on the bytes the grant
+    // pins, as every load does; a module that fails its own fixture is not granted.
     const declaration = declaredModulesOf(args.root).find((d) => d.package === name) ?? {
       package: name,
     };
-    const loaded = await loadDeclaredModules(args.root, [declaration], { beforeGrant: true });
+    const loaded = await loadDeclaredModules(args.root, [declaration]);
     const issue = loaded.issues[0];
     if (issue !== undefined) {
       return fail("trust", "constitution", issue.code, issue.message, {
@@ -479,13 +477,6 @@ export const trustCommand: CommandSpec = {
     const module = loaded.loaded[0];
     if (module === undefined) {
       return fail("trust", "not_found", "module-not-found", `"${name}" did not load`);
-    }
-    const proved = runModuleFixture(module);
-    if (!proved.ok) {
-      return fail("trust", "constitution", "module-fixture-failed", proved.issue.message, {
-        hint: "a module ships input bytes and the findings they must produce; a grant approves a module the engine proved on this machine",
-        data: { issue: proved.issue },
-      });
     }
     // After the missing module, the impurity and the fixture, and before the
     // machine-local write.
@@ -513,7 +504,7 @@ export const trustCommand: CommandSpec = {
       ...(shared === undefined ? { vault } : { worktree_scope: shared }),
       sha256: digest.sha256,
       files: digest.files.length,
-      fixture: proved.result,
+      fixture: module.fixtureResult,
       statement:
         shared === undefined
           ? "granted module code runs inside the judge whenever this vault is judged; changing any of its files, or moving the vault, revokes"

@@ -671,8 +671,8 @@ describe("a machine-local store that does not parse is a named refusal (docs/cli
     assert.equal(bad.envelope.error?.code, "trust-store-malformed");
     assert.equal(bad.envelope.error?.details?.["record"], 0);
 
-    // The module loader's trust check reaches the same store: a vault verb over
-    // a bundle whose installed module is checked against it refuses by name.
+    // The module loader reads no store: a vault verb over a bundle whose module
+    // is installed loads it and judges, whatever the store holds.
     const bundle = join(tmp, "malformed-trust", "bundle-a");
     for (const part of ["config", "wiki"]) {
       cpSync(join(CONFORMANCE, "bundle-a", part), join(bundle, part), { recursive: true });
@@ -683,8 +683,7 @@ describe("a machine-local store that does not parse is a named refusal (docs/cli
       { recursive: true },
     );
     const loaded = run(tmp, ["type", "list", "--root", bundle], env);
-    assert.equal(loaded.status, 4, JSON.stringify(loaded.envelope));
-    assert.equal(loaded.envelope.error?.code, "trust-store-malformed");
+    assert.equal(loaded.status, 0, JSON.stringify(loaded.envelope));
     assert.equal(loaded.envelope.metadata.bundle?.["label"], "bundle-a");
   });
 });

@@ -291,7 +291,7 @@ describe("every envelope over a vault names the bundle it read (docs/cli.md §Th
   });
 });
 
-describe("the law digest names every installed module, trusted or not (docs/cli.md §The envelope)", () => {
+describe("the law digest names every installed module (docs/cli.md §The envelope)", () => {
   let tmp = "";
   let root = "";
   let env: NodeJS.ProcessEnv = {};
@@ -316,43 +316,33 @@ describe("the law digest names every installed module, trusted or not (docs/cli.
     assert.equal(r.envelope.ok, true, JSON.stringify(r.envelope));
   };
 
-  it("an ungranted module is in the law: the refusal names the law the grant then admits", () => {
-    const refused = run(root, ["type", "list"], env);
-    assert.equal(refused.envelope.error?.["code"], "module-untrusted");
-    const untrusted = refused.envelope.metadata.bundle;
-    assert.ok(untrusted !== undefined, JSON.stringify(refused.envelope));
-    grant();
-    const granted = bundleOf(root, ["type", "list"], env);
-    assert.equal(granted.law, untrusted.law, "a grant does not change what the law is");
-
-    // The module's line is the digest the grant pinned, as docs/cli.md spells it.
+  it("an installed module is in the law, as the digest the loader reports", () => {
+    const listedLaw = bundleOf(root, ["type", "list"], env);
+    // The module's line is the digest `modules list` reports, as docs/cli.md spells it.
     const listed = run(root, ["modules", "list"], env);
     const loaded = (listed.envelope.data?.["loaded"] ?? []) as { digest: string }[];
     const digest = loaded[0]?.digest ?? "";
     assert.match(digest, HEX);
-    assert.equal(granted.law, lawFormula(root, [`module:${PROBE} ${digest}`]));
+    assert.equal(listedLaw.law, lawFormula(root, [`module:${PROBE} ${digest}`]));
+    // A grant does not change what the law is.
+    grant();
+    assert.equal(bundleOf(root, ["type", "list"], env).law, listedLaw.law);
   });
 
-  it("a module's bytes move the law, granted or not", () => {
-    grant();
+  it("a module's bytes move the law", () => {
     const first = bundleOf(root, ["type", "list"], env);
-    writeFileSync(join(installed(), "NOTES.txt"), "a file the grant did not see\n");
-    const modified = run(root, ["type", "list"], env);
-    assert.equal(modified.envelope.error?.["code"], "module-modified");
-    const moved = modified.envelope.metadata.bundle;
-    assert.ok(moved !== undefined, JSON.stringify(modified.envelope));
+    writeFileSync(join(installed(), "NOTES.txt"), "a file the first digest did not see\n");
+    const moved = bundleOf(root, ["type", "list"], env);
     assert.notEqual(moved.law, first.law, "the module digest is part of the law");
     assert.equal(moved.content, first.content);
-    grant();
-    assert.equal(bundleOf(root, ["type", "list"], env).law, moved.law);
   });
 
-  it("an engine.json with a byte order mark declares its modules to the law, listed or refused", () => {
+  it("an engine.json with a byte order mark declares its modules to the law, listed or loaded", () => {
     // The loader reads a config that starts with a byte order mark. The law
-    // digest and the preload read the same declarations, so the ungranted
-    // module is refused by trust rather than by a preload that saw none, and a
+    // digest and the preload read the same declarations, so the module loads
+    // rather than the vault being refused by a preload that saw none, and a
     // module-only edit moves the law where the registry lists it and where a
-    // vault verb refuses.
+    // vault verb reads it.
     const marked = join(tmp, "marked");
     for (const part of ["config", "wiki", "package.json"]) {
       cpSync(join(root, part), join(marked, part), { recursive: true });
@@ -374,22 +364,22 @@ describe("the law digest names every installed module, trusted or not (docs/cli.
       assert.ok(law !== undefined, JSON.stringify(r.envelope));
       return law;
     };
-    const refused = (): string => {
+    const read = (): string => {
       const r = run(marked, ["type", "list"], owned);
-      assert.equal(r.envelope.error?.["code"], "module-untrusted", JSON.stringify(r.envelope));
+      assert.equal(r.envelope.ok, true, JSON.stringify(r.envelope));
       const law = r.envelope.metadata.bundle?.law;
       assert.ok(law !== undefined, JSON.stringify(r.envelope));
       return law;
     };
 
-    const first = { listed: listed(), refused: refused() };
-    assert.equal(first.listed, first.refused);
+    const first = { listed: listed(), read: read() };
+    assert.equal(first.listed, first.read);
     assert.notEqual(first.listed, lawFormula(marked, []), "the module's line is in the law");
     writeFileSync(join(module, "NOTES.txt"), "a file only the module holds\n");
-    const second = { listed: listed(), refused: refused() };
+    const second = { listed: listed(), read: read() };
     assert.notEqual(second.listed, first.listed, "a module-only edit moves the listed law");
-    assert.notEqual(second.refused, first.refused, "and the refusal's law");
-    assert.equal(second.listed, second.refused);
+    assert.notEqual(second.read, first.read, "and the law a vault verb reads");
+    assert.equal(second.listed, second.read);
   });
 
   it("a declared module that is not installed contributes no line", () => {

@@ -2,11 +2,11 @@
 // docs/architecture.md §The invariants
 //
 // e2e:modules — `config/engine.json` declares a module package, the package is
-// resolved from the bundle's own `node_modules`, pinned by the bundle's own
-// granted on this machine, scanned, loaded, proved against its own
-// fixture, and then GOVERNS the vault: its grammar parses, its arms fire, its
-// severity ratchets, its findings route to its own lane, and its coverage rows
-// are counted. Bytes on disk to a verdict, with nothing hard-coded in between.
+// resolved from the bundle's own `node_modules`, digested, scanned, loaded,
+// proved against its own fixture, and then GOVERNS the vault: its grammar
+// parses, its arms fire, its severity ratchets, its findings route to its own
+// lane, and its coverage rows are counted. Bytes on disk to a verdict, with
+// nothing hard-coded in between.
 //
 // The fixture module is domain-neutral test infrastructure. It is not a domain
 // model, not a recommended shape and not a product kit: it exists so this suite
@@ -31,6 +31,7 @@ import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { loadModules } from "@wikiwright/core";
 import { lawFor } from "../src/law.ts";
+import { fixtureRunCount, loadDeclaredModules } from "../src/moduleload.ts";
 import { loadVault } from "../src/vaultio.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
@@ -212,22 +213,22 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
     }
   });
 
-  it("refuses an untrusted module by name, before it can judge anything", () => {
+  it("an installed module loads with no approval step: installing is the consent", () => {
     install(BUNDLE_A);
-    // A fresh store: this is what a reviewer's machine looks like the first time.
+    // A fresh store: this is what a reviewer's machine looks like the first
+    // time, and the load reads nothing from it.
     rmSync(TRUST, { force: true });
     const listed = runAny(BUNDLE_A, ["modules", "list"]);
-    const refused = (listed.envelope.data?.["refused"] ?? []) as { code: string; grant: string }[];
+    assert.deepEqual(listed.envelope.data?.["refused"], [], JSON.stringify(listed.envelope));
+    const loaded = (listed.envelope.data?.["loaded"] ?? []) as Record<string, unknown>[];
     assert.deepEqual(
-      refused.map((r) => [r.code, r.grant]),
-      [["module-untrusted", "missing"]],
-      JSON.stringify(listed.envelope),
+      loaded.map((row) => row["package"]),
+      ["@wikiwright-fixture/probe"],
     );
-    // …and a verb that would judge the vault refuses too, rather than judging it
-    // under the standard library alone.
+    // …and a verb that judges the vault judges it under the module's law.
     const linted = runAny(BUNDLE_A, ["lint", "--all"]);
-    assert.equal(linted.envelope.ok, false);
-    assert.equal(linted.envelope.error?.["code"], "module-untrusted");
+    assert.equal(linted.envelope.ok, true, JSON.stringify(linted.envelope));
+    assert.equal(existsSync(TRUST), false, "a load wrote this machine's trust store");
   });
 
   it("a granted module resolves and reports what it registered", () => {
@@ -260,7 +261,7 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
     const resolved = row?.["resolved"] as Record<string, unknown>;
     assert.match(String(resolved["spec"]), /^file:.*module-fixture$/u);
     assert.equal(resolved["path"], "node_modules/@wikiwright-fixture/probe");
-    assert.equal(row?.["grant"], "granted");
+    assert.equal("grant" in (row ?? {}), false, "a row reports no approval: the load needs none");
     // docs/extending.md §The determinism fixture: the module's own fixture ran, twice, and agreed with itself.
     assert.deepEqual(row?.["fixture"], {
       package: "@wikiwright-fixture/probe",
@@ -269,30 +270,22 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
     });
   });
 
-  it("a module edited after its grant is refused, and the refusal says which", () => {
-    grant(BUNDLE_A);
+  it("a module edited after its install is proved again, under the digest of its new bytes", () => {
     const bundle = copyOf(BUNDLE_A);
     const entry = join(bundle, "node_modules", "@wikiwright-fixture", "probe", "index.js");
     const original = readFileSync(entry, "utf8");
-    try {
-      writeFileSync(entry, `${original}\n// edited after the grant\n`);
+    const digestOf = (): string => {
       const listed = runAny(bundle, ["modules", "list"]);
-      const refused = (listed.envelope.data?.["refused"] ?? []) as { code: string }[];
-      // The COPY has a different vault key, so it is untrusted rather than
-      // modified — which is the same law from the other side: a grant covers one
-      // vault at one content hash, and neither may drift.
-      assert.equal(refused.length, 1, JSON.stringify(listed.envelope));
-      assert.equal(refused[0]?.code, "module-untrusted");
-      // Grant the copy as it stands, then edit it: now it is `module-modified`.
-      runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-      writeFileSync(entry, `${original}\n// edited AFTER the grant\n`);
-      const again = runAny(bundle, ["modules", "list"]);
-      const second = (again.envelope.data?.["refused"] ?? []) as { code: string }[];
-      assert.deepEqual(
-        second.map((r) => r.code),
-        ["module-modified"],
-        JSON.stringify(again.envelope),
-      );
+      const loaded = (listed.envelope.data?.["loaded"] ?? []) as { digest: string }[];
+      assert.equal(loaded.length, 1, JSON.stringify(listed.envelope));
+      return loaded[0]?.digest ?? "";
+    };
+    try {
+      const before = digestOf();
+      writeFileSync(entry, `${original}\n// edited after the install\n`);
+      // A pure edit loads, and the digest the law names is the new bytes'.
+      const after = digestOf();
+      assert.notEqual(after, before, "an edit to the entry moved no digest");
     } finally {
       rmSync(bundle, { recursive: true, force: true });
     }
@@ -300,11 +293,11 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
 
   // ---- the two ways the package boundary leaked ----------------------------
 
-  it("a dot-prefixed entry is inside the grant, not beside it", () => {
+  it("a dot-prefixed entry is inside the digest, not beside it", () => {
     // The hole: `moduleFiles` skipped every dot-prefixed name, so a package
     // could name `.hidden.mjs` as its entry, load it, and edit it afterwards
     // with the digest unmoved. Reproduced against a real install before the fix:
-    // the grant hashed TWO files and the entry was not one of them.
+    // the digest covered TWO files and the entry was not one of them.
     const bundle = copyOf(BUNDLE_A);
     const pkg = join(bundle, "node_modules", "@wikiwright-fixture", "probe");
     try {
@@ -323,17 +316,17 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
       const loaded = (listed.envelope.data?.["loaded"] ?? []) as unknown[];
       assert.equal(loaded.length, 1, JSON.stringify(listed.envelope));
 
+      const before = (loaded[0] as { digest: string }).digest;
+
       // A PURE edit — a comment, nothing the purity scan would catch on its own.
-      // Before the boundary fix this left the digest identical and the grant standing.
+      // Before the boundary fix this left the digest identical, so the law named
+      // bytes that no longer judged.
       const hidden = join(pkg, ".hidden.mjs");
-      writeFileSync(hidden, `${readFileSync(hidden, "utf8")}\n// edited after the grant\n`);
+      writeFileSync(hidden, `${readFileSync(hidden, "utf8")}\n// edited after the install\n`);
       const again = runAny(bundle, ["modules", "list"]);
-      const refused = (again.envelope.data?.["refused"] ?? []) as { code: string }[];
-      assert.deepEqual(
-        refused.map((r) => r.code),
-        ["module-modified"],
-        JSON.stringify(again.envelope),
-      );
+      const reloaded = (again.envelope.data?.["loaded"] ?? []) as { digest: string }[];
+      assert.equal(reloaded.length, 1, JSON.stringify(again.envelope));
+      assert.notEqual(reloaded[0]?.digest, before, "an edit to the hidden entry moved no digest");
     } finally {
       rmSync(bundle, { recursive: true, force: true });
     }
@@ -590,26 +583,95 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
     }
   });
 
-  it("a module whose own fixture disagrees with this engine is not granted", () => {
+  it("a module whose own fixture disagrees with this engine is refused at every load", () => {
     const bundle = copyOf(BUNDLE_A);
     const fixture = join(bundle, "node_modules", "@wikiwright-fixture", "probe", "fixture.json");
     try {
-      runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
       const parsed = JSON.parse(readFileSync(fixture, "utf8")) as { expected: string[] };
       parsed.expected = [];
       writeFileSync(fixture, JSON.stringify(parsed, null, 2));
-      // The fixture is not executable code, so the digest changes and the grant
-      // is stale. The re-grant is where the fixture runs — and it refuses.
+      // docs/extending.md §The determinism fixture: the load runs the fixture on the installed
+      // bytes before the module judges anything, so every verb that reads the
+      // vault's law refuses by the fixture's own name, with its hint.
+      for (const argv of [["check"], ["search", "probe"], ["type", "show", "widget"]]) {
+        const r = runAny(bundle, argv);
+        assert.equal(r.status, 2, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
+        assert.equal(r.envelope.error?.["code"], "module-fixture-failed", argv.join(" "));
+        assert.match(String(r.envelope.error?.["hint"]), /regenerate the fixture/u);
+      }
+      const listed = runAny(bundle, ["modules", "list"]);
+      assert.deepEqual(listed.envelope.data?.["loaded"], []);
+      assert.deepEqual(
+        ((listed.envelope.data?.["refused"] ?? []) as { code: string }[]).map((r) => r.code),
+        ["module-fixture-failed"],
+      );
+      // The grant runs the same load, and refuses by the same name.
       const regrant = runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
       assert.equal(regrant.envelope.ok, false, JSON.stringify(regrant.envelope));
       assert.equal(regrant.envelope.error?.["code"], "module-fixture-failed");
-      // No grant landed for the edited bytes, so the vault stays unjudgeable
-      // under the stale one: the module is `modified`, not silently loaded.
-      const linted = runAny(bundle, ["lint", "--all"]);
-      assert.equal(linted.envelope.ok, false);
-      assert.equal(linted.envelope.error?.["code"], "module-modified");
     } finally {
       rmSync(bundle, { recursive: true, force: true });
+    }
+  });
+
+  it("a module whose findings differ between two runs is refused as nondeterministic", () => {
+    const bundle = copyOf(BUNDLE_A);
+    const entry = join(bundle, "node_modules", "@wikiwright-fixture", "probe", "index.js");
+    try {
+      // A counter at module scope: nothing the purity scan names, and the
+      // census arm stops firing after its second call, so the fixture's second
+      // run finds less than its first.
+      const before = readFileSync(entry, "utf8");
+      const source = `let calls = 0;\n${before.replace(
+        '            const probe = asProbe(item);\n            if (probe === undefined) return;\n            ctx.emit(\n              "@wikiwright-fixture/probe/measured",',
+        '            const probe = asProbe(item);\n            if (probe === undefined) return;\n            calls += 1;\n            if (calls > 2) return;\n            ctx.emit(\n              "@wikiwright-fixture/probe/measured",',
+      )}`;
+      assert.notEqual(source, `let calls = 0;\n${before}`, "the mutation landed");
+      writeFileSync(entry, source);
+      for (const argv of [["check"], ["search", "probe"], ["type", "show", "widget"]]) {
+        const r = runAny(bundle, argv);
+        assert.equal(r.status, 2, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
+        assert.equal(r.envelope.error?.["code"], "module-nondeterministic", argv.join(" "));
+        assert.match(String(r.envelope.error?.["hint"]), /find the state it is reading/u);
+      }
+    } finally {
+      rmSync(bundle, { recursive: true, force: true });
+    }
+  });
+
+  it("the fixture runs once per process for one digest, however many bundles load it", async () => {
+    // Two bundles holding the same module bytes at two roots: the proof is the
+    // digest's, not the root's, so the second load reuses the first's verdict.
+    // A third holding one byte more is other bytes, and is proved on its own.
+    const roots = ["one", "two", "edited"].map((name) => {
+      const root = mkdtempSync(join(tmpdir(), `ww-proof-${name}-`));
+      cpSync(
+        join(CONFORMANCE, "module-fixture"),
+        join(root, "node_modules", "@wikiwright-fixture", "probe"),
+        { recursive: true },
+      );
+      return root;
+    });
+    const [one = "", two = "", edited = ""] = roots;
+    const entry = join(edited, "node_modules", "@wikiwright-fixture", "probe", "index.js");
+    writeFileSync(entry, `${readFileSync(entry, "utf8")}\n// one byte more\n`);
+    const declared = [{ package: "@wikiwright-fixture/probe", version: "^1.0.0" }];
+    try {
+      const start = fixtureRunCount();
+      const first = await loadDeclaredModules(one, declared);
+      assert.deepEqual(first.issues, []);
+      assert.equal(fixtureRunCount(), start + 1, "the first load ran the fixture");
+      const second = await loadDeclaredModules(two, declared);
+      assert.deepEqual(second.issues, []);
+      assert.equal(second.loaded[0]?.digest, first.loaded[0]?.digest, "the same bytes");
+      assert.equal(fixtureRunCount(), start + 1, "a second load of one digest ran it again");
+      assert.deepEqual(second.loaded[0]?.fixtureResult, first.loaded[0]?.fixtureResult);
+      const third = await loadDeclaredModules(edited, declared);
+      assert.deepEqual(third.issues, []);
+      assert.notEqual(third.loaded[0]?.digest, first.loaded[0]?.digest);
+      assert.equal(fixtureRunCount(), start + 2, "other bytes are proved on their own");
+    } finally {
+      for (const root of roots) rmSync(root, { recursive: true, force: true });
     }
   });
 });

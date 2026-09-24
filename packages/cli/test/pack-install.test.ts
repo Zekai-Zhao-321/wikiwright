@@ -235,13 +235,6 @@ describe("a module installs as a tarball, and governs (docs/extending.md §Decla
     const trust = join(workspace, "pack-trust.json");
     const env = { WIKIWRIGHT_TRUST_FILE: trust };
 
-    const untrusted = run(["modules", "list", "--root", bundle], CONSUMER ?? REPO, env);
-    assert.deepEqual(
-      ((untrusted.data?.["refused"] ?? []) as { code: string }[]).map((r) => r.code),
-      ["module-untrusted"],
-      JSON.stringify(untrusted),
-    );
-
     const granted = run(
       ["trust", "grant", "module:@wikiwright-fixture/probe", "--root", bundle],
       CONSUMER ?? REPO,

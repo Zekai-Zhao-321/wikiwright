@@ -132,8 +132,8 @@ export const ENGINE_CONFIG_CONSUMERS: Readonly<Record<string, string | readonly 
   extensions: "lintOptionsFor",
   commit_prefixes: "commitPrefixVerdict",
   move_reasons: "moveReasonsOf",
-  // docs/extending.md §Declaring a module: the shell resolves, pins, trusts, scans and
-  // loads each declared module before any vault is judged under it.
+  // docs/extending.md §Declaring a module: the shell resolves, digests, scans, loads and
+  // proves each declared module before any vault is judged under it.
   modules: "loadDeclaredModules",
 };
 

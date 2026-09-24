@@ -145,7 +145,7 @@ export {
   transitionSeam,
 } from "./modules/index.ts";
 export type { PurityViolation } from "./modules/purity.ts";
-export { scanPurity } from "./modules/purity.ts";
+export { PURITY_SCAN_VERSION, scanPurity } from "./modules/purity.ts";
 export { basenameOf } from "./names/basename.ts";
 export type { NamedPage, NameEntry, NameIndex } from "./names/index.ts";
 export { buildNameIndex, checkVaultIdentity } from "./names/index.ts";

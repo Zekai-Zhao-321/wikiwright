@@ -1,15 +1,15 @@
 // docs/extending.md §The determinism fixture (a determinism fixture per module,
-// input bytes and expected findings, run by the engine at the grant that pins
-// the module's bytes — before the module judges anything of the bundle's — and
-// again by `modules list` and `modules plan` on request) · docs/architecture.md §The invariants
+// input bytes and expected findings, run by the loader on the module's bytes
+// once per process — before the module judges anything of the bundle's) ·
+// docs/architecture.md §The invariants
 //
 // The second of the three determinism guards. The purity scan reads a module's
 // bytes and refuses the ordinary ways of reaching the clock; this runs the
 // module and requires it to be a FUNCTION of its input: the same bytes, twice,
 // in one process, and the findings it shipped as its own expectation.
 //
-// Separate from `moduleload.ts` because it needs the composed registry, and the
-// registry is composed only after every declared module has resolved.
+// Separate from `moduleload.ts` because it composes a registry and runs the
+// judge, which loading a package does not otherwise need.
 import { readFileSync } from "node:fs";
 import {
   judge,
@@ -18,7 +18,6 @@ import {
   type ModuleManifest,
   STANDARD_LIBRARY,
 } from "@wikiwright/core";
-import type { LoadedModule, ModuleIssue } from "./moduleload.ts";
 
 /**
  * What a module ships beside its code: a constitution that declares the module's
@@ -49,13 +48,36 @@ export interface FixtureResult {
 }
 
 /**
+ * The fixture's refusal, in the shape of the loader's `ModuleIssue` and with
+ * one of its two codes. Declared here rather than imported, so this file needs
+ * nothing of the loader that calls it.
+ */
+export interface FixtureIssue {
+  code: "module-fixture-failed" | "module-nondeterministic";
+  package: string;
+  message: string;
+  hint?: string;
+  details?: Record<string, unknown>;
+}
+
+/** What one run of a fixture proved: its result, or the refusal the load reports. */
+export type FixtureVerdict =
+  | { ok: true; result: FixtureResult }
+  | { ok: false; issue: FixtureIssue };
+
+/** The loaded module a fixture runs: its declared name, its manifest and where its fixture lies. */
+export interface FixtureSubject {
+  package: string;
+  manifest: ModuleManifest;
+  fixture: string;
+}
+
+/**
  * docs/extending.md §The determinism fixture: run one module's fixture under a registry composed of the
  * standard library plus THAT module — never the whole bundle's module set, so a
  * fixture proves the module rather than the company it keeps.
  */
-export function runModuleFixture(
-  module: LoadedModule,
-): { ok: true; result: FixtureResult } | { ok: false; issue: ModuleIssue } {
+export function runModuleFixture(module: FixtureSubject): FixtureVerdict {
   let fixture: ModuleFixture;
   try {
     fixture = JSON.parse(readFileSync(module.fixture, "utf8")) as ModuleFixture;

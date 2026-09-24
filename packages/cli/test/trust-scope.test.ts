@@ -1,10 +1,12 @@
-// docs/cli.md §trust · docs/extending.md §Declaring a module: a grant
-// approves exact module bytes for one vault, or, when a maintainer chooses the
-// worktree scope, for one vault path in every linked worktree of one clone. The
-// shared scope is keyed by the repository's git common directory and the
-// vault's path inside its worktree, spelled as the filesystem spells it. The
-// default scope is the one this engine always had, and nothing widens a grant
-// but an explicit write.
+// docs/cli.md §trust: a grant records exact module bytes for one vault, or,
+// when a maintainer chooses the worktree scope, for one vault path in every
+// linked worktree of one clone. The shared scope is keyed by the repository's
+// git common directory and the vault's path inside its worktree, spelled as the
+// filesystem spells it.
+//
+// The load no longer reads a grant: installing a module is the consent to run
+// it, and the load proves the module's bytes itself. What stays here until the
+// verb goes is the store the verb reads and writes.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
@@ -13,7 +15,6 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -169,22 +170,6 @@ function grant(root: string, store: string, scope?: "vault" | "worktrees"): Enve
   return r.envelope;
 }
 
-/** `authorized:<scope>` when the module loads, else the refusal's code. */
-function standing(root: string, store: string, env: NodeJS.ProcessEnv = {}): string {
-  const r = cli(root, ["modules", "list"], store, env);
-  const loaded = (r.envelope.data?.["loaded"] ?? []) as { grant_scope?: string }[];
-  if (loaded.length === 1) return `authorized:${String(loaded[0]?.grant_scope)}`;
-  const refused = (r.envelope.data?.["refused"] ?? []) as { code: string }[];
-  return refused[0]?.code ?? JSON.stringify(r.envelope);
-}
-
-function refusal(root: string, store: string): { code: string; hint?: string } {
-  const r = cli(root, ["modules", "list"], store);
-  const refused = (r.envelope.data?.["refused"] ?? []) as { code: string; hint?: string }[];
-  assert.equal(refused.length, 1, JSON.stringify(r.envelope));
-  return refused[0] ?? { code: "none" };
-}
-
 interface StoredGrant {
   vault?: string;
   scope?: string;
@@ -202,13 +187,10 @@ function stored(store: string): { schema_version: number; grants: StoredGrant[] 
 }
 
 describe("the vault scope is the grant this engine always had", () => {
-  it("a vault grant approves its vault and not a linked worktree of it", SLOW, () => {
+  it("a vault grant is keyed by the vault's real path, in the 0.1.0 shape", SLOW, () => {
     const store = storeFile();
-    const { repo, vault } = repository();
+    const { vault } = repository();
     grant(vault, store);
-    assert.equal(standing(vault, store), "authorized:vault");
-    const wt = worktree(repo, "wt");
-    assert.equal(standing(join(wt, "vault"), store), "module-untrusted");
     const [record] = stored(store).grants;
     assert.equal(record?.vault, realpathSync(vault));
     assert.equal("scope" in (record ?? {}), false, "a vault grant keeps the 0.1.0 shape");
@@ -219,46 +201,13 @@ describe("the vault scope is the grant this engine always had", () => {
     const { vault } = repository();
     grant(vault, store);
     edit(vault);
-    assert.equal(standing(vault, store), "module-modified");
     grant(vault, store);
     const grants = stored(store).grants;
     assert.equal(grants.length, 1, JSON.stringify(grants));
-    assert.equal(standing(vault, store), "authorized:vault");
   });
 });
 
 describe("a worktree-scope grant approves one vault path in every linked worktree of a clone", () => {
-  it(
-    "attached, detached and moved worktrees, made before or after the grant, share it",
-    SLOW,
-    () => {
-      const store = storeFile();
-      const { repo, vault } = repository();
-      const before = worktree(repo, "before");
-      grant(vault, store, "worktrees");
-      const later = worktree(repo, "later");
-      const detached = worktree(repo, "detached", "--detach");
-      const moving = worktree(repo, "moving");
-      const moved = `${moving}-moved`;
-      git(repo, "worktree", "move", moving, moved);
-      for (const checkout of [repo, before, later, detached, moved]) {
-        assert.equal(standing(join(checkout, "vault"), store), "authorized:worktrees", checkout);
-      }
-    },
-  );
-
-  it("another vault in the same repository and a separate clone stay unapproved", SLOW, () => {
-    const store = storeFile();
-    const { repo, vault } = repository();
-    cpSync(BASE, join(repo, "another-vault"), { recursive: true, dereference: true });
-    grant(vault, store, "worktrees");
-    assert.equal(standing(join(repo, "another-vault"), store), "module-untrusted");
-    const clone = fresh("clone");
-    git(SCRATCH, "clone", "-q", repo, clone);
-    install(join(clone, "vault"));
-    assert.equal(standing(join(clone, "vault"), store), "module-untrusted");
-  });
-
   it(
     "the store keys the scope by git common directory and vault path, with no vault field",
     SLOW,
@@ -281,9 +230,9 @@ describe("a worktree-scope grant approves one vault path in every linked worktre
   );
 });
 
-describe("approval stays tied to exact bytes", () => {
+describe("a grant stays tied to exact bytes", () => {
   it(
-    "changed bytes are modified until approved, and approving them keeps the other version",
+    "a grant of changed bytes keeps the other version, and the listing tells them apart",
     SLOW,
     () => {
       const store = storeFile();
@@ -291,15 +240,7 @@ describe("approval stays tied to exact bytes", () => {
       grant(vault, store, "worktrees");
       const wt = worktree(repo, "wt");
       edit(join(wt, "vault"));
-      assert.equal(standing(join(wt, "vault"), store), "module-modified");
-      assert.equal(standing(vault, store), "authorized:worktrees");
       grant(join(wt, "vault"), store, "worktrees");
-      assert.equal(standing(join(wt, "vault"), store), "authorized:worktrees");
-      assert.equal(
-        standing(vault, store),
-        "authorized:worktrees",
-        "the first version stays approved",
-      );
       const listed = cli(vault, ["trust", "list"], store);
       const rows = (listed.envelope.data?.["grants"] ?? []) as { scope: string; status: string }[];
       assert.deepEqual(rows.map((r) => `${r.scope}:${r.status}`).sort(), [
@@ -308,30 +249,9 @@ describe("approval stays tied to exact bytes", () => {
       ]);
     },
   );
-
-  it(
-    "a matching digest in either scope approves; an outdated applicable grant is modified",
-    SLOW,
-    () => {
-      const store = storeFile();
-      const { repo, vault } = repository();
-      const wt = worktree(repo, "wt");
-      const wtVault = join(wt, "vault");
-      grant(wtVault, store);
-      edit(wtVault);
-      assert.equal(standing(wtVault, store), "module-modified", "only a stale vault grant applies");
-      grant(wtVault, store, "worktrees");
-      assert.equal(
-        standing(wtVault, store),
-        "authorized:worktrees",
-        "a stale vault grant does not block a matching worktree grant",
-      );
-      assert.equal(standing(vault, store), "module-modified", "the shared scope holds other bytes");
-    },
-  );
 });
 
-describe("git identity is read only when a worktree-scope grant could apply", () => {
+describe("git identity is read only when the verb names the worktree scope", () => {
   /** A `git` on PATH that logs each argv, so a case can count identity lookups. */
   function countingGit(): { env: NodeJS.ProcessEnv; lookups: () => number } {
     const real = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
@@ -352,22 +272,6 @@ describe("git identity is read only when a worktree-scope grant could apply", ()
         : 0;
     return { env, lookups };
   }
-
-  it("a matching vault grant needs no lookup; a worktree that needs one makes one", SLOW, () => {
-    if (WINDOWS) return;
-    const store = storeFile();
-    const { repo, vault } = repository();
-    grant(vault, store);
-    const counted = countingGit();
-    assert.equal(standing(vault, store, counted.env), "authorized:vault");
-    assert.equal(counted.lookups(), 0, "no worktree grant exists, so git is not asked");
-    grant(vault, store, "worktrees");
-    assert.equal(standing(vault, store, counted.env), "authorized:vault");
-    assert.equal(counted.lookups(), 0, "the vault grant approves first");
-    const wt = worktree(repo, "wt");
-    assert.equal(standing(join(wt, "vault"), store, counted.env), "authorized:worktrees");
-    assert.equal(counted.lookups(), 1, "one lookup, for the one vault that needed it");
-  });
 
   it("a lookup that is needed and fails is an explicit refusal, not a quieter answer", SLOW, () => {
     const store = storeFile();
@@ -391,7 +295,6 @@ describe("git identity is read only when a worktree-scope grant could apply", ()
         ],
       })}\n`,
     );
-    assert.equal(standing(outside, store), "module-scope-unresolved");
     const refused = cli(
       outside,
       ["trust", "grant", `module:${MODULE}`, "--scope", "worktrees"],
@@ -403,11 +306,6 @@ describe("git identity is read only when a worktree-scope grant could apply", ()
       JSON.stringify(refused.envelope),
     );
     grant(outside, store);
-    assert.equal(
-      standing(outside, store),
-      "authorized:vault",
-      "a matching vault grant needs no git",
-    );
   });
 
   it("a verb that reads no vault law asks git nothing, worktree grant or not", SLOW, () => {
@@ -421,9 +319,6 @@ describe("git identity is read only when a worktree-scope grant could apply", ()
     const listed = cli(vault, ["trust", "list", "--scope", "vault"], store, counted.env);
     assert.equal(listed.envelope.ok, true, JSON.stringify(listed.envelope));
     assert.equal(counted.lookups(), 0, "a trust listing preloaded the vault's modules");
-    // `modules list` reads the law, so the one lookup it needs is made.
-    assert.equal(standing(vault, store, counted.env), "authorized:worktrees");
-    assert.equal(counted.lookups(), 1);
   });
 
   it("a missing module is refused before any scope is written", SLOW, () => {
@@ -502,8 +397,6 @@ describe("revocation and listing say which scope approves", () => {
       assert.equal(revoked.envelope.ok, true, JSON.stringify(revoked.envelope));
       assert.equal(revoked.envelope.data?.["removed"], 2);
       assert.equal(revoked.envelope.data?.["still_authorized_by"], "vault");
-      assert.equal(standing(vault, store), "authorized:vault");
-      assert.equal(standing(join(wt, "vault"), store), "module-untrusted");
       const again = cli(
         vault,
         ["trust", "revoke", `module:${MODULE}`, "--scope", "worktrees"],
@@ -631,32 +524,13 @@ describe("the store keeps both record shapes, and an older engine reads it safel
     const afterDrop = oldDrop(afterPut, key, `module:${MODULE}`);
     assert.deepEqual(afterDrop, shared, "the older writer round-trips the worktree record");
     writeFileSync(store, `${JSON.stringify({ ...stored(store), grants: afterPut })}\n`);
-    assert.equal(standing(vault, store), "authorized:worktrees", "the newer reader reads it back");
-  });
-
-  it("a 0.1.0 store approves exactly what it approved, and judging never rewrites it", SLOW, () => {
-    const store = storeFile();
-    const { repo, vault } = repository();
-    grant(vault, store);
-    const current = stored(store).grants[0]?.sha256 ?? "";
-    const legacy = `${JSON.stringify({
-      schema: "wikiwright/trust",
-      schema_version: 1,
-      grants: [
-        {
-          vault: realpathSync(vault),
-          path: `module:${MODULE}`,
-          sha256: current,
-          granted: "2026-09-04",
-        },
-      ],
-    })}\n`;
-    writeFileSync(store, legacy);
-    const wt = worktree(repo, "wt");
-    assert.equal(standing(vault, store), "authorized:vault");
-    assert.equal(standing(join(wt, "vault"), store), "module-untrusted", "no silent widening");
-    cli(vault, ["check"], store);
-    assert.equal(readFileSync(store, "utf8"), legacy, "only an explicit write migrates the store");
+    const listed = cli(vault, ["trust", "list"], store);
+    const rows = (listed.envelope.data?.["grants"] ?? []) as { scope: string; status: string }[];
+    assert.deepEqual(
+      rows.map((r) => `${r.scope}:${r.status}`),
+      ["vault:modified", "worktrees:current"],
+      "the newer reader reads both back",
+    );
   });
 
   it("a record that is both shapes, or neither, is refused by name", () => {
@@ -695,37 +569,6 @@ describe("the key keeps the path as the filesystem spells it", () => {
     assert.equal(scopeKeyFrom("/c/.git", "vault\\nested/", "win32").vault_path, "vault/nested");
     assert.equal(scopeKeyFrom("/c/.git", "", "linux").vault_path, ".");
   });
-
-  it(
-    "two vaults that differ only in Unicode form are two scopes where the filesystem keeps them apart",
-    SLOW,
-    () => {
-      const store = storeFile();
-      const nfc = "vault-é";
-      const nfd = "vault-é";
-      const { repo } = repository(nfc);
-      let distinct = false;
-      try {
-        mkdirSync(join(repo, nfd));
-        distinct = readdirSync(repo).includes(nfd) && readdirSync(repo).includes(nfc);
-      } catch {
-        distinct = false;
-      }
-      grant(join(repo, nfc), store, "worktrees");
-      if (distinct) {
-        cpSync(BASE, join(repo, nfd), { recursive: true, dereference: true });
-        assert.equal(standing(join(repo, nfd), store), "module-untrusted");
-      } else {
-        // A filesystem that folds Unicode forms holds one directory under both
-        // spellings. The key is not normalized, so the other spelling may match or
-        // fail closed; it may not be anything else.
-        assert.match(
-          standing(join(repo, nfd), store),
-          /^(authorized:worktrees|module-untrusted)$/u,
-        );
-      }
-    },
-  );
 
   it("a backslash in a directory name is not a separator on POSIX", SLOW, () => {
     if (WINDOWS) return;
@@ -773,7 +616,6 @@ describe("the key keeps the path as the filesystem spells it", () => {
     const other = listed(join(repo, "vault", "nested"));
     assert.equal(other.worktree_scope.vault_path, "vault/nested");
     assert.deepEqual(other.grants, []);
-    assert.equal(standing(join(repo, "vault", "nested"), store), "module-untrusted");
   });
 
   it("a newline in a path leaves no worktree identity, never a shorter path's", SLOW, () => {
@@ -785,7 +627,6 @@ describe("the key keeps the path as the filesystem spells it", () => {
     // newline in a path verbatim: `vault\nx` once read as `vault`.
     const below = join(repo, "vault\nx");
     cpSync(BASE, below, { recursive: true, dereference: true });
-    assert.equal(standing(below, store), "module-scope-unresolved");
     const refused = cli(
       below,
       ["trust", "grant", `module:${MODULE}`, "--scope", "worktrees"],
@@ -796,92 +637,5 @@ describe("the key keeps the path as the filesystem spells it", () => {
       "scope-unresolved",
       JSON.stringify(refused.envelope),
     );
-    assert.equal(standing(vault, store), "authorized:worktrees");
-    // Above the vault: a main checkout's common directory is printed relative
-    // to the vault and reads whole, as a scope of its own; a linked worktree's
-    // is printed whole, newline included, and is refused.
-    const above = fresh("re\npo");
-    mkdirSync(above, { recursive: true });
-    cpSync(BASE, join(above, "vault"), { recursive: true, dereference: true });
-    writeFileSync(join(above, ".gitignore"), "node_modules/\n");
-    git(above, "init", "-q", "-b", "main");
-    git(above, "config", "user.email", "test@example.com");
-    git(above, "config", "user.name", "Test");
-    git(above, "add", "-A");
-    git(above, "commit", "-q", "-m", "seed");
-    const linked = worktree(above, "wt");
-    assert.equal(standing(join(above, "vault"), store), "module-untrusted");
-    assert.equal(standing(join(linked, "vault"), store), "module-scope-unresolved");
-  });
-});
-
-describe("a real pre-commit hook in a linked worktree reads the same scope", () => {
-  it("a commit whose hook judges the vault finds the worktree-scope grant", SLOW, () => {
-    if (WINDOWS) return;
-    const store = storeFile();
-    const { repo, vault } = repository();
-    grant(vault, store, "worktrees");
-    const wt = worktree(repo, "wt");
-    const mark = join(fresh("mark"), "ran");
-    mkdirSync(join(mark, ".."), { recursive: true });
-    // git runs the hook with GIT_DIR exported and the worktree's top as the
-    // working directory: the environment the scope key must survive.
-    const hook = join(repo, ".git", "hooks", "pre-commit");
-    writeFileSync(
-      hook,
-      [
-        "#!/bin/sh",
-        'touch "$WW_MARK"',
-        'out=$("$WW_NODE" "$WW_CLI" modules list --root vault)',
-        `printf '%s' "$out" | "$WW_NODE" -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const e=JSON.parse(s);const l=(e.data&&e.data.loaded)||[];process.exit(l.length===1&&l[0].grant_scope==="worktrees"?0:1)})' || { printf '%s\\n' "$out" >&2; exit 1; }`,
-        "",
-      ].join("\n"),
-    );
-    chmodSync(hook, 0o755);
-    const r = spawnSync("git", ["commit", "-q", "--allow-empty", "-m", "test: through the hook"], {
-      cwd: wt,
-      encoding: "utf8",
-      env: {
-        ...cleanEnv(),
-        ...PINNED_CLOCK,
-        WIKIWRIGHT_TRUST_FILE: store,
-        WW_MARK: mark,
-        WW_NODE: CLI_RUNTIME,
-        WW_CLI: CLI,
-      },
-    });
-    assert.equal(existsSync(mark), true, "the hook ran");
-    assert.equal(r.status, 0, `the hook refused the approved worktree: ${r.stderr}`);
-  });
-});
-
-describe("a refusal names the maintainer's decision, never a grant command", () => {
-  it("module-unresolved, module-untrusted and module-modified say who decides", SLOW, () => {
-    const store = storeFile();
-    const bare = fresh("bare");
-    cpSync(BASE, bare, {
-      recursive: true,
-      dereference: true,
-      filter: (src) => !src.includes("node_modules"),
-    });
-    const untrusted = fresh("untrusted");
-    cpSync(BASE, untrusted, { recursive: true, dereference: true });
-    const modified = fresh("modified");
-    cpSync(BASE, modified, { recursive: true, dereference: true });
-    grant(modified, store);
-    edit(modified);
-    for (const [root, code] of [
-      [bare, "module-unresolved"],
-      [untrusted, "module-untrusted"],
-      [modified, "module-modified"],
-    ] as const) {
-      const r = refusal(root, store);
-      assert.equal(r.code, code);
-      assert.doesNotMatch(r.hint ?? "", /trust grant/u, `${code} hands out a grant command`);
-      assert.match(r.hint ?? "", /maintainer/u, `${code} does not say who decides`);
-    }
-    const checked = cli(untrusted, ["check"], store);
-    assert.equal(checked.envelope.error?.["code"], "module-untrusted");
-    assert.doesNotMatch(String(checked.envelope.error?.["hint"]), /trust grant/u);
   });
 });

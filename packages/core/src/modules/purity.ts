@@ -13,6 +13,14 @@
 // see. What the scan buys is that the ORDINARY way of reaching one is refused by
 // name, at load, with the line that reached.
 
+/**
+ * The version of the rules below. A proof is cached by the module's digest and
+ * this number, so a change to any pattern bumps it: bytes the older rules
+ * passed are scanned again under the newer ones rather than served a verdict
+ * the rules that gave it no longer give.
+ */
+export const PURITY_SCAN_VERSION = 1;
+
 export interface PurityViolation {
   /** The construct that was found, as this scan names it. */
   readonly reason: string;

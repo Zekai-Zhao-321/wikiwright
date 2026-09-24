@@ -1,16 +1,17 @@
 // docs/extending.md §Declaring a module, docs/extending.md §The determinism fixture, docs/extending.md §Adopting a new version
-// docs/architecture.md §Directories (the shell owns fs; core stays pure) · docs/cli.md §trust (machine-local,
-// content-hashed grants; deny by default, `git pull` can never grant).
+// docs/architecture.md §Directories (the shell owns fs; core stays pure).
 //
 // Loading a module a bundle declares. Every step below is a REFUSAL with a name,
 // because a module the engine cannot vouch for must not be judged with: a bundle
 // judged without a law it declares is judged under a different law than it
-// believes.
+// believes. Installing a module is the consent to run it; what the load adds
+// is two proofs over the installed bytes, the purity scan and the determinism
+// fixture, run before the module judges anything of the bundle's.
 //
 // Nothing here reaches the network. Resolution is node's own, from the bundle's
 // own `node_modules`, which is what a workspace link, a `file:` dependency and a
-// locally packed tarball all produce. The trust grant's digest over every file
-// of the package is the boundary; no lockfile is read.
+// locally packed tarball all produce. The digest over every file of the package
+// is what the law names and what the proofs are cached by; no lockfile is read.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -18,18 +19,19 @@ import {
   codeUnitCompare,
   type ModuleManifest,
   normalizeInput,
+  PURITY_SCAN_VERSION,
   type PurityViolation,
   satisfiesEngineRange,
   scanPurity,
 } from "@wikiwright/core";
 import { ENGINE_VERSION } from "./envelope.ts";
 import {
-  type GrantScope,
-  readTrustStore,
-  sha256Of,
-  type TrustVerdict,
-  trustVerdict,
-} from "./trust.ts";
+  type FixtureResult,
+  type FixtureSubject,
+  type FixtureVerdict,
+  runModuleFixture,
+} from "./modulefixture.ts";
+import { sha256Of } from "./trust.ts";
 
 /** docs/extending.md §Declaring a module: what `config/engine.json` declares. */
 export interface ModuleDeclaration {
@@ -46,9 +48,6 @@ export interface ModuleIssue {
     | "module-malformed"
     | "module-version-mismatch"
     | "module-incompatible"
-    | "module-untrusted"
-    | "module-modified"
-    | "module-scope-unresolved"
     | "module-impure"
     | "module-load-failed"
     | "module-fixture-missing"
@@ -66,13 +65,13 @@ export interface LoadedModule {
   package: string;
   /** The installed package.json's version — the one a finding is attributed to. */
   version: string;
-  /** sha256 over the module's own bytes — what the trust grant is pinned to. */
+  /** sha256 over every file of the package — what the law names and the proofs are cached by. */
   digest: string;
   manifest: ModuleManifest;
-  /** Where the module's determinism fixture lives, for the runner one layer up. */
+  /** Where the module's determinism fixture lives. */
   fixture: string;
-  /** The scope whose grant approved this load; absent when `trust grant` skipped the gate. */
-  authorizedBy?: GrantScope;
+  /** What the determinism fixture judged on these bytes, in this process, before the module was admitted. */
+  fixtureResult: FixtureResult;
 }
 
 export interface ModuleLoadOutcome {
@@ -156,12 +155,12 @@ function moduleFiles(root: string): string[] {
 }
 
 /**
- * docs/cli.md §trust: what a grant is PINNED to is every file, and what the purity scan
- * READS is the executable ones. The two differ on purpose.
+ * What the digest COVERS is every file, and what the purity scan READS is the
+ * executable ones. The two differ on purpose.
  *
  * A digest over the code alone was a hole: `package.json` names the entry, so
  * repointing `wikiwright.module` at another file already in the package runs
- * different code under an unchanged digest — a granted module, quietly swapped.
+ * different code under an unchanged digest — a proved module, quietly swapped.
  * The fixture is data too, and a module whose expectation was edited is a module
  * whose proof was edited.
  */
@@ -175,15 +174,15 @@ const PORTABLE_ENTRY = /\.(?:js|mjs|cjs)$/u;
  * `join(root, spec)` was the whole check, and `join` happily walks out:
  * `wikiwright.module: "../../../outside.mjs"` resolved, imported and RAN, with
  * its bytes in neither the digest nor the purity scan. Editing it afterwards
- * changed nothing a grant could see.
+ * changed nothing the digest could see.
  *
  * The test is LEXICAL, and deliberately not `realpath`. A `file:` install links
  * each of a package's files at an absolute path back into its source tree, so
  * every legitimate local install would fail a realpath containment test — and
  * local installs are the whole of `docs/extending.md §Declaring a module`. What closes the hole is
  * not where a link points but whether the digest covers it: `moduleFiles` reads
- * THROUGH links, so a linked file's bytes are in the grant and editing them
- * revokes it. The caller asserts that membership, which is the property that
+ * THROUGH links, so a linked file's bytes are in the digest and editing them
+ * moves it. The caller asserts that membership, which is the property that
  * matters; this only refuses the paths that are not the package's to name.
  *
  * `./index.js` stays legal — a leading `./` is how package.json is written —
@@ -212,64 +211,48 @@ function contractOf(packageJson: unknown): PackageContract | undefined {
 export interface ModuleLoadOptions {
   /** The running engine's version; the module's declared range is checked against it. */
   engineVersion?: string;
-  /**
-   * Skip the machine-local trust gate. The ONE caller is `trust grant`, which
-   * loads the module it is about to grant so its determinism fixture is proved
-   * BEFORE the grant is written; every other load goes through the gate, and
-   * the flag is named so a reader can see the exception in a diff.
-   */
-  beforeGrant?: boolean;
 }
 
 /**
- * docs/cli.md §trust: the approval is a maintainer's decision, and the refusal
- * names it without a command to run — the engine's hints are followed literally,
- * and a grant an agent writes to unblock itself approves code nobody read.
- * The message names the worktree scope only when git identity was read.
+ * The fixture's refusal as the load reports it. A fixture that could not be
+ * read, loaded or composed carries no hint of its own, and a refusal that
+ * says what a fixture is tells its reader what to repair.
  */
-function trustRefusal(
-  name: string,
-  digest: string,
-  verdict: Exclude<TrustVerdict, { kind: "authorized" }>,
-): ModuleIssue {
-  if (verdict.kind === "scope-unresolved") {
-    return {
-      code: "module-scope-unresolved",
-      package: name,
-      message: `a worktree-scope grant for "${name}" could apply, and this vault's git identity could not be read: ${verdict.reason}`,
-      hint: "A worktree-scope grant is matched by the git common directory of the vault's checkout; run inside that checkout, or a maintainer approves this vault alone.",
-    };
-  }
-  const worktree = verdict.worktree === undefined ? {} : { worktree_scope: verdict.worktree };
-  if (verdict.kind === "modified") {
-    return {
-      code: "module-modified",
-      package: name,
-      message: `"${name}" has changed since it was approved on this machine`,
-      hint: "The installed digest differs from every digest approved for this vault. A maintainer must review the change and choose the approval scope.",
-      details: {
-        granted: verdict.approved[0],
-        approved: verdict.approved,
-        current: digest,
-        ...worktree,
-      },
-    };
-  }
-  return {
-    code: "module-untrusted",
-    package: name,
-    message:
-      verdict.worktree === undefined
-        ? `"${name}" has no trust grant for this vault on this machine`
-        : `"${name}" has no trust grant for this vault, nor for "${verdict.worktree.vault_path}" in the worktrees of ${verdict.worktree.common_dir}`,
-    hint: "This module's installed digest is not authorized for this vault. A maintainer must review the module and choose the approval scope; a grant is machine-local, and `git pull` can never write one.",
-    ...(verdict.worktree === undefined ? {} : { details: worktree }),
-  };
+const FIXTURE_HINT =
+  "a module ships input bytes and the findings they must produce; the engine runs it before the module judges anything of yours";
+
+/**
+ * The determinism fixtures already run in this process, by what they proved:
+ * the digest of the module's bytes (the fixture's own bytes among them), the
+ * scanner version, and the declared name the outcome is reported under. Not
+ * by root and entry: two bundles that install the same bytes share one proof.
+ *
+ * Invocation-local, never persisted. The fixture composes the standard
+ * library and runs the judge, so its outcome is a function of this engine as
+ * well as of the module's bytes, and a cache that outlived the process would
+ * have to key on the engine too (docs/roadmap.md).
+ */
+const FIXTURE_VERDICTS = new Map<string, FixtureVerdict>();
+let fixtureRuns = 0;
+
+/** Test-only: how many determinism fixtures this process has run, cached ones not counted. */
+export function fixtureRunCount(): number {
+  return fixtureRuns;
+}
+
+function provedFixture(digest: string, module: FixtureSubject): FixtureVerdict {
+  const key = `${digest}\u0000${String(PURITY_SCAN_VERSION)}\u0000${module.package}`;
+  const known = FIXTURE_VERDICTS.get(key);
+  if (known !== undefined) return known;
+  fixtureRuns += 1;
+  const verdict = runModuleFixture(module);
+  FIXTURE_VERDICTS.set(key, verdict);
+  return verdict;
 }
 
 /**
- * docs/extending.md §Declaring a module + docs/extending.md §The determinism fixture: resolve, pin, check compatibility, trust,
- * scan, load. Each step refuses by name, and a refused module contributes
+ * docs/extending.md §Declaring a module + docs/extending.md §The determinism fixture: resolve, pin, check compatibility,
+ * scan, load, prove. Each step refuses by name, and a refused module contributes
  * nothing — there is no partial load, because a bundle judged under half its
  * declared law is judged under a law nobody wrote.
  */
@@ -330,9 +313,9 @@ export async function loadDeclaredModules(
     }
 
     // docs/extending.md §Declaring a module: the version is the installed package's own, and the
-    // bundle's declared range is checked against it. The trust grant pins the
-    // BYTES (`moduleDigest`, package.json included), so a version this range
-    // admits and a version a reviewer read are the same file.
+    // bundle's declared range is checked against it. The digest covers the
+    // BYTES (`moduleDigest`, package.json included), so the version the law
+    // names and the version that judged are the same file.
     const claimedRaw = (packageJson as { version?: unknown }).version;
     if (!isPackageVersion(claimedRaw)) {
       issues.push({
@@ -362,16 +345,17 @@ export async function loadDeclaredModules(
       continue;
     }
 
-    // Resolve the two executable inputs lexically inside the
-    // installation before scanning. The entry is passed into moduleDigest so it
-    // is scanned regardless of suffix using the same bytes that feed the digest.
+    // Resolve the two executable inputs lexically inside the installation
+    // before scanning. `moduleDigest` resolves the entry from the same
+    // package.json, so it is scanned regardless of suffix using the same bytes
+    // that feed the digest.
     const entry = insidePackage(root, contract.module);
     if (entry === undefined) {
       issues.push({
         code: "module-malformed",
         package: name,
         message: `"${name}" names an entry at "${contract.module}", which does not resolve to a file inside the package`,
-        hint: "a module's entry is one of the files its grant is pinned to; a path that leaves the package is code no digest covers",
+        hint: "a module's entry is one of the files its digest covers; a path that leaves the package is code no digest covers",
       });
       continue;
     }
@@ -386,10 +370,10 @@ export async function loadDeclaredModules(
       continue;
     }
 
-    // One definition of "the module's bytes": the trust grant, the purity scan
-    // and the `modules list` row all read the same digest, so a grant cannot be
-    // pinned to one reading and checked against another.
-    const scanned = moduleDigest(vaultRoot, name, entry);
+    // One definition of "the module's bytes": the law digest, the purity scan,
+    // the fixture's cache and the `modules list` row all read the same digest,
+    // so a proof cannot be taken of one reading and reported for another.
+    const scanned = moduleDigest(vaultRoot, name);
     if (scanned === undefined) {
       issues.push({
         code: "module-unresolved",
@@ -443,21 +427,6 @@ export async function loadDeclaredModules(
       continue;
     }
 
-    // The purity scan runs BEFORE the trust gate, deliberately: an impure module
-    // is refused whether or not a human approved it, because a grant is approval
-    // of code a reader read and not permission to depend on the clock. Ordering
-    // it the other way would have made "grant it and see" the way to find out.
-    // docs/cli.md §trust: a matching digest in either scope approves (D-006).
-    let authorizedBy: GrantScope | undefined;
-    if (options.beforeGrant !== true) {
-      const verdict = trustVerdict(readTrustStore(), vaultRoot, `module:${name}`, digest);
-      if (verdict.kind !== "authorized") {
-        issues.push(trustRefusal(name, digest, verdict));
-        continue;
-      }
-      authorizedBy = verdict.scope;
-    }
-
     let manifest: ModuleManifest;
     try {
       const imported = (await import(pathToFileURL(entry).href)) as { default?: unknown };
@@ -490,15 +459,29 @@ export async function loadDeclaredModules(
       continue;
     }
 
+    // docs/extending.md §The determinism fixture: a finding's attribution reads the manifest's version,
+    // and the installed package's is the one the digest covers.
+    const stated = { ...manifest, version };
+
+    // docs/extending.md §The determinism fixture: the module is proved on these bytes, in this
+    // process, before any bundle is judged with it — once per digest, however
+    // many bundles or loads ask. A module that does not reproduce its own
+    // findings is refused like any other step, and contributes nothing.
+    const proved = provedFixture(digest, { package: name, manifest: stated, fixture });
+    if (!proved.ok) {
+      issues.push(
+        proved.issue.hint === undefined ? { ...proved.issue, hint: FIXTURE_HINT } : proved.issue,
+      );
+      continue;
+    }
+
     loaded.push({
       package: name,
       version,
       digest,
-      // docs/extending.md §The determinism fixture: a finding's attribution reads the manifest's version,
-      // and the installed package's is the one the grant digest covers.
-      manifest: { ...manifest, version },
+      manifest: stated,
       fixture,
-      ...(authorizedBy === undefined ? {} : { authorizedBy }),
+      fixtureResult: proved.result,
     });
   }
 
@@ -512,7 +495,9 @@ export async function loadDeclaredModules(
  * Loading a module is the shell's ONE asynchronous step — `import` is async and
  * `loadVault` is not. Rather than making every verb async for one step, the CLI
  * entry point performs it once, before dispatch, and stores the outcome here
- * keyed by the resolved vault root.
+ * keyed by the resolved vault root: an outcome is a bundle's declarations
+ * loaded, which `loadVaultVia` looks up by the root it reads. The proofs inside
+ * it are cached by digest, beside the loader.
  *
  * The cache is what makes the failure CLOSED rather than quiet: `loadVaultVia`
  * asks for it whenever `config/engine.json` declares a module, and a bundle whose
@@ -610,54 +595,79 @@ export interface ModuleDigest {
   violations: (PurityViolation & { file: string })[];
 }
 
-/**
- * One reading of a package per process. The preload, the brief's law digest
- * and the envelope's each ask for the same package's digest, and each read,
- * hashed and purity-scanned every file of it. Keyed by the resolved package
- * root and the entry scanned with it. Invocation-local: nothing outlives the
- * process, so no state is kept between runs (docs/roadmap.md §Every run parses
- * the whole corpus), and no verb writes a module's files while it runs.
- */
-const DIGESTS = new Map<string, ModuleDigest>();
+/** One reading of a package's bytes: the digest over them and the files it covers. */
+interface ModuleReading {
+  sha256: string;
+  files: string[];
+  /** The entry package.json names, scanned whatever its suffix; absent when it names none. */
+  entry: string | undefined;
+}
 
 /**
- * docs/cli.md §trust: what a module grant is pinned to — the sha256 over the
- * package's own executable bytes, plus the purity violations the grant would be
- * approving. Exposed so `trust grant` can refuse an impure module before writing
- * a grant that reads as approval and buys nothing.
+ * One reading of a package per process. The preload, the brief's law digest
+ * and the envelope's each ask for the same package's digest, and each read and
+ * hashed every file of it. Keyed by the resolved package root, since bytes are
+ * read where they lie; what is proved of them is keyed by their digest, below.
+ * Invocation-local: nothing outlives the process, so no state is kept between
+ * runs (docs/roadmap.md §Every run parses the whole corpus), and no verb writes
+ * a module's files while it runs.
  */
-export function moduleDigest(
-  vaultRoot: string,
-  name: string,
-  declaredEntry?: string,
-): ModuleDigest | undefined {
+const READINGS = new Map<string, ModuleReading>();
+
+/**
+ * The purity scan of a package, by the digest of its bytes and the scanner
+ * version: the digest covers every file and the package.json that names the
+ * entry, so equal digests scan equally, and a new rule is a new version.
+ */
+const SCANS = new Map<string, ModuleDigest["violations"]>();
+
+/** The entry the package's own package.json names, resolved inside it, or undefined. */
+function entryOf(root: string): string | undefined {
+  try {
+    const contract = contractOf(readJson(join(root, "package.json")));
+    return contract === undefined ? undefined : insidePackage(root, contract.module);
+  } catch {
+    // The loader reports the malformed package; the known executable files
+    // are still scanned.
+    return undefined;
+  }
+}
+
+/**
+ * The sha256 over every file of an installed package, the files it covers,
+ * and the purity violations in its executable ones. The law digest names it,
+ * the loader proves the module under it, and `modules list` reports it.
+ */
+export function moduleDigest(vaultRoot: string, name: string): ModuleDigest | undefined {
   const root = packageRoot(vaultRoot, name);
   if (root === undefined) return undefined;
-  let entry = declaredEntry;
-  if (entry === undefined) {
-    try {
-      const contract = contractOf(readJson(join(root, "package.json")));
-      if (contract !== undefined) entry = insidePackage(root, contract.module);
-    } catch {
-      // The loader reports the malformed package; known executable files are
-      // still scanned so trust grant cannot approve ordinary impure code.
+  let reading = READINGS.get(root);
+  let read: Map<string, Buffer> | undefined;
+  if (reading === undefined) {
+    const entry = entryOf(root);
+    const files = moduleFiles(root);
+    read = new Map();
+    const parts: string[] = [];
+    for (const file of files) {
+      const bytes = readFileSync(file);
+      read.set(file, bytes);
+      parts.push(`${file.slice(root.length)} ${sha256Of(bytes)}`);
     }
+    reading = { sha256: sha256Of(parts.join("\n")), files, entry };
+    READINGS.set(root, reading);
   }
-  const key = `${root}\u0000${entry ?? ""}`;
-  const known = DIGESTS.get(key);
-  if (known !== undefined) return known;
-  const files = moduleFiles(root);
-  const violations: (PurityViolation & { file: string })[] = [];
-  const parts: string[] = [];
-  for (const file of files) {
-    const bytes = readFileSync(file);
-    parts.push(`${file.slice(root.length)} ${sha256Of(bytes)}`);
-    if (file !== entry && !EXECUTABLE.test(file)) continue;
-    for (const violation of scanPurity(bytes.toString("utf8"))) {
-      violations.push({ ...violation, file: file.slice(root.length + 1) });
+  const scanKey = `${reading.sha256}\u0000${String(PURITY_SCAN_VERSION)}`;
+  let violations = SCANS.get(scanKey);
+  if (violations === undefined) {
+    violations = [];
+    for (const file of reading.files) {
+      if (file !== reading.entry && !EXECUTABLE.test(file)) continue;
+      const bytes = read?.get(file) ?? readFileSync(file);
+      for (const violation of scanPurity(bytes.toString("utf8"))) {
+        violations.push({ ...violation, file: file.slice(root.length + 1) });
+      }
     }
+    SCANS.set(scanKey, violations);
   }
-  const digest = { sha256: sha256Of(parts.join("\n")), files, violations };
-  DIGESTS.set(key, digest);
-  return digest;
+  return { sha256: reading.sha256, files: reading.files, violations };
 }

@@ -133,14 +133,8 @@ describe("init lands a starter that declares modules, and names what makes it gr
       const refused = (listed.envelope.data?.["refused"] ?? []) as { code: string; hint: string }[];
       assert.equal(refused[0]?.code, "module-unresolved");
       assert.match(refused[0]?.hint ?? "", /install .* maintainer/u);
-      // After the install, before the grant: the approval is named as a
-      // maintainer's decision, not as a command to run.
-      installKit(tmp);
-      const untrusted = runKit(tmp, ["check"]);
-      assert.equal(untrusted.envelope.error?.["code"], "module-untrusted");
-      assert.match(String(untrusted.envelope.error?.["hint"]), /maintainer/u);
-      assert.doesNotMatch(String(untrusted.envelope.error?.["hint"]), /trust grant/u);
       // The named steps, in order, and the first real check is green.
+      installKit(tmp);
       grantKit(tmp);
       assert.equal(
         runKit(tmp, ["check", "--write"]).status,
