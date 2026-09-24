@@ -128,6 +128,21 @@ const transitionKey = (v: Verdict, path: string): string[] =>
     )
     .sort();
 
+const FOLK = ["wiki/Folk/Alpha.md", "wiki/Folk/Beta.md", "wiki/Folk/Delta.md"] as const;
+
+/**
+ * The pages a state holds, asserted before any verdict is read from it: an
+ * empty or short state judges clean, so a negative assertion over one proves
+ * nothing unless the state is first shown to hold what the case is about.
+ */
+function assertPages(state: VaultState, expected: readonly string[], label: string): void {
+  assert.deepEqual(
+    [...state.pages.keys()].sort(),
+    [...expected].sort(),
+    `${label}: the state holds exactly these pages`,
+  );
+}
+
 function judgeAll(root: string, state: VaultState): Verdict {
   const vault = loadVault("lint", root);
   assert.equal(vault.ok, true, "the scratch vault loads");
@@ -159,6 +174,11 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
         overlayState: overlayState(fs, tmp, [{ path: target, text: disk }]),
         revisionState: revisionState(tmp, "HEAD", undefined, ROOTS),
       };
+      const expected = ["wiki/Folk/Alpha Prime.md", "wiki/Folk/Beta.md", "wiki/Folk/Gamma.md"];
+      for (const [name, state] of Object.entries(constructors)) {
+        assertPages(state, expected, name);
+        assert.equal(state.pages.get(target), disk, `${name}: the target's bytes`);
+      }
       const verdicts = Object.fromEntries(
         Object.entries(constructors).map(([name, state]) => [name, judgeAll(tmp, state)] as const),
       );
@@ -192,11 +212,13 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
       );
       const fs = fsState(tmp, ROOTS);
       assert.equal(fs.pages.has(nfc), true, "walkPages stores NFC");
+      assertPages(fs, [...FOLK, nfc], "fsState");
 
       const disk = readFileSync(join(tmp, nfc), "utf8");
       {
         const state = overlayState(fs, tmp, [{ path: nfd, text: disk }]);
         assert.equal(state.pages.size, fs.pages.size, "the page set doubled");
+        assertPages(state, [...FOLK, nfc], "overlayState");
         assert.deepEqual(
           stateKey(judgeAll(tmp, state)),
           stateKey(judgeAll(tmp, fs)),
@@ -224,6 +246,11 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
       );
       const fs = fsState(tmp, ROOTS);
       const index = indexState(tmp, ROOTS);
+      assertPages(fs, FOLK, "fsState");
+      assertPages(index, FOLK, "indexState");
+      // The index holds the target, and holds it as committed: its clean
+      // verdict below is about the page, not about a page that is missing.
+      assert.equal(index.pages.get(target), BETA, "the index carries the committed bytes");
       assert.notEqual(
         fs.pages.get(target),
         index.pages.get(target),
@@ -244,6 +271,11 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
       git(tmp, "mv", "wiki/Folk/Alpha.md", "wiki/Folk/Alpha Prime.md");
       git(tmp, "add", "-A");
       const index = indexState(tmp, ROOTS);
+      assertPages(
+        index,
+        ["wiki/Folk/Alpha Prime.md", "wiki/Folk/Beta.md", "wiki/Folk/Delta.md"],
+        "indexState",
+      );
       assert.deepEqual(
         index.renames,
         [{ from: "wiki/Folk/Alpha.md", to: "wiki/Folk/Alpha Prime.md" }],
@@ -268,19 +300,26 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
       const target = "wiki/Folk/Alpha.md";
       const fs = fsState(tmp, ROOTS);
       // The overlay pair: disk (= HEAD) as base, the draft as the page.
-      const overlayVerdict = judgeAll(
-        tmp,
-        overlayState(fs, tmp, [{ path: target, text: ALPHA_DRAFT }]),
-      );
+      const overlay = overlayState(fs, tmp, [{ path: target, text: ALPHA_DRAFT }]);
+      assertPages(overlay, FOLK, "overlayState");
+      const overlayVerdict = judgeAll(tmp, overlay);
 
       // The staged pair: the same draft, staged against the same HEAD.
       writeFileSync(join(tmp, target), ALPHA_DRAFT);
       git(tmp, "add", "-A");
-      const staged = judgeAll(tmp, indexState(tmp, ROOTS));
+      const index = indexState(tmp, ROOTS);
+      assertPages(index, FOLK, "indexState");
+      assert.equal(index.pages.get(target), ALPHA_DRAFT, "the index carries the draft");
+      assert.equal(index.base?.get(target), ALPHA_BASE, "judged against HEAD's bytes");
+      const staged = judgeAll(tmp, index);
 
       // The commit pair: the same draft, committed, judged against its parent.
       git(tmp, "commit", "-q", "-m", "the edit");
-      const replayed = judgeAll(tmp, revisionState(tmp, "HEAD", undefined, ROOTS));
+      const revision = revisionState(tmp, "HEAD", undefined, ROOTS);
+      assertPages(revision, FOLK, "revisionState");
+      assert.equal(revision.pages.get(target), ALPHA_DRAFT, "the commit carries the draft");
+      assert.equal(revision.base?.get(target), ALPHA_BASE, "judged against its parent's bytes");
+      const replayed = judgeAll(tmp, revision);
 
       const reference = transitionKey(overlayVerdict, target);
       assert.equal(reference.length > 0, true, "the draft fires a transition arm at all");
@@ -294,7 +333,9 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
   it("a constructor with no base reports no-base coverage rather than a clean zero", () => {
     const tmp = scratchVault();
     try {
-      const verdict = judgeAll(tmp, fsState(tmp, ROOTS));
+      const fs = fsState(tmp, ROOTS);
+      assertPages(fs, FOLK, "fsState");
+      const verdict = judgeAll(tmp, fs);
       assert.equal(verdict.coverage.passes["claims-transition"]?.reason, "no-base");
       assert.equal(verdict.coverage.passes["claims-transition"]?.evaluated, 0);
       assert.equal(verdict.summary.unevaluated > 0, true);
@@ -309,10 +350,11 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
       const target = "wiki/Folk/Alpha.md";
       // The ONLY change: Shangai -> Shanghai, markers untouched.
       const corrected = ALPHA_BASE.replace("Shangai", "Shanghai");
-      const verdict = judgeAll(
-        tmp,
-        overlayState(fsState(tmp, ROOTS), tmp, [{ path: target, text: corrected }]),
-      );
+      const state = overlayState(fsState(tmp, ROOTS), tmp, [{ path: target, text: corrected }]);
+      assertPages(state, FOLK, "overlayState");
+      assert.equal(state.pages.get(target), corrected, "the overlay carries the corrected draft");
+      assert.equal(state.base?.get(target), ALPHA_BASE, "judged against the disk bytes");
+      const verdict = judgeAll(tmp, state);
       assert.equal(
         verdict.findings.some((f) => f.ruleId === "claims-transition" && f.path === target),
         false,
@@ -338,10 +380,10 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
         const target = "wiki/Folk/Alpha.md";
         assert.equal(ALPHA_BASE.includes(before), true, "the fixture carries the base claim");
         const changed = ALPHA_BASE.replace(before, after);
-        const verdict = judgeAll(
-          tmp,
-          overlayState(fsState(tmp, ROOTS), tmp, [{ path: target, text: changed }]),
-        );
+        const state = overlayState(fsState(tmp, ROOTS), tmp, [{ path: target, text: changed }]);
+        assertPages(state, FOLK, "overlayState");
+        assert.equal(state.pages.get(target), changed, "the overlay carries the changed draft");
+        const verdict = judgeAll(tmp, state);
         assert.equal(verdict.dispositions[target]?.corrected, 0, "not laundered as a typo fix");
         assert.equal(
           verdict.findings.some((f) => f.ruleId === "claims-transition" && f.path === target),
@@ -362,10 +404,10 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
         "Alpha lives in Shangai since 2024",
         "Alpha relocated to Chengdu for work",
       );
-      const verdict = judgeAll(
-        tmp,
-        overlayState(fsState(tmp, ROOTS), tmp, [{ path: target, text: reworded }]),
-      );
+      const state = overlayState(fsState(tmp, ROOTS), tmp, [{ path: target, text: reworded }]);
+      assertPages(state, FOLK, "overlayState");
+      assert.equal(state.pages.get(target), reworded, "the overlay carries the reworded draft");
+      const verdict = judgeAll(tmp, state);
       assert.equal(
         verdict.findings.some((f) => f.ruleId === "claims-transition" && f.path === target),
         true,

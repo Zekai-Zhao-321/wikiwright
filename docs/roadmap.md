@@ -429,9 +429,13 @@ but a channel with no prefix to return.
 
 The suite also runs the CLI under Node: `tools/run-suite.ts` sets
 `WIKIWRIGHT_CLI_RUNTIME` to the `node` on PATH, and every test that runs the
-CLI runs it under that (`packages/cli/test/fixtures/runtime.ts`). The
-shipped engine does not use Bun's synchronous spawn: `dist/bin.js` is a Node
-script.
+CLI runs it under that (`packages/cli/test/fixtures/runtime.ts`). That seam
+reaches only the CLI a test spawns. The engine functions a test calls in its
+own process still run under Bun, and their git reads are covered by the
+transport above, not by the seam; `judge-property.test.ts`, which judges
+states it builds that way, asserts each state's pages before any verdict
+read from it, since an empty or short state judges clean. The shipped engine
+does not use Bun's synchronous spawn: `dist/bin.js` is a Node script.
 
 Left: the test files still run under Bun, so the envelope a test reads back
 from the CLI, and the test's own setup `git` calls, still come through Bun's
