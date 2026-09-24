@@ -33,7 +33,6 @@ import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { MACHINE_LOCAL_WRITERS } from "../src/connections.ts";
 import type { CommandArgs } from "../src/spec.ts";
-import { trustFilePath } from "../src/trust.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -180,17 +179,21 @@ function vault(engine: Record<string, unknown> = FOLDER_MODE): string {
 }
 
 /**
- * The bundles registry a run uses: beside the trust store the case passes, or,
- * for a run that passes none, one under this file's scratch directory — never
- * the developer's, which a dry run must not read its answer from either.
+ * The machine-local stores a run uses: the trust store the case passes, or,
+ * for a run that passes none, one under this file's scratch directory, and the
+ * bundles registry beside whichever it is. Never the developer's: a test that
+ * guards against a write must not be able to make one where a person keeps
+ * their grants, and a dry run must not read its answer from a store it does
+ * not own.
  */
-const SCRATCH_REGISTRY = join(mkdtempSync(join(tmpdir(), "ww-dryrun-registry-")), "bundles.json");
+const SCRATCH = mkdtempSync(join(tmpdir(), "ww-dryrun-stores-"));
+const SCRATCH_TRUST = join(SCRATCH, "trust.json");
 after(() => {
-  rmSync(dirname(SCRATCH_REGISTRY), { recursive: true, force: true });
+  rmSync(SCRATCH, { recursive: true, force: true });
 });
 
 function registryBeside(trustStore: string | undefined): string {
-  return trustStore === undefined ? SCRATCH_REGISTRY : join(dirname(trustStore), "bundles.json");
+  return join(dirname(trustStore ?? SCRATCH_TRUST), "bundles.json");
 }
 
 function run(
@@ -200,7 +203,7 @@ function run(
   stdin?: string,
 ): { status: number; envelope: Record<string, unknown> } {
   const env: Record<string, string | undefined> = { ...process.env, ...PINNED_CLOCK };
-  if (trustStore !== undefined) env["WIKIWRIGHT_TRUST_FILE"] = trustStore;
+  env["WIKIWRIGHT_TRUST_FILE"] = trustStore ?? SCRATCH_TRUST;
   env["WIKIWRIGHT_BUNDLES_FILE"] = registryBeside(trustStore);
   const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
     cwd,
@@ -335,12 +338,16 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   for (const command of COMMANDS.filter((c) => c.writes && c.name !== "init")) {
     it(`${command.name} --dry-run writes nothing and reports wrote: false`, () => {
       const tmp = vault();
-      const store = trustFilePath();
-      const storeBefore = existsSync(store) ? readFileSync(store, "utf8") : null;
+      // A store this case owns, holding a grant-free store's bytes, so a write
+      // to it shows and nothing of the developer's is read.
+      const stores = mkdtempSync(join(tmpdir(), "ww-dryrun-case-"));
+      const store = join(stores, "trust.json");
+      writeFileSync(store, '{"schema":"wikiwright/trust","schema_version":2,"grants":[]}\n');
+      const storeBefore = readFileSync(store, "utf8");
       try {
         const before = treeHash(tmp);
         const argv = DRY_RUNS[command.name] ?? [];
-        const r = run(tmp, argv, undefined, DRY_RUN_STDIN[command.name]?.(tmp));
+        const r = run(tmp, argv, store, DRY_RUN_STDIN[command.name]?.(tmp));
         assert.equal(r.status, 0, `${command.name}: ${JSON.stringify(r.envelope)}`);
         const data = (r.envelope["data"] ?? {}) as Record<string, unknown>;
         assert.equal(data["wrote"], false, `${command.name} does not report wrote: false`);
@@ -349,12 +356,13 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
         const storeAfter = existsSync(store) ? readFileSync(store, "utf8") : null;
         assert.equal(storeAfter, storeBefore, `${command.name} --dry-run wrote the trust store`);
         assert.equal(
-          existsSync(SCRATCH_REGISTRY),
+          existsSync(registryBeside(store)),
           false,
           `${command.name} --dry-run wrote the bundles registry`,
         );
       } finally {
         rmSync(tmp, { recursive: true, force: true });
+        rmSync(stores, { recursive: true, force: true });
       }
     });
   }

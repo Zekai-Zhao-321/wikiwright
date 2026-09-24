@@ -403,23 +403,45 @@ describe("--bundle names the target of any verb (docs/cli.md §bundles)", () => 
   });
 
   it("an installed copy refuses every writing verb before it runs, dry runs included", () => {
-    const before = treeHash(ALLOTMENT);
-    const draft = readFileSync(join(ALLOTMENT, "wiki", "pruning-roses.md"), "utf8");
+    // The writes are attempted against a copy, connected as installed in its
+    // own registry: if the guard ever let one through, it would land here and
+    // not in the shipped fixture.
+    const copy = join(tmp, "installed", "allotment");
+    cpSync(ALLOTMENT, copy, { recursive: true });
+    const own = registry("installed").env;
+    const added = run(
+      tmp,
+      [
+        "bundles",
+        "add",
+        copy,
+        "--name",
+        "allotment",
+        "--kind",
+        "installed",
+        "--feedback",
+        ALLOTMENT_FEEDBACK,
+      ],
+      own,
+    );
+    assert.equal(added.status, 0, JSON.stringify(added.envelope));
+    const before = treeHash(copy);
+    const draft = readFileSync(join(copy, "wiki", "pruning-roses.md"), "utf8");
     const writes: [string[], string][] = [
       [["new", "procedure-page", "Mulching", "--dest", "wiki/mulching.md"], ""],
       [["write", "wiki/pruning-roses.md"], `${draft}\nA line the draft adds.\n`],
       [["write", "wiki/pruning-roses.md", "--dry-run"], `${draft}\nA line the draft adds.\n`],
     ];
     for (const [argv, input] of writes) {
-      const r = run(tmp, [...argv, "--bundle", "allotment"], env, input);
+      const r = run(tmp, [...argv, "--bundle", "allotment"], own, input);
       assert.equal(r.status, 2, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
       assert.equal(r.envelope.error?.code, "bundle-readonly");
       assert.equal(r.envelope.error?.details?.["kind"], "installed");
       assert.equal(r.envelope.error?.details?.["feedback"], ALLOTMENT_FEEDBACK);
     }
-    assert.equal(treeHash(ALLOTMENT), before, "a refused write touched the installed copy");
+    assert.equal(treeHash(copy), before, "a refused write touched the installed copy");
     // Reading it is what an installed copy is for.
-    const read = run(tmp, ["search", "pruning", "--bundle", "allotment"], env);
+    const read = run(tmp, ["search", "pruning", "--bundle", "allotment"], own);
     assert.equal(read.status, 0, JSON.stringify(read.envelope));
     assert.equal(read.envelope.metadata.bundle?.["label"], "allotment");
   });
