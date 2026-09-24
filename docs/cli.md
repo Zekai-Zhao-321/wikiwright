@@ -561,11 +561,15 @@ What the registry rows below do not say.
 - **`skills status | update [--force]`** compares the installed skill files
   under `.claude/skills/` with the shipped ones by the stamp the engine wrote
   and reinstalls them; a file the bundle edited is refused unless `--force`.
-  Three skills ship, each the judgment half of one way of working with a
-  bundle, beside the brief that carries its verbs: `wikiwright-consume`, for
-  using what a bundle knows (which bundle answered, the section rather than the
-  sentence, a child handed the words with their source, a problem reported as
-  a proposal); `wikiwright-write`, for adding to one (what deserves a page, the
+  Three skills ship, one for each way of working with a bundle, beside the
+  brief that carries the verbs: `wikiwright-consume`, the runtime skill every
+  bundle skill requires — how to run the engine (the one route today: clone,
+  `bun install`, `bun run build`, `node packages/cli/dist/main.js`), what a
+  bundle skill is and how to find one, the consumer's commands, each of which
+  must parse, with their discipline (which bundle answered, the section rather
+  than the sentence, a child handed the words with their source), where a
+  problem with a copy goes by its contribution mode, and what is left without
+  the engine; `wikiwright-write`, for adding to one (what deserves a page, the
   identity guard, the hedge kept verbatim, a citation as a relation);
   `wikiwright-maintain`, for answering its findings and changing its law, with
   the lint-response playbook the engine generates beside it. `init` installs

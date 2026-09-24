@@ -1,5 +1,7 @@
-// docs/cli.md §skills (the hand-written skills are JUDGMENT ONLY and name no
-// verb; the verbs live in the generated brief, and the rule-by-rule playbook is
+// docs/cli.md §skills (the write and maintain skills are JUDGMENT ONLY and name
+// no verb; the consume skill is the runtime skill a bundle skill requires and
+// names the consumer's commands, each of which must parse; the rest of the
+// verbs live in the generated brief, and the rule-by-rule playbook is
 // generated from PASS_TABLE and the fixer registry) · docs/architecture.md §The invariants (the
 // no-verbs-in-prose grep, the reverse gate, and the generator guard)
 // docs/cli.md §brief · docs/cli.md §The envelope (generated surfaces stay true).
@@ -55,8 +57,15 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
       assert.equal(text.includes("description:"), true);
     });
 
-    it(`${skill}/SKILL.md is at most 80 lines of judgment (docs/cli.md §skills)`, () => {
+    it(`${skill}/SKILL.md stays short (docs/cli.md §skills)`, () => {
       const text = readFileSync(join(SKILLS_DIR, skill, "SKILL.md"), "utf8");
+      if (skill === "wikiwright-consume") {
+        // The runtime skill carries the setup and the commands every bundle
+        // skill leaves to it: under 200 lines, the whole file.
+        const lines = text.split("\n").length;
+        assert.equal(lines < 200, true, `${skill}/SKILL.md is ${lines} lines`);
+        return;
+      }
       const body = text.split("---\n").slice(2).join("---\n");
       const lines = body.split("\n").filter((l) => l.trim() !== "").length;
       assert.equal(lines <= 80, true, `${skill}/SKILL.md carries ${lines} non-blank lines`);
@@ -99,13 +108,24 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
     );
   });
 
-  it("the consume skill says the brief is the engine's to print, for any connected bundle", () => {
+  it("the consume skill is the runtime skill: setup first, the brief is the engine's to print", () => {
     const text = readFileSync(join(SKILLS_DIR, "wikiwright-consume", "SKILL.md"), "utf8");
     assert.match(text, /generated\/BRIEF\.md/u);
-    assert.match(
-      text,
-      /engine prints the same brief for any connected bundle, from any directory/u,
-    );
+    assert.match(text, /engine prints the same brief for any bundle, from any\s+directory/u);
+    // The one route that exists, and that no published package does.
+    assert.match(text, /no published package exists yet/u);
+    for (const step of ["`bun install`", "`bun run build`", "`node packages/cli/dist/main.js`"]) {
+      assert.equal(text.includes(step), true, `the setup names ${step}`);
+    }
+    const headings = [...text.matchAll(/^## (.+)$/gmu)].map((m) => m[1]);
+    assert.deepEqual(headings.slice(0, 5), [
+      "1. Setup",
+      "2. What a bundle skill is",
+      "3. The commands, and the discipline",
+      "4. A problem with the knowledge is a proposal",
+      "5. Without the engine",
+    ]);
+    assert.doesNotMatch(text, /connected/u);
     assert.match(
       text,
       /Which bundle an answer came from, and at which version, is part of the answer/u,
@@ -114,11 +134,24 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
   });
 });
 
+/**
+ * The verbs a hand-written skill may name. The runtime skill names the
+ * consumer's commands, since a bundle skill leaves them to it; the others name
+ * none, and their verbs live in the generated brief.
+ */
+const NAMED: Readonly<Record<string, readonly string[]>> = {
+  "wikiwright-consume": COMMANDS.filter((c) => c.role === "consumer").map((c) => c.name),
+  "wikiwright-maintain": [],
+  "wikiwright-write": [],
+};
+
 describe("the no-verbs-in-prose grep (docs/architecture.md §The invariants)", () => {
-  it("no hand-written skill file names a verb", () => {
+  it("no hand-written skill file names a verb beyond the ones it is for", () => {
     for (const skill of SKILLS) {
       for (const file of handWritten(skill)) {
-        const hits = mentionedVerbs(readFileSync(join(SKILLS_DIR, skill, file), "utf8"));
+        const hits = mentionedVerbs(readFileSync(join(SKILLS_DIR, skill, file), "utf8")).filter(
+          (verb) => !(NAMED[skill] ?? []).includes(verb),
+        );
         assert.deepEqual(
           hits,
           [],
@@ -258,15 +291,16 @@ function tokenize(invocation: string): string[] {
 describe("every documented invocation is a legal invocation (docs/cli.md §skills)", () => {
   const byName = new Map(COMMANDS.map((c) => [c.name, c]));
 
-  // The hand-written skills name no verb, so the population this gate
-  // walks is the GENERATED half — the brief and the playbook — plus every
-  // example the registry itself renders. A documented invocation that does not
-  // parse is the same defect wherever it is written.
+  // The population this gate walks is the GENERATED half — the brief and the
+  // playbook — every example the registry itself renders, and the hand-written
+  // skills that name a verb. A documented invocation that does not parse is
+  // the same defect wherever it is written.
   it("each backticked `wikiwright …` the engine renders parses under its own parser", () => {
     let seen = 0;
     {
       const text = [
         readFileSync(join(SKILLS_DIR, "wikiwright-maintain", "lint-response.md"), "utf8"),
+        ...SKILLS.map((skill) => readFileSync(join(SKILLS_DIR, skill, "SKILL.md"), "utf8")),
         // An example may carry a trailing `# comment`; the gate parses the
         // invocation, which is what an agent would run.
         ...COMMANDS.flatMap((c) => c.examples.map((e) => `\`${e.replace(/\s+#.*$/u, "")}\``)),

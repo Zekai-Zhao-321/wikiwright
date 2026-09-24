@@ -435,10 +435,13 @@ through `write`. The maintainer's is the writer's five and two more: a queued
 finding is a judgment to adjudicate or a law to change, never a severity to
 lower, and `generated/` is committed with the pages it describes.
 
-Three **skills** carry what no engine can check, one per way of working with a
-bundle: `wikiwright-consume` for using what it knows, `wikiwright-write` for
-writing into it, `wikiwright-maintain` for answering its findings and changing
-its law. None names a verb: the brief does.
+Three **skills** ship, one per way of working with a bundle:
+`wikiwright-consume` for using what it knows, `wikiwright-write` for writing
+into it, `wikiwright-maintain` for answering its findings and changing its
+law. The write and maintain skills carry what no engine can check and name no
+verb: the brief does. The consume skill is also the runtime every bundle
+skill requires (§A copy), so it names the consumer's commands, each of which
+must parse.
 
 ## Naming a bundle
 
