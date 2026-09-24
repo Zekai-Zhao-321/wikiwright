@@ -623,11 +623,24 @@ What the registry rows below do not say.
   `bundle-not-found` (exit 3) with `details.searched`, the directories
   probed in order, `details.names`, every bundle skill the scan saw, and
   `details.skipped`; `bundle-ambiguous` (exit 2) when two identities answer,
-  every candidate's `{root, tier, repository}` in `details.candidates`; and
-  `bundle-readonly` (exit 2) for a verb that can write, `--dry-run` included,
-  since what it finds is an installed copy. `bundles` is exempt by verb: its
-  write is this machine's registry. With a name the cost is one `stat` per
-  probed directory and one marker read per candidate, never a page read.
+  every candidate's `{root, tier, repository}` in `details.candidates`. What
+  it finds is a copy, guarded as every marked root is (below). With a name
+  the cost is one `stat` per probed directory and one marker read per
+  candidate, never a page read.
+- **A marked root is read only.** A root that holds `config/export.json` is
+  an installed copy, however it was named — `--bundle`, `--root` or the
+  working directory — and its marker is checked before any module preloads:
+  a marker that is not one is `export-marker-invalid` (exit 4), and a verb
+  that can write is refused `bundle-readonly` (exit 2), `--dry-run` included,
+  with `details` `{export, contribution, root}` and a hint that says where a
+  change goes instead, by the copy's contribution mode: `issues`, "report at
+  <repository>/issues"; `pull-requests`, "clone <repository> and write
+  there"; `local-folder`, "write a proposal under <folder>"; `none`, "this
+  copy takes no reports". The repository is the contribution's, or the
+  export's when it names none. `bundles` is exempt by verb: its write is this
+  machine's registry. The guard is a courtesy on this CLI, not a guarantee:
+  a copy's files are protected by their permissions, and a process that does
+  not go through the CLI is not stopped.
 - **`freshness [--fetch] [--fast-forward]`** measures every `pin` field
   against the origin its page names: `ls-remote` per origin by default;
   `--fetch` keeps a blobless bare cache under `.wikiwright/origins/` and

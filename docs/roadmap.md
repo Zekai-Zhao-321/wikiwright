@@ -386,17 +386,14 @@ whether and when a session shows their context is unverified.
 
 Wanted: a recorded run inside a host, kept beside the test.
 
-### A write to a copy is refused only through `--bundle`
+### `bundles list` lists the registry, not the skill directories
 
 `--bundle` finds a copy by its name in the skill directories, but
 `bundles list` still lists the registry's connections, not what those
-directories hold. A writing verb over a copy reached by `--root` or the
-working directory is not refused: `bundle-readonly` fires only through
-`--bundle`.
+directories hold, and the two hooks still read the registry.
 
-Wanted: the write guard over any marked root, `bundles list` over the scan,
-and the session-start and post-edit hooks rebased on it. It is the next slice
-of work.
+Wanted: `bundles list` over the scan, and the session-start and post-edit
+hooks rebased on it. It is the next slice of work.
 
 ### The shipped skills do not yet speak of copies
 
@@ -439,10 +436,9 @@ whose declared source roots are absent is verified (`export-copy`).
 
 ### `bundle-readonly` is a guardrail on the CLI
 
-A copy found by `--bundle` refuses a verb that writes the vault or its
-repository. `--root` names the same
-directory and is not refused, by design, and a process that does not go
-through the engine is not stopped at all.
+A root that holds a marker refuses a verb that can write, however it was
+named. A process that does not go through the engine is not stopped at all,
+and a copy whose marker is removed is a bundle like any other.
 
 Wanted: nothing in the engine. Isolation is the filesystem's: a read-only
 mount or permissions.

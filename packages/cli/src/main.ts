@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // docs/cli.md §The envelope (stdout = one envelope; stderr = UX; parseArgs
 // strict under the command registry; generated help) · JSON-only v1.
+import { resolve } from "node:path";
 import { isSkillName, SKILL_NAME, SKILL_NAME_MAX } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { bundleIdentity } from "./bundle.ts";
@@ -9,7 +10,7 @@ import { MACHINE_LOCAL_WRITERS } from "./connections.ts";
 import { resolveBundle } from "./discovery.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
 import { GitInconsistentRead, GitShortRead } from "./git.ts";
-import { MARKER_PATH, markerAt } from "./marker.ts";
+import { type ExportMarker, MARKER_PATH, markerAt } from "./marker.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import {
   type CommandArgs,
@@ -128,10 +129,8 @@ function thrown(command: string, e: unknown): CommandResult {
  * flags at once (`one-target`), a name outside the skill grammar
  * (`bundle-name-invalid`), a name nothing answers (`bundle-not-found`, with the
  * directories searched and the names the scan saw), and a name two different
- * bundles answer (`bundle-ambiguous`, with each candidate). A found copy is an
- * installed copy, read only: a verb that can write it is refused
- * (`bundle-readonly`, `--dry-run` included), except `bundles`, whose write is
- * this machine's registry (`MACHINE_LOCAL_WRITERS`).
+ * bundles answer (`bundle-ambiguous`, with each candidate). What it finds is a
+ * copy, and a copy is guarded as every marked root is (`markedRootRefusal`).
  */
 function targetOf(spec: CommandSpec, args: CommandArgs): Target {
   const name = args.flags["bundle"];
@@ -199,26 +198,69 @@ function targetOf(spec: CommandSpec, args: CommandArgs): Target {
     };
   }
   const chosen = resolution.chosen;
-  if (spec.writes && !MACHINE_LOCAL_WRITERS.has(spec.name)) {
-    return {
-      ok: false,
-      result: fail(
-        spec.name,
-        "usage",
-        "bundle-readonly",
-        `"${name}" is an installed copy, read only, and "${spec.name}" can write`,
-        {
-          details: { bundle: name, root: chosen.root },
-          hint: "an installed copy is not changed in place; its SKILL.md says where a problem with it is reported",
-        },
-      ),
-    };
-  }
   return {
     ok: true,
     args: { ...args, root: chosen.root },
     shadowed: resolution.shadowed.map((c) => ({ root: c.root, tier: c.tier })),
   };
+}
+
+/** docs/cli.md §bundles: where a problem with a copy goes, in the words of its contribution mode. */
+function contributionHint(marker: ExportMarker): string {
+  const { contribution } = marker;
+  const repository = contribution.repository ?? marker.source.repository ?? "its repository";
+  switch (contribution.mode) {
+    case "issues":
+      return `report at ${repository}/issues`;
+    case "pull-requests":
+      return `clone ${repository} and write there`;
+    case "local-folder":
+      return `write a proposal under ${contribution.folder ?? "the folder its SKILL.md names"}`;
+    case "none":
+      return "this copy takes no reports";
+  }
+}
+
+/**
+ * docs/cli.md §bundles: a root that carries a marker is a copy, however it was
+ * named — `--bundle`, `--root` or the working directory — and it is checked
+ * before any module preloads or the verb reads a page. A marker that is not one
+ * is refused as a config the loader cannot read is: the copy is not loaded
+ * (`export-marker-invalid`). A verb that can write is refused over a copy,
+ * `--dry-run` included, with where a change goes instead (`bundle-readonly`):
+ * a copy is overwritten by its next install. A courtesy, not a guarantee —
+ * the files' permissions protect a copy, and a process that does not go
+ * through the CLI is not stopped. `bundles` writes this machine's registry,
+ * not the copy, so it is answered.
+ */
+function markedRootRefusal(spec: CommandSpec, root: string): CommandResult | undefined {
+  if (!spec.needsVaultModules && !spec.writes) return undefined;
+  const marker = markerAt(root);
+  if (marker.kind === "none") return undefined;
+  if (marker.kind === "invalid") {
+    return fail(
+      spec.name,
+      "conflict",
+      "export-marker-invalid",
+      `${MARKER_PATH} is not an export's marker: ${marker.reason}`,
+      {
+        details: { path: MARKER_PATH, reason: marker.reason },
+        hint: "the file is written by `check --write` or `export`; install the copy again from its source, or remove the file if this root is not a copy",
+      },
+    );
+  }
+  if (!spec.writes || MACHINE_LOCAL_WRITERS.has(spec.name)) return undefined;
+  const copy = marker.marker;
+  return fail(
+    spec.name,
+    "usage",
+    "bundle-readonly",
+    `this root is an installed copy of the export "${copy.name}" of the bundle "${copy.bundle}", read only, and "${spec.name}" can write`,
+    {
+      details: { export: copy.name, contribution: copy.contribution, root: resolve(root) },
+      hint: `an installed copy is not changed in place, and its next install overwrites it: ${contributionHint(copy)}`,
+    },
+  );
 }
 
 async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandResult> {
@@ -232,25 +274,8 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
   }
   if (!target.ok) return target.result;
   const { args, shadowed } = target;
-  // docs/cli.md §The envelope: a root that carries a marker is a copy, and a
-  // copy is read under the identity its marker gives it. A marker that is not
-  // one is refused before any module preloads or the verb reads a page, as a
-  // config the loader cannot read is: the copy is not loaded.
-  if (spec.needsVaultModules) {
-    const marker = markerAt(args.root);
-    if (marker.kind === "invalid") {
-      return fail(
-        spec.name,
-        "conflict",
-        "export-marker-invalid",
-        `${MARKER_PATH} is not an export's marker: ${marker.reason}`,
-        {
-          details: { path: MARKER_PATH, reason: marker.reason },
-          hint: "the file is written by `check --write` or `export`; install the copy again from its source, or remove the file if this root is not a copy",
-        },
-      );
-    }
-  }
+  const refused = markedRootRefusal(spec, args.root);
+  if (refused !== undefined) return refused;
   let result: CommandResult;
   try {
     // docs/extending.md §Declaring a module: loading a module is the shell's one

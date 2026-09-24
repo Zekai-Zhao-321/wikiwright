@@ -217,12 +217,13 @@ describe("check --write renders the in-repository exports, and check holds them 
     assert.equal(stale?.path, "plugin.json");
   });
 
-  it("a root that carries a marker is a copy, and renders nothing", () => {
+  it("a root that carries a marker is a copy: check --write is refused there, and renders nothing", () => {
     const root = garden({ content_roots: ["wiki"], exports: [ALL] });
     run(root, ["check", "--write"]);
     const copy = join(root, "skills", "garden");
     const r = run(copy, ["check", "--write"]);
-    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    assert.equal(r.status, 2, JSON.stringify(r.envelope));
+    assert.equal(r.envelope.error?.["code"], "bundle-readonly");
     assert.equal(existsSync(join(copy, "skills")), false, "a copy rendered exports of its own");
   });
 });
