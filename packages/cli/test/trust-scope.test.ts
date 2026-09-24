@@ -582,7 +582,7 @@ describe("the key keeps the path as the filesystem spells it", () => {
     mkdirSync(join(repo, "vault"), { recursive: true });
     cpSync(BASE, join(repo, "vault", "nested"), { recursive: true, dereference: true });
     const backslashed = join(repo, "vault\\nested");
-    const digest = moduleDigest(backslashed, MODULE)?.sha256;
+    const digest = moduleDigest(backslashed, { package: MODULE })?.sha256;
     assert.equal(typeof digest, "string");
     mkdirSync(join(store, ".."), { recursive: true });
     writeFileSync(

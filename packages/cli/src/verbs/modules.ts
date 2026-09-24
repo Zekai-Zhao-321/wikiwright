@@ -20,6 +20,8 @@ import {
   declaredModulesOf,
   forgetPreloadedModules,
   loadDeclaredModules,
+  type ModuleDeclaration,
+  moduleLocation,
   plantPreloadedModules,
   preloadModules,
 } from "../moduleload.ts";
@@ -92,6 +94,8 @@ export const modulesCommand: CommandSpec = {
   run: async (args: CommandArgs) => {
     const [action] = args.positionals;
     const declarations = declaredModulesOf(args.root);
+    const declarationOf = (name: string): ModuleDeclaration =>
+      declarations.find((d) => d.package === name) ?? { package: name };
 
     if (action === "list") {
       // docs/extending.md §Declaring a module: what the bundle declares, what resolved, the digest
@@ -114,8 +118,8 @@ export const modulesCommand: CommandSpec = {
             version: m.version,
             resolved: {
               spec: packageSpecOf(args.root, m.package),
-              declared: declarations.find((d) => d.package === m.package)?.version ?? null,
-              path: `node_modules/${m.package}`,
+              declared: declarationOf(m.package).version ?? null,
+              path: moduleLocation(declarationOf(m.package)),
             },
             digest: m.digest,
             contributes: {
@@ -140,7 +144,7 @@ export const modulesCommand: CommandSpec = {
           ...issue,
           resolved: {
             spec: packageSpecOf(args.root, issue.package),
-            path: `node_modules/${issue.package}`,
+            path: moduleLocation(declarationOf(issue.package)),
           },
         })),
       });
@@ -188,7 +192,11 @@ export const modulesCommand: CommandSpec = {
     // The load proves the candidate's own fixture, as every load does, so a
     // candidate that fails it is `candidate-unresolved`, its issue naming the
     // fixture's code.
-    const candidateLoad = await loadDeclaredModules(candidateRoot, [{ package: name }]);
+    // A module declared by path is read from the same path under the candidate.
+    const declaredPath = declarationOf(name).path;
+    const candidateLoad = await loadDeclaredModules(candidateRoot, [
+      declaredPath === undefined ? { package: name } : { package: name, path: declaredPath },
+    ]);
     const candidateModule = candidateLoad.loaded[0];
     if (candidateLoad.issues.length > 0 || candidateModule === undefined) {
       forgetPreloadedModules(args.root);

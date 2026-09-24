@@ -257,9 +257,10 @@ loads itself — `trust` — or about this machine's registry of connected
 bundles — `bundles`, which reads a connected bundle's files for its identity
 and no law — declares it reads no vault law and loads none.
 
-A bundle names the package in `config/engine.json` and installs it in its own
-`node_modules`, by a workspace link, a `file:` dependency or a local tarball;
-nothing is published anywhere. From `fixtures/conformance/bundle-a`:
+A bundle names the package in `config/engine.json` and either installs it in
+its own `node_modules`, by a workspace link, a `file:` dependency or a local
+tarball, or carries it in its own tree and names the directory; nothing is
+published anywhere. The first spelling, from `fixtures/conformance/bundle-a`:
 
 ```json
 { "content_roots": ["wiki"], "modules": [{ "package": "@wikiwright-fixture/probe", "version": "^1.0.0" }] }
@@ -268,6 +269,27 @@ nothing is published anywhere. From `fixtures/conformance/bundle-a`:
 ```json
 { "dependencies": { "@wikiwright-fixture/probe": "file:../module-fixture" } }
 ```
+
+The second spelling adds `path`, a directory relative to the bundle root,
+which the package lies in whole. The gardening kit the suite declares this way
+(`packages/cli/test/fixtures/kit-garden`, copied to `kit/garden` in a bundle
+under the temporary directory):
+
+```json
+{ "content_roots": ["wiki"], "modules": [{ "package": "kit-garden", "version": "^1.0.0", "path": "kit/garden" }] }
+```
+
+A declared `path` is where the module is read from and the only place: when
+the directory is not there the load is `module-unresolved`, naming the path,
+even if `node_modules` holds a package of that name. The path is held to the
+path law, as a content root is: `"../kit"` or an absolute path is refused when
+`config/engine.json` loads (`schema-invalid` at `engine.modules.<n>.path`),
+and `modules list`, which reads the declarations without loading the rest of
+the config, reports it `module-malformed`. The loader also refuses, as
+`module-malformed`, a directory whose real path lies outside the bundle's: a
+link out of the bundle. One resolver reads both spellings for the loader, the law
+digest and `modules list`, whose `resolved.path` prints the declared path or
+`node_modules/<package>`.
 
 The package's own contract is a `wikiwright` block in its `package.json`:
 
@@ -309,8 +331,8 @@ with its refusal rather than omitting it.
 
 | Code | Refused when |
 |---|---|
-| `module-unresolved` | the package is not under the bundle's own `node_modules` (an ancestor directory or the engine's tree does not count) |
-| `module-malformed` | no `package.json`, no `wikiwright` block, no semver `version`, an entry outside the package or outside the digested file set, a non-portable entry suffix, or the same package declared twice |
+| `module-unresolved` | the package is not under the bundle's own `node_modules` (an ancestor directory or the engine's tree does not count), or no directory is at its declared `path` |
+| `module-malformed` | no `package.json`, no `wikiwright` block, no semver `version`, an entry outside the package or outside the digested file set, a non-portable entry suffix, the same package declared twice, or a declared `path` that is not a directory inside the bundle |
 | `module-version-mismatch` | the installed `version` does not satisfy the bundle's declared range |
 | `module-incompatible` | the running engine is outside the module's declared `engine` range |
 | `module-impure` | the purity scan found the clock, randomness, locale comparison, the environment, the network, dynamic evaluation or a filesystem import, with file and line |

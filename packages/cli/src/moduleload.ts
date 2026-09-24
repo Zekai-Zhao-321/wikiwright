@@ -10,17 +10,21 @@
 //
 // Nothing here reaches the network. Resolution is node's own, from the bundle's
 // own `node_modules`, which is what a workspace link, a `file:` dependency and a
-// locally packed tarball all produce. The digest over every file of the package
-// is what the law names and what the proofs are cached by; no lockfile is read.
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+// locally packed tarball all produce — or, when the declaration names a `path`,
+// that directory of the bundle's and nothing else. The digest over every file of
+// the package is what the law names and what the proofs are cached by; no
+// lockfile is read.
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   codeUnitCompare,
   type ModuleManifest,
   normalizeInput,
+  PATH_REFUSALS,
   PURITY_SCAN_VERSION,
   type PurityViolation,
+  pathRefusal,
   satisfiesEngineRange,
   scanPurity,
 } from "@wikiwright/core";
@@ -35,10 +39,12 @@ import { sha256Of } from "./trust.ts";
 
 /** docs/extending.md §Declaring a module: what `config/engine.json` declares. */
 export interface ModuleDeclaration {
-  /** The package name, resolved by node from the bundle's own `node_modules`. */
+  /** The package name, resolved from the bundle's own `node_modules` unless `path` is declared. */
   package: string;
   /** The range the bundle expects; the resolved version must satisfy it. */
   version?: string;
+  /** A bundle-relative directory holding the package: authoritative, with no fallback. */
+  path?: string;
 }
 
 /** One refusal, with everything a reader needs to act on it. */
@@ -98,15 +104,98 @@ function readJson(file: string): unknown {
 }
 
 /**
- * Node's own resolution, from the BUNDLE — never from the engine's own tree. A
- * module the engine can see and the bundle cannot is a module the bundle does
- * not depend on, and `docs/extending.md §A check` refuses a reference to one.
+ * docs/extending.md §Declaring a module: where a declaration says its package lies, spelled
+ * relative to the bundle — the declared `path`, or `node_modules/<package>`.
+ * What `modules list` prints as a module's resolved path.
  */
-function packageRoot(vaultRoot: string, name: string): string | undefined {
-  const boundary = resolve(vaultRoot, "node_modules");
-  const candidate = resolve(boundary, ...name.split("/"));
-  if (!candidate.startsWith(boundary + sep)) return undefined;
-  return existsSync(join(candidate, "package.json")) ? candidate : undefined;
+export function moduleLocation(declaration: ModuleDeclaration): string {
+  return declaration.path ?? `node_modules/${declaration.package}`;
+}
+
+/** Where a declared module's package lies, or the refusal that says why it does not. */
+type Resolution = { ok: true; root: string } | { ok: false; issue: ModuleIssue };
+
+/**
+ * docs/extending.md §Declaring a module: the ONE resolver of a declaration to a package directory,
+ * read by the loader, the digest and so the law digest, and `modules list`.
+ *
+ * Without a `path`, node's own resolution, from the BUNDLE — never from the
+ * engine's own tree. A module the engine can see and the bundle cannot is a
+ * module the bundle does not depend on, and `docs/extending.md §A check`
+ * refuses a reference to one.
+ *
+ * With a `path`, that directory and no other: an explicit location that fell
+ * back to `node_modules` would judge a bundle with a module it did not name.
+ * The path is held to the vault path law, as the schema holds it, and the
+ * directory's real path must lie inside the bundle's: a link that leaves the
+ * bundle is a module the bundle does not carry.
+ */
+function resolveModule(vaultRoot: string, declaration: ModuleDeclaration): Resolution {
+  const name = declaration.package;
+  const declared = declaration.path;
+  if (declared === undefined) {
+    const boundary = resolve(vaultRoot, "node_modules");
+    const candidate = resolve(boundary, ...name.split("/"));
+    if (candidate.startsWith(boundary + sep) && existsSync(join(candidate, "package.json"))) {
+      return { ok: true, root: candidate };
+    }
+    return {
+      ok: false,
+      issue: {
+        code: "module-unresolved",
+        package: name,
+        message: `config/engine.json declares module "${name}", which this bundle does not have installed`,
+        hint: "install it into this bundle's own node_modules — package.json names it as a workspace link or a `file:<path>` to the package, and the package manager's install lands it — and then a maintainer reviews it and chooses its approval scope",
+      },
+    };
+  }
+  const refusal = pathRefusal(declared);
+  if (refusal !== undefined) {
+    return {
+      ok: false,
+      issue: {
+        code: "module-malformed",
+        package: name,
+        message: `config/engine.json declares module "${name}" at "${declared}", which is not a directory inside the bundle: it ${PATH_REFUSALS[refusal]}`,
+        hint: "a declared path is relative to the bundle root, with no leading `/` and no `..` segment",
+        details: { path: declared },
+      },
+    };
+  }
+  const candidate = resolve(vaultRoot, ...declared.split("/"));
+  let directory = false;
+  try {
+    directory = statSync(candidate).isDirectory();
+  } catch {
+    // Nothing there: unresolved, below.
+  }
+  if (!directory) {
+    return {
+      ok: false,
+      issue: {
+        code: "module-unresolved",
+        package: name,
+        message: `config/engine.json declares module "${name}" at "${declared}", where this bundle has no directory`,
+        hint: "a declared path is the only place the module is read from; put the package's directory there, or declare where it is",
+        details: { path: declared },
+      },
+    };
+  }
+  const bundle = realpathSync(vaultRoot);
+  const real = realpathSync(candidate);
+  if (!real.startsWith(bundle + sep)) {
+    return {
+      ok: false,
+      issue: {
+        code: "module-malformed",
+        package: name,
+        message: `config/engine.json declares module "${name}" at "${declared}", which resolves outside the bundle, to "${real}"`,
+        hint: "a module declared by path is one the bundle carries; a link that leaves the bundle names a directory the bundle does not hold",
+        details: { path: declared, resolved: real },
+      },
+    };
+  }
+  return { ok: true, root: candidate };
 }
 
 const PACKAGE_VERSION =
@@ -279,16 +368,12 @@ export async function loadDeclaredModules(
     }
     seen.add(name);
 
-    const root = packageRoot(vaultRoot, name);
-    if (root === undefined) {
-      issues.push({
-        code: "module-unresolved",
-        package: name,
-        message: `config/engine.json declares module "${name}", which this bundle does not have installed`,
-        hint: "install it into this bundle's own node_modules — package.json names it as a workspace link or a `file:<path>` to the package, and the package manager's install lands it — and then a maintainer reviews it and chooses its approval scope",
-      });
+    const resolved = resolveModule(vaultRoot, declaration);
+    if (!resolved.ok) {
+      issues.push(resolved.issue);
       continue;
     }
+    const root = resolved.root;
 
     let packageJson: unknown;
     try {
@@ -373,7 +458,7 @@ export async function loadDeclaredModules(
     // One definition of "the module's bytes": the law digest, the purity scan,
     // the fixture's cache and the `modules list` row all read the same digest,
     // so a proof cannot be taken of one reading and reported for another.
-    const scanned = moduleDigest(vaultRoot, name);
+    const scanned = moduleDigest(vaultRoot, declaration);
     if (scanned === undefined) {
       issues.push({
         code: "module-unresolved",
@@ -578,13 +663,13 @@ export function declaredModulesIn(engineJson: unknown): ModuleDeclaration[] {
   const out: ModuleDeclaration[] = [];
   for (const raw of parsed.modules) {
     if (raw === null || typeof raw !== "object") continue;
-    const record = raw as { package?: unknown; version?: unknown };
+    const record = raw as { package?: unknown; version?: unknown; path?: unknown };
     if (typeof record.package !== "string") continue;
-    out.push(
-      typeof record.version === "string"
-        ? { package: record.package, version: record.version }
-        : { package: record.package },
-    );
+    out.push({
+      package: record.package,
+      ...(typeof record.version === "string" ? { version: record.version } : {}),
+      ...(typeof record.path === "string" ? { path: record.path } : {}),
+    });
   }
   return out;
 }
@@ -637,10 +722,15 @@ function entryOf(root: string): string | undefined {
  * The sha256 over every file of an installed package, the files it covers,
  * and the purity violations in its executable ones. The law digest names it,
  * the loader proves the module under it, and `modules list` reports it.
+ * Undefined when the declaration resolves to no package.
  */
-export function moduleDigest(vaultRoot: string, name: string): ModuleDigest | undefined {
-  const root = packageRoot(vaultRoot, name);
-  if (root === undefined) return undefined;
+export function moduleDigest(
+  vaultRoot: string,
+  declaration: ModuleDeclaration,
+): ModuleDigest | undefined {
+  const resolved = resolveModule(vaultRoot, declaration);
+  if (!resolved.ok) return undefined;
+  const root = resolved.root;
   let reading = READINGS.get(root);
   let read: Map<string, Buffer> | undefined;
   if (reading === undefined) {

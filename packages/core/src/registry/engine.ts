@@ -26,11 +26,11 @@ export interface EngineConfig {
   extensions?: { mode: "open" | "registered"; namespaces?: string[]; fields?: string[] };
   /**
    * docs/extending.md §Declaring a module: the module packages this bundle loads. Resolved
-   * by the package manager from the bundle's own `node_modules`; `version` is
-   * the RANGE the bundle expects, and an installed version outside it is a load
-   * error.
+   * from the bundle's own `node_modules`, or, when `path` is declared, from
+   * that bundle-relative directory and nowhere else; `version` is the RANGE the
+   * bundle expects, and an installed version outside it is a load error.
    */
-  modules?: { package: string; version?: string }[];
+  modules?: { package: string; version?: string; path?: string }[];
 }
 
 /**
@@ -51,6 +51,20 @@ const RootArraySchema = z
     }),
   )
   .min(1);
+
+/**
+ * docs/extending.md §Declaring a module: a module's bundle-relative directory is a vault path
+ * too, held to the same law as a root, so `"../kit"` or `"/opt/kit"` is refused
+ * at load rather than read from outside the bundle.
+ */
+const ModulePathSchema = z.string().superRefine((value, ctx) => {
+  const refusal = pathRefusal(value);
+  if (refusal === undefined) return;
+  ctx.addIssue({
+    code: "custom",
+    message: `not a directory inside the bundle: it ${PATH_REFUSALS[refusal]}`,
+  });
+});
 
 const EngineConfigSchema = z.strictObject({
   content_roots: RootArraySchema.optional(),
@@ -83,9 +97,9 @@ const EngineConfigSchema = z.strictObject({
   modules: z
     .array(
       z.strictObject({
-        // A package name, not a path: a module is resolved by the package
-        // manager, so the bundle names what it depends on and never where it
-        // happens to sit (docs/extending.md §Declaring a module).
+        // A package name, always: the bundle names what it depends on, and the
+        // law digest and every refusal name the module by it (docs/extending.md
+        // §Declaring a module). Where it sits is `path`'s to say, when declared.
         package: z
           .string()
           .min(1)
@@ -94,6 +108,10 @@ const EngineConfigSchema = z.strictObject({
             "a module is named as an npm package (`name` or `@scope/name`)",
           ),
         version: z.string().min(1).optional(),
+        // Where the package lies when it is not installed under `node_modules`:
+        // a directory of the bundle's own, such as a kit committed beside its
+        // pages. Declared, it is the only place the module is read from.
+        path: ModulePathSchema.optional(),
       }),
     )
     .optional(),
@@ -181,9 +199,11 @@ export function loadEngineConfig(json: unknown): EngineConfigLoadResult {
     config.extensions = ext;
   }
   if (parsed.data.modules !== undefined) {
-    config.modules = parsed.data.modules.map((m) =>
-      m.version === undefined ? { package: m.package } : { package: m.package, version: m.version },
-    );
+    config.modules = parsed.data.modules.map((m) => ({
+      package: m.package,
+      ...(m.version === undefined ? {} : { version: m.version }),
+      ...(m.path === undefined ? {} : { path: m.path }),
+    }));
   }
   if (parsed.data.commit_prefixes !== undefined) {
     config.commit_prefixes = { prefixes: parsed.data.commit_prefixes.prefixes };

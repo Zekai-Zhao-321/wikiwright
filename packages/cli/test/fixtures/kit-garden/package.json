@@ -1,0 +1,13 @@
+{
+  "name": "kit-garden",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Test infrastructure: a gardening kit a bundle carries in its own tree and declares by path. Not a domain model and not a product kit.",
+  "license": "MIT",
+  "wikiwright": {
+    "module": "./index.js",
+    "fixture": "./fixture.json",
+    "engine": ">=0.1.0 <1.0.0"
+  }
+}

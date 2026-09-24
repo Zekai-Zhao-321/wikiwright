@@ -194,6 +194,11 @@ export const trustCommand: CommandSpec = {
       }
     }
     const rank = (s: GrantScope): number => GRANT_SCOPES.indexOf(s);
+    // The installed digest of a module, resolved as the bundle declares it.
+    const declarationOf = (name: string) =>
+      declaredModulesOf(args.root).find((d) => d.package === name) ?? { package: name };
+    const digestOf = (name: string): string | undefined =>
+      moduleDigest(args.root, declarationOf(name))?.sha256;
     if (action === "list") {
       const store = readTrustStore();
       // The whole store, not this vault's share of it: a record keyed by a path
@@ -231,7 +236,7 @@ export const trustCommand: CommandSpec = {
       const statusOf = (path: string, sha256: string): "current" | "modified" | "missing" => {
         const name = moduleNameOf(path);
         if (!digests.has(path)) {
-          digests.set(path, name === undefined ? undefined : moduleDigest(args.root, name)?.sha256);
+          digests.set(path, name === undefined ? undefined : digestOf(name));
         }
         const installed = digests.get(path);
         if (installed === undefined) return "missing";
@@ -393,7 +398,7 @@ export const trustCommand: CommandSpec = {
       // read is approved by nothing.
       let installed: string | undefined;
       try {
-        installed = moduleDigest(args.root, name)?.sha256;
+        installed = digestOf(name);
       } catch {
         installed = undefined;
       }
@@ -436,7 +441,8 @@ export const trustCommand: CommandSpec = {
             : null,
       });
     }
-    const digest = moduleDigest(args.root, name);
+    const declaration = declarationOf(name);
+    const digest = moduleDigest(args.root, declaration);
     if (digest === undefined) {
       return fail(
         "trust",
@@ -463,9 +469,6 @@ export const trustCommand: CommandSpec = {
     }
     // docs/extending.md §The determinism fixture: the load runs the fixture on the bytes the grant
     // pins, as every load does; a module that fails its own fixture is not granted.
-    const declaration = declaredModulesOf(args.root).find((d) => d.package === name) ?? {
-      package: name,
-    };
     const loaded = await loadDeclaredModules(args.root, [declaration]);
     const issue = loaded.issues[0];
     if (issue !== undefined) {

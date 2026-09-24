@@ -25,8 +25,9 @@ import {
  * The law digest: sha256 over one line per input, in a fixed order — the
  * constitution's sha256, engine.json's (the empty text's when the file is
  * absent), then one line per declared module installed under the bundle's
- * `node_modules`, in declaration order, with the digest a trust grant pins. A
- * declared module that is not installed contributes no line.
+ * `node_modules` or at the bundle-relative path it declares, in declaration
+ * order, with the digest a trust grant pins. A declared module that is not
+ * installed contributes no line.
  *
  * Trust does not enter. The law is what the bundle declares and has
  * installed; a grant decides whether this machine will judge under it, and
@@ -46,7 +47,7 @@ export function lawDigest(
     `${ENGINE_PATH} ${sha256Of(engine ?? "")}`,
   ];
   for (const declaration of declarations) {
-    const installed = moduleDigest(root, declaration.package);
+    const installed = moduleDigest(root, declaration);
     if (installed !== undefined) lines.push(`module:${declaration.package} ${installed.sha256}`);
   }
   return sha256Of(lines.join("\n"));
