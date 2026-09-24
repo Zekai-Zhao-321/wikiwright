@@ -346,6 +346,51 @@ describe("the law digest names every installed module, trusted or not (docs/cli.
     assert.equal(bundleOf(root, ["type", "list"], env).law, moved.law);
   });
 
+  it("an engine.json with a byte order mark declares its modules to the law, listed or refused", () => {
+    // The loader reads a config that starts with a byte order mark. The law
+    // digest and the preload read the same declarations, so the ungranted
+    // module is refused by trust rather than by a preload that saw none, and a
+    // module-only edit moves the law where the registry lists it and where a
+    // vault verb refuses.
+    const marked = join(tmp, "marked");
+    for (const part of ["config", "wiki", "package.json"]) {
+      cpSync(join(root, part), join(marked, part), { recursive: true });
+    }
+    const module = join(marked, "node_modules", ...PROBE.split("/"));
+    cpSync(join(CONFORMANCE, "module-fixture"), module, { recursive: true });
+    const engine = join(marked, "config", "engine.json");
+    writeFileSync(engine, `\ufeff${readFileSync(engine, "utf8")}`);
+    const owned = {
+      WIKIWRIGHT_TRUST_FILE: join(tmp, "marked-trust.json"),
+      WIKIWRIGHT_BUNDLES_FILE: join(tmp, "marked-bundles.json"),
+    };
+    assert.equal(run(tmp, ["bundles", "add", marked, "--name", "marked"], owned).status, 0);
+
+    const listed = (): string => {
+      const r = run(tmp, ["bundles", "list"], owned);
+      const rows = (r.envelope.data?.["bundles"] ?? []) as { identity: Bundle | null }[];
+      const law = rows[0]?.identity?.law;
+      assert.ok(law !== undefined, JSON.stringify(r.envelope));
+      return law;
+    };
+    const refused = (): string => {
+      const r = run(marked, ["type", "list"], owned);
+      assert.equal(r.envelope.error?.["code"], "module-untrusted", JSON.stringify(r.envelope));
+      const law = r.envelope.metadata.bundle?.law;
+      assert.ok(law !== undefined, JSON.stringify(r.envelope));
+      return law;
+    };
+
+    const first = { listed: listed(), refused: refused() };
+    assert.equal(first.listed, first.refused);
+    assert.notEqual(first.listed, lawFormula(marked, []), "the module's line is in the law");
+    writeFileSync(join(module, "NOTES.txt"), "a file only the module holds\n");
+    const second = { listed: listed(), refused: refused() };
+    assert.notEqual(second.listed, first.listed, "a module-only edit moves the listed law");
+    assert.notEqual(second.refused, first.refused, "and the refusal's law");
+    assert.equal(second.listed, second.refused);
+  });
+
   it("a declared module that is not installed contributes no line", () => {
     const bare = join(tmp, "bare");
     for (const part of ["config", "wiki"]) {

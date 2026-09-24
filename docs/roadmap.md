@@ -173,6 +173,22 @@ build with it run one after the other (not through the baseline argument: the
 block is a difference in every envelope), median of five fresh processes over
 1,000 pages: `check` 273 ms to 298 ms, `lint --staged` 351 ms to 383 ms.
 
+The law digest in that block reads the bytes of every declared module
+installed under the bundle, and so does the brief's law digest, beside the
+preload's own reading: each reading hashes every file of the package and
+purity-scans its executable ones. `bundles list` computes each connection's
+identity the same way, so discovery scans a module's purity and discards the
+result; it loads no module and judges nothing. A package's digest is now
+taken once per process and reused by the preload, the brief and the
+envelope; nothing of it outlives the process. Measured on 2026-09-24 on one
+Apple-silicon machine under Node 22.22.0 over a granted temporary copy of
+`devwiki`, whose one module is the kit (three files, 28 KB), median of eleven
+fresh processes alternating the build before the change and the build with
+it: `check --all` 190.2 ms before and 190.2 ms after, `read` 114.2 ms and
+113.8 ms. One digest of the kit takes about 0.9 ms, so the two readings a
+`check` no longer repeats are below the noise; the saving grows with a
+module's size.
+
 The gate the hooks run reads the index. In 0.1.0 it read one `git show` per
 page, a process spawn each: 33 s to read the 5,000-page index, four to judge
 it. It now reads every staged page through one `ls-files -s` and one

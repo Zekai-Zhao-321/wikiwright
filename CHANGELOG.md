@@ -193,6 +193,13 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
+- A `config/engine.json` that starts with a byte order mark, which the vault
+  loader reads, declared no module to the preload and none to the law
+  digest: its modules were refused `module-not-loaded`, and the bundle block
+  left out every installed module, so a module-only edit did not move `law`.
+  The declarations are read as the loader reads them. A package's digest is
+  taken once per process, where the preload, the brief and the envelope each
+  read, hashed and purity-scanned its bytes.
 - `brief` is a consumer verb. It was ranked writer, so a session under
   `WIKIWRIGHT_ROLE=consumer` was refused `role-forbidden` when it asked for
   the brief `--role consumer` renders for it: the one role bounded to reading

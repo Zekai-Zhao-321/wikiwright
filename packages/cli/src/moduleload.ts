@@ -17,6 +17,7 @@ import { pathToFileURL } from "node:url";
 import {
   codeUnitCompare,
   type ModuleManifest,
+  normalizeInput,
   type PurityViolation,
   satisfiesEngineRange,
   scanPurity,
@@ -562,10 +563,27 @@ export function declaredModulesOf(vaultRoot: string): ModuleDeclaration[] {
   const file = join(resolve(vaultRoot), "config", "engine.json");
   if (!existsSync(file)) return [];
   try {
-    return declaredModulesIn(readJson(file));
+    return declaredModulesInText(readFileSync(file, "utf8"));
   } catch {
     return [];
   }
+}
+
+/**
+ * The declarations in engine.json's text, parsed as the vault loader parses
+ * it: `normalizeInput` first, so a byte order mark the loader accepts declares
+ * the same modules here. A second convention was how a config the loader read
+ * declared no module to the preload and none to the law digest. Text that does
+ * not parse declares none; the loader refuses it by name.
+ */
+export function declaredModulesInText(text: string): ModuleDeclaration[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(normalizeInput(text).text);
+  } catch {
+    return [];
+  }
+  return declaredModulesIn(parsed);
 }
 
 /** The declarations in an already-parsed engine.json — what `init` reads off a starter's bytes before they land. */
@@ -586,6 +604,22 @@ export function declaredModulesIn(engineJson: unknown): ModuleDeclaration[] {
   return out;
 }
 
+export interface ModuleDigest {
+  sha256: string;
+  files: string[];
+  violations: (PurityViolation & { file: string })[];
+}
+
+/**
+ * One reading of a package per process. The preload, the brief's law digest
+ * and the envelope's each ask for the same package's digest, and each read,
+ * hashed and purity-scanned every file of it. Keyed by the resolved package
+ * root and the entry scanned with it. Invocation-local: nothing outlives the
+ * process, so no state is kept between runs (docs/roadmap.md §Every run parses
+ * the whole corpus), and no verb writes a module's files while it runs.
+ */
+const DIGESTS = new Map<string, ModuleDigest>();
+
 /**
  * docs/cli.md §trust: what a module grant is pinned to — the sha256 over the
  * package's own executable bytes, plus the purity violations the grant would be
@@ -596,9 +630,7 @@ export function moduleDigest(
   vaultRoot: string,
   name: string,
   declaredEntry?: string,
-):
-  | { sha256: string; files: string[]; violations: (PurityViolation & { file: string })[] }
-  | undefined {
+): ModuleDigest | undefined {
   const root = packageRoot(vaultRoot, name);
   if (root === undefined) return undefined;
   let entry = declaredEntry;
@@ -611,6 +643,9 @@ export function moduleDigest(
       // still scanned so trust grant cannot approve ordinary impure code.
     }
   }
+  const key = `${root}\u0000${entry ?? ""}`;
+  const known = DIGESTS.get(key);
+  if (known !== undefined) return known;
   const files = moduleFiles(root);
   const violations: (PurityViolation & { file: string })[] = [];
   const parts: string[] = [];
@@ -622,5 +657,7 @@ export function moduleDigest(
       violations.push({ ...violation, file: file.slice(root.length + 1) });
     }
   }
-  return { sha256: sha256Of(parts.join("\n")), files, violations };
+  const digest = { sha256: sha256Of(parts.join("\n")), files, violations };
+  DIGESTS.set(key, digest);
+  return digest;
 }

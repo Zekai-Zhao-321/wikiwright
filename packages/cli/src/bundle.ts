@@ -11,7 +11,7 @@ import { basename, join } from "node:path";
 import { loadEngineConfig, normalizeInput } from "@wikiwright/core";
 import type { BundleIdentity } from "./envelope.ts";
 import { gitCheckoutState } from "./git.ts";
-import { declaredModulesOf, type ModuleDeclaration, moduleDigest } from "./moduleload.ts";
+import { declaredModulesInText, type ModuleDeclaration, moduleDigest } from "./moduleload.ts";
 import { sha256Of } from "./trust.ts";
 import {
   CONSTITUTION_PATH,
@@ -108,7 +108,14 @@ export function bundleIdentity(root: string): BundleIdentity | undefined {
     root: real,
     head: checkout?.head ?? null,
     dirty: checkout?.dirty ?? null,
-    law: lawDigest(root, constitution, engine, declaredModulesOf(root)),
+    // The declarations come from the engine.json this read, parsed as the
+    // loader parses it, so a byte order mark cannot hide an installed module.
+    law: lawDigest(
+      root,
+      constitution,
+      engine,
+      engine === undefined ? [] : declaredModulesInText(engine),
+    ),
     content: contentDigest(root, contentRootsOf(engine)),
   };
 }
