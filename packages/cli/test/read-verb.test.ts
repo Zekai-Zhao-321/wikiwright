@@ -5,11 +5,21 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import { type ParsedDoc, parseDoc } from "@wikiwright/core";
+import { pageNamed } from "../src/verbs/read.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -355,6 +365,52 @@ describe("read returns a page's sections with attribution (docs/cli.md §read)",
       [climate(orchard.envelope), climate(allotment.envelope)],
       ["temperate", "arid"],
     );
+  });
+
+  it("a page linked out of the vault is refused invalid-path, and every other page still resolves", () => {
+    const vault = join(tmp, "escaping");
+    cpSync(ORCHARD, vault, { recursive: true });
+    const outside = join(tmp, "outside-page.md");
+    writeFileSync(outside, "# Outside\n\nWords that belong to no bundle.\n");
+    symlinkSync(outside, join(vault, "wiki", "elsewhere.md"));
+    for (const wanted of ["wiki/elsewhere.md", "elsewhere"]) {
+      const r = read([wanted, "--root", vault]);
+      assert.equal(r.status, 2, `${wanted}: ${JSON.stringify(r.envelope)}`);
+      assert.equal(r.envelope.error?.code, "invalid-path");
+      assert.deepEqual(r.envelope.error?.details, { path: "wiki/elsewhere.md" });
+      assert.doesNotMatch(JSON.stringify(r.envelope), /belong to no bundle/u);
+    }
+    // The link does not stand between a name and the pages it does not name.
+    for (const [wanted, via] of [
+      ["pruning-roses", "name"],
+      ["Rose pruning", "alias"],
+      ["Pruning roses", "title"],
+    ] as const) {
+      assert.equal(dataOf([wanted, "--root", vault]).page["resolved_via"], via, wanted);
+    }
+  });
+
+  it("the page a name resolves to is parsed once: the resolver's parse is the one read cuts", () => {
+    let calls = 0;
+    const counting = (text: string): ParsedDoc => {
+      calls += 1;
+      return parseDoc(text);
+    };
+    const byName = pageNamed(ORCHARD, ["wiki"], "pruning-roses", undefined, counting);
+    assert.ok(byName?.ok === true);
+    assert.equal(byName.path, PAGE);
+    assert.equal(
+      calls,
+      3,
+      "one parse per page of the handbook, the chosen one included, and no more",
+    );
+    assert.deepEqual(byName.doc, parseDoc(readFileSync(join(ORCHARD, PAGE), "utf8")));
+    assert.deepEqual(byName.bytes, readFileSync(join(ORCHARD, PAGE)));
+
+    calls = 0;
+    const byPath = pageNamed(ORCHARD, ["wiki"], PAGE, undefined, counting);
+    assert.ok(byPath?.ok === true);
+    assert.equal(calls, 1, "a path parses only the page it names");
   });
 
   it("a heading the type admits twice: each occurrence numbered, and --section returns both", () => {

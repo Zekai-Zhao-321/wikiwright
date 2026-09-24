@@ -312,7 +312,9 @@ What the registry rows below do not say.
   `field_sources` where the frontmatter carries none, as `page.title` and
   `page.description` are); `page.resolved_via` says which (`path`, `name`,
   `alias`, `title`). A miss is `page-not-found` with `details.tried` and names
-  no page. `data` is `{ page, sections, omitted, coverage }`. `page` carries
+  no page. A page that resolves outside the vault, a link out of it, is
+  `invalid-path` (exit 2) with `details.path`, as `lint --page` refuses it,
+  and does not stop a name from resolving to any other page. `data` is `{ page, sections, omitted, coverage }`. `page` carries
   `path`, `name`, `resolved_via`, `type`, `chain`, `title`, `description`,
   `status` (`active` or `retired`), `digest` and the parsed `frontmatter`;
   `digest` is sha256 over the page's raw bytes, the same sha256 the content

@@ -8,10 +8,12 @@
 import {
   basenameOf,
   buildNameIndex,
+  codeUnitCompare,
   type FieldSources,
   type Heading,
   normalizeIdentity,
   type PageInput,
+  type ParsedDoc,
   parseDoc,
   resolveDescription,
   resolveTitle,
@@ -19,9 +21,9 @@ import {
 import { pageDigest } from "../bundle.ts";
 import { type CommandResult, fail, ok } from "../envelope.ts";
 import { generateOptionsFor, rootsOf } from "../law.ts";
-import { collectPages } from "../pages.ts";
+import { contentPathRefusal } from "../paths.ts";
 import type { CommandArgs, CommandSpec } from "../spec.ts";
-import { loadVault, readPageBytes, walkPages } from "../vaultio.ts";
+import { loadVault, readPage, readPageBytes, walkPages } from "../vaultio.ts";
 
 /** The section depth a type that declares none is cut at (docs/constitution.md §Sections). */
 const DEFAULT_DEPTH = 2;
@@ -47,6 +49,13 @@ interface Section {
   text: string;
 }
 
+/** A resolved page: its path, how it was named, and its parse when resolving it made one. */
+interface Resolved {
+  path: string;
+  via: ResolvedVia;
+  doc?: ParsedDoc;
+}
+
 /**
  * The page a `<page>` argument names: an exact vault path under a content root,
  * else a basename or an alias through the name index the judge builds, else a
@@ -54,26 +63,86 @@ interface Section {
  * derived under `field_sources` where the frontmatter carries none. A title
  * shared by two pages resolves to the first in path order, as the walk lists
  * them.
+ *
+ * The name forms read and parse every page, and the chosen page's parse is
+ * returned with it, so it is not parsed again. A page the walk lists and no
+ * read inside the vault reaches — a link out of it — is left out of the index
+ * rather than ending the resolution of every other page, and is still named by
+ * its basename, so the caller refuses it by name.
  */
 function resolvePage(
   root: string,
   paths: readonly string[],
   wanted: string,
   fieldSources: FieldSources | undefined,
-): { path: string; via: ResolvedVia } | undefined {
+  parse: (text: string) => ParsedDoc,
+): Resolved | undefined {
   const asPath = wanted.normalize("NFC");
   if (paths.includes(asPath)) return { path: asPath, via: "path" };
-  const pages: PageInput[] = collectPages(root, [...paths]);
+  const pages: PageInput[] = [];
+  const unread: string[] = [];
+  for (const path of [...paths].sort(codeUnitCompare)) {
+    let text: string;
+    try {
+      text = readPage(root, path);
+    } catch {
+      unread.push(path);
+      continue;
+    }
+    pages.push({ path, doc: parse(text) });
+  }
+  const docOf = (path: string): ParsedDoc | undefined => pages.find((p) => p.path === path)?.doc;
   const named = buildNameIndex(pages).resolve(wanted);
-  if (named !== undefined) return { path: named.path, via: named.viaAlias ? "alias" : "name" };
+  if (named !== undefined) {
+    const doc = docOf(named.path);
+    return {
+      path: named.path,
+      via: named.viaAlias ? "alias" : "name",
+      ...(doc === undefined ? {} : { doc }),
+    };
+  }
   const identity = normalizeIdentity(wanted);
+  const linked = unread.find((path) => normalizeIdentity(basenameOf(path)) === identity);
+  if (linked !== undefined) return { path: linked, via: "name" };
   for (const page of pages) {
     const title = resolveTitle(page.doc, page.path, fieldSources);
     if (title !== null && normalizeIdentity(title) === identity) {
-      return { path: page.path, via: "title" };
+      return { path: page.path, via: "title", doc: page.doc };
     }
   }
   return undefined;
+}
+
+/**
+ * docs/cli.md §read: the page `wanted` names, its bytes and its one parse, or
+ * the refusal: `invalid-path` for a page that resolves outside the vault, as
+ * `lint --page` refuses it, and undefined when nothing answers. The bytes are
+ * read once more for the digest and the sections; the parse is the
+ * resolver's where it made one. `parse` is the parser, a parameter so a test
+ * can count its calls.
+ */
+export function pageNamed(
+  root: string,
+  roots: readonly string[],
+  wanted: string,
+  fieldSources: FieldSources | undefined,
+  parse: (text: string) => ParsedDoc = parseDoc,
+):
+  | { ok: true; path: string; via: ResolvedVia; bytes: Buffer; doc: ParsedDoc }
+  | { ok: false; path: string; refusal: string }
+  | undefined {
+  const found = resolvePage(root, walkPages(root, roots), wanted, fieldSources, parse);
+  if (found === undefined) return undefined;
+  const refusal = contentPathRefusal(root, found.path, roots);
+  if (refusal !== undefined) return { ok: false, path: found.path, refusal };
+  const bytes = readPageBytes(root, found.path);
+  return {
+    ok: true,
+    path: found.path,
+    via: found.via,
+    bytes,
+    doc: found.doc ?? parse(bytes.toString("utf8")),
+  };
 }
 
 /**
@@ -169,7 +238,7 @@ function run(args: CommandArgs): CommandResult {
   if (!vault.ok) return vault.result;
 
   const fieldSources = generateOptionsFor(vault)?.fieldSources;
-  const found = resolvePage(args.root, walkPages(args.root, rootsOf(vault)), wanted, fieldSources);
+  const found = pageNamed(args.root, rootsOf(vault), wanted, fieldSources);
   if (found === undefined) {
     // What was tried, never what exists: a list of the pages that do would make
     // a refusal a way to enumerate the vault.
@@ -178,10 +247,13 @@ function run(args: CommandArgs): CommandResult {
       hint: "`search` finds a page by any name form; `read` takes the path it returns",
     });
   }
-  const { path } = found;
-  const bytes = readPageBytes(args.root, path);
+  if (!found.ok) {
+    return fail("read", "usage", "invalid-path", `${found.path} ${found.refusal}`, {
+      details: { path: found.path },
+    });
+  }
+  const { path, bytes, doc } = found;
   const raw = bytes.toString("utf8");
-  const doc = parseDoc(raw);
   const frontmatter = doc.frontmatter.value;
   const declared = frontmatter["type"];
   const typeName = typeof declared === "string" ? declared : null;

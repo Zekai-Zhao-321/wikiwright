@@ -123,13 +123,17 @@ nothing of a vault and cannot change a verdict, only how long the engine
 takes to load; `NODE_DISABLE_COMPILE_CACHE=1` turns it off. The cost grows with the corpus. Parsing and reading
 pages dominate the synthetic benchmark; applying the rules is much cheaper.
 
-A verb parses each page once. `check` reads the tree into one state and
+`check`, the gate and `read` parse each page they read once; that is not
+a property every verb is held to. `check` reads the tree into one state and
 `parsedPages` keeps each page's parse on that state, so the artifacts, the
 brief and the verdict share it, where `check` once walked and parsed the tree
 three times; `brief-stale` compares the brief already rendered. The gate's
 drift pass, rename review and verdict share one parse of the index, a staged
 transition reuses an unchanged page's parse as its base and skips a base no
 section or body law consumes, and every declared transition arm still runs.
+`read` by a path parses that page alone; by a name, an alias or a title it
+parses every page to resolve the name and keeps the chosen page's parse, so
+the whole corpus is parsed for one page.
 The vault root's real path is resolved once per run and a page's once per
 read. Nothing is retained between invocations.
 
@@ -166,8 +170,7 @@ startup of the timer used to take it.
 
 The bundle block every vault verb's envelope carries (`docs/cli.md` §The
 envelope) costs a second read of each page, unparsed, for the content digest,
-and one `git status` for `head` and `dirty`; a verb still parses each page
-once. Measured on 2026-09-23 on one Apple-silicon machine under Node 22.22.0
+and one `git status` for `head` and `dirty`; it parses nothing. Measured on 2026-09-23 on one Apple-silicon machine under Node 22.22.0
 with `node tools/benchmark-check.ts 1000 5`, the build before the block and the
 build with it run one after the other (not through the baseline argument: the
 block is a difference in every envelope), median of five fresh processes over
