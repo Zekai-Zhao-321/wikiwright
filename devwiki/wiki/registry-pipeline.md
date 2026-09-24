@@ -3,7 +3,7 @@ type: subsystem
 title: Registry pipeline
 description: Loads, validates and flattens config/constitution.json and config/engine.json into the effective contracts every pass reads.
 tags: [kernel, cli]
-pin: 0102007b93b93f4e19f03b4ca5976633679cbf7a
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/verbs/read.ts, packages/cli/src/verbs/bundles.ts]
 ---
@@ -52,7 +52,7 @@ read, the inputs of the law digest (`:49-55`, `:369`). Every verb that needs
 types goes through it, `read` among them
 (`packages/cli/src/verbs/read.ts:237`), and a root `--bundle` names is
 resolved to a directory before any verb runs, so the loader reads it as it
-reads `--root` (`packages/cli/src/main.ts:96-159`); the `bundles` verb loads
+reads `--root` (see [[command-runtime]]); the `bundles` verb loads
 no law: it reads whether a root holds a constitution, the content roots its
 `config/engine.json` declares, parsed as the loader parses it without
 loading the rest, and its bundle identity

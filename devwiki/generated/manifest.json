@@ -2,12 +2,12 @@
   "schema": "wikiwright/manifest",
   "totals": {
     "pages": 33,
-    "edges": 219
+    "edges": 235
   },
   "by_kind": {
     "relation": 69,
     "tagged": 46,
-    "wikilink": 104
+    "wikilink": 120
   },
   "by_label": {
     "relation": {
@@ -245,9 +245,15 @@
         "wikilink": [
           "wiki/envelope-and-exit-codes.md",
           "wiki/environment-variables.md",
+          "wiki/fields-and-shapes.md",
+          "wiki/findings-and-routing.md",
+          "wiki/git.md",
           "wiki/modules-and-trust.md",
           "wiki/one-judge-five-states.md",
-          "wiki/skills-and-brief.md"
+          "wiki/parser-and-names.md",
+          "wiki/registry-pipeline.md",
+          "wiki/skills-and-brief.md",
+          "wiki/trust-law.md"
         ]
       }
     },
@@ -318,6 +324,7 @@
       "inbound": {
         "wikilink": [
           "wiki/findings-and-routing.md",
+          "wiki/git.md",
           "wiki/one-judge-five-states.md"
         ]
       }
@@ -381,8 +388,10 @@
           ]
         },
         "wikilink": [
+          "wiki/command-runtime.md",
           "wiki/judge.md",
           "wiki/repository-layout.md",
+          "wiki/search.md",
           "wiki/testing-guide.md"
         ]
       }
@@ -408,6 +417,7 @@
           ]
         },
         "wikilink": [
+          "wiki/command-runtime.md",
           "wiki/envelope-and-exit-codes.md",
           "wiki/fixers.md",
           "wiki/standard-library.md",
@@ -495,6 +505,7 @@
           ]
         },
         "wikilink": [
+          "wiki/generated-artifacts.md",
           "wiki/git.md"
         ]
       }
@@ -533,10 +544,12 @@
         "wikilink": [
           "meta/D-001.md",
           "meta/D-005.md",
+          "wiki/freshness.md",
           "wiki/repository-layout.md",
           "wiki/skills-and-brief.md",
           "wiki/testing-guide.md",
-          "wiki/wikiwright-architecture.md"
+          "wiki/wikiwright-architecture.md",
+          "wiki/writer-and-staged-gate.md"
         ]
       },
       "inbound": {
@@ -555,7 +568,7 @@
         "concept"
       ],
       "title": "Git",
-      "description": "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt, and every answer with a terminator held to it.",
+      "description": "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt, and every answer read from a file git wrote itself.",
       "tags": [
         "cli"
       ],
@@ -570,6 +583,8 @@
           ]
         },
         "wikilink": [
+          "wiki/command-runtime.md",
+          "wiki/envelope-and-exit-codes.md",
           "wiki/freshness.md",
           "wiki/repository-layout.md",
           "wiki/writer-and-staged-gate.md"
@@ -582,8 +597,10 @@
           "wiki/environment-variables.md",
           "wiki/fixers.md",
           "wiki/freshness.md",
+          "wiki/modules-and-trust.md",
           "wiki/one-judge-five-states.md",
           "wiki/testing-guide.md",
+          "wiki/trust-law.md",
           "wiki/writer-and-staged-gate.md"
         ]
       }
@@ -617,7 +634,8 @@
         "wikilink": [
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
-          "wiki/wikiwright-architecture.md"
+          "wiki/wikiwright-architecture.md",
+          "wiki/writer-and-staged-gate.md"
         ]
       },
       "inbound": {
@@ -674,6 +692,7 @@
           "meta/D-003.md",
           "meta/D-006.md",
           "wiki/command-runtime.md",
+          "wiki/git.md",
           "wiki/judge.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
@@ -717,6 +736,11 @@
           "wiki/wikiwright-architecture.md",
           "wiki/writer-and-staged-gate.md"
         ]
+      },
+      "inbound": {
+        "wikilink": [
+          "wiki/parser-and-names.md"
+        ]
       }
     },
     {
@@ -746,6 +770,8 @@
           ]
         },
         "wikilink": [
+          "wiki/command-runtime.md",
+          "wiki/one-judge-five-states.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
@@ -785,6 +811,7 @@
           ]
         },
         "wikilink": [
+          "wiki/command-runtime.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
@@ -793,6 +820,7 @@
       "inbound": {
         "wikilink": [
           "wiki/repository-layout.md",
+          "wiki/standard-library.md",
           "wiki/wikiwright-architecture.md"
         ]
       }
@@ -925,12 +953,14 @@
         "wikilink": [
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
-          "wiki/wikiwright-architecture.md"
+          "wiki/wikiwright-architecture.md",
+          "wiki/writer-and-staged-gate.md"
         ]
       },
       "inbound": {
         "wikilink": [
-          "wiki/deterministic-artifacts.md"
+          "wiki/deterministic-artifacts.md",
+          "wiki/fields-and-shapes.md"
         ]
       }
     },
@@ -1030,6 +1060,7 @@
           ]
         },
         "wikilink": [
+          "wiki/registry-pipeline.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
@@ -1134,6 +1165,8 @@
           "meta/D-002.md",
           "meta/D-004.md",
           "meta/D-006.md",
+          "wiki/command-runtime.md",
+          "wiki/git.md",
           "wiki/judge.md",
           "wiki/modules-and-trust.md",
           "wiki/wikiwright-architecture.md"
@@ -1305,8 +1338,11 @@
           ]
         },
         "wikilink": [
+          "wiki/generated-artifacts.md",
           "wiki/git.md",
-          "wiki/one-judge-five-states.md"
+          "wiki/judge.md",
+          "wiki/one-judge-five-states.md",
+          "wiki/search.md"
         ]
       }
     }

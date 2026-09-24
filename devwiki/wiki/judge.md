@@ -3,7 +3,7 @@ type: subsystem
 title: "The judge and its passes"
 description: "One pure function turns a vault state and a law into a verdict: the per-page passes, the vault passes, the grammar arms, routing, exceptions, the gate rule, the coverage block and the cap."
 tags: [kernel]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/judge/, packages/core/src/passes/, packages/core/src/lint/, packages/core/src/grammar/]
 ---
@@ -47,7 +47,7 @@ fixer and lane — and the closed `KERNEL_LANES` (`:20-36`).
 
 - `judge` (`packages/core/src/judge/index.ts:439`), called by every verb that
   judges: `check` (`packages/cli/src/verbs/check.ts:146`), the staged gate
-  (`packages/cli/src/staged.ts:111`) and the Writer's proof
+  (see [[writer-and-staged-gate]]) and the Writer's proof
   (`packages/cli/src/writer.ts:82-85`).
 - `routeFindings` (`packages/core/src/judge/index.ts:269`), for verbs that
   build findings outside the judge —

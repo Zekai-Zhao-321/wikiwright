@@ -3,7 +3,7 @@ type: subsystem
 title: "Fields and shapes"
 description: "The closed shape vocabulary a frontmatter field is declared in, the value check every field runs, the one pin shape, and the derivation of a title or description from the page."
 tags: [kernel]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/fields/, packages/core/src/shapes/]
 ---
@@ -39,13 +39,13 @@ under `field_sources.title: basename`, `resolveDescription` (`:34`) to the lede
   and `shapeAuto` to decide what is missing (`:247`) and `shapeRequires` for
   the conditional form (`:269-278`).
 - `shapeKind` decides whether `new --set` takes text or JSON
-  (`packages/cli/src/verbs/new.ts:39-54`).
+  (`packages/cli/src/verbs/new.ts`; see [[command-runtime]]).
 - `pinFieldOf` is read by the judge's coverage count
   (`packages/core/src/judge/index.ts:375`) and by `freshness`
   (`packages/cli/src/freshness.ts:74-81`).
 - `resolveTitle` and `resolveDescription` are read by generation
   (`packages/core/src/generate/index.ts:95`, `:291-292`), search
-  (`packages/core/src/search/index.ts:169-170`) and the identity pass
+  (see [[search]]) and the identity pass
   (`packages/core/src/names/index.ts:112`).
 
 ## State

@@ -3,7 +3,7 @@ type: subsystem
 title: "Fixers and routing"
 description: "The closed registry of fixers a finding's fix argv can name, the pure derivations from a finding's details to write ops, and the fix verb that applies, proves and lands them."
 tags: [kernel, cli]
-pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/fixers/, packages/cli/src/verbs/fix.ts]
 ---
@@ -89,8 +89,9 @@ and the page's current bytes and nothing else
   not `--expect` (`:442`); `working-tree-drift` under `--staged` when the
   working tree differs from the index on a page the fix would write (`:284`);
   `git-unavailable` under `--staged` outside a repository, and
-  `git-short-read` when the index's answer was cut short, never a fix of
-  fewer pages (`:243-259`; [[git]]).
+  `git-short-read` or `git-inconsistent-read` when the index's answer was
+  cut short or disagrees with the staged diff, never a fix of fewer pages
+  (`:243-259`; [[git]]).
 - The Writer's proof refuses with `not-proved` when the rule still fires on a
   fixed page, or `new-errors` when any page gained an error
   (`packages/cli/src/writer.ts:38-40`, `:73-96`).

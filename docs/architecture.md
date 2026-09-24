@@ -42,6 +42,7 @@ packages/cli/src/
   envelope.ts  ok, fail, EXIT, verdictEnvelope, capOptions
   clock.ts     today(): WIKIWRIGHT_TODAY or the wall clock, read once
   state.ts     fsState, indexState, overlayState, revisionState
+  git.ts, stdoutfile.ts   the git plumbing: every answer read from a file git writes itself
   vaultfiles.ts   the config paths, the reader, the page walk and the page reads, below the loader
   vaultio.ts   the loader, its refusals
   bundle.ts    the bundle an envelope names: label, root, head, dirty, the law and content digests
@@ -146,7 +147,9 @@ many at once as the machine has cores, because `bun test` runs its files one
 after another and most of the suite's time is spent waiting on the CLI
 processes the tests spawn; a run passes only when every file does. It gives
 a test or a hook 20 seconds rather than Bun's 5, because a file's time under
-that contention was measured at about 2.4 times its time alone.
+that contention was measured at about 2.4 times its time alone. Under Bun it
+runs the CLI the tests spawn under the `node` on PATH, and refuses to run
+when it finds none (`docs/roadmap.md`).
 `scripts/hooks/pre-commit` runs it locally; enable the hook once per clone:
 
 ```sh

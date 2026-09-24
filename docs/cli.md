@@ -69,8 +69,7 @@ the engine states no partial identity. An envelope answered before the verb
 runs names no bundle either: `--help`, a refusal of the arguments, a
 `role-forbidden`, a refusal of `--bundle`.
 
-The judging verbs (`lint`, `check`, `gate`, `write`, `fix`, `new`) share one
-verdict block:
+`lint`, `check` and `gate` answer with this verdict block, whole:
 
 | Key | Meaning |
 |---|---|
@@ -80,6 +79,14 @@ verdict block:
 | `unevaluated` | the passes a declaration turned on that this run could not judge, keyed by pass with a count and a reason |
 | `caps` | `limit` and whether it was `hit` |
 | `dispositions` | per page, the counted transition outcomes where a base exists (`relation_added`, `relation_removed`, `superseded`, `corrected`, …) |
+
+The writing verbs judge with the same judge and answer in their own shapes.
+`write` and `new` report the page they wrote: its `findings`, its
+`dispositions`, its `claims`, the `unevaluated` passes and its `digest`,
+not the vault-wide `summary`, `coverage` and `caps`; `write --from` reports
+one such row per draft under `pages`. `fix` reports what it `changed`, the
+ops it applied and whether the proof held, and a refused proof carries the
+findings that refused it.
 
 ## Exit codes
 
@@ -286,7 +293,8 @@ What the registry rows below do not say.
   `date-before-claim` (exit 4): that interval would run backwards. `--coexist <reason>` admits a second open claim of a
   supersede category and records a rationale line under it, `coexists:
   <reason> (beside <handle>, <handle> and <n> more)`: the reason first, then
-  the two newest open claims of the category and a count of the rest. No arm
+  the two newest open claims of the category — the last two in page order,
+  not the two latest by date — and a count of the rest. No arm
   reads the line; the reason given is what admits the claim.
 - **`fix --rule <id> --expect <n|any>`** applies the `MachineApplicable` ops
   one rule licenses, refuses when the count is not `--expect`, and proves
@@ -344,9 +352,15 @@ What the registry rows below do not say.
   terms. `--files` lists every page with a match instead of ranking them:
   `{ path, match_reasons }` in code-unit order by path, uncapped
   (`caps.limit` is `null`), the pages the ranked search finds plus every page
-  whose text holds a query term only inside a longer word (`text:contains`),
-  which is the set a line search lists; with no query, every page the filters
-  keep. Each result of the ranked page search carries a `band`, and `--band`
+  whose normalized text holds a query term only inside a longer word
+  (`text:contains`). That is a tokenized substring scan — the query split
+  into terms as the tokenizer splits it, each matched case-folded — plus the
+  identity matches, which can find a page by its name or an alias where its
+  text never spells the query; it is not a literal line search, and a
+  pattern with punctuation or across terms can list other files than `rg`
+  would. The suite compares it with a line search on six fixed queries over
+  two handbooks and a claims bundle, which is evidence for those queries, not
+  a proof for every one. With no query, every page the filters keep. Each result of the ranked page search carries a `band`, and `--band`
   keeps one: `identity` for a page the query names — by its name, an alias,
   the name without a trailing `(…)` qualifier, or its whole title
   (`name:exact`, `alias:exact`, `name:stem`, `title:exact`) — and `relevance`

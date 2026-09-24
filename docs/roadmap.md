@@ -23,18 +23,24 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,578 tests across 108 files, green under Bun and under the
-node runner. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
+The suite is 1,590 tests across 108 files. At `29dbfb9` the full gate,
+`bun run check`, passed them all with the test files under Bun and the CLI
+under Node (`tools/run-suite.ts`), and the full node runner,
+`bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
+judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the connection tests read end to end) and proves
 the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured at
-`fcc4c69`, on a clone with the kit granted in a temporary store because the
+`29dbfb9`, on a clone with the kit granted in a temporary store because the
 kit is ungranted on the development machine, `freshness` reads all 26 pinned
-pages `current` (7) or `unchanged` (19) and none `stale`, with no
+pages `current` (22) or `unchanged` (4) and none `stale`, with no
 `stale-capture`, `stale-source-cited` or `citation-unresolved` finding.
+A citation into a file its page does not cover is held to the pin but not
+to the file's later changes, so such a reference either is covered or goes
+through the page that covers the file.
 
 The gate is `bun run check` (biome, the build, the test-project typecheck,
 the whole suite). `scripts/hooks/pre-commit` runs it on the machine that
@@ -61,15 +67,17 @@ install and the grant already happened, rendering `generated/` and the
 brief in that one run. That needs the plan to be asynchronous — a change to
 the dry-run law's machinery, not to `init`.
 
-### `freshness` checks only the citations it can read without the page's context
+### `freshness` holds a citation to its pin, not to what the lines say
 
-A full repository path with a line (`packages/cli/src/pages.ts:75`) is held
-to the pin. A bare `:166` after it, meaning "the same file", is a convention
-of the paragraph rather than a rule the engine has, so it is not checked and
-`checked` does not count it; nor is a citation into a file at the repository
-root (`package.json:26`), because a cited path is recognised by the `/` in
-it. When covered paths move, the shift of a page's `path:line` citations is
-done by content, outside the engine; no verb offers it.
+A code span is a citation when it is a repository path whose first segment
+is an entry at the root of the tree at the pin (`packages/cli/src/pages.ts:75`,
+and a root file such as `package.json:26`), the bare name of exactly one
+file the page covers (`git.ts:31`), or a line alone (`:166`), which names
+the nearest file cited before it on the page; each is held to the pin, its
+path to exist and its line to be inside the blob, and `checked` counts it.
+What is not checked is whether the cited lines still say what the sentence
+says they do, and when covered paths move, the shift of a page's citations
+is done by content, outside the engine; no verb offers it.
 
 Wanted: `freshness --shift`, a writer over pages that relocates each
 citation by content and re-pins. It belongs to a verb that writes.

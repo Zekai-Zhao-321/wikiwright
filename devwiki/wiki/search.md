@@ -3,7 +3,7 @@ type: subsystem
 title: "Search"
 description: "Deterministic lexical retrieval: an identity ladder fused with BM25 by reciprocal rank fusion, a CJK-capable tokenizer over explicit code-point ranges, a per-invocation index, item search, an unranked file listing, and a coverage block on every answer."
 tags: [kernel, cli]
-pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/search/, packages/cli/src/verbs/search.ts]
 ---
@@ -34,14 +34,16 @@ corpus size, the tokenization mode, the fusion method and the caps
 (`:380-393`); `--near` adds an advisory candidate list under its own cap of
 20 (`:394-403`; `packages/core/src/search/near.ts:25`).
 
-`searchFiles` (`packages/core/src/search/index.ts:428-467`) is `--files`:
+`searchFiles` (`packages/core/src/search/index.ts:428-478`) is `--files`:
 every page with a match, in code-unit order by path, unranked and uncapped
-(`caps.limit` is `null`, `:464`). It is the ranked search's pages with each
-page's tier reasons and without the fusion's list positions (`:434-440`),
-plus every other kept page whose normalized source holds a query term inside
-a longer word, reason `text:contains` (`:419`, `:442-456`); a page only that
-tier found belongs to the relevance band, so `--band identity` drops the tier
-(`:446-447`).
+(`caps.limit` is `null`, `:475`). Every ranked match is classified first,
+whatever band was asked for: the ranked search's pages with each page's band
+and tier reasons, without the fusion's list positions (`:434-449`), then
+every other kept page whose normalized source holds a query term inside a
+longer word, reason `text:contains`, in the relevance band (`:419`,
+`:450-463`). `--band` applies to that whole list, so no identity match comes
+back as a substring match and the two bands split the unbanded list
+(`:464-467`).
 
 `searchItems` (`packages/core/src/search/items.ts:133-206`) is `--items`: it
 ranks grammar items rather than pages. `collectItems` (`:77-110`) takes every
@@ -83,11 +85,11 @@ listing or the page search (`:168-197`).
   `buildLexicalIndex`, `buildTextIndex`, `rankLexical`, `rankKeys`,
   `collectItems`, `searchItems`, `buildNearIndex`, `nearCandidates`,
   `nameFormsOf`, `stripQualifier`, `tokenize`
-  (`packages/core/src/index.ts:201-230`).
+  (the package barrel, `packages/core/src/index.ts`).
 - `searchCommand` (`packages/cli/src/verbs/search.ts:20`).
 - The write path's identity gate reads `nameFormsOf` and `nearCandidates`
-  from the same module (`packages/cli/src/verbs/write.ts:21-22`, `:111`,
-  `:497`).
+  from the same module (`packages/cli/src/verbs/write.ts`; see
+  [[writer-and-staged-gate]]).
 
 ## State
 
@@ -107,7 +109,7 @@ built per invocation and passing one in is a memo, never a policy
 - Deterministic and locale-free: ties break on the code-unit path
   (`packages/core/src/search/index.ts:300`, `:357`), an item's on path then
   line (`packages/core/src/search/items.ts:190-193`), and `--files` sorts by
-  path (`packages/core/src/search/index.ts:457`); scores are rounded to six
+  path (`packages/core/src/search/index.ts:468`); scores are rounded to six
   places (`:145-147`); the tokenizer and the logarithm are specified to the
   bit (`tokenize.ts:5-7`, `bm25.ts:2-5`).
 - A query-less invocation ran the `filter` tier and only that, and the
@@ -117,7 +119,7 @@ built per invocation and passing one in is a memo, never a policy
 - Not-found is only as good as the coverage block: `caps.hit` reports that
   the cap cut the list (`packages/core/src/search/index.ts:391`), the
   advisory list is capped by its own cap, never by `--limit` (`:396-402`),
-  and the file listing has no cap to hit (`:464`).
+  and the file listing has no cap to hit (`:475`).
 - Every demoted result names its demotion in `match_reasons` (`:341-348`;
   an item's at `packages/core/src/search/items.ts:172-174`).
 

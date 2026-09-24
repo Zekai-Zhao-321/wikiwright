@@ -3,7 +3,7 @@ type: subsystem
 title: "The standard library"
 description: "Three first-party modules — claims, relations, entries — registered through the same API a domain kit uses, composed by standardLibrary(), and never imported by the kernel."
 tags: [stdlib]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/stdlib/]
 ---
@@ -62,12 +62,12 @@ the base-comparing `entry-mutated` (`:125`).
 - The three default exports and `STANDARD_LIBRARY` / `standardLibrary`
   (`packages/core/src/stdlib/index.ts:14`, `:22`); the CLI composes
   `[...STANDARD_LIBRARY, ...loaded]` when a bundle declares modules
-  (`packages/cli/src/vaultio.ts:222`) and calls `standardLibrary()` otherwise
-  (`:182`).
+  and calls `standardLibrary()` otherwise (`packages/cli/src/vaultio.ts`;
+  see [[registry-pipeline]]).
 - The package barrel re-exports the item parsers and shapes for a bundle's
   tools — `parseClaim`, `claimHandle`, `PROVENANCE_FORMS`, `parseEntry`,
   `parseRelation`, `rangeAdmits` — while the kernel reaches none of them
-  (`packages/core/src/index.ts:220-248`).
+  (the package barrel, `packages/core/src/index.ts`).
 
 ## State
 

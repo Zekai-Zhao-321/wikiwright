@@ -3,7 +3,7 @@ type: subsystem
 title: "Generated artifacts"
 description: "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges."
 tags: [kernel, cli]
-pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/generate/, packages/core/src/hash/, packages/cli/src/artifacts.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/graph.ts]
 ---
@@ -34,7 +34,7 @@ In the shell, `regenerate` (`packages/cli/src/artifacts.ts:59-72`) is the
 one generation path `check --write` and `init` share: the kernel's three
 plans plus the writer's brief, which `briefPlan` (`:26-33`) renders through
 the brief's one renderer as a fourth `ArtifactPlan`, under a header naming
-the bundle's law digest (`packages/cli/src/brief.ts:232`); `writeArtifacts`
+the bundle's law digest (see [[skills-and-brief]]); `writeArtifacts`
 (`packages/cli/src/artifacts.ts:43-51`) lands every file write-then-rename;
 `writeBrief` (`:35-41`) is the brief alone through the same loop, for
 `skills update`; `artifactOps` (`:81-101`) answers the dry run from the
@@ -68,9 +68,9 @@ carry no `mapped_in`" is `--label mapped_in --outbound subsystem --missing`
   (`packages/cli/src/verbs/check.ts:44`); `graphCommand`
   (`packages/cli/src/verbs/graph.ts:38`).
 - The staged gate rebuilds the artifacts from the index's own pages and
-  compares them with the index's bytes (`packages/cli/src/staged.ts:34-65`);
+  compares them with the index's bytes (see [[writer-and-staged-gate]]);
   `freshness` reads the graph's edges for its one-hop propagation
-  (`packages/cli/src/verbs/freshness.ts:48-57`).
+  (see [[freshness]]).
 
 ## State
 
@@ -81,9 +81,9 @@ see [[skills-and-brief]]), all four landed by `check --write` and tracked in
 this bundle by [[D-001]], as the two gardening handbooks under
 `fixtures/handbooks` track theirs; the suite rebuilds each tracked
 `generated/` from nothing and compares every byte
-(`packages/cli/test/generated-tracked.test.ts:19-24`).
-`generated/freshness.json` is never committed
-(`packages/cli/src/verbs/freshness.ts:38`). Nothing is held at runtime.
+(`packages/cli/test/generated-tracked.test.ts`).
+`generated/freshness.json` is never committed (see [[freshness]]). Nothing
+is held at runtime.
 
 ## Invariants
 
@@ -105,7 +105,7 @@ this bundle by [[D-001]], as the two gardening handbooks under
   (`packages/cli/src/artifacts.ts:74-80`); drift is compared against a fresh
   rebuild, never a remembered set (`packages/cli/src/verbs/check.ts:81-98`),
   and at the gate against the index, never the working tree
-  (`packages/cli/src/staged.ts:25-33`).
+  (see [[writer-and-staged-gate]]).
 - `check` contacts no origin: the origin rows read `not_applicable`, reason
   `external-origin`, on every page (`packages/cli/src/verbs/check.ts:129-133`).
 
@@ -114,8 +114,8 @@ this bundle by [[D-001]], as the two gardening handbooks under
 - `generated-drift` (error, fixer `check --write`) when a file differs or is
   missing (`packages/cli/src/verbs/check.ts:84-97`;
   `packages/core/src/passes/index.ts:187-193`); at the gate, when the staged
-  artifact does not describe the staged pages
-  (`packages/cli/src/staged.ts:46-64`).
+  artifact does not describe the staged pages (see
+  [[writer-and-staged-gate]]).
 - The rename loop is per-file atomic, not batch-atomic: a crash mid-loop
   leaves a mix the next `check --write` converges
   (`packages/cli/src/artifacts.ts:43-51`; `packages/cli/src/atomicwrite.ts:84-98`).

@@ -446,6 +446,11 @@
     },
     {
       "from": "wiki/fields-and-shapes.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/fields-and-shapes.md",
       "to": "wiki/judge.md",
       "kind": "relation",
       "label": "part_of"
@@ -468,6 +473,11 @@
     },
     {
       "from": "wiki/fields-and-shapes.md",
+      "to": "wiki/search.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/fields-and-shapes.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
       "label": "verified_by"
@@ -481,6 +491,11 @@
       "from": "wiki/findings-and-routing.md",
       "to": "tag:kernel",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/findings-and-routing.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/findings-and-routing.md",
@@ -633,6 +648,11 @@
     },
     {
       "from": "wiki/generated-artifacts.md",
+      "to": "wiki/freshness.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
       "label": "mapped_in"
@@ -670,9 +690,24 @@
       "kind": "wikilink"
     },
     {
+      "from": "wiki/generated-artifacts.md",
+      "to": "wiki/writer-and-staged-gate.md",
+      "kind": "wikilink"
+    },
+    {
       "from": "wiki/git.md",
       "to": "tag:cli",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "wiki/envelope-and-exit-codes.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/git.md",
@@ -743,6 +778,11 @@
     {
       "from": "wiki/judge.md",
       "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/judge.md",
+      "to": "wiki/writer-and-staged-gate.md",
       "kind": "wikilink"
     },
     {
@@ -791,6 +831,11 @@
     {
       "from": "wiki/modules-and-trust.md",
       "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
+      "to": "wiki/git.md",
       "kind": "wikilink"
     },
     {
@@ -884,6 +929,16 @@
     },
     {
       "from": "wiki/parser-and-names.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/parser-and-names.md",
+      "to": "wiki/one-judge-five-states.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/parser-and-names.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
       "label": "mapped_in"
@@ -924,6 +979,11 @@
       "from": "wiki/registry-pipeline.md",
       "to": "tag:kernel",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/registry-pipeline.md",
@@ -1039,6 +1099,11 @@
       "kind": "wikilink"
     },
     {
+      "from": "wiki/search.md",
+      "to": "wiki/writer-and-staged-gate.md",
+      "kind": "wikilink"
+    },
+    {
       "from": "wiki/section-grammars.md",
       "to": "tag:kernel",
       "kind": "tagged"
@@ -1121,6 +1186,11 @@
       "from": "wiki/standard-library.md",
       "to": "tag:stdlib",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/standard-library.md",
+      "to": "wiki/registry-pipeline.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/standard-library.md",
@@ -1212,6 +1282,16 @@
       "from": "wiki/trust-law.md",
       "to": "tag:kit",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/trust-law.md",
+      "to": "wiki/git.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/trust-law.md",

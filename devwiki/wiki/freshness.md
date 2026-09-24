@@ -3,7 +3,7 @@ type: subsystem
 title: "Freshness and pins"
 description: "Every pin is measured against the origin its page names — the enclosing repository for origin dot, ls-remote or a blobless cache for a URL — into one of six states, with a covering diff deciding stale from unchanged, every repository path the page cites held to the pin, and a fast-forward that advances only clean pins through the Writer."
 tags: [cli]
-pin: fcc4c6996a4b3d6976bed6ee3163130e0c6b6603
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/cli/src/freshness.ts, packages/cli/src/verbs/freshness.ts]
 ---
@@ -59,7 +59,7 @@ one token and neither shifts the pairing of the spans after it (`:237-243`,
 distinct path once and the line count of each cited blob once, and names a
 path the tree does not hold, a line cited on a tree, or a line past the blob's
 end (`:352-369`); the plumbing is `gitTreeEntries`, `gitObjectType` and
-`gitBlobLineCount` (`packages/cli/src/git.ts:313-349`). Each miss is one
+`gitBlobLineCount` (`packages/cli/src/git.ts`; see [[git]]). Each miss is one
 `citation-unresolved` warning carrying the reason a writer acts on — `missing`,
 `past-end`, `unattached`, `ambiguous` or `malformed` — and the words for it
 (`packages/cli/src/freshness.ts:378-392`, `:601-613`); the entry carries
@@ -108,7 +108,7 @@ through the same xor as every verb (`:226-228`).
   stay as data beside the word, and `pins` counts all six even at zero
   (`packages/cli/src/freshness.ts:107-128`, `:491-496`).
 - A page with no `covers` is stale on any diff: the covering diff is
-  restricted only when paths are named (`packages/cli/src/git.ts:372-373`).
+  restricted only when paths are named (`packages/cli/src/git.ts`; see [[git]]).
 - A citation is checked wherever the objects are — origin `.`, or a URL
   under `--fetch` — and is a run-external measurement that lives beside
   `stale-capture`, never in the judge (`packages/cli/src/freshness.ts:212-213`,
@@ -152,8 +152,9 @@ through the same xor as every verb (`:226-228`).
   does not recognise, thrown deliberately rather than read as "no repository"
   (`packages/cli/src/freshness.ts:427-432`;
   `packages/cli/src/verbs/freshness.ts:110-119`, `:180-185`) — and
-  `git-short-read` for a git answer cut short, which is rethrown as itself
-  (`:117`; [[git]]); a dry run answers both as the run does (`:165-171`).
+  `git-short-read` or `git-inconsistent-read` for a git answer cut short or
+  contradicted, which is rethrown as itself (`:117`; [[git]]); a dry run
+  answers each as the run does (`:165-171`).
 - An origin that did not answer is a finding on the pages naming it, never a
   refusal; with a cache it is measured against the cache's head and the
   message says so (`packages/cli/src/freshness.ts:552-563`).

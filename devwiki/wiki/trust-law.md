@@ -3,7 +3,7 @@ type: code-concept
 title: "The trust law"
 description: "Module code runs inside the judge, so a module is admitted by a machine-local grant pinned to the sha256 over every file of the installed package, for one vault or for its path in every linked worktree of one clone, taken only after a purity scan and a determinism fixture, and revoked by any edit; a stranger's bug is one attributed finding, never a crash."
 tags: [cli, kit]
-pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/modules/purity.ts, packages/cli/src/moduleload.ts, packages/cli/src/trust.ts, packages/cli/src/storelock.ts, packages/cli/src/modulefixture.ts, packages/cli/src/verbs/trust.ts, packages/kit-code/, packages/core/src/grammar/index.ts, packages/core/src/lint/index.ts, packages/cli/test/bundles.test.ts]
 ---
@@ -53,7 +53,7 @@ of both — approves nothing and is never rewritten: it is thrown as
 `StoreMalformed` and refused as `trust-store-malformed`, naming the file and
 the record, by the load or the verb that reached it
 (`packages/cli/src/trust.ts:79-138`; `packages/cli/src/storelock.ts:34-65`;
-`packages/cli/src/main.ts:80-103`).
+see [[command-runtime]]).
 
 The digest is the boundary and the only one: no lockfile is read, because
 the grant already pins every byte, `package.json` included, and repointing
@@ -87,7 +87,7 @@ developer's
 - The scan: `packages/core/src/modules/purity.ts`; the ladder and the digest:
   `packages/cli/src/moduleload.ts`; the store: `packages/cli/src/trust.ts`,
   under the lock in `packages/cli/src/storelock.ts`;
-  the worktree identity: `packages/cli/src/git.ts:510-559`; the fixture
+  the worktree identity: `packages/cli/src/git.ts`, in [[git]]; the fixture
   runner: `packages/cli/src/modulefixture.ts`; the verb:
   `packages/cli/src/verbs/trust.ts` — all in [[modules-and-trust]].
 - The attributed failure: `packages/core/src/grammar/index.ts:548-580` and

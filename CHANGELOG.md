@@ -316,19 +316,30 @@ version` prints the engine version and the commit a binary was built from.
   machine a 5,000-page index gated in 33 s and now gates in about 4 s, with a
   byte-identical envelope. `docs/roadmap.md` states the measured cost of a
   run and why no parse cache and no daemon are built.
-- A git answer cut short is refused as `git-short-read` (exit 1,
-  `internal`), naming the git command. Every git read with a terminator is
-  held to it: a `-z` listing to its final NUL, a line answer to its final
-  newline, a batch to the count it was asked, and a batch stream that ends
-  inside an object, which the core parser now throws as
-  `BatchStreamTruncated`, is the same refusal. Before, a staged-change or
-  index listing that ended early read as a shorter listing, so a cut answer
-  could judge fewer staged pages, or none, and pass; `fix --staged` answered
-  ok with nothing changed. A runtime's synchronous spawn has handed back
-  such answers under load with exit 0 (`docs/roadmap.md`).
+- Every git answer is read from a file git writes itself. The engine hands
+  git an open file under `os.tmpdir()` for its stdout and reads it once git
+  has exited, so the runtime reads no pipe and exit 0 with the file is the
+  whole answer: under load a runtime's synchronous spawn had handed back
+  piped answers cut to a prefix with exit 0, and a prefix that ends between
+  records is as well formed as the whole, so a cut index listing judged as
+  fewer staged pages, or none, and passed, and `fix --staged` answered ok
+  with nothing changed (`docs/roadmap.md`). The checks on the bytes stay as
+  a second line, and none of them alone could close that gap: every answer
+  with a terminator is held to it — a `-z` listing to its final NUL, a line
+  answer to its final newline — and one that ends short is `git-short-read`
+  (exit 1, `internal`), naming the git command; a batch read, whose object
+  names still go in through a pipe, is held to the count it asked for, and a
+  batch stream that ends inside an object, which the core parser throws as
+  `BatchStreamTruncated`, is the same refusal. Two cross-checks catch a
+  listing cut at a record boundary: every path the staged diff names as
+  added, modified, retyped, renamed or copied must be in the index listing,
+  and `lint --since`'s commit walk must list as many commits as
+  `rev-list --count` counts; either failing is `git-inconsistent-read`
+  (exit 1, `internal`), naming both commands.
 - `freshness --fetch --fast-forward --dry-run` answers a measurement that
   fails with the refusal the run gives — `git-unavailable`, or
-  `git-short-read` for a cut answer — as the dry-run law says. It caught
+  `git-short-read` or `git-inconsistent-read` for a refused answer — as the
+  dry-run law says. It caught
   every failure and returned the plan without the pin advances, which read
   as a vault with no pin to advance.
 
@@ -364,9 +375,12 @@ version` prints the engine version and the commit a binary was built from.
   (`packages/cli/test/fixtures/runtime.ts`); the summary names the runtime.
   The `node` is resolved to an absolute path, a relative PATH entry against
   the runner's directory, and with none to find the runner refuses to run.
-  Under load, Bun 1.3.11's synchronous spawn cut 7 of 900 child outputs
-  short with exit 0, where Node cut none of 3,600, and that was the gate's
-  intermittent `lint --staged` failure.
+  Under load, Bun 1.3.11's synchronous spawn cut 7 of 900 piped child
+  outputs short with exit 0, where Node cut none of 3,600, and that was the
+  gate's intermittent `lint --staged` failure. The seam reaches the CLI a
+  test spawns; an engine function a test calls in its own process reads git
+  through the file transport above. `judge-property` asserts each state's
+  pages before any verdict read from it.
 
 ## 0.1.0 — 2026-09-07
 

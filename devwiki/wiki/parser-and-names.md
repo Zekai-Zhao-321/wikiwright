@@ -3,7 +3,7 @@ type: subsystem
 title: "The parser and the names it binds"
 description: "Bytes become one ParsedDoc through the mdast and yaml seams; identity is one normalization; the name index resolves basenames and aliases; the path law says what a vault path may spell."
 tags: [kernel]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/parse/, packages/core/src/text/, packages/core/src/names/, packages/core/src/identity/, packages/core/src/paths/]
 ---
@@ -58,9 +58,9 @@ and the near-name index both read: `boundedLevenshtein` (`:11`), `trigrams`
   (`packages/core/src/judge/index.ts:422`, `:510`).
 - `pathRefusal`, `isVaultPath`, `isContentPath`, `PATH_REFUSALS`
   (`packages/core/src/paths/index.ts`), read by the page walk, the state
-  constructors and the shell's containment check
-  (`packages/cli/src/vaultio.ts:405`, `packages/cli/src/state.ts:91`,
-  `packages/cli/src/paths.ts:100`).
+  constructors and the shell's containment check (see
+  [[wikiwright-architecture]], [[one-judge-five-states]] and
+  [[command-runtime]]).
 
 ## State
 
@@ -102,7 +102,7 @@ None. `casefold-data.ts` is a generated table from the vendored Unicode
 - `identity-collision` names the kind of owner — basename, alias or title —
   and the owning path (`packages/core/src/names/index.ts:84-86`, `:97-99`,
   `:121-129`).
-- A refused path throws in a reader (`packages/cli/src/vaultio.ts:48-51`) or
+- A refused path throws in a reader (see [[wikiwright-architecture]]) or
   is refused by name in an agent-facing verb
   (`packages/cli/src/paths.ts:79-97`).
 

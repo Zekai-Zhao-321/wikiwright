@@ -3,7 +3,7 @@ type: code-concept
 title: "One judge, five states"
 description: "Every write path — the working tree, the staged gate, a draft on stdin, a write, a replay of history — constructs a state and calls the one judge under the one law, so no verb can be told one thing at write time and another at the gate."
 tags: [kernel, cli]
-pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
+pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
 origin: .
 covers: [packages/core/src/judge/index.ts, packages/cli/src/state.ts, packages/cli/src/writer.ts, packages/cli/src/staged.ts, packages/cli/src/law.ts, packages/cli/src/verbs/lint.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/fix.ts, packages/cli/src/verbs/write.ts]
 ---
@@ -19,16 +19,16 @@ for a page that did not exist — and a rename list (`:43-60`); the judge
 parses each page once per text and keeps the parse on the state
 (`:63-75`). The shell constructs a state and hands it over; the judge never
 reads a filesystem, a process or git (`:6-8`). Four constructors in `packages/cli/src/state.ts`
-answer "which bytes, against which base" (`:3-4`): `fsState` (`:38-45`) for
-`lint` and `check`, no base; `indexState` (`:72-166`) for `lint --staged` and
+answer "which bytes, against which base" (`:3-4`): `fsState` (`:33-40`) for
+`lint` and `check`, no base; `indexState` (`:86-180`) for `lint --staged` and
 `gate`, the index's bytes against HEAD over one `indexSnapshot` of the
-index (`:65-70`), every staged page and every base read in one batch
-(`:118-125`), with an unchanged page based on its own staged content and
+index (`:60-81`), every staged page and every base read in one batch
+(`:132-139`), with an unchanged page based on its own staged content and
 a deletion kept as a base fact; `overlayState`
-(`:168-197`) for `lint --stdin`, `write`, `write --from`, `new` and `fix`, the
+(`:182-211`) for `lint --stdin`, `write`, `write --from`, `new` and `fix`, the
 vault with every draft in place of its page and the disk bytes as each base;
-`revisionState` (`:269-315`) for `lint --since`, one commit's tree against its
-first parent, walked by `commitPairs` (`:199-224`). The fifth path is the
+`revisionState` (`:294-340`) for `lint --since`, one commit's tree against its
+first parent, walked by `commitPairs` (`:213-249`). The fifth path is the
 proof: every writing verb calls the judge a second time over the spliced bytes
 before a byte lands (`packages/cli/src/writer.ts:48-71`), which is why the
 count of paths exceeds the count of constructors.
@@ -49,17 +49,18 @@ Whichever state a verb builds, its envelope names the bundle it was built
 over: `metadata.bundle` carries the root, the checkout, a digest of the
 pages and the law digest over the config and module bytes the law is built
 from (`packages/cli/src/bundle.ts:38-54`, `:118-140`;
-`packages/cli/src/main.ts:59-76`, `:198-200`). A bundle named by `--bundle`
+see [[command-runtime]]). A bundle named by `--bundle`
 is resolved to the root `--root` would name before any module loads, so it is
 judged by the same constructors under the same law; the runtime's refusals —
 `one-target`, `bundle-not-found`, `bundle-readonly`, and
 `trust-store-malformed` or `bundles-registry-malformed` for a machine-local
 store that does not parse — are answered before a verb builds a state, and
-are envelope errors, not findings (`packages/cli/src/main.ts:80-168`; see
-[[envelope-and-exit-codes]]). A constructor that reads git holds every
-answer to its terminator, so a cut index listing, tree or commit walk is
-refused as `git-short-read` rather than judged as a smaller state
-(`packages/cli/src/main.ts:87-95`; see [[git]]).
+are envelope errors, not findings (see [[command-runtime]] and
+[[envelope-and-exit-codes]]). A constructor reads git through a file git
+writes itself, and holds the answers to their terminators, their counts
+and each other, so a cut or contradictory index listing, tree or commit walk
+is refused as `git-short-read` or `git-inconsistent-read` rather than judged
+as a smaller state (see [[git]]).
 
 The property is held by a test that judges one fixture through every
 constructor and asserts the per-page findings agree, under Bun and under
