@@ -3,7 +3,7 @@ type: subsystem
 title: Registry pipeline
 description: Loads, validates and flattens config/constitution.json and config/engine.json into the effective contracts every pass reads.
 tags: [kernel, cli]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+pin: 842c67fcc34e5fd972af04521a999be7f6dab783
 origin: .
 covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/verbs/read.ts, packages/cli/src/verbs/bundles.ts]
 ---
@@ -21,8 +21,8 @@ contributed each element; `packages/core/src/registry/model.ts:29-60`,
 `:89-138`). Refuse every constitution that violates the model before any page
 is judged. The loader runs in stages, total within a stage and fail-fast
 between them (`packages/core/src/registry/index.ts:6-10`): merge the module
-contributions into the document (`:71-72`), parse it under one zod family
-(`:73-75`; `packages/core/src/registry/document.ts:459`), resolve the
+contributions into the document (`:73-74`), parse it under one zod family
+(`:75-77`; `packages/core/src/registry/document.ts:459`), resolve the
 vocabularies (`:61-62`), combine the types (`:65`;
 `packages/core/src/registry/combine.ts:1017`), validate the effective set
 (`:66`; `packages/core/src/registry/validate.ts:122`), and collapse issues so
@@ -30,7 +30,7 @@ one cause is reported once with its sites (`:93-116`).
 
 ## Entry points
 
-`loadConstitution(json, modules)` in `packages/core/src/registry/index.ts:70`:
+`loadConstitution(json, modules)` in `packages/core/src/registry/index.ts:72`:
 the document and the composed module registry in, `{ok, registry}` or
 `{ok: false, issues}` out (`packages/core/src/registry/model.ts:249`).
 `loadEngineConfig(json)` in `packages/core/src/registry/engine.ts:456` reads
@@ -64,10 +64,9 @@ types goes through it, `read` among them
 (`packages/cli/src/verbs/read.ts:237`), and a root `--bundle` names is
 resolved to a directory before any verb runs, so the loader reads it as it
 reads `--root` (see [[command-runtime]]); the `bundles` verb loads
-no law: it reads whether a root holds a constitution, the content roots its
-`config/engine.json` declares, parsed as the loader parses it without
-loading the rest, and its bundle identity
-(`packages/cli/src/verbs/bundles.ts:72-73`, `:96`, `:215-219`, `:251`).
+no law: it lists the skill directories' copies from their markers and their
+SKILL.md frontmatter, and reads nothing the loader reads
+(`packages/cli/src/verbs/bundles.ts:1-7`, `:71-116`).
 
 ## State
 

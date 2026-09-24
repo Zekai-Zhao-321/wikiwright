@@ -55,9 +55,9 @@ from (`packages/cli/src/bundle.ts:39-54`, `:151-197`;
 see [[command-runtime]]). A bundle named by `--bundle`
 is resolved to the root `--root` would name before any module loads, so it is
 judged by the same constructors under the same law; the runtime's refusals —
-`one-target`, `bundle-not-found`, `bundle-readonly`, and
-`bundles-registry-malformed` for a machine-local registry that does not
-parse — are answered before a verb builds a state, and
+`one-target`, `bundle-name-invalid`, `bundle-not-found`, `bundle-ambiguous`,
+and over a marked root `export-marker-invalid` and `bundle-readonly` — are
+answered before a verb builds a state, and
 are envelope errors, not findings (see [[command-runtime]] and
 [[envelope-and-exit-codes]]). A constructor reads git through a file git
 writes itself, and holds the answers to their terminators, their counts

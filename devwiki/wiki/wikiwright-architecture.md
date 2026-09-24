@@ -3,9 +3,9 @@ type: architecture-overview
 title: wikiwright architecture
 description: The four-layer shape of the engine and how a page's obligations flow through it.
 tags: [kernel, stdlib, cli, kit]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+pin: 842c67fcc34e5fd972af04521a999be7f6dab783
 origin: .
-covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/connections.ts, packages/cli/src/law.ts, packages/kit-code/]
+covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/discovery.ts, packages/cli/src/law.ts, packages/kit-code/]
 ---
 
 # wikiwright architecture
@@ -28,12 +28,13 @@ fix or a queue lane. See [[registry-pipeline]] for the load path and
 
 The shell reads a vault's files through `vaultfiles.ts`, below the loader in
 `vaultio.ts`, so the bundle identity can read them without loading the law.
-Before a verb runs, `main.ts` resolves `--bundle <name>` through this
-machine's bundles registry (`connections.ts`, a JSON file, by default outside
-every vault) to the root `--root` would have named, and every verb that reads a vault's
-law names the bundle it read on its envelope, with a digest of its law and of
-its pages. Two verbs serve an agent reading a bundle it does not maintain:
-`bundles` keeps the registry of connections, and `read` returns a page's
+Before a verb runs, `main.ts` resolves `--bundle <name>` by a scan of the
+skill directories (`discovery.ts`, which reads markers only; nothing
+registers a bundle) to the root `--root` would have named, refuses a verb
+that can write over a root that holds a marker, and every verb that reads a
+vault's law names the bundle it read on its envelope, with a digest of its
+law and of its pages. Two verbs serve an agent reading a bundle it does not
+maintain: `bundles list` prints the scan, and `read` returns a page's
 sections verbatim with the page's digest. A bundle may declare exports, read-only
 copies of itself or of part of it that a host installs as skills: `check
 --write` renders them into the bundle's own `skills/`, `export` writes one

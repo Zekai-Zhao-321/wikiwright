@@ -28,7 +28,7 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,646 tests across 114 files. At `29dbfb9`, when it held 1,590,
+The suite is 1,635 tests across 115 files. At `29dbfb9`, when it held 1,590,
 the full gate, `bun run check`, passed them all with the test files under
 Bun and the CLI under Node (`tools/run-suite.ts`), and the full node runner,
 `bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
@@ -39,14 +39,13 @@ the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured on
-2026-09-25 on the development machine at `5af44d8`, where `check --root
-devwiki` needs the install and nothing else, `freshness` read all 27 pinned
-pages `unchanged` and none `stale`, with no `stale-capture`,
-`stale-source-cited` or `citation-unresolved` finding. A later change to
-code a page covers makes that page `stale` until it is re-read and
-re-pinned, and `freshness` names it: the pages covering `exports.ts`,
-`artifacts.ts` and `verbs/export.ts` are `stale` after the commit that reads
-exports through links, until they are.
+2026-09-25 on the development machine, where `check --root devwiki` needs
+the install and nothing else, `freshness` reads all 27 pinned pages
+`current` (14) or `unchanged` (13) and none `stale`, with no
+`stale-capture`, `stale-source-cited` or `citation-unresolved` finding,
+before the commit that carries those pins; once it lands, the 14 are
+`unchanged`. A later change to code a page covers makes that page `stale`
+until it is re-read and re-pinned, and `freshness` names it.
 A citation into a file its page does not cover is held to the pin but not
 to the file's later changes, so such a reference either is covered or goes
 through the page that covers the file.
@@ -428,9 +427,22 @@ No host has installed a rendered export here. Unverified: how a skill
 installer that fetches from a repository handles symbolic links, size limits,
 pinning to a branch and updating a pinned copy; where each host caches a
 plugin; whether every host sets the skill-directory variable a `SKILL.md`
-names; how a skill store lists a generated plugin; and whether a host follows
-a skill directory that is a symbolic link. That the loader accepts a copy
-whose declared source roots are absent is verified (`export-copy`).
+names; how a skill store lists a generated plugin; whether a host follows
+a skill directory that is a symbolic link; and which keys an installer
+writes into a copy's `SKILL.md`, which `bundles list` reports verbatim and
+the session-start hook reads by the shape of each value. That the loader
+accepts a copy whose declared source roots are absent is verified
+(`export-copy`).
+
+### Plugin caches are not scanned
+
+`--bundle` and `bundles list` read the project's skill directories, the
+user's and those `WIKIWRIGHT_SKILL_DIRS` names. A bundle skill a host keeps
+in its plugin cache is not found by name unless the host, or the user, names
+that directory in the variable; `--root` reaches it either way.
+
+Wanted: nothing until a host's cache layout is verified; then, perhaps, the
+layout as a tier of its own.
 
 ### `bundle-readonly` is a guardrail on the CLI
 

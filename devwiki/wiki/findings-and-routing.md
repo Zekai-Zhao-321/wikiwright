@@ -3,7 +3,7 @@ type: code-concept
 title: "Findings and total routing"
 description: "Every error or warning finding carries exactly one of a runnable fix and a queue lane; an info finding is a census row; the property is held statically over the pass table and at runtime over every emit path."
 tags: [kernel]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+pin: 842c67fcc34e5fd972af04521a999be7f6dab783
 origin: .
 covers: [packages/core/src/passes/index.ts, packages/core/src/modules/index.ts, packages/core/src/judge/index.ts, packages/core/src/fixers/index.ts, packages/cli/src/envelope.ts, packages/cli/src/brief.ts, tools/render-playbook.ts]
 ---
@@ -58,19 +58,19 @@ did not print (`:168-181`).
 - The arms' own rows and lanes, declared beside the arms:
   [[standard-library]]; a kit that declares no arm declares no lane (D-004).
 - The envelope every judging verb prints: `verdictEnvelope`
-  (`packages/cli/src/envelope.ts:125-137`), under the `metadata.bundle` every
+  (`packages/cli/src/envelope.ts:127-139`), under the `metadata.bundle` every
   vault verb's envelope carries, the bundle the verdict was reached over
   (see [[command-runtime]]). A refusal the runtime makes
-  before a verb runs — `one-target`, `bundle-not-found`, `bundle-readonly` —
-  or when the machine-local registry does not parse —
-  `bundles-registry-malformed` — or when a git answer was cut short or two
+  before a verb runs — `one-target`, `bundle-name-invalid`,
+  `bundle-not-found`, `bundle-ambiguous`, `export-marker-invalid`,
+  `bundle-readonly` — or when a git answer was cut short or two
   disagree — `git-short-read`, `git-inconsistent-read` — is an envelope
   error, not a finding, and carries no route (see [[command-runtime]] and
   [[envelope-and-exit-codes]]).
 - The brief's "Findings" paragraph is the role's: the writer's and the
   maintainer's run a finding's `fix` argv and leave a `queue`, the consumer's
-  runs nothing (`packages/cli/src/brief.ts:150-169`), and every role's counts
-  the fix-routed rows (`:240-241`, `:268`); the maintainer skill's playbook is
+  runs nothing (`packages/cli/src/brief.ts:151-170`), and every role's counts
+  the fix-routed rows (`:241-242`, `:269`); the maintainer skill's playbook is
   rendered from the same table (`tools/render-playbook.ts:1-7`).
 - The tests: `packages/cli/test/routing-xor.test.ts` (every finding on every
   corpus) and `packages/cli/test/pass-table.test.ts` (the table's static

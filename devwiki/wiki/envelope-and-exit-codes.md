@@ -3,7 +3,7 @@ type: ops-reference
 title: "The envelope and exit codes"
 description: "Every verb prints one JSON envelope on stdout, and a vault verb's names the bundle it read; the exit code is one of seven, each mapped to one error type; lint, check and gate share one verdict block, and the writing verbs report the pages they wrote."
 tags: [cli]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+pin: 842c67fcc34e5fd972af04521a999be7f6dab783
 origin: .
 covers: [packages/cli/src/envelope.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts]
 ---
@@ -15,52 +15,54 @@ covers: [packages/cli/src/envelope.ts, packages/cli/src/main.ts, packages/cli/sr
 An `ok` envelope is `{ ok: true, data, metadata: { command, engine, bundle? } }`;
 an error envelope is `{ ok: false, data?, error: { code, exit_code, type,
 message, hint?, details? }, metadata }`
-(`packages/cli/src/envelope.ts:64-88`, `:99-123`). `metadata.engine` is
+(`packages/cli/src/envelope.ts:66-90`, `:101-125`). `metadata.engine` is
 `0.1.0` (`:24`). `metadata.bundle` — `label`, `root`, `head`, `dirty`, `law`,
-`content`, and over a copy `export`, the export its marker names (`:26-62`) —
+`content`, over a copy `export`, the export its marker names, and under
+`--bundle` `shadowed`, the farther copies of the same bundle (`:26-64`) —
 is on the envelope of every verb that reads a vault's law whose root holds a
 constitution, ok or refused, and on no envelope answered before the verb runs
-(`packages/cli/src/main.ts:60-77`, `:226-228`; see [[exports]]).
+(`packages/cli/src/main.ts:67-83`, `:284-286`; see [[exports]]).
 `error.code` is one kebab-case word per meaning and `details` carries the
 machine recovery data; a refusal that carries a verdict puts it in `data`
-beside `error` (`packages/cli/src/envelope.ts:116-122`). The envelope goes to
+beside `error` (`packages/cli/src/envelope.ts:118-124`). The envelope goes to
 stdout, the verb's stderr text to stderr, and the process exit code is the
 envelope's (`packages/cli/src/main.ts:24-29`).
 
 | Exit | `error.type` | Meaning | Where |
 | --- | --- | --- | --- |
 | 0 | — | ok | `envelope.ts:9` |
-| 1 | `internal` | the engine broke; `unexpected-error` carries the thrown message, `git-short-read` a git answer that ended before its terminator, and `git-inconsistent-read` two git answers about one state that disagree | `envelope.ts:10`; `main.ts:81-112` |
-| 2 | `usage` | a verb, flag, positional, subcommand or environment variable the caller got wrong; `--bundle` beside `--root`; a writing verb aimed at an installed copy | `envelope.ts:11`; `argv.ts:92-151`; `main.ts:128-177`, `:282-305` |
+| 1 | `internal` | the engine broke; `unexpected-error` carries the thrown message, `git-short-read` a git answer that ended before its terminator, and `git-inconsistent-read` two git answers about one state that disagree | `envelope.ts:10`; `main.ts:94-111` |
+| 2 | `usage` | a verb, flag, positional, subcommand or environment variable the caller got wrong; `--bundle` beside `--root`, a name outside the skill grammar, or one two bundles answer; a writing verb aimed at an installed copy | `envelope.ts:11`; `argv.ts:92-151`; `main.ts:124-195`, `:224-252`, `:340-363` |
 | 2 | `constitution` | the law did not load, a declared module did not load, or the engine pin refused; nothing was judged | `envelope.ts:12-15` |
-| 3 | `not_found` | the page, section, type, vocabulary entry, revision, directory or connected bundle asked for does not exist | `envelope.ts:16` |
-| 4 | `conflict` | the state refuses the operation: a stale base, a foreign hook, an `--expect` mismatch, unmerged paths, a splice the Writer cannot prove, the machine-local registry when it does not parse, a copy's marker that is not one | `envelope.ts:17`; `main.ts:81-112`, `:190-208` |
+| 3 | `not_found` | the page, section, type, vocabulary entry, revision, directory or bundle skill asked for does not exist | `envelope.ts:16` |
+| 4 | `conflict` | the state refuses the operation: a stale base, a foreign hook, an `--expect` mismatch, unmerged paths, a splice the Writer cannot prove, a copy's marker that is not one | `envelope.ts:17`; `main.ts:224-252` |
 | 5 | `findings` | the tool worked and the subject failed; read `data.findings` | `envelope.ts:18` |
 | 10 | `confirm_required` | an identity or blast-radius gate wants the plan pinned | `envelope.ts:19` |
 
 The runtime's own codes: `unknown-command` with `valid_commands`
-(`packages/cli/src/main.ts:282-288`), `role-unknown` with `valid_values`
-(`:290-296`), `role-forbidden` with the caller's role and the verbs it may run
-(`:251-274`); for `--bundle`, `one-target` beside `--root`,
-`bundle-not-found` with `valid_values` and `bundle-readonly` with `kind` and
-`feedback`, each before the verb runs (`:128-177`); `git-short-read` with the
+(`packages/cli/src/main.ts:340-346`), `role-unknown` with `valid_values`
+(`:348-354`), `role-forbidden` with the caller's role and the verbs it may run
+(`:309-332`); for `--bundle`, `one-target` beside `--root`,
+`bundle-name-invalid` with the grammar, `bundle-not-found` with `searched`,
+`names` and `skipped`, and `bundle-ambiguous` with every `candidate`, each
+before the verb runs (`:124-195`); over a marked root, `export-marker-invalid`
+with the marker's `path` and the first `reason` it is not one, and
+`bundle-readonly` with `export`, `contribution` and `root`, before any module
+preloads (`:224-252`); `git-short-read` with the
 git command as `command`, from any verb whose git answer was cut short, and
 `git-inconsistent-read` with both commands as `commands`, from any verb two
-of whose git answers disagree (`:89-104`, [[git]]); `bundles-registry-malformed`
-with `file` and, for a record, `record` (`:81-112`); `export-marker-invalid`
-with the marker's `path` and the first `reason` it is not one, before any
-module preloads (`:190-208`); `unknown-flag` with `valid_flags`
+of whose git answers disagree (`:94-109`, [[git]]); `unknown-flag` with `valid_flags`
 (`packages/cli/src/argv.ts:95-104`), `invalid-arguments` (`:105-110`),
 `unexpected-argument` with `expected_positionals` (`:112-129`),
 `missing-argument` and `unknown-subcommand` with `valid_values`
 (`:133-151`).
 
 `lint`, `check` and `gate` answer with one verdict block rendered by
-`verdictEnvelope` (`envelope.ts:125-137`), whole:
+`verdictEnvelope` (`envelope.ts:127-139`), whole:
 
 | Key | Meaning |
 | --- | --- |
-| `findings` | the findings, capped at `--limit` (default 50), error-first; `--rule` and `--path` filter before the cap and `--all` lifts it (`envelope.ts:139-158`; `packages/core/src/judge/index.ts:164`, `:643-650`) |
+| `findings` | the findings, capped at `--limit` (default 50), error-first; `--rule` and `--path` filter before the cap and `--all` lifts it (`envelope.ts:141-160`; `packages/core/src/judge/index.ts:164`, `:643-650`) |
 | `summary` | `pages`, `errors`, `warnings`, `infos`, `by_rule`, `excepted`, `unevaluated`, over the uncapped set; the exit code follows `errors` (`packages/core/src/judge/index.ts:674-682`) |
 | `coverage.passes` | per pass: `evaluated`, `not_applicable`, `unevaluable`, `reason` (`packages/core/src/judge/index.ts:122-135`) |
 | `unevaluated` | the passes a declaration turned on that this run could not judge, keyed by pass with a count and `no-base` (`:137-145`) |

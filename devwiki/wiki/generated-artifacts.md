@@ -3,7 +3,7 @@ type: subsystem
 title: "Generated artifacts"
 description: "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, and the bundle's rendered exports under skills/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges."
 tags: [kernel, cli]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+pin: 842c67fcc34e5fd972af04521a999be7f6dab783
 origin: .
 covers: [packages/core/src/generate/, packages/core/src/hash/, packages/cli/src/artifacts.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/graph.ts]
 ---
@@ -38,12 +38,13 @@ the bundle's law digest (see [[skills-and-brief]]), then the bundle's
 `output: skills` exports (see [[exports]]); `writeArtifacts`
 (`packages/cli/src/artifacts.ts:50-58`) lands every file write-then-rename;
 `writeBrief` (`:42-48`) is the brief alone through the same loop, for
-`skills update`; `writeExports` (`:88-130`) replaces each export's planned
-files that differ and removes what its plan no longer holds, pruning the
-directories that leaves empty and nothing outside them (`:132-146`);
-`artifactOps` (`:171-211`) answers the dry run from the generator itself,
+`skills update`; `writeExports` (`:88-134`) replaces each export's planned
+files that differ and removes what its plan no longer holds, a link in its
+place removed first and never written through (`:136-151`), pruning the
+directories that leaves empty and nothing outside them (`:153-167`);
+`artifactOps` (`:192-232`) answers the dry run from the generator itself,
 the brief named after the kernel's plans and the exports' writes and
-removals from `exportOps` (`:148-169`). The `check` verb
+removals from `exportOps` (`:169-190`). The `check` verb
 (`packages/cli/src/verbs/check.ts`) reads the tree into one state and parses
 it once, through `parsedPages`, for everything that follows (`:73-79`),
 plans the exports from the same pages (`:83-90`), writes the three plans,
@@ -113,9 +114,9 @@ is held at runtime.
   keys the edge by the item's kind (`:74-80`, `:137-141`).
 - The plan's paths come from the generator itself, so a dry run can never
   name a file the writer would not produce
-  (`packages/cli/src/artifacts.ts:171-177`), and an export's plan names only
+  (`packages/cli/src/artifacts.ts:192-198`), and an export's plan names only
   the files that differ and the ones it removes, the delta the writer makes
-  (`:148-169`); drift is compared against a fresh
+  (`:169-190`); drift is compared against a fresh
   rebuild, never a remembered set (`packages/cli/src/verbs/check.ts:98-115`),
   and at the gate against the index, never the working tree
   (see [[writer-and-staged-gate]]).

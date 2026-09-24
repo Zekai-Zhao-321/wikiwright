@@ -3,7 +3,7 @@ type: subsystem
 title: "Modules, the loader and the fixture"
 description: "The registration API every module goes through, the loader's ladder from the bundle's own node_modules or a declared bundle-relative path to the judge, the purity scan and the determinism fixture run at every load and kept once per digest in a process, and the modules verb."
 tags: [kernel, cli]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+pin: 842c67fcc34e5fd972af04521a999be7f6dab783
 origin: .
 covers: [packages/core/src/modules/, packages/core/src/version/, packages/cli/src/main.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/cli/src/sha256.ts, packages/cli/src/verbs/modules.ts]
 aliases: ["modules-and-trust"]
@@ -85,7 +85,7 @@ same path (`packages/cli/src/verbs/modules.ts:1-7`, `:100-151`, `:189-210`).
   `declaredModulesOf`, `declaredModulesIn`, `declaredModulesInText`,
   `moduleDigest`, `moduleLocation` (`packages/cli/src/moduleload.ts:348`,
   `:600`, `:595`, `:632`, `:660`, `:649`, `:727`, `:111`); `main.ts` preloads
-  once before dispatch (`packages/cli/src/main.ts:218-221`) and `loadVaultVia`
+  once before dispatch (`packages/cli/src/main.ts:276-279`) and `loadVaultVia`
   reads the outcome, refusing `module-not-loaded` when it is absent and
   composing `[...STANDARD_LIBRARY, ...loaded]` when it is not
   (`packages/cli/src/vaultio.ts:197-261`).

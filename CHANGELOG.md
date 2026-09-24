@@ -70,40 +70,43 @@ version` prints the engine version and the commit a binary was built from.
   over every page under the content roots, path and bytes, as the working tree
   holds them). An answer read from one bundle can be told from an answer read
   from another, and an uncommitted edit shows in `content` and `dirty` while
-  `head` stays where it was. `version`, `schema`, `trust` and `bundles` carry
+  `head` stays where it was. `version`, `schema` and `bundles` carry
   none. The brief's header prints the law digest in place of a digest of the
   sorted type names, which did not move when a type's contract, the engine
   policy or a module changed.
-- `bundles add <root> --name <n> | list | remove <name>` connects a vault by
-  name in a machine-local registry (`~/.config/wikiwright/bundles.json`, or
-  `WIKIWRIGHT_BUNDLES_FILE`), written under the trust store's lock. A
-  connection carries its root, a `kind` — `maintained`, a checkout the caller
-  may write to within its role, or `installed`, a copy that is read only — the
-  place a problem with it is reported, and a page to read first, which must
-  be a Markdown page under a content root, the pages `read` returns
-  (`guide-not-a-page` otherwise). `list` shows every connection with its
-  content roots and the identity the envelope's bundle block carries, and
-  `list --records` the rows without the identity, for a caller that only
-  routes; it loads no law and no module, so a bundle whose modules are not
-  approved on this machine still lists. The verb is a consumer's: the registry
-  is this machine's, by default outside every vault, and connecting a bundle
-  grants nothing. A relative `WIKIWRIGHT_BUNDLES_FILE` or
-  `WIKIWRIGHT_TRUST_FILE` is resolved against the working directory, so a
-  plan names an absolute path. A record whose root is not an absolute path,
-  or two records with one name or one real root, as a registry edited by
-  hand may hold, are refused as `bundles-registry-malformed`, never resolved
-  against the working directory or answered with the first.
-- `--bundle <name>` names the target of any verb by its connection, in place
-  of `--root`, so an agent working in an unrelated directory reads two
-  handbooks by name and every answer says which one it came from. It refuses
-  `one-target` beside `--root`, `bundle-not-found` with the connected names,
-  and `bundle-readonly` for a verb that writes the vault or its repository,
-  dry run included, aimed at an installed copy, with the connection's feedback
-  destination in the refusal; `bundles` and `trust`, whose writes are this
-  machine's stores, are answered, an exemption by verb that does not look at
-  where the environment put those stores. That refusal is a guardrail on the
-  CLI, not filesystem isolation: `--root` reaches the same directory by
-  design.
+- `--bundle <name>` names the target of any verb by the name of a bundle
+  skill installed in a skill directory, in place of `--root`, so an agent
+  working in an unrelated directory reads two handbooks by name and every
+  answer says which one it came from. Nothing registers a bundle: the name is
+  held to the skill grammar (`bundle-name-invalid`), then probed in the
+  project's `.claude/skills` and `.agents/skills` from the working directory
+  up to the top of its repository, the user's `~/.claude/skills`,
+  `~/.agents/skills` and `/etc/codex/skills`, and each directory of
+  `WIKIWRIGHT_SKILL_DIRS`; plugin caches are not scanned. A candidate's marker
+  must parse and name its directory, or it is skipped with its reason. One
+  identity — the marker's repository, bundle and name, a copy with no
+  repository only ever itself — resolves to the nearest copy, and
+  `metadata.bundle.shadowed` lists the rest; two identities are
+  `bundle-ambiguous`; none is `bundle-not-found` with the directories
+  searched and the names seen. `one-target` refuses `--bundle` beside
+  `--root`.
+- `bundles list` prints the same scan, one row per copy — its name, bundle,
+  tier, root and real path, whether it is a link, the marker's repository and
+  digests, selection, page count and contribution, what its installer wrote
+  into its `SKILL.md` frontmatter, and the root that shadows it — and one row
+  per directory whose marker it cannot take. It reads markers only: no law, no
+  kit, no page.
+- A root that holds a marker is read only however it is named: a verb that
+  can write is refused `bundle-readonly`, `--dry-run` included, with a hint in
+  the words of the copy's contribution mode, and a marker that is not one is
+  `export-marker-invalid` before any module loads. A courtesy on the CLI, not
+  isolation.
+- The plugin's session-start hook names each installed bundle skill with the
+  action that fits how it was installed — linked to a checkout, pinned, an
+  installer's update, or installed by hand — and checks nothing remote. The
+  post-edit hook finds the bundle an edited file belongs to by its ancestry:
+  in an installed copy it says the next update overwrites the edit and where
+  a change goes, and lints nothing; elsewhere it lints the page with `--root`.
 - `read <page> [--section <heading>] [--budget <bytes>]` returns a page's
   sections verbatim, cut at its type's section depth, each with its address,
   lines and byte length, beside the page's type, chain, frontmatter and
@@ -320,6 +323,16 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- The machine-local registry of connected bundles, added and removed within
+  this release: `bundles add` and `bundles remove`, `--name`, `--kind`,
+  `--guide`, `--feedback` and `--records`, the file
+  `~/.config/wikiwright/bundles.json` and `WIKIWRIGHT_BUNDLES_FILE`, a
+  connection's kind, feedback destination and guide, the store lock, and the
+  codes `bundles-registry-malformed`, `store-busy`, `bundle-name-taken`,
+  `bundle-root-registered`, `guide-not-found`, `guide-not-a-page`,
+  `invalid-kind` and `vault-not-found`. Installing a bundle skill is copying
+  its directory, and `--bundle` finds it there; a maintained checkout is named
+  with `--root`.
 - The `trust` verb and the machine-local trust store: `trust grant`, `list`
   and `revoke`, their `--scope`, `--all` and `--record`, the store at
   `~/.config/wikiwright/trust.json` and `WIKIWRIGHT_TRUST_FILE`, and the codes

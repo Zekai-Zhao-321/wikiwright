@@ -501,6 +501,21 @@ left out is refused when the export is declared `links: closed` and counted
 when it is `links: cut`, and the marker carries the count, so a reader can
 tell how much of the bundle the copy does not reach.
 
+**Finding a copy.** Nothing registers a copy: a host installs it by copying
+its directory into a skill directory, and the engine finds it there by name.
+`--bundle <name>` probes the project's skill directories from the working
+directory up to the top of its repository, then the user's, then those
+`WIKIWRIGHT_SKILL_DIRS` names, reading one marker per directory that has
+one and never a page. Every copy that answers is inspected: two copies of
+the same bundle — the same repository, bundle and export name — resolve to
+the nearer, and the envelope lists the other as shadowed; two different
+bundles under one name are refused as ambiguous, and `--root` names the one
+meant. A copy that names no repository is only ever itself. `bundles list`
+prints the same scan with what each copy's installer recorded. However a
+copy is named — `--bundle`, `--root` or the working directory — it is read
+only: a verb that can write is refused with where a change goes instead,
+since the next install overwrites whatever is written there.
+
 ## The four layers
 
 ```text

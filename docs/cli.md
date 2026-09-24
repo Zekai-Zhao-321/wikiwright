@@ -95,6 +95,10 @@ or unknown, another schema or version — is refused `export-marker-invalid`
 `details.reason`: the copy is not loaded. The brief's header over a copy names
 the export and the bundle it was cut from.
 
+A root named by `--bundle` whose name other, farther copies of the same
+bundle also answer adds `shadowed`, a list of `{root, tier}`, one per copy
+not chosen (§Notes per verb, `--bundle`).
+
 `lint`, `check` and `gate` answer with this verdict block, whole:
 
 | Key | Meaning |
@@ -184,7 +188,7 @@ The package root, `packages/cli`, is also a Claude Code plugin.
 its skills are the three under `skills/`; `hooks/hooks.json` runs two scripts
 with `node`, `SessionStart` with no matcher and `PostToolUse` on
 `Edit|Write`. Each reads the hook's JSON on stdin, runs this package's own
-binary with the session's environment (so `WIKIWRIGHT_BUNDLES_FILE` and
+binary with the session's environment (so `HOME`, `WIKIWRIGHT_SKILL_DIRS` and
 `WIKIWRIGHT_ROLE` apply), prints at most one JSON
 object whose `hookSpecificOutput` carries `hookEventName` and
 `additionalContext`, and exits 0 whatever happens: on stdin that is not a JSON

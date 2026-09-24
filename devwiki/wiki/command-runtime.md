@@ -1,11 +1,11 @@
 ---
 type: subsystem
 title: "The command runtime"
-description: "One spec-driven registry of 24 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the `--bundle` target and the bundle every vault envelope names, the one clock, and the place a loaded vault becomes the judge's law."
+description: "One spec-driven registry of 24 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the `--bundle` scan of the skill directories, the read-only guard on a marked root, the bundle every vault envelope names, the one clock, and the place a loaded vault becomes the judge's law."
 tags: [cli]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+pin: 842c67fcc34e5fd972af04521a999be7f6dab783
 origin: .
-covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/bundle.ts, packages/cli/src/connections.ts, packages/cli/src/storelock.ts, packages/cli/src/verbs/]
+covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/bundle.ts, packages/cli/src/discovery.ts, packages/cli/src/verbs/]
 ---
 
 # The command runtime
@@ -13,49 +13,49 @@ covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/arg
 ## Responsibilities
 
 `packages/cli/src/main.ts` is the entry point: `help` and no command print the
-verb list (`:49-58`, `:278-279`); `--version` and `-v` reach the `version`
-verb (`:231-233`, `:281`); an unknown command is refused with the valid set
-(`:282-288`); the role is read from `WIKIWRIGHT_ROLE` and an unrecognised
-value refuses rather than falling back (`:237-249`, `:290-296`); a verb above
+verb list (`:49-58`, `:336-337`); `--version` and `-v` reach the `version`
+verb (`:289-291`, `:339`); an unknown command is refused with the valid set
+(`:340-346`); the role is read from `WIKIWRIGHT_ROLE` and an unrecognised
+value refuses rather than falling back (`:295-307`, `:348-354`); a verb above
 the caller's rank is refused before `--help` and before parsing, with the
-verbs the caller may run listed (`:251-274`, `:298-305`); `--help` prints the
+verbs the caller may run listed (`:309-332`, `:356-363`); `--help` prints the
 spec's own row and is never a usage error (`:31-47`). `runCommand` parses
-under the registry and resolves `--bundle` to the connection's root before
-anything else, refusing `one-target` beside `--root`, a name no connection
-carries, and a writing verb aimed at an installed copy unless its write is
-this machine's own registry (`:128-177`, `:179-189`); it refuses a root
-whose `config/export.json` is not an export's marker, `export-marker-invalid`,
-before any module preloads, so a copy is read under its marker or not at all
-(`:190-208`; see [[exports]]); it preloads the modules
-`engine.json` declares for a verb that declares it reads the vault's law —
-the shell's one asynchronous step — runs the verb, turns a throw into
-`unexpected-error`, into `git-short-read` or `git-inconsistent-read` when a
-git answer ended before its terminator or two git answers disagree
-([[git]]), or into the store's own refusal when a machine-local
-store does not parse (`:81-112`, `:209-225`), and for a vault verb attaches
-the bundle it read as `metadata.bundle` (`:60-77`, `:226-228`); `emit` writes
-one envelope to stdout, the verb's UX text to stderr and sets the exit code
-(`:24-29`). `packages/cli/src/bundle.ts` computes that block without loading
-anything — label, real root, head and dirty from one `git status`, the law
-digest over the config and each installed module's digest, the content digest
-over every page's bytes (`:39-54`, `:71-75`, `:151-197`); over a copy, a root
-that carries a marker, the label is the bundle the marker names, `head` and
+under the registry and resolves the target before anything else
+(`:254-266`). `targetOf` resolves `--bundle` by the scan of the skill
+directories, refusing `one-target` beside `--root`, a name outside the skill
+grammar, a name the scan finds nowhere — with the directories searched and
+the names it saw — and a name two different bundles answer, and otherwise
+names the nearest copy and the copies it shadowed (`:124-195`).
+`markedRootRefusal` checks the marker of every resolved root, however it was
+named, for a verb that reads the vault's law or can write: a marker that is
+not one is `export-marker-invalid`, before any module preloads, and a verb
+that can write is `bundle-readonly`, `--dry-run` included, with a hint in the
+words of the copy's contribution mode (`:198-252`; see [[exports]]). It then
+preloads the modules `engine.json` declares for a verb that declares it reads
+the vault's law — the shell's one asynchronous step — runs the verb, turns a
+throw into `unexpected-error`, or into `git-short-read` or
+`git-inconsistent-read` when a git answer ended before its terminator or two
+git answers disagree ([[git]]) (`:94-111`, `:267-283`), and for a vault verb
+attaches the bundle it read as `metadata.bundle`, with the copies `--bundle`
+shadowed (`:67-83`, `:284-286`); `emit` writes one envelope to stdout, the
+verb's UX text to stderr and sets the exit code (`:24-29`).
+`packages/cli/src/bundle.ts` computes that block without loading anything —
+label, real root, head and dirty from one `git status`, the law digest over
+the config and each installed module's digest, the content digest over every
+page's bytes (`:39-54`, `:71-75`, `:151-197`); over a copy, a root that
+carries a marker, the label is the bundle the marker names, `head` and
 `dirty` are null, and `export` names the export, `intact: false` when the
-recomputed digests differ from the marker's (`:132-135`, `:168-187`) — and
-`packages/cli/src/connections.ts` is the registry `--bundle` reads, at the
-path its override names made absolute (`:46-55`), which refuses as
-malformed a record whose root is not an absolute path rather than resolving
-it against the working directory, and two records with one name or one real
-root rather than answering with the first (`:66-93`, `:95-149`), beside
-`MACHINE_LOCAL_WRITERS`, the one verb an installed copy answers — an
-exemption by verb, not by where the store lies (`:154-164`). The registry is
-read, changed and written as one operation (`:172-187`) under the lock every
-machine-local store takes, `packages/cli/src/storelock.ts`: the store is read
-after the lock is held, so two writes at once keep each other's record; the
-lock names the process and the host that hold it and is broken only when
-that process is gone from this machine, never because it is old, and one that
-does not clear is `StoreBusy`, which `bundles` answers as `store-busy`
-(`:114-162`, `:177-198`).
+recomputed digests differ from the marker's (`:132-135`, `:168-187`).
+`packages/cli/src/discovery.ts` is the scan: the skill directories in the
+order a name resolves in — the project's `.claude/skills` and
+`.agents/skills` from the working directory up to the top of its repository,
+the user's, then `WIKIWRIGHT_SKILL_DIRS` (`:46-96`) — a directory a candidate
+when its marker parses and names it and skipped with its reason otherwise
+(`:107-140`), one candidate per real path (`:143-167`), identity by the
+marker's repository, bundle and name, a copy with no repository alone
+(`:198-203`), and a name resolved to one identity's nearest copy or refused
+as ambiguous (`:215-232`); `bundles list` walks the same directories
+(`:170-195`; `packages/cli/src/verbs/bundles.ts:71-116`).
 
 `packages/cli/src/commands.ts` is the registry, the `COMMANDS` array and
 nothing else, one module per verb under `verbs/` (`:2-6`, `:33-58`).
@@ -75,9 +75,9 @@ a missing or unknown subcommand, each with the legal domain in `details`
 (`:68-150`); `scanInvocation` finds `--help` without reading a string flag's
 value as one (`:35-61`). `packages/cli/src/envelope.ts` fixes the exit table
 (`:8-20`), the engine version (`:24`), the shape of `metadata.bundle`,
-a copy's `export` included (`:26-62`), the `ok` and `fail` constructors (`:99-123`), the verdict block
-every judging verb prints (`:125-137`) and the cap flags read once
-(`:139-158`).
+a copy's `export` and the copies `--bundle` shadowed included (`:26-64`), the `ok` and `fail` constructors (`:101-125`), the verdict block
+every judging verb prints (`:127-139`) and the cap flags read once
+(`:141-160`).
 
 `packages/cli/src/law.ts` is where a loaded vault becomes the judge's second
 argument: `lawFor` (`:63-84`) carries the registry, the module set the loader
@@ -166,16 +166,22 @@ turns off.
   makes the entry point preload a bundle's modules; the meta-test holds each
   declaration against what that verb's imports reach, the registry's own edge
   excluded (`packages/cli/src/spec.ts:152-162`;
-  `packages/cli/src/main.ts:218-221`;
+  `packages/cli/src/main.ts:276-279`;
   `packages/cli/test/module-loading.test.ts:1-6`).
 - The role bound is a rank comparison, `consumer ⊂ writer ⊂ maintainer`, and
   a bounded caller cannot learn the shape of a verb it may not run
-  (`packages/cli/src/spec.ts:109-118`; `packages/cli/src/main.ts:298-305`).
+  (`packages/cli/src/spec.ts:109-118`; `packages/cli/src/main.ts:356-363`).
 - Every envelope of a verb that reads a vault's law names the bundle it read
   when the root holds a constitution, ok or refused; an envelope answered
-  before the verb runs names none (`packages/cli/src/main.ts:60-77`,
-  `:226-228`); over a copy it names the export the copy is, from its marker
+  before the verb runs names none (`packages/cli/src/main.ts:67-83`,
+  `:284-286`); over a copy it names the export the copy is, from its marker
   (`packages/cli/src/bundle.ts:168-187`).
+- A copy is read only however it is named: the marker is checked on every
+  resolved root before any module preloads, and a verb that can write is
+  refused over it (`packages/cli/src/main.ts:224-252`, `:265-266`).
+- Discovery reads markers only: a name is resolved by one `stat` per probed
+  directory and one marker read per candidate, never a page, and nothing
+  registers a bundle (`packages/cli/src/discovery.ts:1-7`, `:143-167`).
 - The shell has one clock and the judge never reads a date it computed
   (`packages/cli/src/clock.ts:1-4`); a malformed `WIKIWRIGHT_TODAY` refuses
   before anything moves (`:18-20`).
@@ -186,23 +192,23 @@ turns off.
 ## Failure modes
 
 - `unknown-command`, `role-unknown`, `role-forbidden`
-  (`packages/cli/src/main.ts:282-305`, `:251-274`); `unknown-flag`,
+  (`packages/cli/src/main.ts:340-363`, `:309-332`); `unknown-flag`,
   `invalid-arguments`, `unexpected-argument`, `missing-argument`,
   `unknown-subcommand` (`packages/cli/src/argv.ts:92-151`).
 - `invalid-value` when a `--set` value is not the JSON its field's kind takes
   (`packages/cli/src/verbs/new.ts:127-148`); `draft-invalid` at exit 5 with
   `pages` and `preview` (`packages/cli/src/verbs/write.ts:566-588`);
   `directory-not-found` at exit 3 with `details.resolved` (`:874-882`).
-- `one-target`, `bundle-not-found` and `bundle-readonly`, each before
-  anything runs (`packages/cli/src/main.ts:128-177`); `export-marker-invalid`
-  at exit 4 when a root's `config/export.json` is not a marker, before any
-  module preloads (`:190-208`);
-  `bundles-registry-malformed` at exit 4 when the machine-local registry does
-  not parse, `git-short-read` at exit 1 with
+- `one-target`, `bundle-name-invalid`, `bundle-ambiguous` (exit 2) and
+  `bundle-not-found` (exit 3), each before anything runs
+  (`packages/cli/src/main.ts:124-195`); `export-marker-invalid` at exit 4
+  when a root's `config/export.json` is not a marker, and `bundle-readonly`
+  at exit 2 for a verb that can write over a copy, each before any module
+  preloads (`:224-252`); `git-short-read` at exit 1 with
   `details.command` when a git answer was cut short, `git-inconsistent-read`
   at exit 1 with `details.commands` when two git answers disagree, and
   `unexpected-error`
-  at exit 1 when a verb throws anything else (`:81-112`).
+  at exit 1 when a verb throws anything else (`:94-111`).
 - `engine-pin-mismatch` when the running engine falls outside the bundle's
   declared range (`packages/cli/src/law.ts:100-118`).
 - A path that escapes the vault throws in the shell's resolvers and is refused
