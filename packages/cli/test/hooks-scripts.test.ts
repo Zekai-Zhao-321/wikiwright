@@ -11,7 +11,7 @@
 // the scripts to that documented shape. They do not verify what a host does
 // with it: no host runs here.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   appendFileSync,
   cpSync,
@@ -63,6 +63,37 @@ function contextOf(stdout: string, event: string): string {
   assert.equal(specific["hookEventName"], event);
   assert.equal(typeof specific["additionalContext"], "string");
   return String(specific["additionalContext"]);
+}
+
+/** The engine itself, over the hooks' registry and trust store. */
+function cli(argv: readonly string[]): { status: number; stdout: string } {
+  const r = spawnSync(process.execPath, [CLI, ...argv], {
+    encoding: "utf8",
+    env: { ...process.env, ...env },
+  });
+  return { status: r.status ?? -1, stdout: r.stdout ?? "" };
+}
+
+function git(cwd: string, ...args: string[]): string {
+  return execFileSync(
+    "git",
+    ["-c", "user.name=T", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false", ...args],
+    { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+}
+
+/** A copy of the orchard handbook under the test's directory, connected as `name`. */
+function connectedCopy(name: string): string {
+  const root = join(tmp, name);
+  cpSync(join(HANDBOOKS, "orchard"), root, { recursive: true });
+  const r = cli(["bundles", "add", root, "--name", name]);
+  assert.equal(r.status, 0, r.stdout);
+  return root;
+}
+
+/** A page with one fix-routed finding: its Notes heading one level too deep. */
+function withDeepNotes(text: string): string {
+  return text.replace("## Notes", "### Notes");
 }
 
 function edited(path: string): string {
@@ -267,5 +298,101 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
         }
       }
     }
+  });
+
+  it("an edit a transition law governs names the pass not judged here; the staged gate refuses it", () => {
+    // The page's type declares an append-only body. A page linted alone has no
+    // base, so the lint cannot judge the law, and says so in `unevaluated`.
+    const root = join(tmp, "ledger");
+    cpSync(join(HANDBOOKS, "orchard"), root, { recursive: true });
+    const constitution = join(root, "config", "constitution.json");
+    const law = JSON.parse(readFileSync(constitution, "utf8")) as {
+      types: Record<string, Record<string, unknown>>;
+    };
+    const type = law.types["procedure-page"];
+    assert.ok(type !== undefined);
+    type["body"] = { lifecycle: "append-only" };
+    writeFileSync(constitution, `${JSON.stringify(law, null, 2)}\n`);
+    assert.equal(cli(["check", "--write", "--root", root]).status, 0);
+    git(root, "init", "-q");
+    git(root, "add", "-A");
+    git(root, "commit", "-q", "-m", "baseline");
+    assert.equal(cli(["bundles", "add", root, "--name", "ledger"]).status, 0);
+
+    const page = join(root, "wiki", "pruning-roses.md");
+    writeFileSync(
+      page,
+      readFileSync(page, "utf8").replace(
+        "Remove dead, diseased and damaged stems",
+        "Remove dead and damaged stems",
+      ),
+    );
+    const text = contextOf(hook(POST_EDIT, edited(page)).stdout, "PostToolUse");
+    const lines = text.split("\n");
+    assert.deepEqual(lines.slice(1), [
+      "0 finding(s) on the page:",
+      "not evaluated here: body-append-only (1 declaration(s), no-base)",
+      "The staged gate judges these against HEAD, so an edit to an append-only body can pass here and be refused at commit.",
+      "This judged the working-tree page against the bundle's current law; it is not the staged gate's verdict.",
+    ]);
+
+    // What the hook said the gate would do, it does.
+    git(root, "add", "-A");
+    const staged = cli(["lint", "--staged", "--root", root]);
+    assert.equal(staged.status, 5, staged.stdout);
+    const envelope = JSON.parse(staged.stdout) as { data: { findings: { ruleId: string }[] } };
+    assert.deepEqual(
+      envelope.data.findings.map((f) => f.ruleId),
+      ["body-append-only"],
+    );
+  });
+
+  it("a fix on a page whose path has a space is one argument, and replays as printed", () => {
+    const root = connectedCopy("spaced");
+    const page = join(root, "wiki", "pruning roses.md");
+    writeFileSync(
+      page,
+      withDeepNotes(readFileSync(join(root, "wiki", "pruning-roses.md"), "utf8")),
+    );
+    const text = contextOf(hook(POST_EDIT, edited(page)).stdout, "PostToolUse");
+    const suggestion = /— fix: (wikiwright .*)$/mu.exec(text)?.[1];
+    assert.equal(
+      suggestion,
+      "wikiwright fix --rule section-depth --path 'wiki/pruning roses.md' --line 24 --expect 1 --bundle spaced",
+    );
+    // Replayed through a POSIX shell exactly as printed, the engine in place of
+    // the command name: the dry run plans the one fix on the one page.
+    const command = `${suggestion.replace(/^wikiwright /u, `'${process.execPath}' '${CLI}' `)} --dry-run`;
+    const r = spawnSync("sh", ["-c", command], {
+      cwd: tmp,
+      encoding: "utf8",
+      env: { ...process.env, ...env },
+    });
+    assert.equal(r.status, 0, `${command}\n${r.stdout}${r.stderr}`);
+    const planned = JSON.parse(r.stdout) as { ok: boolean; data: { ops: { path?: string }[] } };
+    assert.equal(planned.ok, true);
+    assert.deepEqual(
+      planned.data.ops.map((op) => op.path),
+      ["wiki/pruning roses.md"],
+    );
+  });
+
+  it("an engine.json that starts with a byte order mark still routes the page", () => {
+    const root = connectedCopy("marked");
+    const engine = join(root, "config", "engine.json");
+    writeFileSync(engine, `\ufeff${readFileSync(engine, "utf8")}`);
+    const page = join(root, "wiki", "pruning-roses.md");
+    writeFileSync(page, withDeepNotes(readFileSync(page, "utf8")));
+    // The hook's own stdin may carry one too.
+    const text = contextOf(hook(POST_EDIT, `\ufeff${edited(page)}`).stdout, "PostToolUse");
+    assert.match(
+      text,
+      /^wikiwright: wiki\/pruning-roses\.md is a page of the bundle "marked"\.$/mu,
+    );
+    assert.match(text, /^1 finding\(s\) on the page:$/mu);
+    assert.match(
+      text,
+      /^- section-depth line 24: .* — fix: wikiwright fix --rule section-depth /mu,
+    );
   });
 });

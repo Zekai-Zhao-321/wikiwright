@@ -151,13 +151,19 @@ object, a missing binary or any error, it prints nothing.
   when no bundle is connected.
 - `hooks/post-edit.mjs` takes `tool_input.file_path` and finds the connection
   whose root holds the file and whose content roots, read from
-  `config/engine.json`, hold its path; a file outside every connection gets
-  nothing. For an `installed` connection it says the page is in a read-only
-  copy and where a change goes. Otherwise it runs `lint --page` on the page:
-  under a role that may not lint, it says the session may not write the
-  bundle; else it names the finding count and each finding's rule, line,
-  message and route, and says that this judged the working-tree page against
-  the current law and is not the staged gate's verdict.
+  `config/engine.json` (a leading byte order mark ignored, as the engine
+  ignores it, here and on stdin), hold its path; a file outside every
+  connection gets nothing. For an `installed` connection it says the page is
+  in a read-only copy and where a change goes. Otherwise it runs
+  `lint --page` on the page: under a role that may not lint, it says the
+  session may not write the bundle; else it names the finding count and each
+  finding's rule, line, message and route, a fix's argv quoted for a POSIX
+  shell so a path with a space stays one argument; then, one line each, the
+  passes the lint's `unevaluated` names — `not evaluated here: <pass> (<count>
+  declaration(s), <reason>)` — which the staged gate judges against HEAD, so
+  an edit to an append-only body can pass here and be refused at commit; and
+  says that this judged the working-tree page against the current law and is
+  not the staged gate's verdict.
 
 `hooks-scripts.test.ts` holds the scripts to the input and output shapes the
 Claude Code hooks reference documents. Host behaviour — whether and how a host

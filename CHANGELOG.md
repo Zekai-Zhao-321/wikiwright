@@ -72,9 +72,13 @@ version` prints the engine version and the commit a binary was built from.
   a connected bundle's page the other says what the edit means there: an
   installed copy is read only and its changes go to its feedback
   destination; a session whose role may not write is told so; otherwise the
-  page's findings, each with its route. Both print nothing when there is
-  nothing to say or anything goes wrong, and exit 0. They are tested against
-  the documented hook input and output; host behaviour is not verified here.
+  page's findings, each with its route, a fix's argv quoted for a POSIX
+  shell, and each pass the page could not be judged by without a base, which
+  the staged gate judges against HEAD. The content roots are read from
+  `engine.json` with a leading byte order mark ignored, as the engine ignores
+  it. Both print nothing when there is nothing to say or anything goes wrong,
+  and exit 0. They are tested against the documented hook input and output;
+  host behaviour is not verified here.
 
 - `trust list --all` prints every record in this machine's store: its
   identity, its scope, the path it is keyed by, its digest, when it was
