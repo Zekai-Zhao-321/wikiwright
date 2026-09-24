@@ -118,7 +118,18 @@ export const typeCommand: CommandSpec = {
       // skeleton and its seeds sit beside the fields, so the two verbs agree.
       const template =
         args.flags["brief"] === true ? templateOf(args.root, vault, effective) : undefined;
+      const sectionLinesOf = sectionLines(effective, template?.body);
       return ok("type", {
+        // docs/cli.md §type: under --brief the brief, the skeleton and the
+        // section lines lead the data, so the first screen of it is what a
+        // writer reads before writing; the key order is the only change.
+        ...(args.flags["brief"] !== true
+          ? {}
+          : {
+              brief: briefLines(vault, effective),
+              skeleton: skeletonOf(effective, template?.body).replaceAll("{{ title }}", "<title>"),
+              section_lines: sectionLinesOf,
+            }),
         ...effective,
         abstract: effective.abstract === true,
         fragments: effective.fragments.map((f) => ({
@@ -136,14 +147,10 @@ export const typeCommand: CommandSpec = {
         }),
         // docs/constitution.md §Sections: one line per section — the contract an agent
         // reads before writing IS the contract the parser enforces.
-        section_lines: sectionLines(effective, template?.body),
+        section_lines: sectionLinesOf,
         ...(args.flags["brief"] !== true
           ? {}
           : {
-              brief: briefLines(vault, effective),
-              // The skeleton `new` writes — the template's body merged with the
-              // required headings — with the title left to the caller.
-              skeleton: skeletonOf(effective, template?.body).replaceAll("{{ title }}", "<title>"),
               // docs/constitution.md §Vocabularies: the vault's LIVE counts for every vocabulary
               // this type's sections read — never a literal name.
               observed: observedFor(vault, args.root, [...readVocabularies]),

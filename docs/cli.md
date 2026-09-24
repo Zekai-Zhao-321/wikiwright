@@ -232,7 +232,11 @@ What the registry rows below do not say.
   and a list whatever the type declares for it: `--set tags='["a", "b"]'`,
   merged after the folder tags the destination seeds. A refused skeleton
   carries `preview`, the draft that was judged, as the accepted dry run does.
-  The template's frontmatter seeds
+  Where `config/engine.json` derives the title from the basename
+  (`field_sources.title: "basename"`) and `<title>` is the destination's
+  basename, the skeleton writes no `title:`, which would only repeat the
+  name; the H1 still carries it. A `<title>` that differs from the name is
+  written, since dropping it would change the page's title. The template's frontmatter seeds
   what `--set` does not name: a non-empty value under a key the type declares
   is written into that field (`origin: .` on the code kit's anchored
   templates); an empty value (`""`, `[]`, `null`) is a stub left standing;
@@ -381,10 +385,12 @@ What the registry rows below do not say.
   in `data`.
 - **`type show <name> [--brief]`**, **`type list`** are the introspection
   surface for types; see [concepts.md](concepts.md). Under `--brief` the
+  data leads with `brief`, `skeleton` and `section_lines`, before `fields`, so
+  the first screen of it is what a writer reads before writing; the
   `section_lines` follow the template's order where the type has one, as
   the `skeleton` beside them does; without it they follow the declaration.
-- **`vocabulary show <name> [--label] [--target]`** prints each entry's four
-  shared properties, its module's own `properties` verbatim, and
+- **`vocabulary show <name> [--label] [--target]`** prints `names`, every
+  entry name sorted, then each entry's four shared properties, its module's own `properties` verbatim, and
   `references`: for each dotted path the registering module declared in
   `typeRefs` or `tagRefs`, the names it holds and the concrete types they
   resolve to in this vault. `--target <type>` is the inbound view of any

@@ -134,6 +134,12 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- `type show --brief` leads its data with `brief`, `skeleton` and
+  `section_lines`, before `fields`; key order only. `new` writes no `title:`
+  where `field_sources.title` is `basename` and the title given is the
+  destination's name, which the line would only repeat; the H1 keeps it, and
+  a title that differs from the name is still written. `vocabulary show` carries `names`, every
+  entry name sorted.
 - `write --replace-core` supersedes a claim on its own date: the History
   line closes it `valid D→D, superseded D`, a zero-length interval, where the
   verb refused because `D→D-1` would run backwards, and an author bent the

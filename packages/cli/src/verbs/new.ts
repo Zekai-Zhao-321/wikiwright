@@ -8,6 +8,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import {
+  basenameOf,
   codeUnitCompare,
   type EffectiveType,
   folderSegmentsFor,
@@ -351,7 +352,15 @@ export const newCommand: CommandSpec = {
     const frontmatter = [
       "---",
       `type: ${typeName}`,
-      `title: ${JSON.stringify(title)}`,
+      // docs/cli.md §new: where the bundle derives the title from the basename
+      // and the title given IS the basename, `title:` would only repeat the
+      // name, so it is not written; the H1 still carries it. A title that
+      // differs from the name is the caller's and is kept: dropping it would
+      // change the page's title, and the identity checks with it.
+      ...(vault.engine.field_sources?.title === "basename" &&
+      title.normalize("NFC") === basenameOf(dest.normalize("NFC"))
+        ? []
+        : [`title: ${JSON.stringify(title)}`]),
       // An explicit empty description would shadow a declared lede
       // derivation forever — stub it only when nothing derives it.
       ...(set.has("description")

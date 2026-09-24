@@ -391,6 +391,8 @@ export const vocabularyCommand: CommandSpec = {
       name,
       mode: view.vocabulary.mode,
       entries: view.vocabulary.entries.size,
+      // The entry names alone, sorted: "which labels exist" in one read.
+      names: [...view.vocabulary.entries.values()].map((e) => e.name).sort(codeUnitCompare),
       form: view.vocabulary.form ?? null,
       ...(notes.length === 0 ? {} : { note: notes.join(" \u00b7 ") }),
       bound_by: rows,
