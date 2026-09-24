@@ -141,6 +141,41 @@ function round6(x: number): number {
   return Math.round(x * 1e6) / 1e6;
 }
 
+/**
+ * The filter flags as one predicate over a page: `--type` matches the page's
+ * type, any ancestor or the archetype through its chain (D11), `--tag` a tag
+ * it carries, `--title-contains` a substring of its resolved title, each
+ * compared by identity. Page search and item search keep the same pages.
+ */
+export function pageFilter(
+  filters: SearchFilters,
+  options?: SearchOptions,
+): (page: NamedPage) => boolean {
+  const nFilterType = filters.type === undefined ? undefined : normalizeIdentity(filters.type);
+  const nFilterTag = filters.tag === undefined ? undefined : normalizeIdentity(filters.tag);
+  const nTitleContains =
+    filters.titleContains === undefined ? undefined : normalizeIdentity(filters.titleContains);
+  return (page) => {
+    const fm = page.doc.frontmatter.value;
+    const type = str(fm["type"]);
+    if (nFilterType !== undefined) {
+      const chain = type === null ? [] : (options?.typeChains?.get(type) ?? [type]);
+      if (!chain.some((t) => normalizeIdentity(t) === nFilterType)) return false;
+    }
+    if (nFilterTag !== undefined) {
+      const tags = Array.isArray(fm["tags"])
+        ? fm["tags"].filter((t): t is string => typeof t === "string")
+        : [];
+      if (!tags.some((t) => normalizeIdentity(t) === nFilterTag)) return false;
+    }
+    if (nTitleContains !== undefined) {
+      const title = resolveTitle(page.doc, page.path, options?.fieldSources);
+      if (title === null || !normalizeIdentity(title).includes(nTitleContains)) return false;
+    }
+    return true;
+  };
+}
+
 export function searchPages(
   pages: NamedPage[],
   query: string | undefined,
@@ -149,10 +184,7 @@ export function searchPages(
   options?: SearchOptions,
 ): SearchOutcome {
   const q = query === undefined ? undefined : normalizeIdentity(query);
-  const nFilterType = filters.type === undefined ? undefined : normalizeIdentity(filters.type);
-  const nFilterTag = filters.tag === undefined ? undefined : normalizeIdentity(filters.tag);
-  const nTitleContains =
-    filters.titleContains === undefined ? undefined : normalizeIdentity(filters.titleContains);
+  const keeps = pageFilter(filters, options);
 
   // The lexical index carries the corpus statistics AND the normalized page
   // source the `body:phrase` tier compares against, so both are computed once
@@ -175,18 +207,9 @@ export function searchPages(
       ? fm["aliases"].filter((a): a is string => typeof a === "string")
       : [];
 
-    if (nFilterType !== undefined) {
-      // D11: exact type, any ancestor, or the archetype — the chain carries
-      // all three, so one flag serves every altitude.
-      const chain = type === null ? [] : (options?.typeChains?.get(type) ?? [type]);
-      if (!chain.some((t) => normalizeIdentity(t) === nFilterType)) continue;
-    }
-    if (nFilterTag !== undefined && !tags.some((t) => normalizeIdentity(t) === nFilterTag)) {
-      continue;
-    }
-    if (nTitleContains !== undefined) {
-      if (title === null || !normalizeIdentity(title).includes(nTitleContains)) continue;
-    }
+    // D11: exact type, any ancestor, or the archetype — the chain carries all
+    // three, so one flag serves every altitude.
+    if (!keeps(page)) continue;
     kept.push(page);
 
     let score = 0;

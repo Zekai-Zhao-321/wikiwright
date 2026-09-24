@@ -304,7 +304,21 @@ What the registry rows below do not say.
   (name, alias, stem, title) fused with BM25 by reciprocal rank fusion, CJK
   bigram-tokenized. Every answer carries a `coverage` block; `caps.hit` says the
   cap cut the list, and a not-found is only as good as that block. `--near`
-  adds an advisory near-name list that never changes ranks.
+  adds an advisory near-name list that never changes ranks. `--limit` caps the
+  results (20 by default) and `--all` lifts the cap. `--items` ranks grammar
+  items instead of pages: every item the judge would parse — a claim, a
+  relation, an entry — on the pages `--type`, `--tag` and `--title-contains`
+  keep, each with `path`, `line`, `section`, `kind`, `grammar`, `raw`, its
+  `rationale` lines, `matched_in` (`core` when a query term is on the item's
+  own line, `rationale` when it is only under it), `fields` (the grammar's own
+  parse of the item, verbatim: for a claim its `handle`, `category`, `core` and
+  `provenance`, the handle `write --replace-core` takes), `score` and
+  `match_reasons`. The ranking is BM25 over the item's line and its rationale
+  lines (`lexical:bm25`), with statistics from every walked page's items; an
+  item whose text holds a query term only inside a longer word follows,
+  unranked, as a line search would find it (`text:contains`). The identity
+  ladder does not apply, a query is required, and `--near` is refused beside
+  it. The coverage block counts `pages_considered` and `items_considered`.
 - **`read <page> [--section <heading>] [--budget <bytes>]`** returns one page's
   sections, verbatim. `<page>` is tried, in order, as a vault path under a
   content root, a basename or an alias through the name index, and a title
@@ -910,13 +924,16 @@ Role: `consumer`. Writes: no.
 | `--tag <value>` | restrict to pages carrying a tag |
 | `--title-contains <value>` | restrict by title substring |
 | `--limit <value>` | result cap (default 20) |
+| `--all` | lift the result cap |
 | `--near` | add the advisory name:near candidate list (never changes ranks) |
+| `--items` | rank the grammar items themselves — claims, relations, entries — with their line, section and fields |
 
 ```text
 wikiwright search 张伟
 wikiwright search --tag reset
 wikiwright search parser --type subsystem
 wikiwright search "Zhang Wei" --near
+wikiwright search "aphids roses" --items
 ```
 
 ### skills

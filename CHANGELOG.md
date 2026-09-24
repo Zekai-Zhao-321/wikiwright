@@ -66,6 +66,15 @@ version` prints the engine version and the commit a binary was built from.
   once keeps its one address, each of its sections carries `occurrence`, and
   `--section` returns every one of them in page order. A consumer's verb: the
   envelope's bundle block says which bundle every passage came from.
+- `search <query> --items` ranks the grammar items themselves instead of
+  pages: every claim, relation or entry the judge would parse on the pages the
+  filter flags keep, each with its path, line, section, kind, grammar, raw
+  line, rationale lines, whether the match was on the item's line or under it,
+  and the grammar's own fields verbatim — for a claim its handle, category,
+  core and provenance. BM25 ranks over the item's line and its rationale;
+  an item holding a term only inside a longer word follows unranked, as a line
+  search would find it. The coverage block counts the pages and the items
+  considered. `--all` lifts the result cap of either form.
 - A third shipped skill, `wikiwright-consume`: the judgment for using what a
   bundle knows rather than writing it. Choose the bundle and say which one
   every answer came from; read the coherent section, qualifications with

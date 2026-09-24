@@ -199,7 +199,15 @@ export {
   vocabularyNames,
 } from "./registry/index.ts";
 export type { LexicalHit, LexicalIndex } from "./search/bm25.ts";
-export { BM25_B, BM25_K1, buildLexicalIndex, FIELD_BOOST, rankLexical } from "./search/bm25.ts";
+export {
+  BM25_B,
+  BM25_K1,
+  buildLexicalIndex,
+  buildTextIndex,
+  FIELD_BOOST,
+  rankKeys,
+  rankLexical,
+} from "./search/bm25.ts";
 export type {
   SearchBand,
   SearchCoverage,
@@ -207,7 +215,14 @@ export type {
   SearchOutcome,
   SearchResult,
 } from "./search/index.ts";
-export { RRF_K, searchPages } from "./search/index.ts";
+export { pageFilter, RRF_K, searchPages } from "./search/index.ts";
+export type {
+  ItemCandidate,
+  ItemCoverage,
+  ItemOutcome,
+  ItemResult,
+} from "./search/items.ts";
+export { collectItems, searchItems } from "./search/items.ts";
 export type { NearCandidate, NearIndex } from "./search/near.ts";
 export { buildNearIndex, nameFormsOf, nearCandidates, stripQualifier } from "./search/near.ts";
 export { TOKENIZATION_MODE, tokenize } from "./search/tokenize.ts";

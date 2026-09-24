@@ -106,9 +106,9 @@ wikiwright read wiki/pruning-roses.md
 wikiwright schema
 ```
 
-### `search` — before creating anything: search both scripts
+### `search` — before creating anything: search both scripts; `--items` for the claims and relations themselves, to decide add, update or supersede
 
-`wikiwright search [query]` — flags: --type <v> --tag <v> --title-contains <v> --limit <v> --near
+`wikiwright search [query]` — flags: --type <v> --tag <v> --title-contains <v> --limit <v> --all --near --items
 
 ```text
 wikiwright search 张伟
