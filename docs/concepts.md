@@ -446,12 +446,12 @@ A **connection** names a bundle by a short name in this machine's registry,
 `~/.config/wikiwright/bundles.json`: its root, its **kind** — `maintained`, a
 checkout the caller may write to within its role, or `installed`, a copy that
 is read only — where a problem with it is reported, and the page to read
-first. `wikiwright bundles` adds, lists and removes connections, and
-`--bundle <name>` names the target of any verb in place of `--root`. A verb
-that writes the vault or its repository, aimed at an installed copy, is
-refused `bundle-readonly` with where a change goes instead; like the role,
-this is a guardrail on the command line, and `--root` names the same directory
-without it.
+first. `wikiwright bundles` adds, lists and removes connections.
+`--bundle <name>` names the target of any verb in place of `--root` by the
+name of a bundle skill installed in a skill directory (§A copy), found by a
+scan, never a registration. A verb that can write, aimed that way at a copy,
+is refused `bundle-readonly`; like the role, this is a guardrail on the
+command line, and `--root` names the same directory without it.
 
 Every envelope of a verb that reads a vault's law names the bundle it read in
 `metadata.bundle`: its **label** (the root directory's name, not an

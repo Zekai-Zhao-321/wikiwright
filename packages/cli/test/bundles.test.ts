@@ -1,21 +1,17 @@
-// docs/cli.md §bundles: a machine-local registry connects a vault by name, and
-// `--bundle <name>` names the target of any verb in place of `--root`. Listing
-// loads nothing and shows each connection's identity; the registry refuses a
-// taken name and a root connected twice; an installed copy refuses every
-// writing verb before it runs, dry runs included, and says where a change goes.
+// docs/cli.md §bundles: a machine-local registry connects a vault by name.
+// Listing loads nothing and shows each connection's identity; the registry
+// refuses a taken name and a root connected twice. `--bundle` no longer reads
+// it: discovery.test.ts holds the scan that resolves a name.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import {
   cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
-  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -23,8 +19,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { COMMANDS } from "../src/commands.ts";
-import { MACHINE_LOCAL_WRITERS } from "../src/connections.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
@@ -76,10 +70,18 @@ function run(
   env: NodeJS.ProcessEnv,
   input = "",
 ): { status: number; envelope: Envelope } {
+  // HOME is the test's own: nothing here reads a skill directory of the
+  // developer's, whatever a verb scans.
   const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
     cwd,
     encoding: "utf8",
-    env: { ...process.env, ...PINNED_CLOCK, ...env },
+    env: {
+      ...process.env,
+      ...PINNED_CLOCK,
+      HOME: join(tmp, "home"),
+      WIKIWRIGHT_SKILL_DIRS: "",
+      ...env,
+    },
     input,
   });
   assert.equal(typeof r.stdout, "string", `the CLI printed no envelope: ${r.stderr}`);
@@ -124,20 +126,6 @@ function connectBoth(env: NodeJS.ProcessEnv): void {
 
 function rowsOf(envelope: Envelope): Row[] {
   return (envelope.data?.["bundles"] ?? []) as Row[];
-}
-
-/** sha256 over every file under `dir`, so a refused write is proved not to have landed. */
-function treeHash(dir: string): string {
-  const hash = createHash("sha256");
-  const walk = (at: string): void => {
-    for (const entry of readdirSync(at, { encoding: "utf8" }).sort()) {
-      const path = join(at, entry);
-      if (statSync(path).isDirectory()) walk(path);
-      else hash.update(`${path}\0`).update(readFileSync(path));
-    }
-  };
-  walk(dir);
-  return hash.digest("hex");
 }
 
 describe("bundles connects a vault by name (docs/cli.md §bundles)", () => {
@@ -306,7 +294,7 @@ describe("bundles connects a vault by name (docs/cli.md §bundles)", () => {
         env,
       );
       assert.equal(added.status, 0, JSON.stringify(added.envelope));
-      const read = run(tmp, ["read", "wiki/start-here.md", "--bundle", name], {
+      const read = run(tmp, ["read", "wiki/start-here.md", "--root", root], {
         ...env,
         WIKIWRIGHT_ROLE: "consumer",
       });
@@ -366,132 +354,11 @@ describe("bundles connects a vault by name (docs/cli.md §bundles)", () => {
   });
 });
 
-describe("--bundle names the target of any verb (docs/cli.md §bundles)", () => {
-  let env: NodeJS.ProcessEnv = {};
-  before(() => {
-    env = registry("target").env;
-    connectBoth(env);
-  });
-
-  it("resolves a verb against the connection's root, and the envelope says which", () => {
-    const orchard = run(tmp, ["type", "list", "--bundle", "orchard"], env);
-    assert.equal(orchard.status, 0, JSON.stringify(orchard.envelope));
-    assert.equal(orchard.envelope.metadata.bundle?.["label"], "orchard");
-    assert.equal(orchard.envelope.metadata.bundle?.["root"], realpathSync(ORCHARD));
-    const allotment = run(tmp, ["type", "list", "--bundle", "allotment"], env);
-    assert.equal(allotment.status, 0, JSON.stringify(allotment.envelope));
-    assert.equal(allotment.envelope.metadata.bundle?.["label"], "allotment");
-    assert.notEqual(
-      allotment.envelope.metadata.bundle?.["law"],
-      orchard.envelope.metadata.bundle?.["law"],
-      "two handbooks, two laws",
-    );
-  });
-
-  it("--bundle with --root is one target too many", () => {
-    const r = run(tmp, ["type", "list", "--bundle", "orchard", "--root", ORCHARD], env);
-    assert.equal(r.status, 2, JSON.stringify(r.envelope));
-    assert.equal(r.envelope.error?.code, "one-target");
-    assert.equal(r.envelope.metadata.bundle, undefined);
-  });
-
-  it("an unknown name is refused with the names that are connected", () => {
-    const r = run(tmp, ["type", "list", "--bundle", "vineyard"], env);
-    assert.equal(r.status, 3, JSON.stringify(r.envelope));
-    assert.equal(r.envelope.error?.code, "bundle-not-found");
-    assert.deepEqual(r.envelope.error?.details?.["valid_values"], ["allotment", "orchard"]);
-  });
-
-  it("an installed copy refuses every writing verb before it runs, dry runs included", () => {
-    // The writes are attempted against a copy, connected as installed in its
-    // own registry: if the guard ever let one through, it would land here and
-    // not in the shipped fixture.
-    const copy = join(tmp, "installed", "allotment");
-    cpSync(ALLOTMENT, copy, { recursive: true });
-    const own = registry("installed").env;
-    const added = run(
-      tmp,
-      [
-        "bundles",
-        "add",
-        copy,
-        "--name",
-        "allotment",
-        "--kind",
-        "installed",
-        "--feedback",
-        ALLOTMENT_FEEDBACK,
-      ],
-      own,
-    );
-    assert.equal(added.status, 0, JSON.stringify(added.envelope));
-    const before = treeHash(copy);
-    const draft = readFileSync(join(copy, "wiki", "pruning-roses.md"), "utf8");
-    const writes: [string[], string][] = [
-      [["new", "procedure-page", "Mulching", "--dest", "wiki/mulching.md"], ""],
-      [["write", "wiki/pruning-roses.md"], `${draft}\nA line the draft adds.\n`],
-      [["write", "wiki/pruning-roses.md", "--dry-run"], `${draft}\nA line the draft adds.\n`],
-    ];
-    for (const [argv, input] of writes) {
-      const r = run(tmp, [...argv, "--bundle", "allotment"], own, input);
-      assert.equal(r.status, 2, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
-      assert.equal(r.envelope.error?.code, "bundle-readonly");
-      assert.equal(r.envelope.error?.details?.["kind"], "installed");
-      assert.equal(r.envelope.error?.details?.["feedback"], ALLOTMENT_FEEDBACK);
-    }
-    assert.equal(treeHash(copy), before, "a refused write touched the installed copy");
-    // Reading it is what an installed copy is for.
-    const read = run(tmp, ["search", "pruning", "--bundle", "allotment"], own);
-    assert.equal(read.status, 0, JSON.stringify(read.envelope));
-    assert.equal(read.envelope.metadata.bundle?.["label"], "allotment");
-  });
-});
-
-describe("the readonly guard refuses the verbs that write a vault (docs/cli.md §bundles)", () => {
-  let env: NodeJS.ProcessEnv = {};
-  before(() => {
-    // A copy, connected as installed: if the guard ever let a verb through,
-    // what it wrote would land here and not in the shipped fixture.
-    const copy = join(tmp, "guard", "allotment");
-    cpSync(ALLOTMENT, copy, { recursive: true });
-    const r = registry("guard");
-    env = r.env;
-    const added = run(tmp, ["bundles", "add", copy, "--name", "copy", "--kind", "installed"], env);
-    assert.equal(added.status, 0, JSON.stringify(added.envelope));
-  });
-
-  it("every writing verb but this machine's store writer is refused on an installed copy", () => {
-    for (const spec of COMMANDS.filter((c) => c.writes)) {
-      const lead = spec.subcommands === undefined ? [] : [spec.subcommands[0] ?? ""];
-      const r = run(tmp, [spec.name, ...lead, "--bundle", "copy"], env);
-      if (MACHINE_LOCAL_WRITERS.has(spec.name)) {
-        assert.notEqual(r.envelope.error?.code, "bundle-readonly", spec.name);
-      } else {
-        assert.equal(
-          r.envelope.error?.code,
-          "bundle-readonly",
-          `${spec.name}: ${JSON.stringify(r.envelope)}`,
-        );
-      }
-    }
-  });
-
-  it("bundles answers over an installed copy: its write is this machine's registry", () => {
-    const r = run(tmp, ["bundles", "list", "--bundle", "copy"], env);
-    assert.equal(r.status, 0, JSON.stringify(r.envelope));
-    const refused = run(tmp, ["new", "procedure-page", "Mulching", "--bundle", "copy"], env);
-    assert.equal(refused.envelope.error?.code, "bundle-readonly");
-  });
-});
-
 describe("a machine-local store that does not parse is a named refusal (docs/cli.md §Exit codes)", () => {
   it("a bundles registry of junk, or with a record of a bad kind, is bundles-registry-malformed", () => {
     const { file, env } = registry("malformed");
     writeFileSync(file, "this is not a registry\n");
-    for (const argv of [
-      ["bundles", "list"],
-      ["type", "list", "--bundle", "orchard"],
-    ]) {
+    for (const argv of [["bundles", "list"]]) {
       const r = run(tmp, argv, env);
       assert.equal(r.status, 4, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
       assert.equal(r.envelope.error?.code, "bundles-registry-malformed");
@@ -537,10 +404,7 @@ describe("a machine-local store that does not parse is a named refusal (docs/cli
     );
     for (const dir of ["alpha", "beta"]) {
       const cwd = join(tmp, "relative-root", dir);
-      for (const argv of [
-        ["read", "wiki/start-here.md", "--bundle", "handbook"],
-        ["bundles", "list"],
-      ]) {
+      for (const argv of [["bundles", "list"]]) {
         const r = run(cwd, argv, env);
         assert.equal(r.status, 4, `${dir}: ${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
         assert.equal(r.envelope.error?.code, "bundles-registry-malformed");
@@ -582,10 +446,7 @@ describe("a machine-local store that does not parse is a named refusal (docs/cli
         file,
         `${JSON.stringify({ schema: "wikiwright/bundles", schema_version: 1, bundles })}\n`,
       );
-      for (const argv of [
-        ["bundles", "list"],
-        ["read", "wiki/start-here.md", "--bundle", "orchard"],
-      ]) {
+      for (const argv of [["bundles", "list"]]) {
         const r = run(tmp, argv, env);
         assert.equal(r.status, 4, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
         assert.equal(r.envelope.error?.code, "bundles-registry-malformed");

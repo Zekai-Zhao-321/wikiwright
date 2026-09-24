@@ -34,7 +34,7 @@ export const GLOBAL_FLAGS: readonly FlagSpec[] = [
     name: "bundle",
     type: "string",
     summary:
-      "a connected bundle's name (see `bundles`): its root is the target, in place of --root",
+      "the name of a bundle skill installed in a skill directory: the copy found is the target, in place of --root",
   },
   // Every verb answers --help, so the global-flag law puts it here — the one
   // constant the parser is built from cannot omit a flag the binary accepts.

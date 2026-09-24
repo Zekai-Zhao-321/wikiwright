@@ -207,6 +207,8 @@ export {
   loadEngineConfig,
   RESERVED_SKILL_PREFIX,
   resolveVocabularyEntry,
+  SKILL_NAME,
+  SKILL_NAME_MAX,
   tagByName,
   tagsOf,
   vocabularyNames,

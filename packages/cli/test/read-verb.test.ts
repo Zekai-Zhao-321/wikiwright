@@ -5,15 +5,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import {
-  cpSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -339,21 +331,8 @@ describe("read returns a page's sections with attribution (docs/cli.md §read)",
   });
 
   it("one path in two handbooks: two digests, two bundles, told apart by the envelope", () => {
-    const registry = join(tmp, "registry");
-    mkdirSync(registry, { recursive: true });
-    const env = { WIKIWRIGHT_BUNDLES_FILE: join(registry, "bundles.json") };
-    for (const [root, name] of [
-      [ORCHARD, "orchard"],
-      [ALLOTMENT, "allotment"],
-    ] as const) {
-      const r = spawnSync(CLI_RUNTIME, [CLI, "bundles", "add", root, "--name", name], {
-        encoding: "utf8",
-        env: { ...process.env, ...env },
-      });
-      assert.equal(r.status, 0, r.stdout);
-    }
-    const orchard = read([PAGE, "--bundle", "orchard"], env);
-    const allotment = read([PAGE, "--bundle", "allotment"], env);
+    const orchard = read([PAGE, "--root", ORCHARD]);
+    const allotment = read([PAGE, "--root", ALLOTMENT]);
     assert.equal(orchard.status, 0, JSON.stringify(orchard.envelope));
     assert.equal(allotment.status, 0, JSON.stringify(allotment.envelope));
     assert.equal(orchard.envelope.data?.page["path"], allotment.envelope.data?.page["path"]);

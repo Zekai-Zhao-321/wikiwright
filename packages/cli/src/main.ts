@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // docs/cli.md §The envelope (stdout = one envelope; stderr = UX; parseArgs
 // strict under the command registry; generated help) · JSON-only v1.
-import { codeUnitCompare } from "@wikiwright/core";
+import { isSkillName, SKILL_NAME, SKILL_NAME_MAX } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
-import { MACHINE_LOCAL_WRITERS, readConnections } from "./connections.ts";
+import { MACHINE_LOCAL_WRITERS } from "./connections.ts";
+import { resolveBundle } from "./discovery.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
 import { GitInconsistentRead, GitShortRead } from "./git.ts";
 import { MARKER_PATH, markerAt } from "./marker.ts";
@@ -64,7 +65,11 @@ function helpResult(): CommandResult {
  * it resolves outside) is left off rather than half-stated; the reads that
  * refuse it are the same ones every verb makes.
  */
-function withBundle(result: CommandResult, root: string): CommandResult {
+function withBundle(
+  result: CommandResult,
+  root: string,
+  shadowed: readonly { root: string; tier: string }[],
+): CommandResult {
   let bundle: BundleIdentity | undefined;
   try {
     bundle = bundleIdentity(root);
@@ -72,11 +77,15 @@ function withBundle(result: CommandResult, root: string): CommandResult {
     return result;
   }
   if (bundle === undefined) return result;
+  // docs/cli.md §bundles: the copies of the same bundle a nearer one shadowed.
+  if (shadowed.length > 0) bundle = { ...bundle, shadowed: [...shadowed] };
   const metadata = { ...result.envelope.metadata, bundle };
   return { ...result, envelope: { ...result.envelope, metadata } };
 }
 
-type Target = { ok: true; args: CommandArgs } | { ok: false; result: CommandResult };
+type Target =
+  | { ok: true; args: CommandArgs; shadowed: { root: string; tier: string }[] }
+  | { ok: false; result: CommandResult };
 
 /**
  * docs/cli.md §Exit codes: what a thrown error becomes. A machine-local store
@@ -112,50 +121,85 @@ function thrown(command: string, e: unknown): CommandResult {
 }
 
 /**
- * docs/cli.md §bundles: `--bundle <name>` names the target by a connection in
- * this machine's registry, resolved here, before any module loads or the verb
- * runs, into the root `--root` would have named. Three refusals come first, each
- * before anything is read of the bundle: both flags at once (`one-target`), a
- * name no connection carries (`bundle-not-found`), and a verb that can write
- * the vault or its repository aimed at an installed copy (`bundle-readonly`,
- * `--dry-run` included, since a dry run of a forbidden write is still a
- * forbidden write). `bundles` writes only this machine's registry
- * (`MACHINE_LOCAL_WRITERS`), so it is answered: an exemption by verb, since
- * where that store lies is the environment's to say. The refusal names where
- * a change to that copy goes instead. It is a guardrail on this CLI, not
- * filesystem isolation: `--root` names the same directory and is not refused.
+ * docs/cli.md §bundles: `--bundle <name>` names the target by the name of a
+ * bundle skill installed in the skill directories (`discovery.ts`), resolved
+ * here, before any module loads or the verb runs, into the root `--root` would
+ * have named. Each refusal comes before anything of the bundle is read: both
+ * flags at once (`one-target`), a name outside the skill grammar
+ * (`bundle-name-invalid`), a name nothing answers (`bundle-not-found`, with the
+ * directories searched and the names the scan saw), and a name two different
+ * bundles answer (`bundle-ambiguous`, with each candidate). A found copy is an
+ * installed copy, read only: a verb that can write it is refused
+ * (`bundle-readonly`, `--dry-run` included), except `bundles`, whose write is
+ * this machine's registry (`MACHINE_LOCAL_WRITERS`).
  */
 function targetOf(spec: CommandSpec, args: CommandArgs): Target {
   const name = args.flags["bundle"];
-  if (typeof name !== "string") return { ok: true, args };
+  if (typeof name !== "string") return { ok: true, args, shadowed: [] };
   const root = args.flags["root"];
   if (typeof root === "string") {
     return {
       ok: false,
       result: fail(spec.name, "usage", "one-target", "--bundle and --root both name the target", {
         details: { bundle: name, root },
-        hint: "pass one: --bundle names a connected bundle, --root names a directory",
+        hint: "pass one: --bundle names an installed bundle skill, --root names a directory",
       }),
     };
   }
-  const store = readConnections();
-  const connection = store.bundles.find((b) => b.name === name);
-  if (connection === undefined) {
+  if (!isSkillName(name)) {
+    return {
+      ok: false,
+      result: fail(spec.name, "usage", "bundle-name-invalid", `"${name}" is not a bundle name`, {
+        details: { name, pattern: SKILL_NAME.source, max_length: SKILL_NAME_MAX },
+        hint: "a bundle is named as its skill is: lower-case letters and digits in hyphen-separated runs, at most 64 characters",
+      }),
+    };
+  }
+  const resolution = resolveBundle(name);
+  const skipped = resolution.skipped.map(({ root: at, tier, reason }) => ({
+    root: at,
+    tier,
+    reason,
+  }));
+  if (resolution.kind === "none") {
     return {
       ok: false,
       result: fail(
         spec.name,
         "not_found",
         "bundle-not-found",
-        `no bundle is connected as "${name}"`,
+        `no bundle skill named "${name}" is installed in the skill directories`,
         {
-          details: { valid_values: store.bundles.map((b) => b.name).sort(codeUnitCompare) },
-          hint: "`bundles list` names every connection on this machine",
+          details: { searched: resolution.searched, names: resolution.names, skipped },
+          hint: "details.names are the bundle skills the scan saw; --root names a directory the scan does not reach",
         },
       ),
     };
   }
-  if (connection.kind === "installed" && spec.writes && !MACHINE_LOCAL_WRITERS.has(spec.name)) {
+  if (resolution.kind === "ambiguous") {
+    return {
+      ok: false,
+      result: fail(
+        spec.name,
+        "usage",
+        "bundle-ambiguous",
+        `${resolution.candidates.length} different bundles are installed as "${name}"`,
+        {
+          details: {
+            candidates: resolution.candidates.map((c) => ({
+              root: c.root,
+              tier: c.tier,
+              repository: c.marker.source.repository,
+            })),
+            skipped,
+          },
+          hint: "name the copy you mean with --root <one of details.candidates' roots>",
+        },
+      ),
+    };
+  }
+  const chosen = resolution.chosen;
+  if (spec.writes && !MACHINE_LOCAL_WRITERS.has(spec.name)) {
     return {
       ok: false,
       result: fail(
@@ -164,16 +208,17 @@ function targetOf(spec: CommandSpec, args: CommandArgs): Target {
         "bundle-readonly",
         `"${name}" is an installed copy, read only, and "${spec.name}" can write`,
         {
-          details: { bundle: name, kind: connection.kind, feedback: connection.feedback },
-          hint:
-            connection.feedback === null
-              ? "an installed copy is not changed in place; report the change to whoever maintains the bundle"
-              : `an installed copy is not changed in place; report the change as details.feedback says: ${connection.feedback}`,
+          details: { bundle: name, root: chosen.root },
+          hint: "an installed copy is not changed in place; its SKILL.md says where a problem with it is reported",
         },
       ),
     };
   }
-  return { ok: true, args: { ...args, root: connection.root } };
+  return {
+    ok: true,
+    args: { ...args, root: chosen.root },
+    shadowed: resolution.shadowed.map((c) => ({ root: c.root, tier: c.tier })),
+  };
 }
 
 async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandResult> {
@@ -186,7 +231,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
     return thrown(spec.name, e);
   }
   if (!target.ok) return target.result;
-  const { args } = target;
+  const { args, shadowed } = target;
   // docs/cli.md §The envelope: a root that carries a marker is a copy, and a
   // copy is read under the identity its marker gives it. A marker that is not
   // one is refused before any module preloads or the verb reads a page, as a
@@ -225,7 +270,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
   }
   // The same switch decides it: a verb that reads the vault's law names the
   // bundle it read, and one that answers about the engine names none.
-  return spec.needsVaultModules ? withBundle(result, args.root) : result;
+  return spec.needsVaultModules ? withBundle(result, args.root, shadowed) : result;
 }
 
 // The conventional spellings reach the `version` verb — one

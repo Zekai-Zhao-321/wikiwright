@@ -37,6 +37,8 @@ export {
   isSkillName,
   loadEngineConfig,
   RESERVED_SKILL_PREFIX,
+  SKILL_NAME,
+  SKILL_NAME_MAX,
 } from "./engine.ts";
 export type {
   Attributed,

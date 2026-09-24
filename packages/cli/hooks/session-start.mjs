@@ -49,7 +49,7 @@ function main() {
       ? "Re-establishing the connected wikiwright bundles from their current state:"
       : "Connected wikiwright bundles:",
     ...present.map(describe),
-    "Every wikiwright command takes --bundle <name> or --root <dir>; `wikiwright brief --bundle <name>` prints that bundle's brief for the role this session declares in WIKIWRIGHT_ROLE, the writer's when it declares none.",
+    "Every wikiwright command takes --root <dir>, or --bundle <name> for a bundle skill installed in a skill directory; `wikiwright brief --root <dir>` prints that bundle's brief for the role this session declares in WIKIWRIGHT_ROLE, the writer's when it declares none.",
   ];
   process.stdout.write(
     `${JSON.stringify({

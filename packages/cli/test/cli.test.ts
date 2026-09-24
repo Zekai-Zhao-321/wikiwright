@@ -195,7 +195,7 @@ describe("schema declares the global flags the parser accepts (docs/cli.md §sch
         name: "bundle",
         type: "string",
         summary:
-          "a connected bundle's name (see `bundles`): its root is the target, in place of --root",
+          "the name of a bundle skill installed in a skill directory: the copy found is the target, in place of --root",
       },
       {
         name: "help",

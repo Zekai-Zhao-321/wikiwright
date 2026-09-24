@@ -19,6 +19,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   symlinkSync,
@@ -166,7 +167,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
       lines[2] ?? "",
       /^- orchard \(maintained\): orchard at no commit, no repository; read first: wiki\/start-here\.md$/u,
     );
-    assert.match(lines[3] ?? "", /--bundle <name> or --root <dir>/u);
+    assert.match(lines[3] ?? "", /--root <dir>, or --bundle <name> for a bundle skill/u);
     assert.equal(lines.length, 4);
     // Context names bundles; it never carries a page's words.
     assert.doesNotMatch(r.stdout, /outward-facing bud|How to use this handbook/u);
@@ -369,7 +370,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     const suggestion = /— fix: (wikiwright .*)$/mu.exec(text)?.[1];
     assert.equal(
       suggestion,
-      "wikiwright fix --rule section-depth --path 'wiki/pruning roses.md' --line 24 --expect 1 --bundle spaced",
+      `wikiwright fix --rule section-depth --path 'wiki/pruning roses.md' --line 24 --expect 1 --root ${realpathSync(root)}`,
     );
     // Replayed through a POSIX shell exactly as printed, the engine in place of
     // the command name: the dry run plans the one fix on the one page.
@@ -429,7 +430,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     );
     assert.match(
       text,
-      /^- section-depth line 24: .* --path wiki\/pruning-roses\.md --line 24 --expect 1 --bundle linked$/mu,
+      /^- section-depth line 24: .* --path wiki\/pruning-roses\.md --line 24 --expect 1 --root \S+$/mu,
     );
     // The archive file itself is under no content root: nothing to say.
     assert.equal(hook(POST_EDIT, edited(target)).stdout, "");
@@ -486,7 +487,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     );
     assert.match(
       text,
-      /^- section-depth line 24: .* --path wiki\/pruning-roses\.md --line 24 --expect 1 --bundle composed$/mu,
+      /^- section-depth line 24: .* --path wiki\/pruning-roses\.md --line 24 --expect 1 --root \S+$/mu,
     );
     // The same page through the root's own path, and through the alias under
     // archive/, which no content root names.

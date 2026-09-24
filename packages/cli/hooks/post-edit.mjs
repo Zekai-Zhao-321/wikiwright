@@ -95,9 +95,11 @@ function shellWord(arg) {
   return /^[A-Za-z0-9_./:=@%+,-]+$/u.test(word) ? word : `'${word.replaceAll("'", "'\\''")}'`;
 }
 
-function routeOf(finding, name) {
+function routeOf(finding, root) {
   if (Array.isArray(finding.fix?.argv)) {
-    const argv = [...finding.fix.argv, "--bundle", name].map(shellWord).join(" ");
+    // `--root`, not `--bundle`: a name resolves to an installed copy, which
+    // refuses a write, and this is the bundle's own checkout.
+    const argv = [...finding.fix.argv, "--root", root].map(shellWord).join(" ");
     return ` — fix: wikiwright ${argv}`;
   }
   if (typeof finding.queue === "string") return ` — queue: ${finding.queue}`;
@@ -138,7 +140,7 @@ function main() {
       lines.push(`${findings.length} finding(s) on the page:`);
       for (const f of findings) {
         const line = typeof f.line === "number" ? ` line ${f.line}` : "";
-        lines.push(`- ${f.ruleId}${line}: ${f.message}${routeOf(f, row.name)}`);
+        lines.push(`- ${f.ruleId}${line}: ${f.message}${routeOf(f, row.realpath)}`);
       }
       // A page linted alone has no base, so a transition law — an append-only
       // body, an append-only ledger — is not judged here. The lint names each

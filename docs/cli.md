@@ -175,7 +175,8 @@ the report it always writes.
 | `WIKIWRIGHT_ROLE` | the shell, before parsing; `brief`, as its default `--role` | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
 | `WIKIWRIGHT_TODAY` | `write`, `new`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
-| `WIKIWRIGHT_BUNDLES_FILE` | `bundles`, `--bundle` | the path of the machine-local bundles registry (default `~/.config/wikiwright/bundles.json`); a relative path is resolved against the working directory |
+| `WIKIWRIGHT_SKILL_DIRS` | `--bundle` | more skill directories to probe after the project's and the user's, colon-separated, in order |
+| `WIKIWRIGHT_BUNDLES_FILE` | `bundles` | the path of the machine-local bundles registry (default `~/.config/wikiwright/bundles.json`); a relative path is resolved against the working directory |
 
 ## The plugin and its hooks
 
@@ -193,7 +194,8 @@ object, a missing binary or any error, it prints nothing.
 - `hooks/session-start.mjs` runs `bundles list` and, when a connected bundle
   is present, names each one: its name, kind, label, head (or `no commit`),
   whether it is dirty, and the page to read first where the connection sets
-  one; then that every command takes `--bundle <name>` or `--root <dir>` and
+  one; then that every command takes `--root <dir>`, or `--bundle <name>` for
+  a bundle skill installed in a skill directory, and
   that the brief prints for the session's role. When the hook's `source` is
   `compact` or `resume`, the first line says the connections are being
   re-established from current state. It prints no page content, and nothing
@@ -596,28 +598,36 @@ What the registry rows below do not say.
   name that is not connected with `bundle-not-found` and `details.valid_values`.
   A plan's one path is the registry, absolute. A registry this engine cannot
   read is `bundles-registry-malformed` (exit 4), with `details.file` and, for a
-  record, `details.record`, from `bundles` and from `--bundle`; the file is
+  record, `details.record`, from `bundles`; the file is
   never rewritten. A record whose `root` is not an absolute path is one of
   these, never resolved against the working directory, where one name would
   answer for a different bundle from each directory; so are two records with
-  one name or one real root, as a registry restored by hand can hold, where
-  `--bundle` would answer with whichever came first.
-- **`--bundle <name>`** names the target of any verb by its connection, in
-  place of `--root`: the shell resolves it before any module loads, and the
-  envelope's `metadata.bundle.label` says which bundle answered. It refuses
-  `one-target` beside `--root`, `bundle-not-found` with
-  `details.valid_values` for a name no connection carries, and
-  `bundle-readonly` for a verb that can write the vault or its repository
-  aimed at an `installed` connection, `--dry-run` included, with
-  `details.kind` and `details.feedback`, where a change to that copy goes
-  instead. `bundles` is exempt by verb: its write is this machine's
-  registry, which changes nothing of the copy while it lies outside it, as it
-  does by default. The exemption does not look at where the environment put
-  it: a registry path set inside the copy is written there. The refusal is a guardrail on this CLI, not
-  filesystem isolation: `--root` names the same directory and is not refused,
-  by design, and nothing stops a process that does not go through the CLI.
-  `bundles` itself takes `--bundle` and reads nothing of it beyond those
-  refusals.
+  one name or one real root, as a registry restored by hand can hold.
+- **`--bundle <name>`** names the target of any verb by the name of a bundle
+  skill installed in a skill directory, in place of `--root`; nothing is
+  registered. The shell resolves it before any module loads, probing
+  `<dir>/<name>/config/export.json` in order: the project's `.claude/skills`
+  and `.agents/skills` at the working directory and at each parent up to the
+  top of its git repository (to the filesystem root outside one); then
+  `~/.claude/skills`, `~/.agents/skills` and `/etc/codex/skills`; then each
+  directory of `WIKIWRIGHT_SKILL_DIRS`, colon-separated, in order. Plugin
+  caches are not scanned; a host names one through that variable. A
+  candidate is a directory whose marker parses and names that same name; one
+  that does not is skipped, with its reason. Every candidate is inspected:
+  identity is the marker's `source.repository`, `bundle` and `name`, two
+  paths to one real directory are one candidate, and a copy that names no
+  repository is itself alone. One identity resolves to the nearest candidate,
+  and `metadata.bundle.shadowed` lists the others as `{root, tier}`. It
+  refuses `one-target` beside `--root`; `bundle-name-invalid` (exit 2) for a
+  name outside the skill grammar, before anything is read;
+  `bundle-not-found` (exit 3) with `details.searched`, the directories
+  probed in order, `details.names`, every bundle skill the scan saw, and
+  `details.skipped`; `bundle-ambiguous` (exit 2) when two identities answer,
+  every candidate's `{root, tier, repository}` in `details.candidates`; and
+  `bundle-readonly` (exit 2) for a verb that can write, `--dry-run` included,
+  since what it finds is an installed copy. `bundles` is exempt by verb: its
+  write is this machine's registry. With a name the cost is one `stat` per
+  probed directory and one marker read per candidate, never a page read.
 - **`freshness [--fetch] [--fast-forward]`** measures every `pin` field
   against the origin its page names: `ls-remote` per origin by default;
   `--fetch` keeps a blobless bare cache under `.wikiwright/origins/` and
@@ -669,7 +679,7 @@ Global flags, accepted by every verb:
 | Flag | Meaning |
 |---|---|
 | `--root <value>` | vault root directory (default: current directory) |
-| `--bundle <value>` | a connected bundle's name (see `bundles`): its root is the target, in place of --root |
+| `--bundle <value>` | the name of a bundle skill installed in a skill directory: the copy found is the target, in place of --root |
 | `--help` | print this command's spec and exit |
 
 | Verb | Role | Writes | Summary |

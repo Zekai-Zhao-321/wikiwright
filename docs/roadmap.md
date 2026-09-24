@@ -15,7 +15,7 @@ one JSON envelope per invocation; `docs/cli.md` lists every verb and flag.
 Every envelope of a verb that reads a vault's law names the bundle it read —
 its label, real root, head, whether it is dirty, and digests of its law and
 its content. `bundles` connects vaults by name in a machine-local registry,
-`--bundle` names the target of any verb, and `read` returns a page's sections
+`--bundle` names an installed bundle skill as the target of any verb, and `read` returns a page's sections
 verbatim with the page's digest, under a byte budget. A bundle declares its
 exports in `config/engine.json`, read-only copies of itself or of part of it
 that a host installs as skills: `check --write` renders them into its own
@@ -386,20 +386,17 @@ whether and when a session shows their context is unverified.
 
 Wanted: a recorded run inside a host, kept beside the test.
 
-### A copy is found by its directory, and a write to it is not refused
+### A write to a copy is refused only through `--bundle`
 
-A copy is read by naming its directory with `--root`, or by connecting it
-with `bundles add --kind installed`. Nothing scans the directories a host
-installs skills into, so a copy is not found by its name, two copies under
-one name are not told apart, and `bundles list` does not list them. The
-marker is checked on the root a verb runs over and nowhere else, and a
-marker whose `name` differs from its directory is not refused. A writing
-verb over a copy reached by `--root` or the working directory is not
-refused: `bundle-readonly` fires only through a connection.
+`--bundle` finds a copy by its name in the skill directories, but
+`bundles list` still lists the registry's connections, not what those
+directories hold. A writing verb over a copy reached by `--root` or the
+working directory is not refused: `bundle-readonly` fires only through
+`--bundle`.
 
-Wanted: a copy found by name over the skill directories, every candidate's
-marker checked, the write guard over any marked root, and the session-start
-and post-edit hooks rebased on it. It is the next slice of work.
+Wanted: the write guard over any marked root, `bundles list` over the scan,
+and the session-start and post-edit hooks rebased on it. It is the next slice
+of work.
 
 ### The shipped skills do not yet speak of copies
 
@@ -442,8 +439,8 @@ whose declared source roots are absent is verified (`export-copy`).
 
 ### `bundle-readonly` is a guardrail on the CLI
 
-An `installed` connection refuses a verb that writes the vault or its
-repository when the verb names it with `--bundle`. `--root` names the same
+A copy found by `--bundle` refuses a verb that writes the vault or its
+repository. `--root` names the same
 directory and is not refused, by design, and a process that does not go
 through the engine is not stopped at all.
 

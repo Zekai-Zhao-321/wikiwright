@@ -1,28 +1,29 @@
-// docs/cli.md §bundles, §read: the connected-bundles scenario, end to end, in
-// one place. An agent working in a directory that is no vault connects two
-// gardening handbooks that hold one page path with different guidance, and:
+// docs/cli.md §bundles, §read: the two-bundle scenario, end to end, in one
+// place. An agent working in a directory that is no vault has two gardening
+// handbooks installed as bundle skills — each a plain copy of the handbook's
+// rendered export in the user's skill directory — which hold one page path
+// with different guidance; the orchard handbook's own checkout sits beside
+// them. It:
 //
-//   1. connects `orchard` as maintained and `allotment` as installed, each
-//      with its own feedback destination;
+//   1. finds both by name with nothing registered;
 //   2. is refused `registry-not-found` when it names no bundle, and reads each
 //      handbook's steps by name, the envelope saying which answered;
 //   3. can compare the two: distinct climates in the frontmatter, distinct
 //      content digests;
-//   4. under a consumer session reads, searches, lists the connections and
-//      prints its own brief against either bundle, and is refused a write;
-//   5. sees an uncommitted edit move the page's digest and the content digest,
-//      mark the bundle dirty and leave its head where it was;
-//   6. is refused a write or a dry run into the installed copy, the refusal
-//      naming where a change goes instead;
-//   7. finds each connection's feedback destination in the listing;
+//   4. under a consumer session reads, searches and prints its own brief
+//      against either bundle, and is refused a write;
+//   5. sees an uncommitted edit in the checkout move the page's digest and the
+//      content digest, mark it dirty and leave its head where it was, and an
+//      edit to an installed copy mark that copy changed since export;
+//   6. is refused a write or a dry run into an installed copy;
 //   8. reads under a budget that leaves a section out by its address;
 //   9. hands a child that address, and the child — a second process under a
 //      consumer session — reads the same bytes under the same page digest.
 //
-// Overlap with bundles.test.ts and read-verb.test.ts is deliberate: those hold
-// each mechanism; this holds the scenario. Everything runs on temporary
-// copies of the two handbooks, never the shipped fixtures, with the registry
-// under the temporary directory.
+// Overlap with discovery.test.ts and read-verb.test.ts is deliberate: those
+// hold each mechanism; this holds the scenario. Everything runs on temporary
+// copies of the two handbooks, never the shipped fixtures, with HOME under the
+// temporary directory.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -36,8 +37,6 @@ import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
 const PAGE = "wiki/pruning-roses.md";
-const ORCHARD_FEEDBACK = "return the proposal to the caller";
-const ALLOTMENT_FEEDBACK = "send a proposal to the allotment handbook's maintainers";
 
 interface Section {
   heading: string | null;
@@ -58,7 +57,8 @@ interface Envelope {
 let tmp = "";
 let elsewhere = "";
 let orchard = "";
-let allotment = "";
+let installedOrchard = "";
+let installedAllotment = "";
 let env: NodeJS.ProcessEnv = {};
 
 function run(
@@ -120,26 +120,30 @@ describe("two handbooks from an unrelated directory, end to end (docs/cli.md §b
     elsewhere = join(tmp, "elsewhere");
     mkdirSync(elsewhere, { recursive: true });
     orchard = checkout("orchard");
-    allotment = checkout("allotment");
-    env = { WIKIWRIGHT_BUNDLES_FILE: join(tmp, "bundles.json") };
+    const home = join(tmp, "home");
+    const skills = join(home, ".claude", "skills");
+    mkdirSync(skills, { recursive: true });
+    // A host installs a bundle skill by copying its directory: the handbook's
+    // rendered export, and nothing else.
+    installedOrchard = join(skills, "orchard");
+    cpSync(join(HANDBOOKS, "orchard", "skills", "orchard"), installedOrchard, { recursive: true });
+    installedAllotment = join(skills, "allotment");
+    cpSync(join(HANDBOOKS, "allotment", "skills", "allotment"), installedAllotment, {
+      recursive: true,
+    });
+    env = { HOME: home, WIKIWRIGHT_SKILL_DIRS: "" };
   });
   after(() => {
     rmSync(tmp, { recursive: true, force: true });
   });
 
-  it("1. connects orchard as maintained and allotment as installed", () => {
-    ok(["bundles", "add", orchard, "--name", "orchard", "--feedback", ORCHARD_FEEDBACK]);
-    ok([
-      "bundles",
-      "add",
-      allotment,
-      "--name",
-      "allotment",
-      "--kind",
-      "installed",
-      "--feedback",
-      ALLOTMENT_FEEDBACK,
-    ]);
+  it("1. finds both by name, with nothing registered", () => {
+    for (const name of ["orchard", "allotment"]) {
+      const found = ok(["type", "list", "--bundle", name]);
+      assert.equal(found.metadata.bundle?.["label"], name);
+      const exported = found.metadata.bundle?.["export"] as { name?: string } | undefined;
+      assert.equal(exported?.name, name);
+    }
   });
 
   it("2. names no bundle and is refused; names each and reads its own steps", () => {
@@ -179,49 +183,39 @@ describe("two handbooks from an unrelated directory, end to end (docs/cli.md §b
       const brief = ok(["brief", "--role", "consumer", "--bundle", name], consumer);
       assert.match(String(brief.data?.["brief"]), /^# wikiwright — the consumer's brief$/mu);
     }
-    const listed = ok(["bundles", "list"], consumer);
-    assert.equal(((listed.data?.["bundles"] ?? []) as unknown[]).length, 2);
     const write = run(["write", PAGE, "--bundle", "orchard"], consumer, "a draft\n");
     assert.equal(write.status, 2, JSON.stringify(write.envelope));
     assert.equal(write.envelope.error?.code, "role-forbidden");
   });
 
-  it("5. an uncommitted edit moves the digests and marks the bundle dirty; the head stays", () => {
-    const before = ok(["read", PAGE, "--bundle", "orchard"]);
+  it("5. an uncommitted edit moves the digests and marks the checkout dirty; a copy says it changed", () => {
+    const before = ok(["read", PAGE, "--root", orchard]);
     assert.equal(before.metadata.bundle?.["dirty"], false);
     appendFileSync(join(orchard, PAGE), "\nA note added and not yet committed.\n");
-    const after = ok(["read", PAGE, "--bundle", "orchard"]);
+    const after = ok(["read", PAGE, "--root", orchard]);
     assert.notEqual(page(after)["digest"], page(before)["digest"]);
     assert.notEqual(after.metadata.bundle?.["content"], before.metadata.bundle?.["content"]);
     assert.equal(after.metadata.bundle?.["head"], before.metadata.bundle?.["head"]);
     assert.equal(after.metadata.bundle?.["dirty"], true);
+    // A copy has no head of its own; an edit to it shows against its marker.
+    const copy = ok(["read", PAGE, "--bundle", "allotment"]);
+    assert.equal(copy.metadata.bundle?.["head"], null);
+    appendFileSync(join(installedAllotment, PAGE), "\nA note added in the copy.\n");
+    const edited = ok(["read", PAGE, "--bundle", "allotment"]);
+    const exported = edited.metadata.bundle?.["export"] as { intact?: boolean } | undefined;
+    assert.equal(exported?.intact, false);
   });
 
-  it("6. the installed copy refuses a write and a dry run, and says where a change goes", () => {
-    const draft = `${readFileSync(join(allotment, PAGE), "utf8")}\nA line the draft adds.\n`;
+  it("6. an installed copy refuses a write and a dry run", () => {
+    const draft = `${readFileSync(join(installedOrchard, PAGE), "utf8")}\nA line the draft adds.\n`;
     for (const [argv, input] of [
       [["new", "procedure-page", "Mulching", "--dest", "wiki/mulching.md"], ""],
       [["write", PAGE, "--dry-run"], draft],
     ] as const) {
-      const r = run([...argv, "--bundle", "allotment"], {}, input);
+      const r = run([...argv, "--bundle", "orchard"], {}, input);
       assert.equal(r.status, 2, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
       assert.equal(r.envelope.error?.code, "bundle-readonly");
-      assert.equal(r.envelope.error?.details?.["feedback"], ALLOTMENT_FEEDBACK);
     }
-  });
-
-  it("7. the listing carries each connection's feedback destination", () => {
-    const rows = (ok(["bundles", "list"]).data?.["bundles"] ?? []) as {
-      name: string;
-      feedback: string | null;
-    }[];
-    assert.deepEqual(
-      rows.map((r) => [r.name, r.feedback]),
-      [
-        ["allotment", ALLOTMENT_FEEDBACK],
-        ["orchard", ORCHARD_FEEDBACK],
-      ],
-    );
   });
 
   it("8. a budget on the longer page leaves Notes out, by its address", () => {
@@ -251,7 +245,7 @@ describe("two handbooks from an unrelated directory, end to end (docs/cli.md §b
     });
     const [section] = sections(child);
     assert.ok(section !== undefined);
-    const lines = readFileSync(join(orchard, path), "utf8").split(/(?<=\n)/u);
+    const lines = readFileSync(join(installedOrchard, path), "utf8").split(/(?<=\n)/u);
     assert.equal(section.text, lines.slice(handed.line - 1, handed.end_line).join(""));
     assert.equal(section.bytes, handed.bytes);
     assert.equal(page(child)["digest"], page(parent)["digest"]);

@@ -55,7 +55,8 @@ packages/cli/src/
   moduleload.ts, modulefixture.ts   the module ladder: resolve, digest, scan, load, prove
   sha256.ts    the shell's sha256 over bytes: a module's files, a page, a shipped skill
   storelock.ts the lock a machine-local store is read, changed and written under
-  connections.ts   the machine-local bundles registry `bundles` and `--bundle` read
+  connections.ts   the machine-local bundles registry `bundles` reads
+  discovery.ts the skill directories `--bundle` scans: a name to the nearest copy of one bundle, reading markers only
   hooks.ts, staged.ts   the installed hooks and the staged gate
   verbs/<name>.ts   one CommandSpec per verb; verbs/bundles.ts keeps the connections, verbs/read.ts is the consumer's read
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit
@@ -118,7 +119,7 @@ converges).
 
 1. `main.ts` finds the verb in `COMMANDS`, applies `WIKIWRIGHT_ROLE`,
    intercepts `--help`, parses argv under the registry, resolves `--bundle` to
-   a connection's root, and preloads any modules `engine.json` declares for a
+   an installed copy by scanning the skill directories, and preloads any modules `engine.json` declares for a
    verb that declares it reads the vault's law.
 2. `vaultio.ts` loads `engine.json`, composes the module registry (the standard
    library plus the loaded packages), loads `constitution.json` through it, and
