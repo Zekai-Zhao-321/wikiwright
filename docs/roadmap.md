@@ -428,8 +428,10 @@ rare and depends on the load; the file transport is not a lower rate of it
 but a channel with no prefix to return.
 
 The suite also runs the CLI under Node: `tools/run-suite.ts` sets
-`WIKIWRIGHT_CLI_RUNTIME` to the `node` on PATH, and every test that runs the
-CLI runs it under that (`packages/cli/test/fixtures/runtime.ts`). That seam
+`WIKIWRIGHT_CLI_RUNTIME` to the `node` on PATH, resolved to an absolute path
+so a test that runs from another directory finds it, and refuses to run when
+it finds none rather than fall back to Bun; every test that runs the CLI runs
+it under that (`packages/cli/test/fixtures/runtime.ts`). That seam
 reaches only the CLI a test spawns. The engine functions a test calls in its
 own process still run under Bun, and their git reads are covered by the
 transport above, not by the seam; `judge-property.test.ts`, which judges

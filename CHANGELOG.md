@@ -360,6 +360,8 @@ version` prints the engine version and the commit a binary was built from.
   `WIKIWRIGHT_CLI_RUNTIME` to the `node` on PATH when it runs under Bun, and
   every test that spawns the CLI spawns it under that
   (`packages/cli/test/fixtures/runtime.ts`); the summary names the runtime.
+  The `node` is resolved to an absolute path, a relative PATH entry against
+  the runner's directory, and with none to find the runner refuses to run.
   Under load, Bun 1.3.11's synchronous spawn cut 7 of 900 child outputs
   short with exit 0, where Node cut none of 3,600, and that was the gate's
   intermittent `lint --staged` failure.

@@ -16,12 +16,13 @@
 //
 // The tests run the engine's CLI under WIKIWRIGHT_CLI_RUNTIME
 // (packages/cli/test/fixtures/runtime.ts). Under Bun the runner sets it to the
-// `node` on PATH, the runtime the engine ships for, unless it is set already;
-// the summary names the runtime it used.
+// `node` on PATH, as an absolute path, the runtime the engine ships for, unless
+// it is set already; with no `node` to find it refuses to run rather than let
+// the tests fall back to Bun. The summary names the runtime it used.
 import { spawn } from "node:child_process";
 import { accessSync, constants, readdirSync, statSync } from "node:fs";
 import { availableParallelism } from "node:os";
-import { delimiter, isAbsolute, join } from "node:path";
+import { delimiter, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -75,12 +76,16 @@ const TIMEOUT_MS = 20_000;
 // `bun` on PATH does, so the runner's test can drive it from the node runner.
 const BUN = process.versions["bun"] === undefined ? "bun" : process.execPath;
 
-/** The first `node` executable on PATH, found without spawning anything. */
-function nodeOnPath(): string | undefined {
+/**
+ * The first `node` executable on PATH, found without spawning anything, as an
+ * absolute path: the tests spawn it from their own working directories, so a
+ * relative PATH entry is resolved against the runner's, and an empty entry is
+ * the runner's directory, as a shell reads it.
+ */
+function nodeOnPath(path = process.env["PATH"] ?? ""): string | undefined {
   const name = process.platform === "win32" ? "node.exe" : "node";
-  for (const dir of (process.env["PATH"] ?? "").split(delimiter)) {
-    if (dir === "") continue;
-    const candidate = join(dir, name);
+  for (const dir of path.split(delimiter)) {
+    const candidate = resolve(dir === "" ? "." : dir, name);
     try {
       accessSync(candidate, constants.X_OK);
       if (statSync(candidate).isFile()) return candidate;
@@ -97,9 +102,17 @@ function nodeOnPath(): string | undefined {
  * cut answers for shorter listings. The engine ships for Node, so the suite
  * runs it under Node; a test that means Bun names `bun` itself.
  */
+const OVERRIDE = process.env["WIKIWRIGHT_CLI_RUNTIME"];
+// A deliberate override is kept; one spelled as a relative path is made
+// absolute for the same reason a PATH entry is. A bare name is left for PATH.
 const CLI_RUNTIME =
-  process.env["WIKIWRIGHT_CLI_RUNTIME"] ??
-  (process.versions["bun"] === undefined ? undefined : nodeOnPath());
+  OVERRIDE !== undefined
+    ? OVERRIDE.includes("/") || OVERRIDE.includes("\\")
+      ? resolve(OVERRIDE)
+      : OVERRIDE
+    : process.versions["bun"] === undefined
+      ? undefined
+      : nodeOnPath();
 const CHILD_ENV =
   CLI_RUNTIME === undefined ? process.env : { ...process.env, WIKIWRIGHT_CLI_RUNTIME: CLI_RUNTIME };
 
@@ -140,6 +153,14 @@ function seconds(ms: number): string {
 }
 
 async function main(): Promise<number> {
+  if (process.versions["bun"] !== undefined && CLI_RUNTIME === undefined) {
+    // Falling back to Bun would run the CLI under the runtime whose spawn cut
+    // its output short (docs/roadmap.md), and call it a pass.
+    process.stderr.write(
+      "run-suite: no `node` on PATH, and WIKIWRIGHT_CLI_RUNTIME is not set: the suite runs the CLI under Node and will not fall back to Bun\n",
+    );
+    return 2;
+  }
   const started = performance.now();
   const given = process.argv.slice(2);
   const files = (given.length > 0 ? given : suiteFiles()).sort(

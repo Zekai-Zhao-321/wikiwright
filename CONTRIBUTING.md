@@ -93,7 +93,9 @@ else is not covered.
 - A test runs the CLI under `CLI_RUNTIME` from
   `packages/cli/test/fixtures/runtime.ts`, never `process.execPath`: the
   runtime in `WIKIWRIGHT_CLI_RUNTIME`, which `tools/run-suite.ts` sets to the
-  `node` on PATH, or the test's own runtime without it. Under load Bun's
+  `node` on PATH as an absolute path, or the test's own runtime without it.
+  Under Bun the runner refuses to run when it finds no `node` and the
+  variable is unset, rather than let the CLI run under Bun. Under load Bun's
   synchronous spawn has cut a child's output short (`docs/roadmap.md`), and
   the engine ships for Node. A test that means Bun names `bun`.
 - Every test writes under `os.tmpdir()`, never in the repository.
