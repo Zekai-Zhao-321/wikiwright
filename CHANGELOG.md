@@ -34,10 +34,14 @@ version` prints the engine version and the commit a binary was built from.
   content roots and the identity the envelope's bundle block carries, and
   `list --records` the rows without the identity, for a caller that only
   routes; it loads no law and no module, so a bundle whose modules are not
-  approved on this machine still lists. The verb is a consumer's: the registry is outside
-  every vault, and connecting a bundle grants nothing. A record whose root is
-  not an absolute path, as a registry edited by hand may hold, is refused as
-  `bundles-registry-malformed`, never resolved against the working directory.
+  approved on this machine still lists. The verb is a consumer's: the registry
+  is this machine's, by default outside every vault, and connecting a bundle
+  grants nothing. A relative `WIKIWRIGHT_BUNDLES_FILE` or
+  `WIKIWRIGHT_TRUST_FILE` is resolved against the working directory, so a
+  plan names an absolute path. A record whose root is not an absolute path,
+  or two records with one name or one real root, as a registry edited by
+  hand may hold, are refused as `bundles-registry-malformed`, never resolved
+  against the working directory or answered with the first.
 - `--bundle <name>` names the target of any verb by its connection, in place
   of `--root`, so an agent working in an unrelated directory reads two
   handbooks by name and every answer says which one it came from. It refuses
@@ -45,8 +49,10 @@ version` prints the engine version and the commit a binary was built from.
   and `bundle-readonly` for a verb that writes the vault or its repository,
   dry run included, aimed at an installed copy, with the connection's feedback
   destination in the refusal; `bundles` and `trust`, whose writes are this
-  machine's stores, are answered. That refusal is a guardrail on the CLI, not
-  filesystem isolation: `--root` reaches the same directory by design.
+  machine's stores, are answered, an exemption by verb that does not look at
+  where the environment put those stores. That refusal is a guardrail on the
+  CLI, not filesystem isolation: `--root` reaches the same directory by
+  design.
 - `read <page> [--section <heading>] [--budget <bytes>]` returns a page's
   sections verbatim, cut at its type's section depth, each with its address,
   lines and byte length, beside the page's type, chain, frontmatter and

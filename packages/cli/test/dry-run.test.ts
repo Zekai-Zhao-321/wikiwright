@@ -957,8 +957,10 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
 
 describe("the writers the readonly guard exempts plan only this machine's stores (docs/cli.md §bundles)", () => {
   // `--bundle` naming an installed copy refuses every writing verb but these:
-  // their one write is a machine-local store, outside every vault. The set is
-  // closed here, and each member's declared plan is held to that claim.
+  // their one write is a machine-local store. The set is closed here, and with
+  // the stores placed outside the vault, as they are by default, each member's
+  // declared plan names only them. Where the environment puts the stores is
+  // the caller's; the exemption is by verb.
   it("the set is bundles and trust, and each plans only absolute paths outside the vault", () => {
     assert.deepEqual([...MACHINE_LOCAL_WRITERS].sort(), ["bundles", "trust"]);
     const tmp = vault();

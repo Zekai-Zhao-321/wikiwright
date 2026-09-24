@@ -560,6 +560,95 @@ describe("a machine-local store that does not parse is a named refusal (docs/cli
     }
   });
 
+  it("two records with one name, or one real root, are bundles-registry-malformed", () => {
+    // `add` refuses both under the lock; a registry restored by hand can hold
+    // them, and `--bundle` would answer with whichever came first.
+    const { file, env } = registry("duplicates");
+    const copy = join(tmp, "duplicates", "orchard");
+    cpSync(ORCHARD, copy, { recursive: true });
+    const link = join(tmp, "duplicates", "orchard-link");
+    symlinkSync(copy, link, "dir");
+    const record = (name: string, root: string): Record<string, unknown> => ({
+      name,
+      root,
+      kind: "maintained",
+      feedback: null,
+      guide: null,
+    });
+    for (const [bundles, message] of [
+      [
+        [record("orchard", copy), record("orchard", ALLOTMENT)],
+        /bundle 1 has the name "orchard" of bundle 0/u,
+      ],
+      [[record("orchard", copy), record("pears", copy)], /bundle 1 has the root of bundle 0/u],
+      [[record("orchard", copy), record("pears", link)], /bundle 1 has the root of bundle 0/u],
+    ] as const) {
+      writeFileSync(
+        file,
+        `${JSON.stringify({ schema: "wikiwright/bundles", schema_version: 1, bundles })}\n`,
+      );
+      for (const argv of [
+        ["bundles", "list"],
+        ["read", "wiki/start-here.md", "--bundle", "orchard"],
+      ]) {
+        const r = run(tmp, argv, env);
+        assert.equal(r.status, 4, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
+        assert.equal(r.envelope.error?.code, "bundles-registry-malformed");
+        assert.equal(r.envelope.error?.details?.["record"], 1);
+        assert.match(String(r.envelope.error?.message ?? ""), message);
+      }
+    }
+  });
+
+  it("a relative store override is made absolute: a plan names the file it would write", () => {
+    const cwd = join(tmp, "relative-stores");
+    mkdirSync(cwd, { recursive: true });
+    const copy = join(cwd, "orchard");
+    cpSync(ORCHARD, copy, { recursive: true });
+    const env = {
+      WIKIWRIGHT_BUNDLES_FILE: join("stores", "bundles.json"),
+      WIKIWRIGHT_TRUST_FILE: join("stores", "trust.json"),
+    };
+    const planned = run(cwd, ["bundles", "add", copy, "--name", "orchard", "--dry-run"], env);
+    assert.equal(planned.status, 0, JSON.stringify(planned.envelope));
+    const ops = (planned.envelope.data?.["ops"] ?? []) as { path: string }[];
+    assert.deepEqual(
+      ops.map((op) => op.path),
+      [join(cwd, "stores", "bundles.json")],
+    );
+
+    // The trust store too: a record read through the relative override, and
+    // the revocation's plan, both name the absolute file.
+    mkdirSync(join(cwd, "stores"), { recursive: true });
+    writeFileSync(
+      join(cwd, "stores", "trust.json"),
+      `${JSON.stringify({
+        schema: "wikiwright/trust",
+        schema_version: 2,
+        grants: [
+          {
+            vault: realpathSync(copy),
+            path: "module:garden-guidance",
+            sha256: "0".repeat(64),
+            granted: "2026-09-04",
+          },
+        ],
+      })}\n`,
+    );
+    const listed = run(cwd, ["trust", "list", "--all", "--root", copy], env);
+    assert.equal(listed.status, 0, JSON.stringify(listed.envelope));
+    assert.equal(listed.envelope.data?.["store"], join(cwd, "stores", "trust.json"));
+    const records = (listed.envelope.data?.["records"] ?? []) as { record: string }[];
+    const id = records[0]?.record;
+    assert.ok(id !== undefined);
+    const revoke = run(cwd, ["trust", "revoke", "--record", id, "--dry-run"], env);
+    assert.equal(revoke.status, 0, JSON.stringify(revoke.envelope));
+    assert.deepEqual(
+      ((revoke.envelope.data?.["ops"] ?? []) as { path: string }[]).map((op) => op.path),
+      [join(cwd, "stores", "trust.json")],
+    );
+  });
+
   it("a trust store of junk, or with a record of no shape, is trust-store-malformed", () => {
     const store = join(tmp, "malformed-trust", "trust.json");
     mkdirSync(join(tmp, "malformed-trust"), { recursive: true });

@@ -2,13 +2,15 @@
 // short name for a vault root, its kind and where a problem with it is
 // reported) · docs/architecture.md §Directories.
 //
-// The registry is outside every vault and outside every repository, like the
-// trust store, and is updated under the same lock. Connecting a bundle grants
-// nothing: a connection names a root, and a verb run against it is judged
-// exactly as `--root` would judge it.
-import { existsSync } from "node:fs";
+// The registry is this machine's, like the trust store: by default under the
+// home directory, outside every vault and every repository, and wherever
+// `WIKIWRIGHT_BUNDLES_FILE` puts it otherwise — the environment is the
+// caller's. It is updated under the trust store's lock. Connecting a bundle
+// grants nothing: a connection names a root, and a verb run against it is
+// judged exactly as `--root` would judge it.
+import { existsSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
-import { isAbsolute, join } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { codeUnitCompare } from "@wikiwright/core";
 import { replaceFile } from "./atomicwrite.ts";
 import { parseStoreFile, type StoreChange, StoreMalformed, updateStore } from "./storelock.ts";
@@ -41,10 +43,24 @@ export interface ConnectionStore {
 /** A connection's name: lower-case letters, digits and hyphens, a letter or digit first, at most 64. */
 export const NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/u;
 
+/**
+ * The registry's path, absolute: an override is resolved against the working
+ * directory once, here, so `bundles add --dry-run` never plans a relative path
+ * and the registry named is one file whichever verb reads it.
+ */
 export function bundlesFilePath(): string {
   const override = process.env["WIKIWRIGHT_BUNDLES_FILE"];
-  if (override !== undefined && override !== "") return override;
+  if (override !== undefined && override !== "") return resolve(override);
   return join(homedir(), ".config", "wikiwright", "bundles.json");
+}
+
+/** Where a root resolves, or the root itself when it does not resolve: what identifies a connection. */
+function whereOf(root: string): string {
+  try {
+    return realpathSync(root);
+  } catch {
+    return root;
+  }
 }
 
 /** One stored record, or why it is not one. */
@@ -96,11 +112,37 @@ export function readConnections(): ConnectionStore {
     );
   }
   const bundles: Connection[] = [];
+  const named = new Map<string, number>();
+  const rooted = new Map<string, number>();
   parsed.bundles.forEach((value, i) => {
     const connection = connectionOf(value);
     if (typeof connection === "string") {
       throw new StoreMalformed(MALFORMED, file, `${file}: bundle ${i} ${connection}`, i);
     }
+    // `add` refuses a taken name and a root connected twice, under the lock. A
+    // registry restored or edited by hand can still hold either, and `--bundle`
+    // would then answer with whichever came first: it is refused instead.
+    const sameName = named.get(connection.name);
+    if (sameName !== undefined) {
+      throw new StoreMalformed(
+        MALFORMED,
+        file,
+        `${file}: bundle ${i} has the name "${connection.name}" of bundle ${sameName}`,
+        i,
+      );
+    }
+    const where = whereOf(connection.root);
+    const sameRoot = rooted.get(where);
+    if (sameRoot !== undefined) {
+      throw new StoreMalformed(
+        MALFORMED,
+        file,
+        `${file}: bundle ${i} has the root of bundle ${sameRoot}, ${where}`,
+        i,
+      );
+    }
+    named.set(connection.name, i);
+    rooted.set(where, i);
     bundles.push(connection);
   });
   return { schema: "wikiwright/bundles", schema_version: 1, bundles };
@@ -110,13 +152,14 @@ export function readConnections(): ConnectionStore {
 const MALFORMED = "bundles-registry-malformed";
 
 /**
- * docs/cli.md §bundles: the verbs whose writes land in this machine's stores,
- * outside every vault — the registry, the trust store — and not in the vault or
- * its repository. `--bundle` naming an installed copy refuses every other
- * writing verb (`bundle-readonly`); these two write nothing of the copy, so
- * they are answered. Closed: the dry-run test holds that each plans only
- * absolute paths outside the vault, and that every other writing verb is
- * refused.
+ * docs/cli.md §bundles: the verbs whose writes are this machine's stores — the
+ * registry, the trust store — and not the vault or its repository.
+ * `--bundle` naming an installed copy refuses every other writing verb
+ * (`bundle-readonly`); these two are answered. The exemption is BY VERB, not by
+ * where the store lies: the stores' paths are the environment's, and one set
+ * to a file inside the copy is written there. Closed: the dry-run test holds
+ * that each plans only absolute store paths, outside the vault when the stores
+ * are, and that every other writing verb is refused.
  */
 export const MACHINE_LOCAL_WRITERS: ReadonlySet<string> = new Set(["bundles", "trust"]);
 

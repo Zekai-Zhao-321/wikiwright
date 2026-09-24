@@ -87,7 +87,7 @@ function thrown(command: string, e: unknown): CommandResult {
   if (e instanceof StoreMalformed) {
     return fail(command, "conflict", e.code, e.message, {
       details: { file: e.file, ...(e.record === undefined ? {} : { record: e.record }) },
-      hint: "the file is this machine's, outside every vault; repair it or move it aside — the engine does not rewrite a store it cannot read",
+      hint: "the file is this machine's store, not a vault's; repair it or move it aside — the engine does not rewrite a store it cannot read",
     });
   }
   return fail(command, "internal", "unexpected-error", e instanceof Error ? e.message : String(e));
@@ -102,8 +102,9 @@ function thrown(command: string, e: unknown): CommandResult {
  * the vault or its repository aimed at an installed copy (`bundle-readonly`,
  * `--dry-run` included, since a dry run of a forbidden write is still a
  * forbidden write). `bundles` and `trust` write only this machine's stores
- * (`MACHINE_LOCAL_WRITERS`), so they are answered. The refusal names where a
- * change to that copy goes instead. It is a guardrail on this CLI, not
+ * (`MACHINE_LOCAL_WRITERS`), so they are answered: an exemption by verb, since
+ * where those stores lie is the environment's to say. The refusal names where
+ * a change to that copy goes instead. It is a guardrail on this CLI, not
  * filesystem isolation: `--root` names the same directory and is not refused.
  */
 function targetOf(spec: CommandSpec, args: CommandArgs): Target {

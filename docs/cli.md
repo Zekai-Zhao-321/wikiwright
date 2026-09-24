@@ -125,8 +125,8 @@ the report it always writes.
 | `WIKIWRIGHT_ROLE` | the shell, before parsing; `brief`, as its default `--role` | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
 | `WIKIWRIGHT_TODAY` | `write`, `new`, `trust grant`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
-| `WIKIWRIGHT_TRUST_FILE` | `trust`, the module loader | the path of the machine-local grant store (default `~/.config/wikiwright/trust.json`) |
-| `WIKIWRIGHT_BUNDLES_FILE` | `bundles`, `--bundle` | the path of the machine-local bundles registry (default `~/.config/wikiwright/bundles.json`) |
+| `WIKIWRIGHT_TRUST_FILE` | `trust`, the module loader | the path of the machine-local grant store (default `~/.config/wikiwright/trust.json`); a relative path is resolved against the working directory |
+| `WIKIWRIGHT_BUNDLES_FILE` | `bundles`, `--bundle` | the path of the machine-local bundles registry (default `~/.config/wikiwright/bundles.json`); a relative path is resolved against the working directory |
 
 ## The plugin and its hooks
 
@@ -416,11 +416,12 @@ What the registry rows below do not say.
   machine's registry of connected bundles, `~/.config/wikiwright/bundles.json`
   unless `WIKIWRIGHT_BUNDLES_FILE` names another file: a JSON document,
   `schema` `wikiwright/bundles`, `schema_version` 1, whose `bundles` each
-  carry `name`, `root`, `kind`, `feedback` and `guide`. It is outside every
-  vault and every repository, and it is written under the same lock as the
-  trust store (`store-busy` when another process holds it), which is why the
-  verb is a consumer's: connecting a bundle changes no bundle and grants
-  nothing. `add` records the root as given, made absolute, and compares real
+  carry `name`, `root`, `kind`, `feedback` and `guide`. By default it is
+  outside every vault and every repository; an override is resolved to an
+  absolute path, and where it points is the caller's choice, not something
+  the engine checks. It is written under the same lock as the trust store
+  (`store-busy` when another process holds it), and the verb is a
+  consumer's: connecting a bundle changes no bundle and grants nothing. `add` records the root as given, made absolute, and compares real
   paths: it refuses `bundle-name-invalid` for a name outside
   `^[a-z0-9][a-z0-9-]{0,63}$`, `invalid-kind`, `vault-not-found` for a root
   with no `config/constitution.json`, `guide-not-found` when `--guide` names
@@ -451,7 +452,9 @@ What the registry rows below do not say.
   record, `details.record`, from `bundles` and from `--bundle`; the file is
   never rewritten. A record whose `root` is not an absolute path is one of
   these, never resolved against the working directory, where one name would
-  answer for a different bundle from each directory.
+  answer for a different bundle from each directory; so are two records with
+  one name or one real root, as a registry restored by hand can hold, where
+  `--bundle` would answer with whichever came first.
 - **`--bundle <name>`** names the target of any verb by its connection, in
   place of `--root`: the shell resolves it before any module loads, and the
   envelope's `metadata.bundle.label` says which bundle answered. It refuses
@@ -460,9 +463,11 @@ What the registry rows below do not say.
   `bundle-readonly` for a verb that can write the vault or its repository
   aimed at an `installed` connection, `--dry-run` included, with
   `details.kind` and `details.feedback`, where a change to that copy goes
-  instead. `bundles` and `trust` are exempt: their writes are this machine's
-  registry and trust store, outside every vault, so they change nothing of
-  the copy and are answered. The refusal is a guardrail on this CLI, not
+  instead. `bundles` and `trust` are exempt by verb: their writes are this
+  machine's registry and trust store, which change nothing of the copy while
+  those stores lie outside it, as they do by default. The exemption does not
+  look at where the environment put them: a store path set inside the copy is
+  written there. The refusal is a guardrail on this CLI, not
   filesystem isolation: `--root` names the same directory and is not refused,
   by design, and nothing stops a process that does not go through the CLI.
   `bundles` itself takes `--bundle` and reads nothing of it beyond those

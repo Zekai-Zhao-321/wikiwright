@@ -2,8 +2,8 @@
 // list the connections with the identity of each, remove one) · docs/cli.md
 // §The dry-run law (the plan names the machine-local registry, absolute).
 //
-// A consumer verb that writes: the registry is machine-local and outside every
-// vault, so connecting a bundle changes no bundle and grants nothing. It loads
+// A consumer verb that writes: what it writes is this machine's registry, not a
+// bundle, so connecting a bundle changes no bundle and grants nothing. It loads
 // no law and no module — `list` is discovery, and a bundle whose modules this
 // machine has not approved still lists, with its identity.
 import { existsSync, realpathSync, statSync } from "node:fs";
@@ -279,9 +279,10 @@ function connectionOf(
 }
 
 /**
- * docs/cli.md §The dry-run law: the registry is machine-local, so the plan's
- * path is absolute — a reader of the plan sees that the write lands outside
- * every vault. `list` writes nothing and plans nothing.
+ * docs/cli.md §The dry-run law: the plan's one path is the registry, absolute,
+ * so a reader of the plan sees exactly which file the write lands in — by
+ * default outside every vault, wherever the environment put it otherwise.
+ * `list` writes nothing and plans nothing.
  */
 function planForBundles(args: CommandArgs): Plan {
   const [action, target] = args.positionals;

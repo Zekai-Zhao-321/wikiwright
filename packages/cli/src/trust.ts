@@ -55,9 +55,15 @@ export function isWorktreeGrant(grant: TrustGrant): grant is WorktreeGrant {
   return "scope" in grant;
 }
 
+/**
+ * The store's path, absolute: an override is resolved against the working
+ * directory once, here, so a plan never names a relative path and every
+ * reader of it means one file. Where it lies is the caller's to choose: by
+ * default under the home directory, anywhere the environment says otherwise.
+ */
 export function trustFilePath(): string {
   const override = process.env["WIKIWRIGHT_TRUST_FILE"];
-  if (override !== undefined && override !== "") return override;
+  if (override !== undefined && override !== "") return resolve(override);
   return join(homedir(), ".config", "wikiwright", "trust.json");
 }
 
