@@ -16,14 +16,19 @@ Every envelope of a verb that reads a vault's law names the bundle it read —
 its label, real root, head, whether it is dirty, and digests of its law and
 its content. `bundles` connects vaults by name in a machine-local registry,
 `--bundle` names the target of any verb, and `read` returns a page's sections
-verbatim with the page's digest, under a byte budget. Three skills ship
+verbatim with the page's digest, under a byte budget. A bundle declares its
+exports in `config/engine.json`, read-only copies of itself or of part of it
+that a host installs as skills: `check --write` renders them into its own
+`skills/`, `check` and the staged gate hold them to a fresh render, `export`
+writes one into another repository, and a plain copy of one answers every
+reader under the identity its marker gives it. Three skills ship
 beside the binary, for using, writing and maintaining a bundle, and each role
 prints its own brief; the package root is also a Claude Code plugin with two
 hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,587 tests across 109 files. At `29dbfb9`, when it held 1,590,
+The suite is 1,640 tests across 114 files. At `29dbfb9`, when it held 1,590,
 the full gate, `bun run check`, passed them all with the test files under
 Bun and the CLI under Node (`tools/run-suite.ts`), and the full node runner,
 `bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
@@ -34,11 +39,11 @@ the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured on
-2026-09-24 on the development machine, where `check --root devwiki` now needs
-the install and nothing else, `freshness` reads all 26 pinned pages `current`
-(17) or `unchanged` (9) and none `stale`, with no `stale-capture`,
+2026-09-25 on the development machine, where `check --root devwiki` needs
+the install and nothing else, `freshness` reads all 27 pinned pages `current`
+(18) or `unchanged` (9) and none `stale`, with no `stale-capture`,
 `stale-source-cited` or `citation-unresolved` finding, before the commit
-that carries those pins; once it lands, the 17 are `unchanged`.
+that carries those pins; once it lands, the 18 are `unchanged`.
 A citation into a file its page does not cover is held to the pin but not
 to the file's later changes, so such a reference either is covered or goes
 through the page that covers the file.
@@ -378,6 +383,73 @@ whether and when a session shows their context is unverified.
 
 Wanted: a recorded run inside a host, kept beside the test.
 
+### A copy is found by its directory, and a write to it is not refused
+
+A copy is read by naming its directory with `--root`, or by connecting it
+with `bundles add --kind installed`. Nothing scans the directories a host
+installs skills into, so a copy is not found by its name, two copies under
+one name are not told apart, and `bundles list` does not list them. The
+marker is checked on the root a verb runs over and nowhere else, and a
+marker whose `name` differs from its directory is not refused. A writing
+verb over a copy reached by `--root` or the working directory is not
+refused: `bundle-readonly` fires only through a connection.
+
+Wanted: a copy found by name over the skill directories, every candidate's
+marker checked, the write guard over any marked root, and the session-start
+and post-edit hooks rebased on it. It is the next slice of work.
+
+### The shipped skills do not yet speak of copies
+
+A copy's `SKILL.md` names the `wikiwright-consume` skill and says it ships in
+the engine's repository, not where an installed engine keeps it, and no
+command installs the engine or that skill beside a copy. The maintainer's
+skill says nothing about choosing what to export or about what an export
+discloses: every selected page, `config/` verbatim and each declared kit
+travel, so a page a maintainer would not publish must be left out of the
+selection.
+
+Wanted: a runtime skill a copy's `SKILL.md` can locate exactly, and the
+export practices, with that warning, in the maintainer's skill.
+
+### An export does not carry a kit installed by link
+
+A copy holds bytes, never a link, so `export-symlink` refuses an export that
+would carry one. A kit a package manager installs as a workspace link, or
+whose files it links from a `file:` dependency, is a link: a bundle over such
+a kit cannot export until the kit's directory holds its own bytes. The
+suite's installs of the code kit replace each link with the bytes it points
+at (`packages/cli/test/fixtures/kit-code.ts`), which is why their copies
+export.
+
+Wanted: a render that reads a linked kit's bytes through the link, contained
+and stated, or an install that copies.
+
+### The staged gate reads a `node_modules` kit from the working tree
+
+A kit under `node_modules` is not in the index, so the staged gate renders an
+export's copy of it from the working tree, as the preload loads it: a commit
+is judged against the kit installed on the machine that commits, not one the
+commit carries. A kit declared by `path` is in the index and read from it.
+
+Wanted: nothing while `node_modules` stays untracked; a bundle that must pin
+its kit exactly declares it by `path`.
+
+### Exports not built yet
+
+No thin pointer: an export always copies, and none names the bundle's
+repository in place of its pages. No `propose`: a reader of a copy reports a
+problem where its `SKILL.md` says, by hand; no verb files it.
+
+### What a host does with a copy is unverified
+
+No host has installed a rendered export here. Unverified: how a skill
+installer that fetches from a repository handles symbolic links, size limits,
+pinning to a branch and updating a pinned copy; where each host caches a
+plugin; whether every host sets the skill-directory variable a `SKILL.md`
+names; how a skill store lists a generated plugin; and whether a host follows
+a skill directory that is a symbolic link. That the loader accepts a copy
+whose declared source roots are absent is verified (`export-copy`).
+
 ### `bundle-readonly` is a guardrail on the CLI
 
 An `installed` connection refuses a verb that writes the vault or its
@@ -508,7 +580,8 @@ prose: a judgment routes to a queue lane for a human. There is no semantic
 retrieval tier (`search` is a deterministic identity ladder fused with
 BM25, CJK-bigram tokenized), no `capture` verb that turns a git origin
 into a source page, no connector layer, no rich-content checks (Mermaid,
-images, tables), no publication or export target, no access control, and no
+images, tables), no publication target beyond the exports a bundle declares,
+no access control, and no
 parse cache or long-lived process (§Every run parses the whole corpus).
 Each stays unbuilt until a bundle needs it.
 
@@ -559,7 +632,10 @@ alternative is to carry the history with the tree.
    dependency between bundles, `references` and `outline`, a report type a
    proposal is written in, and a filter by applicability.
 3. Run the two hook scripts inside a host and record what a session sees.
-4. The capture verb, the connector layer, rich-content checks, publication
+4. Find a copy by name over the skill directories and guard every marked
+   root against a write; then the runtime skill, and the export practices in
+   the maintainer's skill.
+5. The capture verb, the connector layer, rich-content checks, publication
    and access control are candidates, none scheduled.
 
 ## Developing against it
@@ -590,7 +666,8 @@ alternative is to carry the history with the tree.
   included, with `wikiwright check --write --root devwiki` after any page
   edit or an engine change that moves the brief. The two handbooks under
   `fixtures/handbooks` are held at zero findings under `check` by
-  `fixture-verdicts` and their tracked `generated/` by `generated-tracked`;
-  an engine change that moves the writer's brief moves theirs too, and
+  `fixture-verdicts` and their tracked `generated/` and rendered exports
+  under `skills/` by `generated-tracked`; an engine change that moves the
+  writer's brief, or what an export carries, moves theirs too, and
   `wikiwright check --write --root fixtures/handbooks/<name>` regenerates each;
   they declare no module.

@@ -3,7 +3,7 @@ type: architecture-overview
 title: wikiwright architecture
 description: The four-layer shape of the engine and how a page's obligations flow through it.
 tags: [kernel, stdlib, cli, kit]
-pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
+pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
 origin: .
 covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/connections.ts, packages/cli/src/law.ts, packages/kit-code/]
 ---
@@ -34,7 +34,11 @@ every vault) to the root `--root` would have named, and every verb that reads a 
 law names the bundle it read on its envelope, with a digest of its law and of
 its pages. Two verbs serve an agent reading a bundle it does not maintain:
 `bundles` keeps the registry of connections, and `read` returns a page's
-sections verbatim with the page's digest.
+sections verbatim with the page's digest. A bundle may declare exports, read-only
+copies of itself or of part of it that a host installs as skills: `check
+--write` renders them into the bundle's own `skills/`, `export` writes one
+into another repository, and a copy is a vault every reader answers over,
+under the identity its marker gives it (see [[exports]]).
 
 ## Layers
 

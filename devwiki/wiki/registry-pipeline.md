@@ -3,7 +3,7 @@ type: subsystem
 title: Registry pipeline
 description: Loads, validates and flattens config/constitution.json and config/engine.json into the effective contracts every pass reads.
 tags: [kernel, cli]
-pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
+pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
 origin: .
 covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/verbs/read.ts, packages/cli/src/verbs/bundles.ts]
 ---
@@ -21,8 +21,8 @@ contributed each element; `packages/core/src/registry/model.ts:29-60`,
 `:89-138`). Refuse every constitution that violates the model before any page
 is judged. The loader runs in stages, total within a stage and fail-fast
 between them (`packages/core/src/registry/index.ts:6-10`): merge the module
-contributions into the document (`:55-56`), parse it under one zod family
-(`:57-59`; `packages/core/src/registry/document.ts:459`), resolve the
+contributions into the document (`:71-72`), parse it under one zod family
+(`:73-75`; `packages/core/src/registry/document.ts:459`), resolve the
 vocabularies (`:61-62`), combine the types (`:65`;
 `packages/core/src/registry/combine.ts:1017`), validate the effective set
 (`:66`; `packages/core/src/registry/validate.ts:122`), and collapse issues so
@@ -30,29 +30,36 @@ one cause is reported once with its sites (`:93-116`).
 
 ## Entry points
 
-`loadConstitution(json, modules)` in `packages/core/src/registry/index.ts:54`:
+`loadConstitution(json, modules)` in `packages/core/src/registry/index.ts:70`:
 the document and the composed module registry in, `{ok, registry}` or
 `{ok: false, issues}` out (`packages/core/src/registry/model.ts:249`).
-`loadEngineConfig(json)` in `packages/core/src/registry/engine.ts:163` reads
-the bootstrap through a closed zod schema (`:131`) and returns the config or
-`schema-invalid` issues (`:164-174`); `ENGINE_CONFIG_CONSUMERS` (`:138-156`)
-names the reader of every key so the meta-test can resolve each. A module
+`loadEngineConfig(json)` in `packages/core/src/registry/engine.ts:456` reads
+the bootstrap through a closed zod schema (`:419`) and returns the config or
+`schema-invalid` issues (`:457-467`); `ENGINE_CONFIG_CONSUMERS` (`:421-449`)
+names the reader of every key so the meta-test can resolve each. The
+`exports` and `plugin` keys are closed shapes of their own (`:199`, `:231`),
+and each export is refused by name for what its shape cannot say — a reserved
+or taken name, a selected directory outside the content roots, an external
+export with no repository, a contribution with nowhere to report
+(`:256`; see [[exports]]). A module
 declaration's optional `path`, a bundle-relative directory, is held to the
 vault path law as a content root is, so a path that leaves the bundle is
-`schema-invalid` at load (`:55-67`, `:97-117`). The CLI's
-`loadVault` in `packages/cli/src/vaultio.ts:70` wraps both with file reading
-through `loadVaultVia` (`:100`), which reads the config through a
+`schema-invalid` at load (`:341-353`, `:383-403`). The CLI's
+`loadVault` in `packages/cli/src/vaultio.ts:72` wraps both with file reading
+through `loadVaultVia` (`:102`), which reads the config through a
 `VaultReader`, the working tree's or the git index's; the two config paths,
 the reader, the page walk and the page reads live below the loader, in
 `packages/cli/src/vaultfiles.ts` (`:1-5`, `:11-36`). The constitution must
-exist (`packages/cli/src/vaultio.ts:105-116`), `engine.json` loads first
+exist (`packages/cli/src/vaultio.ts:107-118`), `engine.json` loads first
 because the modules it declares compose the registry the constitution is
-validated under (`:133-168`), the module set is the preloaded one or a
-refusal, each module proved by the load that preloaded it (`:177-241`; see
-[[modules]]), `content_roots` is required (`:243-257`), and every
+validated under (`:135-169`), and a name an export derives from the
+bundle's label is held to the name law there, where the root is known
+(`:170-187`), the module set is the preloaded one or a
+refusal, each module proved by the load that preloaded it (`:197-261`; see
+[[modules]]), `content_roots` is required (`:263-277`), and every
 declared template or example must exist and, for an example, pass its own
-type (`:264-361`); a loaded vault keeps the two config texts as they were
-read, the inputs of the law digest (`:49-55`, `:369`). Every verb that needs
+type (`:284-381`); a loaded vault keeps the two config texts as they were
+read, the inputs of the law digest (`:51-57`, `:389`). Every verb that needs
 types goes through it, `read` among them
 (`packages/cli/src/verbs/read.ts:237`), and a root `--bundle` names is
 resolved to a directory before any verb runs, so the loader reads it as it
@@ -98,9 +105,9 @@ path below it (`packages/core/src/registry/model.ts:12-27`): `schema-invalid`
 `packages/core/src/registry/validate.ts:264`), `vocabulary-unknown`
 (`packages/core/src/registry/vocabularies.ts:81`). The CLI reports a
 constitution that does not load as `constitution-invalid` at exit 2 with the
-issues in `data.issues` (`packages/cli/src/vaultio.ts:373-381`), and judges no
+issues in `data.issues` (`packages/cli/src/vaultio.ts:393-401`), and judges no
 page under it; a declared module that did not load is refused by its own code
-before the constitution is read (`:199-216`).
+before the constitution is read (`:219-236`).
 
 ## Relations
 

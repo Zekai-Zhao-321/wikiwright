@@ -379,6 +379,57 @@ is not a relative path, or a repository beside it, and a `none` mode with
 either. A name, a repository, a guide or a skill outside its own grammar is
 `schema-invalid`.
 
+**What a copy carries.** A rendered export is a vault of its own, under
+`skills/<name>/` or `<dir>/skills/<name>/`:
+
+- the selected pages at their own paths. Under `sources: exclude` a page
+  under a source root is never selected; under `include` every file under the
+  source roots travels, and the roots stay declared either way, so a citation
+  parses the same in the copy;
+- `config/constitution.json` and `config/engine.json`, byte for byte;
+- every template and example the loader validates, at its declared path; an
+  example that is a page under a content root travels as one of the copy's
+  pages, since the loader refuses a copy without it;
+- each declared module's directory, at `node_modules/<package>` or at its
+  declared `path`, its own `node_modules` left out, as the law digest leaves
+  it out;
+- every file a selected page embeds: `![[name]]` resolved by name, or as a
+  vault path when it holds a `/`, under the content roots, and `![alt](path)`
+  resolved against the page. One that resolves
+  to nothing, to more than one file or outside the content roots does not
+  travel and is counted in the marker's `cut.attachments`;
+- `generated/graph.json`, `manifest.json` and `tag-catalog.md` over the
+  selection, and `generated/BRIEF.md`, the consumer's brief, whose header
+  names the export;
+- `SKILL.md`, the text a host reads first: the name, a description from the
+  guide's (cut at a word within 1024 characters), the bundle's name, digests
+  and contribution mode under `metadata`, then what the copy is, the engine
+  version and skill it needs, what it holds, where a problem goes, and the
+  `skill` fragment when one is declared;
+- `config/export.json`, the marker.
+
+A copy holds bytes, never a link: a symbolic link anywhere in that set
+refuses the export (`export-symlink`). The render's other refusals are
+`export-tag-unknown` (a selected tag the vocabulary does not register),
+`export-guide-outside` (a guide the selection does not hold),
+`export-skill-invalid` (a fragment under a content root, or absent),
+`export-not-closed` (a warning: under `links: closed`, a selected page links
+to one left out) and `export-destination-invalid` (a destination inside a
+content root) (docs/cli.md §Notes per verb).
+
+**The marker**, `config/export.json`, is written last and in a fixed key
+order: `schema` (`"wikiwright/export"`), `version` (`1`), `name`, `bundle`
+(the label of the bundle it was cut from), `select`, `sources`, `output`,
+`links`, `cut` (`links`, `citations` and `attachments` left out), `pages`,
+`source` (`repository`, `null` when none is declared; `law`, the source's law
+digest; `content`, the content digest over the selected pages, both as the
+envelope computes them), `contribution`, `guide`, `license` (`null` when
+undeclared) and `engine`, the version that rendered it. A root that holds a
+marker is a copy: `check --write` renders nothing there, its envelope names
+the export (docs/cli.md §The envelope), and a marker that is not one — not
+JSON, a key missing, unknown or of the wrong type, another schema or version —
+is refused `export-marker-invalid` before any module loads.
+
 ### plugin
 
 ```json

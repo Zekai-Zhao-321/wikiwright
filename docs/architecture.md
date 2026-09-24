@@ -45,7 +45,10 @@ packages/cli/src/
   git.ts, stdoutfile.ts   the git plumbing: every answer read from a file git writes itself
   vaultfiles.ts   the config paths, the reader, the page walk and the page reads, below the loader
   vaultio.ts   the loader, its refusals
-  bundle.ts    the bundle an envelope names: label, root, head, dirty, the law and content digests
+  bundle.ts    the bundle an envelope names: label, root, head, dirty, the law and content digests, and over a copy the export it is
+  marker.ts    a copy's marker, config/export.json: read and checked before any module loads
+  exports.ts   the export planner, the plugin manifests, the in-repository renders and their comparison
+  artifacts.ts the one generation path: the artifacts, the writer's brief and the rendered exports, written and planned
   law.ts       the loaded vault to a Law; the engine.json consumers
   writer.ts    the shell half of the Writer: prove, then temp-and-rename
   atomicwrite.ts   the one staged replace every non-page write lands through
@@ -62,7 +65,7 @@ packages/cli/hooks/           hooks.json and its two scripts, session-start.mjs 
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
 devwiki/                      this repository's own bundle, over the kit, judged by the suite
 fixtures/conformance/         the neutral module fixture and two bundles consuming it
-fixtures/handbooks/           two small gardening handbooks the connection tests read, one page title in both
+fixtures/handbooks/           two small gardening handbooks the connection tests read, one page title in both, each with its exports rendered under skills/
 fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories)
 fixtures/minimal-vault/       the smallest bundle that loads
 fixtures/okf-upstream/        the OKF pin: repository, commit, grounding line
@@ -100,7 +103,8 @@ by name when it breaks. Test files live under `packages/core/test` and
 | The command registry is the only surface | `--help`, `schema`, the brief and the parser render one table; every documented invocation in a shipped skill parses; every writer verb has a brief workflow slot and every slot names a verb; the playbook is byte-identical to its generator's output | `per-command-help`, `schema-walk`, `skills`, `skills-update`, `verbs`, `role-enforcement` |
 | The starters are fixtures | the `code` starter's types over `devwiki`'s own vocabularies yield the error set devwiki's constitution yields; `init` on an empty directory is green on its first `check`, and a starter that declares modules is green once the envelope's named steps are run; every copy a test judges installs the kit from the shipped package under `os.tmpdir()`, never into the shipped tree | `starter-fixtures`, `fixture-verdicts`, `init`, `kit-code` |
 | Identity is Unicode-aware | NFC and full case folding through one seam, with CJK cases; unique basenames, aliases and titles | `identity`, `names-graph` |
-| Every vault envelope names its bundle | a verb that reads a vault's law adds `metadata.bundle` — label, real root, head, dirty, the law digest over the constitution, `engine.json` and each installed module, the content digest over every page's bytes — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs; the brief's header prints the same law digest | `bundle-identity` |
+| Every vault envelope names its bundle | a verb that reads a vault's law adds `metadata.bundle` — label, real root, head, dirty, the law digest over the constitution, `engine.json` and each installed module, the content digest over every page's bytes — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs; over a copy, the export its marker names, with no head; the brief's header prints the same law digest | `bundle-identity` |
+| A copy is a vault | an export is planned by one function behind `check --write`, `check`, the staged gate and `export`, and carries its resource closure — its pages, `config/` verbatim, the templates and examples the loader validates, each declared kit at its declared location, the files its pages embed — so every reader answers over a plain copy of it with nothing installed, under the identity its marker gives it; two renders are byte-identical, a rendered copy is held to a fresh render, and a copy never carries a symbolic link | `export-copy` (end to end), `export-plan`, `export-check`, `export-verb`, `generated-tracked`, `bundle-identity` |
 | Connected bundles are told apart | from a directory that is no vault, two bundles connected by name hold one page path with different guidance, and every answer carries the bundle that gave it and the page's digest; an installed copy refuses every write to it, a consumer session reads and is refused a write, and a child handed a section's address, while the page is unchanged, reads the same bytes under the same digest — an address names the current tree, not a revision, so a child compares the digest it reads with the one it was handed | `multi-bundle` (the scenario, end to end), `bundles`, `read-verb`, `bundle-identity` |
 
 Two more properties are stated rather than tested, so a reader meets them:

@@ -9,6 +9,43 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- A bundle declares its **exports** in `config/engine.json`: read-only
+  copies of the bundle, or of part of it, that an agent host installs as
+  skills. Each selects every page, the pages carrying a tag or the pages under
+  a directory; says whether a link to a page left out is refused (`links:
+  closed`) or cut and counted (`cut`); names a guide page, where a problem
+  with the copy is reported, a license and a fragment of its own for the
+  skill text; and is rendered into the bundle's own `skills/<name>/`
+  (`output: skills`) or written into another repository (`output:
+  external`, with a `repository`). A name, when undeclared, derives from the
+  bundle's label and the selection. `plugin` declares the two plugin
+  manifests written beside them. A declaration that cannot be rendered is
+  refused when the config loads, by name.
+- A rendered export is a vault: its pages, `config/` verbatim, the templates
+  and examples the loader validates, each declared kit at its declared
+  location, the files its pages embed, `generated/` over the selection with a
+  consumer's brief that names the export, a `SKILL.md`, and the marker,
+  `config/export.json`, which names the export and the bundle and records the
+  digests it was cut with. A symbolic link is never carried: the export is
+  refused, `export-symlink`.
+- `check --write` renders every `output: skills` export and the plugin
+  manifests, replacing what differs and removing what the plan no longer
+  holds, and nothing else; `check` holds each rendered copy to a fresh render,
+  `export-stale` (fixed by `check --write`), and queues the render's own
+  refusals to `export-review`. The staged gate makes the same comparison over
+  the index, so a page or a kit declared by `path` staged without its
+  re-rendered export is refused. The two gardening handbooks track theirs.
+- `export <name> --to <dir>` writes one `output: external` export into the
+  repository at `<dir>`, as `<dir>/skills/<name>/` with the manifests beside
+  it, and refuses an undeclared name, an `output: skills` export, a
+  destination that is the bundle's root or in a content root, a
+  `skills/<name>/` without a marker, and a symbolic link where it writes.
+- An installed copy identifies itself: over a root that carries a marker,
+  `metadata.bundle` takes its label from the marker, reports no `head` and no
+  `dirty`, and names the export in `export`, with `intact: false` when the
+  copy's law or pages changed after it was cut. A marker that is not one is
+  refused, `export-marker-invalid` (exit 4), before any module loads. The
+  brief's header over a copy names the export.
 - A module declaration may name a bundle-relative directory, `path`, instead
   of an installation under `node_modules`: `{ "package": "kit-garden",
   "path": "kit/garden" }`, for a kit a bundle carries in its own tree. The

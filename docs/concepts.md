@@ -406,8 +406,9 @@ writer's verb list and the bundle's own types and vocabularies, from the
 command registry and the loaded constitution (`wikiwright brief --role <r>`
 prints any role's without writing). `wikiwright freshness` writes
 `generated/freshness.json`, which is never committed because it derives from an
-origin outside the vault. Every artifact has one generator and is byte-reproducible;
-a hand edit is overwritten by the next run.
+origin outside the vault. `check --write` also renders the bundle's exports
+under `skills/` (§A copy). Every artifact has one generator and is
+byte-reproducible; a hand edit is overwritten by the next run.
 
 ## Roles, the brief and the skills
 
@@ -470,6 +471,38 @@ page as it stands when it reads, and gets the same bytes only while the page
 has not changed. So it compares the digest it reads with the digest it was
 handed, and a mismatch means the page moved; or it is handed the passage
 itself, with its digest, and reads nothing.
+
+## A copy
+
+An **export** is a read-only copy of a bundle, or of part of it, that an
+agent host installs as a skill: a **bundle-skill**. `config/engine.json`
+declares each one (docs/constitution.md §exports): which pages it carries,
+whether a link to a page left out is refused or cut, the page to read first,
+and where a problem with it is reported. `check --write` renders an
+`output: skills` export into `skills/<name>/` under the bundle root, where a
+host that installs from the repository finds it, and `check` and the staged
+gate hold that render to a fresh one (`export-stale`); `export <name> --to
+<dir>` writes an `output: external` export into another repository's tree.
+
+A copy is itself a vault. It carries its pages at their own paths,
+`config/` verbatim, the templates and examples the loader validates, each
+declared kit at its declared location, and the files its pages embed; its
+own `generated/` artifacts and a consumer's brief over what it holds; a
+`SKILL.md` for the host; and `config/export.json`, the **marker**, which says
+which export of which bundle it is and records the digests of the law and
+the pages it was cut with. Every reader answers over a plain copy of it with
+nothing installed — `search`, `read`, `type show`, `vocabulary show`,
+`brief` — and every envelope over it names the bundle it was cut from and the
+export it is (`metadata.bundle.export`), with no `head`, since the checkout
+it sits in is not the bundle's. A copy changed after it was cut says so
+(`intact: false`); nothing refuses it for that.
+
+A copy of a subset is a **partial reader**: it holds the pages its selection
+chose and no others. A page it left out is not found in it, so not-found in a
+subset says nothing about the bundle. A link from a selected page to one it
+left out is refused when the export is declared `links: closed` and counted
+when it is `links: cut`, and the marker carries the count, so a reader can
+tell how much of the bundle the copy does not reach.
 
 ## The four layers
 

@@ -3,7 +3,7 @@ type: testing-guide
 title: "Testing the engine"
 description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install the code kit into a copy."
 tags: [repo]
-pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
+pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
 origin: .
 covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/store-lock.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts, tools/run-suite.ts]
 ---
@@ -79,8 +79,12 @@ The two gardening handbooks under `fixtures/handbooks` are corpora too, and
 declare no module, so nothing is installed to judge them:
 `fixture-verdicts` holds each at zero findings of any severity under `lint`
 and `check` (`packages/cli/test/fixture-verdicts.test.ts:105-114`),
-`generated-tracked` rebuilds their tracked `generated/` byte for byte
-(`packages/cli/test/generated-tracked.test.ts:20-25`), and `multi-bundle`,
+`generated-tracked` rebuilds their tracked `generated/` and their rendered
+exports under `skills/` byte for byte, each copied under its own name, since
+an export's marker names the bundle by its label
+(`packages/cli/test/generated-tracked.test.ts:30-35`, `:47-53`), `export-copy`
+installs their exports by a plain copy and reads them as a host would (see
+[[exports]]), and `multi-bundle`,
 `bundles`, `read-verb` and `hooks-scripts` read temporary copies of them,
 never the shipped fixtures (`packages/cli/test/multi-bundle.test.ts:22-25`).
 The lock the registry is written under is tested over the registry itself:
@@ -129,13 +133,13 @@ move under a dry run; every case owns one, so no case reads or writes the
 developer's (`packages/cli/test/dry-run.test.ts:1-13`, `:174-200`). The one
 verb an installed copy does not refuse, `bundles`, is held, with the registry
 placed outside the vault, to plan only absolute store paths; the exemption is
-by verb (`:960-995`). The source scans read text: the import
+by verb (`:1034-1069`). The source scans read text: the import
 graph and the vault-loading declaration check share one recognizer of
 runtime import edges (`packages/cli/test/fixtures/imports.ts:1-27`), and
 each scan says where it is defined what it cannot see; the one module
 outside the Writer that writes a file of its own, the stdout file a git
-child writes to, is declared there with its reason
-(`packages/cli/test/dry-run.test.ts:859-878`). A git
+child writes to, is declared there with its reason, as `artifacts.ts` is
+for the export files it removes (`packages/cli/test/dry-run.test.ts:933-952`). A git
 answer is tested by cutting it, not by trusting a parser to notice:
 `packages/cli/test/git-short-read.test.ts` puts an `sh` launcher named `git`
 first on PATH that runs the real git and prints one command's answer cut —

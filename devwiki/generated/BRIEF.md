@@ -190,7 +190,7 @@ No `categories` value has been observed in this vault yet.
 
 ### `relations`
 
-`part_of` (25) · `mapped_in` (18) · `verified_by` (15) · `decided_by` (11)
+`part_of` (26) · `mapped_in` (19) · `verified_by` (16) · `decided_by` (11)
 
 ### `sources`
 
@@ -198,7 +198,7 @@ No `sources` value has been observed in this vault yet.
 
 ### `tags`
 
-`cli` (16) · `kernel` (14) · `meta` (8) · `repo` (4) · `stdlib` (3) · `kit` (2)
+`cli` (17) · `kernel` (14) · `meta` (8) · `repo` (4) · `stdlib` (3) · `kit` (2)
 
 ## What the loaded modules add
 

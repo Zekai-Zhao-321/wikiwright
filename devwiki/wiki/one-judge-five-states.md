@@ -3,7 +3,7 @@ type: code-concept
 title: "One judge, five states"
 description: "Every write path — the working tree, the staged gate, a draft on stdin, a write, a replay of history — constructs a state and calls the one judge under the one law, so no verb can be told one thing at write time and another at the gate."
 tags: [kernel, cli]
-pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
+pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
 origin: .
 covers: [packages/core/src/judge/index.ts, packages/cli/src/state.ts, packages/cli/src/writer.ts, packages/cli/src/staged.ts, packages/cli/src/law.ts, packages/cli/src/verbs/lint.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/fix.ts, packages/cli/src/verbs/write.ts]
 ---
@@ -42,13 +42,16 @@ true`, which turns on line-scoped severity and the change scoping and makes
 every fix argv say `--staged` (`packages/core/src/judge/index.ts:93-99`,
 `:537-540`); `configChanged` suspends the demotion (`:432-434`, `:605`).
 A verb that reports findings without judging — `okf check`, `move`, `new`,
-`freshness` — routes them through the same xor with `routeFindings`
-(`:264-277`).
+`freshness`, `export` — routes them through the same xor with `routeFindings`
+(`:264-277`). The exports' findings ride into the judge as shell findings,
+planned from the same state's pages: the working tree's under `check`
+(`packages/cli/src/verbs/check.ts:83-90`, `:116-121`), the index's under the
+staged gate (`packages/cli/src/staged.ts:122-137`; see [[exports]]).
 
 Whichever state a verb builds, its envelope names the bundle it was built
 over: `metadata.bundle` carries the root, the checkout, a digest of the
 pages and the law digest over the config and module bytes the law is built
-from (`packages/cli/src/bundle.ts:38-53`, `:118-140`;
+from (`packages/cli/src/bundle.ts:39-54`, `:151-197`;
 see [[command-runtime]]). A bundle named by `--bundle`
 is resolved to the root `--root` would name before any module loads, so it is
 judged by the same constructors under the same law; the runtime's refusals —
@@ -76,7 +79,7 @@ this page does.
   `packages/cli/src/staged.ts`).
 - The law: `packages/cli/src/law.ts` (see [[command-runtime]]).
 - The verbs that choose a constructor: `packages/cli/src/verbs/lint.ts:62`,
-  `:84`, `:101`, `:210`; `packages/cli/src/verbs/check.ts:147`;
+  `:84`, `:101`, `:210`; `packages/cli/src/verbs/check.ts:171`;
   `packages/cli/src/verbs/fix.ts:42`; `packages/cli/src/verbs/write.ts:53`.
 - The test: `packages/cli/test/judge-property.test.ts`, with `staged-gate`,
   `lint-verb`, `write-verb` and `relation-lifecycle` beside it

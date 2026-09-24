@@ -3,7 +3,7 @@ type: subsystem
 title: "Modules, the loader and the fixture"
 description: "The registration API every module goes through, the loader's ladder from the bundle's own node_modules or a declared bundle-relative path to the judge, the purity scan and the determinism fixture run at every load and kept once per digest in a process, and the modules verb."
 tags: [kernel, cli]
-pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
+pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
 origin: .
 covers: [packages/core/src/modules/, packages/core/src/version/, packages/cli/src/main.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/cli/src/sha256.ts, packages/cli/src/verbs/modules.ts]
 aliases: ["modules-and-trust"]
@@ -85,10 +85,10 @@ same path (`packages/cli/src/verbs/modules.ts:1-7`, `:100-151`, `:189-210`).
   `declaredModulesOf`, `declaredModulesIn`, `declaredModulesInText`,
   `moduleDigest`, `moduleLocation` (`packages/cli/src/moduleload.ts:348`,
   `:600`, `:595`, `:632`, `:660`, `:649`, `:727`, `:111`); `main.ts` preloads
-  once before dispatch (`packages/cli/src/main.ts:198-201`) and `loadVaultVia`
+  once before dispatch (`packages/cli/src/main.ts:218-221`) and `loadVaultVia`
   reads the outcome, refusing `module-not-loaded` when it is absent and
   composing `[...STANDARD_LIBRARY, ...loaded]` when it is not
-  (`packages/cli/src/vaultio.ts:177-241`).
+  (`packages/cli/src/vaultio.ts:197-261`).
 - `runModuleFixture` (`packages/cli/src/modulefixture.ts:80`); `sha256Of`
   (`packages/cli/src/sha256.ts:10`); `modulesCommand`
   (`packages/cli/src/verbs/modules.ts:70`).
@@ -111,7 +111,7 @@ loader reads and never writes. Nothing of a module is kept between processes.
 - A bundle judged without a law it declares is judged under a different law
   than it believes: a declared module that did not load is a refusal, never a
   quieter law (`packages/cli/src/moduleload.ts:4-9`;
-  `packages/cli/src/vaultio.ts:169-176`).
+  `packages/cli/src/vaultio.ts:189-196`).
 - The digest covers every file of the package, `package.json` and the fixture
   included, so repointing the entry or editing the expectation moves the
   digest (`packages/cli/src/moduleload.ts:246-255`); the entry and the
@@ -139,7 +139,7 @@ loader reads and never writes. Nothing of a module is kept between processes.
   `module-load-failed`, `module-fixture-missing`, `module-fixture-failed`,
   `module-nondeterministic` (`packages/cli/src/moduleload.ts:50-67`), each
   naming the package and most a hint; `module-not-loaded` and
-  `module-conflict` at the vault load (`packages/cli/src/vaultio.ts:183-238`).
+  `module-conflict` at the vault load (`packages/cli/src/vaultio.ts:203-258`).
 - `RegistryConflict` kinds from `loadModules`
   (`packages/core/src/modules/index.ts:785-812`), raised before any module
   code runs (`:821-825`).

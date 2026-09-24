@@ -1,20 +1,20 @@
 {
   "schema": "wikiwright/manifest",
   "totals": {
-    "pages": 34,
-    "edges": 243
+    "pages": 35,
+    "edges": 264
   },
   "by_kind": {
-    "relation": 69,
-    "tagged": 47,
-    "wikilink": 127
+    "relation": 72,
+    "tagged": 48,
+    "wikilink": 144
   },
   "by_label": {
     "relation": {
       "decided_by": 11,
-      "mapped_in": 18,
-      "part_of": 25,
-      "verified_by": 15
+      "mapped_in": 19,
+      "part_of": 26,
+      "verified_by": 16
     }
   },
   "extensions": {},
@@ -263,6 +263,7 @@
           ]
         },
         "wikilink": [
+          "wiki/exports.md",
           "wiki/git.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
@@ -280,6 +281,7 @@
         "wikilink": [
           "wiki/envelope-and-exit-codes.md",
           "wiki/environment-variables.md",
+          "wiki/exports.md",
           "wiki/fields-and-shapes.md",
           "wiki/findings-and-routing.md",
           "wiki/git.md",
@@ -316,6 +318,7 @@
         },
         "wikilink": [
           "meta/D-001.md",
+          "wiki/exports.md",
           "wiki/generated-artifacts.md",
           "wiki/loading-a-module.md",
           "wiki/modules.md",
@@ -351,6 +354,7 @@
         },
         "wikilink": [
           "wiki/command-runtime.md",
+          "wiki/exports.md",
           "wiki/fixers.md",
           "wiki/git.md",
           "wiki/repository-layout.md",
@@ -394,6 +398,57 @@
           "wiki/repository-layout.md",
           "wiki/repository-scripts.md",
           "wiki/testing-guide.md"
+        ]
+      }
+    },
+    {
+      "path": "wiki/exports.md",
+      "type": "subsystem",
+      "archetype": "concept",
+      "chain": [
+        "subsystem",
+        "code/subsystem",
+        "concept"
+      ],
+      "title": "Exports",
+      "description": "A bundle's declared exports: read-only copies of the bundle, or of part of it, that a host installs as skills, planned by one function, rendered into the bundle's own skills/ by check --write or into another repository by export, held to a fresh render by check and the staged gate, and read as a vault under the identity their marker gives.",
+      "tags": [
+        "cli"
+      ],
+      "outbound": {
+        "relation": {
+          "mapped_in": [
+            "wiki/repository-layout.md"
+          ],
+          "part_of": [
+            "wiki/wikiwright-architecture.md"
+          ],
+          "verified_by": [
+            "wiki/testing-guide.md"
+          ]
+        },
+        "wikilink": [
+          "wiki/command-runtime.md",
+          "wiki/generated-artifacts.md",
+          "wiki/git.md",
+          "wiki/repository-layout.md",
+          "wiki/testing-guide.md",
+          "wiki/wikiwright-architecture.md",
+          "wiki/writer-and-staged-gate.md"
+        ]
+      },
+      "inbound": {
+        "wikilink": [
+          "wiki/command-runtime.md",
+          "wiki/deterministic-artifacts.md",
+          "wiki/envelope-and-exit-codes.md",
+          "wiki/generated-artifacts.md",
+          "wiki/git.md",
+          "wiki/one-judge-five-states.md",
+          "wiki/registry-pipeline.md",
+          "wiki/testing-guide.md",
+          "wiki/wikiwright-architecture.md",
+          "wiki/writer-and-staged-gate.md"
         ]
       }
     },
@@ -557,7 +612,7 @@
         "concept"
       ],
       "title": "Generated artifacts",
-      "description": "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges.",
+      "description": "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, and the bundle's rendered exports under skills/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges.",
       "tags": [
         "kernel",
         "cli"
@@ -581,6 +636,7 @@
         "wikilink": [
           "meta/D-001.md",
           "meta/D-005.md",
+          "wiki/exports.md",
           "wiki/freshness.md",
           "wiki/repository-layout.md",
           "wiki/skills-and-brief.md",
@@ -591,7 +647,8 @@
       },
       "inbound": {
         "wikilink": [
-          "wiki/deterministic-artifacts.md"
+          "wiki/deterministic-artifacts.md",
+          "wiki/exports.md"
         ]
       }
     },
@@ -622,6 +679,7 @@
         "wikilink": [
           "wiki/command-runtime.md",
           "wiki/envelope-and-exit-codes.md",
+          "wiki/exports.md",
           "wiki/freshness.md",
           "wiki/repository-layout.md",
           "wiki/writer-and-staged-gate.md"
@@ -632,6 +690,7 @@
           "wiki/command-runtime.md",
           "wiki/envelope-and-exit-codes.md",
           "wiki/environment-variables.md",
+          "wiki/exports.md",
           "wiki/fixers.md",
           "wiki/freshness.md",
           "wiki/one-judge-five-states.md",
@@ -808,6 +867,7 @@
         "wikilink": [
           "wiki/command-runtime.md",
           "wiki/envelope-and-exit-codes.md",
+          "wiki/exports.md",
           "wiki/git.md",
           "wiki/judge.md",
           "wiki/wikiwright-architecture.md",
@@ -889,6 +949,7 @@
         },
         "wikilink": [
           "wiki/command-runtime.md",
+          "wiki/exports.md",
           "wiki/modules.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
@@ -928,6 +989,7 @@
             "wiki/command-runtime.md",
             "wiki/envelope-and-exit-codes.md",
             "wiki/environment-variables.md",
+            "wiki/exports.md",
             "wiki/fields-and-shapes.md",
             "wiki/fixers.md",
             "wiki/freshness.md",
@@ -949,6 +1011,7 @@
           "wiki/command-runtime.md",
           "wiki/envelope-and-exit-codes.md",
           "wiki/environment-variables.md",
+          "wiki/exports.md",
           "wiki/fields-and-shapes.md",
           "wiki/fixers.md",
           "wiki/freshness.md",
@@ -1172,6 +1235,7 @@
           ]
         },
         "wikilink": [
+          "wiki/exports.md",
           "wiki/git.md",
           "wiki/loading-a-module.md",
           "wiki/wikiwright-architecture.md"
@@ -1181,6 +1245,7 @@
         "relation": {
           "verified_by": [
             "wiki/command-runtime.md",
+            "wiki/exports.md",
             "wiki/fields-and-shapes.md",
             "wiki/fixers.md",
             "wiki/freshness.md",
@@ -1199,6 +1264,7 @@
         "wikilink": [
           "wiki/command-runtime.md",
           "wiki/environment-variables.md",
+          "wiki/exports.md",
           "wiki/fields-and-shapes.md",
           "wiki/fixers.md",
           "wiki/freshness.md",
@@ -1247,6 +1313,7 @@
         },
         "wikilink": [
           "meta/D-004.md",
+          "wiki/exports.md",
           "wiki/loading-a-module.md",
           "wiki/registry-pipeline.md",
           "wiki/repository-layout.md",
@@ -1259,6 +1326,7 @@
           "part_of": [
             "wiki/command-runtime.md",
             "wiki/deterministic-artifacts.md",
+            "wiki/exports.md",
             "wiki/findings-and-routing.md",
             "wiki/freshness.md",
             "wiki/generated-artifacts.md",
@@ -1280,6 +1348,7 @@
         "wikilink": [
           "wiki/command-runtime.md",
           "wiki/deterministic-artifacts.md",
+          "wiki/exports.md",
           "wiki/findings-and-routing.md",
           "wiki/freshness.md",
           "wiki/generated-artifacts.md",
@@ -1369,6 +1438,7 @@
           ]
         },
         "wikilink": [
+          "wiki/exports.md",
           "wiki/git.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
@@ -1383,6 +1453,7 @@
         },
         "wikilink": [
           "wiki/envelope-and-exit-codes.md",
+          "wiki/exports.md",
           "wiki/generated-artifacts.md",
           "wiki/git.md",
           "wiki/judge.md",

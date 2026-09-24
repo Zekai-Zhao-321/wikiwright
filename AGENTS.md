@@ -64,7 +64,8 @@ Before a release run `bun run test:node` (the node runner) and
   stamps a date sets `WIKIWRIGHT_TODAY`.
 - **Generated files have one generator.** `devwiki/generated`, the brief
   included, from `wikiwright check --write --root devwiki`; the two
-  handbooks' `generated/`, their briefs included, from
+  handbooks' `generated/`, their briefs included, and their rendered exports
+  under `skills/`, from
   `wikiwright check --write --root fixtures/handbooks/<name>`; the playbook from
   `bun tools/render-playbook.ts`; `docs/cli.md`'s verb block from
   `bun docs/render-cli.ts --write`.

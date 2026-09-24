@@ -3,7 +3,7 @@ type: source-map
 title: Repository layout
 description: Directory-to-purpose lookup for the wikiwright repository.
 tags: [repo]
-pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
+pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
 origin: .
 covers: [package.json, tsconfig.json, packages/cli/constitutions/, packages/cli/skills/, packages/cli/.claude-plugin/, packages/cli/hooks/, packages/kit-code/, fixtures/, tools/, scripts/, .github/]
 ---
@@ -22,7 +22,7 @@ covers: [package.json, tsconfig.json, packages/cli/constitutions/, packages/cli/
 | `packages/cli/.claude-plugin/` | The plugin manifest: the package root is also a Claude Code plugin |
 | `packages/cli/hooks/` | `hooks.json` and its two scripts, run at session start and after an edit |
 | `packages/kit-code/` | `@wikiwright/kit-code`: the shipped domain kit — the types, relation labels, templates and discipline of a code wiki, consumed by the `code` starter and by this bundle |
-| `fixtures/` | The corpora the suite judges (`memory-synth`, `minimal-vault`, and the two gardening handbooks under `handbooks/` the connection tests read), the conformance module fixture with its two bundles, and the OKF pin |
+| `fixtures/` | The corpora the suite judges (`memory-synth`, `minimal-vault`, and the two gardening handbooks under `handbooks/` the connection tests read, each with its exports rendered and tracked under `skills/`), the conformance module fixture with its two bundles, and the OKF pin |
 | `tools/` | Repository scripts: the build-info writer, the playbook renderer, the case-fold table generator, the uncovered-directory lister, the suite runner the gate uses, and the benchmark of `check` and `lint --staged` |
 | `scripts/hooks/` | The development gate, `pre-commit` |
 | `.github/workflows/` | The workflow `check.yml`: the gate and the node runner on every push and pull request, on Linux and macOS |

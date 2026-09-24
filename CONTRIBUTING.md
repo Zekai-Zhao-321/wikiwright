@@ -102,8 +102,10 @@ else is not covered.
   `lint` must be clean) and `generated-tracked` (its `generated/` must be
   what this build renders). The two handbooks under `fixtures/handbooks`
   are held at zero findings of any severity under `check` by
-  `fixture-verdicts`, their tracked `generated/` by `generated-tracked`, and
-  the connected-bundles scenario over them by `multi-bundle`.
+  `fixture-verdicts`, their tracked `generated/` and their rendered exports
+  under `skills/` by `generated-tracked`, the connected-bundles scenario over
+  them by `multi-bundle`, and a copy of their exports, installed as a host
+  installs it, by `export-copy`.
 
 ## Measuring command performance
 
@@ -132,7 +134,7 @@ logical change is one commit).
 | File | Generator |
 |---|---|
 | `devwiki/generated/*`, the brief included | `wikiwright check --write --root devwiki`, after the install above |
-| `fixtures/handbooks/*/generated/*`, the briefs included | `wikiwright check --write --root fixtures/handbooks/orchard`, and the same for `allotment` |
+| `fixtures/handbooks/*/generated/*`, the briefs included, and `fixtures/handbooks/*/skills/*`, the rendered exports | `wikiwright check --write --root fixtures/handbooks/orchard`, and the same for `allotment` |
 | `packages/cli/skills/wikiwright-maintain/lint-response.md` | `bun tools/render-playbook.ts` (`--check` verifies) |
 | the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies) |
 | `packages/core/src/identity/casefold-data.ts` | `bun tools/generate-casefold.ts` |

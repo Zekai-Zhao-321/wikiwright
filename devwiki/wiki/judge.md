@@ -3,7 +3,7 @@ type: subsystem
 title: "The judge and its passes"
 description: "One pure function turns a vault state and a law into a verdict: the per-page passes, the vault passes, the grammar arms, routing, exceptions, the gate rule, the coverage block and the cap."
 tags: [kernel]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
 origin: .
 covers: [packages/core/src/judge/, packages/core/src/passes/, packages/core/src/lint/, packages/core/src/grammar/]
 ---
@@ -40,13 +40,15 @@ sections by identity and depth and parses each non-prose section's top-level
 list items through the section's dispatch chain (`:194-221`); `checkGrammar`
 (`:407`) runs the state arms the loaded modules registered for the section's
 grammar. `packages/core/src/passes/index.ts` holds the kernel's own
-`PASS_TABLE` (`:115`) — every id the kernel emits, with its kind, severity,
-fixer and lane — and the closed `KERNEL_LANES` (`:20-36`).
+`PASS_TABLE` (`:118`) — every id the kernel emits, with its kind, severity,
+fixer and lane, the exports' rows among them — and the closed
+`KERNEL_LANES` (`:20-39`), `export-review` the lane an export's refusals
+queue to.
 
 ## Entry points
 
 - `judge` (`packages/core/src/judge/index.ts:439`), called by every verb that
-  judges: `check` (`packages/cli/src/verbs/check.ts:146`), the staged gate
+  judges: `check` (`packages/cli/src/verbs/check.ts:170`), the staged gate
   (see [[writer-and-staged-gate]]) and the Writer's proof
   (`packages/cli/src/writer.ts:82-85`).
 - `routeFindings` (`packages/core/src/judge/index.ts:269`), for verbs that
@@ -59,7 +61,7 @@ fixer and lane — and the closed `KERNEL_LANES` (`:20-36`).
   `evidenceDigestFor` (`:181`), `linkVerdict` (`:101`).
 - `parseSections` and `checkGrammar` (`packages/core/src/grammar/index.ts:228`,
   `:407`); `routeOf` and `unroutableRows`
-  (`packages/core/src/passes/index.ts:90`, `:102`); `inheritedLines`
+  (`packages/core/src/passes/index.ts:93`, `:105`); `inheritedLines`
   (`packages/core/src/judge/index.ts:312`).
 
 ## State

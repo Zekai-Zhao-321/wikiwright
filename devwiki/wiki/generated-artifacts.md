@@ -1,9 +1,9 @@
 ---
 type: subsystem
 title: "Generated artifacts"
-description: "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges."
+description: "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, and the bundle's rendered exports under skills/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges."
 tags: [kernel, cli]
-pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
+pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
 origin: .
 covers: [packages/core/src/generate/, packages/core/src/hash/, packages/cli/src/artifacts.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/graph.ts]
 ---
@@ -30,26 +30,34 @@ one serializer (`:24-30`). `packages/core/src/hash/index.ts` is the kernel's
 vendored SHA-256 (`:45`), read by the claim handle and a finding's evidence
 digest, with `node:crypto` as its oracle in a test (`:1-9`).
 
-In the shell, `regenerate` (`packages/cli/src/artifacts.ts:59-72`) is the
+In the shell, `regenerate` (`packages/cli/src/artifacts.ts:60-86`) is the
 one generation path `check --write` and `init` share: the kernel's three
-plans plus the writer's brief, which `briefPlan` (`:26-33`) renders through
+plans plus the writer's brief, which `briefPlan` (`:33-40`) renders through
 the brief's one renderer as a fourth `ArtifactPlan`, under a header naming
-the bundle's law digest (see [[skills-and-brief]]); `writeArtifacts`
-(`packages/cli/src/artifacts.ts:43-51`) lands every file write-then-rename;
-`writeBrief` (`:35-41`) is the brief alone through the same loop, for
-`skills update`; `artifactOps` (`:81-101`) answers the dry run from the
-generator itself, the brief named last. The `check` verb
+the bundle's law digest (see [[skills-and-brief]]), then the bundle's
+`output: skills` exports (see [[exports]]); `writeArtifacts`
+(`packages/cli/src/artifacts.ts:50-58`) lands every file write-then-rename;
+`writeBrief` (`:42-48`) is the brief alone through the same loop, for
+`skills update`; `writeExports` (`:88-130`) replaces each export's planned
+files that differ and removes what its plan no longer holds, pruning the
+directories that leaves empty and nothing outside them (`:132-146`);
+`artifactOps` (`:171-211`) answers the dry run from the generator itself,
+the brief named after the kernel's plans and the exports' writes and
+removals from `exportOps` (`:148-169`). The `check` verb
 (`packages/cli/src/verbs/check.ts`) reads the tree into one state and parses
-it once, through `parsedPages`, for everything that follows (`:67-71`),
-writes the three plans and the brief under `--write` (`:75-80`), compares
-every kernel plan with the file on disk and reports `generated-drift`
-(`:81-98`), adds the machine-local findings about skills, the brief and the
-installed hooks (`:103-126`) — a brief that differs from the one already
-rendered from those pages is `brief-stale`, `info`, whose advisory is
-`check --write` (`packages/cli/src/verbs/brief.ts:41-59`;
-`packages/core/src/passes/index.ts:378`) — names the shell passes it ran
-(`:133-142`), hands the same state to one judge (`:146-150`) and lists the
-four files it generates (`:154`). The `graph edges` verb queries
+it once, through `parsedPages`, for everything that follows (`:73-79`),
+plans the exports from the same pages (`:83-90`), writes the three plans,
+the brief and the exports under `--write` (`:94-97`), compares every kernel
+plan with the file on disk and reports `generated-drift` (`:98-115`), adds
+the exports' own findings and each rendered copy against a fresh plan,
+`export-stale` (`:116-121`), then the machine-local findings about skills,
+the brief and the installed hooks (`:122-149`) — a brief that differs from
+the one already rendered from those pages is `brief-stale`, `info`, whose
+advisory is `check --write` (`packages/cli/src/verbs/brief.ts:41-59`;
+`packages/core/src/passes/index.ts:381`) — names the shell passes it ran
+(`packages/cli/src/verbs/check.ts:157-167`), hands the same state to one
+judge (`:171-176`) and lists the four files it generates and the export
+directories it judged (`:179-182`). The `graph edges` verb queries
 the graph built from the working tree through `graphOf`, never the artifact on
 disk (`packages/cli/src/verbs/graph.ts:1-5`); `--missing` enumerates one
 side and names it — `side: "target"` under `--inbound`, the pages of that
@@ -63,9 +71,9 @@ carry no `mapped_in`" is `--label mapped_in --outbound subsystem --missing`
 - `graphOf`, `generateArtifacts`, `serializeArtifact`
   (`packages/core/src/generate/index.ts:83`, `:214`, `:28`); `sha256Hex`
   (`packages/core/src/hash/index.ts:45`).
-- `regenerate`, `artifactOps`, `writeArtifacts`
-  (`packages/cli/src/artifacts.ts`); `checkCommand`
-  (`packages/cli/src/verbs/check.ts:44`); `graphCommand`
+- `regenerate`, `artifactOps`, `writeArtifacts`, `writeExports`,
+  `exportOps` (`packages/cli/src/artifacts.ts`); `checkCommand`
+  (`packages/cli/src/verbs/check.ts:51`); `graphCommand`
   (`packages/cli/src/verbs/graph.ts:38`).
 - The staged gate rebuilds the artifacts from the index's own pages and
   compares them with the index's bytes (see [[writer-and-staged-gate]]);
@@ -76,12 +84,15 @@ carry no `mapped_in`" is `--label mapped_in --outbound subsystem --missing`
 
 The files under `generated/`: `graph.json`, `manifest.json` and
 `tag-catalog.md` from the kernel (`packages/core/src/generate/index.ts:326-328`)
-and `BRIEF.md` from the brief's renderer (`packages/cli/src/artifacts.ts:26-33`;
+and `BRIEF.md` from the brief's renderer (`packages/cli/src/artifacts.ts:33-40`;
 see [[skills-and-brief]]), all four landed by `check --write` and tracked in
 this bundle by [[D-001]], as the two gardening handbooks under
 `fixtures/handbooks` track theirs; the suite rebuilds each tracked
 `generated/` from nothing and compares every byte
 (`packages/cli/test/generated-tracked.test.ts`).
+The handbooks' rendered exports under `skills/<name>/` are landed by the
+same `check --write` and tracked beside their `generated/`, and rebuilt
+from nothing by the same test (see [[exports]]).
 `generated/freshness.json` is never committed (see [[freshness]]). Nothing
 is held at runtime.
 
@@ -102,23 +113,29 @@ is held at runtime.
   keys the edge by the item's kind (`:74-80`, `:137-141`).
 - The plan's paths come from the generator itself, so a dry run can never
   name a file the writer would not produce
-  (`packages/cli/src/artifacts.ts:74-80`); drift is compared against a fresh
-  rebuild, never a remembered set (`packages/cli/src/verbs/check.ts:81-98`),
+  (`packages/cli/src/artifacts.ts:171-177`), and an export's plan names only
+  the files that differ and the ones it removes, the delta the writer makes
+  (`:148-169`); drift is compared against a fresh
+  rebuild, never a remembered set (`packages/cli/src/verbs/check.ts:98-115`),
   and at the gate against the index, never the working tree
   (see [[writer-and-staged-gate]]).
 - `check` contacts no origin: the origin rows read `not_applicable`, reason
-  `external-origin`, on every page (`packages/cli/src/verbs/check.ts:129-133`).
+  `external-origin`, on every page (`packages/cli/src/verbs/check.ts:152-156`).
 
 ## Failure modes
 
 - `generated-drift` (error, fixer `check --write`) when a file differs or is
-  missing (`packages/cli/src/verbs/check.ts:84-97`;
-  `packages/core/src/passes/index.ts:187-193`); at the gate, when the staged
+  missing (`packages/cli/src/verbs/check.ts:101-114`;
+  `packages/core/src/passes/index.ts:190-196`); at the gate, when the staged
   artifact does not describe the staged pages (see
   [[writer-and-staged-gate]]).
+- `export-stale` (error, fixer `check --write`) when a rendered export
+  differs from a fresh plan, naming the first files that differ
+  (`packages/core/src/passes/index.ts:392`); the render's own refusals are
+  the exports' (see [[exports]]).
 - The rename loop is per-file atomic, not batch-atomic: a crash mid-loop
   leaves a mix the next `check --write` converges
-  (`packages/cli/src/artifacts.ts:43-51`; `packages/cli/src/atomicwrite.ts:84-98`).
+  (`packages/cli/src/artifacts.ts:50-58`; `packages/cli/src/atomicwrite.ts:84-98`).
 - An unknown type, kind or label in `graph edges` is exit 3 with the nearest
   names within three edits (`packages/cli/src/verbs/graph.ts:24-33`).
 - `brief-stale` (info, advisory `check --write`) when the installed brief is

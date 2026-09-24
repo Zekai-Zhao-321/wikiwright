@@ -98,6 +98,12 @@
       "title": "Environment variables"
     },
     {
+      "id": "wiki/exports.md",
+      "kind": "page",
+      "type": "subsystem",
+      "title": "Exports"
+    },
+    {
       "id": "wiki/fields-and-shapes.md",
       "kind": "page",
       "type": "subsystem",
@@ -303,6 +309,11 @@
     },
     {
       "from": "wiki/command-runtime.md",
+      "to": "wiki/exports.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/command-runtime.md",
       "to": "wiki/git.md",
       "kind": "wikilink"
     },
@@ -362,6 +373,11 @@
     },
     {
       "from": "wiki/deterministic-artifacts.md",
+      "to": "wiki/exports.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
       "to": "wiki/generated-artifacts.md",
       "kind": "wikilink"
     },
@@ -415,6 +431,11 @@
     {
       "from": "wiki/envelope-and-exit-codes.md",
       "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/envelope-and-exit-codes.md",
+      "to": "wiki/exports.md",
       "kind": "wikilink"
     },
     {
@@ -483,6 +504,64 @@
     {
       "from": "wiki/environment-variables.md",
       "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/generated-artifacts.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/git.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/exports.md",
+      "to": "wiki/writer-and-staged-gate.md",
       "kind": "wikilink"
     },
     {
@@ -694,6 +773,11 @@
     },
     {
       "from": "wiki/generated-artifacts.md",
+      "to": "wiki/exports.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/generated-artifacts.md",
       "to": "wiki/freshness.md",
       "kind": "wikilink"
     },
@@ -753,6 +837,11 @@
     {
       "from": "wiki/git.md",
       "to": "wiki/envelope-and-exit-codes.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/git.md",
+      "to": "wiki/exports.md",
       "kind": "wikilink"
     },
     {
@@ -988,6 +1077,11 @@
     {
       "from": "wiki/one-judge-five-states.md",
       "to": "wiki/envelope-and-exit-codes.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "wiki/exports.md",
       "kind": "wikilink"
     },
     {
@@ -1081,6 +1175,11 @@
     },
     {
       "from": "wiki/registry-pipeline.md",
+      "to": "wiki/exports.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
       "to": "wiki/modules.md",
       "kind": "wikilink"
     },
@@ -1331,6 +1430,11 @@
     },
     {
       "from": "wiki/testing-guide.md",
+      "to": "wiki/exports.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/testing-guide.md",
       "to": "wiki/git.md",
       "kind": "wikilink"
     },
@@ -1380,6 +1484,11 @@
       "from": "wiki/wikiwright-architecture.md",
       "to": "tag:stdlib",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "wiki/exports.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/wikiwright-architecture.md",
@@ -1476,6 +1585,11 @@
       "from": "wiki/writer-and-staged-gate.md",
       "to": "tag:kernel",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/writer-and-staged-gate.md",
+      "to": "wiki/exports.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/writer-and-staged-gate.md",
