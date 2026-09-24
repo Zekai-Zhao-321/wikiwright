@@ -4,12 +4,18 @@
 // a verb that reads the law and says it does not would be judged under a
 // quieter law, and one that says it does loads a bundle's third-party code to
 // answer a question about the engine.
+//
+// The scan reads source text: it follows every runtime import edge the shared
+// recognizer sees — a named, default or namespace import, a re-export, a bare
+// import for its side effects, a dynamic import of a literal — and a loader
+// call spelled out. A specifier or a call built at runtime is outside it.
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
+import { runtimeImports } from "./fixtures/imports.ts";
 
 const SRC = fileURLToPath(new URL("../src", import.meta.url));
 
@@ -39,23 +45,25 @@ const CALLS_LOADER = /(?<!function )\b(?:loadVault|loadVaultVia|preloadedModules
  */
 const REGISTRY = join(SRC, "commands.ts");
 
-function importsOf(file: string): string[] {
-  const out: string[] = [];
-  for (const m of readFileSync(file, "utf8").matchAll(/from\s+"(\.[^"]+)"/gu)) {
-    const target = resolve(dirname(file), m[1] ?? "");
-    if (target !== REGISTRY) out.push(target);
-  }
-  return out;
+function readSource(file: string): string {
+  return readFileSync(file, "utf8");
 }
 
-function readsAVault(entry: string): boolean {
+/** The files a module's runtime imports reach, the registry's edge left out. */
+function importsOf(source: string, file: string): string[] {
+  return runtimeImports(source, file).filter((target) => target !== REGISTRY);
+}
+
+/** Whether `entry`, or a module its imports reach, calls the vault loader. */
+function readsAVault(entry: string, read: (file: string) => string = readSource): boolean {
   const seen = new Set([entry]);
   const stack = [entry];
   while (stack.length > 0) {
     const file = stack.pop();
     if (file === undefined) break;
-    if (CALLS_LOADER.test(readFileSync(file, "utf8"))) return true;
-    for (const next of importsOf(file)) {
+    const source = read(file);
+    if (CALLS_LOADER.test(source)) return true;
+    for (const next of importsOf(source, file)) {
       if (!seen.has(next)) {
         seen.add(next);
         stack.push(next);
@@ -96,6 +104,31 @@ describe("a verb declares whether it reads the vault's law (docs/extending.md)",
     assert.equal(CALLS_LOADER.test('const vault = loadVault("check", root);'), true);
     assert.equal(CALLS_LOADER.test("export function preloadedModules(root: string) {"), false);
     assert.equal(CALLS_LOADER.test('import { loadVault } from "../vaultio.ts";'), false);
+  });
+
+  it("and the graph follows every runtime edge to a loader call, and no type-only one", () => {
+    // Two in-memory modules: the verb reaches the loader call only through the
+    // one edge each case spells.
+    const verb = join(SRC, "verbs", "probe.ts");
+    const helper = join(SRC, "probe-helper.ts");
+    const graph = (spelling: string) => (file: string) =>
+      file === verb ? spelling : file === helper ? "loadVault(command, root);\n" : "";
+    for (const reaches of [
+      'import { helper } from "../probe-helper.ts";',
+      'import helper from "../probe-helper.ts";',
+      'import * as helper from "../probe-helper.ts";',
+      'export { helper } from "../probe-helper.ts";',
+      'import "../probe-helper.ts";',
+      'const helper = await import("../probe-helper.ts");',
+    ]) {
+      assert.equal(readsAVault(verb, graph(reaches)), true, reaches);
+    }
+    for (const erased of [
+      'import type { Helper } from "../probe-helper.ts";',
+      'export type { Helper } from "../probe-helper.ts";',
+    ]) {
+      assert.equal(readsAVault(verb, graph(erased)), false, erased);
+    }
   });
 
   it("every source file the walk finds is a file the graph can read", () => {

@@ -54,6 +54,17 @@ const WRITE_CALLS = [
   "unlinkSync",
   "chmodSync",
   "createWriteStream",
+  // The same writes without `Sync`: the callback API of `node:fs` and the
+  // promise API of `node:fs/promises` spell them so.
+  "writeFile",
+  "appendFile",
+  "rename",
+  "cp",
+  "mkdir",
+  "rm",
+  "rmdir",
+  "unlink",
+  "chmod",
 ];
 
 /** `git <subcommand>` spellings that change the repository rather than read it. */
@@ -815,19 +826,38 @@ function gitInitEmpty(dir: string): void {
  * build by the module's own name rather than by a reviewer noticing.
  */
 
-/** The `node:fs` write APIs a module imports, by the specifier — never by a bare name. */
+/**
+ * The `node:fs` write APIs a module imports, by the specifier — never by a bare
+ * name: a named import of one, or a namespace (`* as fs`) or default (`fs`)
+ * binding called through a member, `fs.writeFileSync(`. It reads source text,
+ * so an API reached through a name built at runtime is outside it.
+ */
 function fsWriteImports(raw: string): string[] {
   const out: string[] = [];
+  // The clause holds no `;`, so it never runs back over an earlier import.
   for (const m of raw.matchAll(
-    /import\s+(?:type\s+)?([\s\S]*?)\s+from\s+"node:fs(?:\/promises)?"/g,
+    /import\s+(?:type\s+)?([^;]*?)\s+from\s+"node:fs(?:\/promises)?"/g,
   )) {
-    for (const entry of (m[1] ?? "").replace(/[{}]/g, "").split(",")) {
+    const clause = m[1] ?? "";
+    const named = /\{([\s\S]*?)\}/u.exec(clause)?.[1] ?? "";
+    for (const entry of named.split(",")) {
       const name =
         entry
           .trim()
           .split(/\s+as\s+/)[0]
           ?.trim() ?? "";
       if (WRITE_CALLS.includes(name)) out.push(name);
+    }
+    const bare = clause.replace(/\{[\s\S]*?\}/u, "");
+    const bindings = [
+      /\*\s*as\s+([A-Za-z_$][\w$]*)/u.exec(bare)?.[1],
+      /^\s*([A-Za-z_$][\w$]*)\s*(?:,|$)/u.exec(bare)?.[1],
+    ].filter((b): b is string => b !== undefined && b !== "type");
+    for (const binding of bindings) {
+      const member = new RegExp(`\\b${binding.replaceAll("$", "\\$")}\\.([A-Za-z]+)\\s*\\(`, "gu");
+      for (const call of raw.matchAll(member)) {
+        if (WRITE_CALLS.includes(call[1] ?? "")) out.push(call[1] ?? "");
+      }
     }
   }
   return out;
@@ -873,7 +903,7 @@ function source(rel: string): string {
 const DIRECT_WRITERS: Readonly<Record<string, string>> = {
   "atomicwrite.ts":
     "the shell's one staged replace: an exclusive temp beside the target, renamed into place",
-  "connections.ts": "the machine-local bundles registry, outside every vault",
+  "connections.ts": "the machine-local bundles registry",
   "artifacts.ts":
     "the generated artifacts and the writer's brief — one generator, byte-reproducible",
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
@@ -952,6 +982,21 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
     assert.equal(writesDirectly('import { replaceFile } from "./atomicwrite.ts";'), true);
     assert.equal(writesDirectly('import { writeFileSync as persist } from "node:fs";'), true);
     assert.equal(writesDirectly('import { readFileSync } from "node:fs";'), false);
+    // A namespace or default binding reaches the write APIs through a member.
+    for (const writes of [
+      'import * as fs from "node:fs";\nfs.writeFileSync(path, text);',
+      'import fs from "node:fs";\nfs.renameSync(from, to);',
+      'import fs, { readFileSync } from "node:fs";\nfs.rmSync(path);',
+      'import * as fsp from "node:fs/promises";\nawait fsp.writeFile(path, text);',
+    ]) {
+      assert.equal(writesDirectly(writes), true, writes);
+    }
+    for (const reads of [
+      'import * as fs from "node:fs";\nfs.readFileSync(path);',
+      'import fs from "node:fs";\nconst text = fs.readFileSync(path, "utf8");',
+    ]) {
+      assert.equal(writesDirectly(reads), false, reads);
+    }
   });
 });
 

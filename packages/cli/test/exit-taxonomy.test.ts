@@ -1,7 +1,11 @@
 // docs/cli.md §The envelope (constitution failures and page findings never blur:
 // type `constitution` exits 2, type `findings` exits 5) (the closed
-// exit taxonomy) · a malformed registry is exit 2, page violations 5
-//.
+// exit taxonomy) · a malformed registry is exit 2, page violations 5.
+//
+// The one-code-one-meaning scan reads LITERAL sites, `fail(<command>,
+// "<type>", "<code>", …)` spelled out in the shell's sources. A code handed to
+// `fail` at runtime — a machine-local store's own refusal, a module issue's —
+// is outside it; the two store codes are held by an explicit case below.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -148,6 +152,39 @@ function refusals(): { file: string; type: string; code: string }[] {
 }
 
 describe("the error-code taxonomy: one code, one meaning (docs/cli.md §The envelope)", () => {
+  it("the two store codes the scan cannot read each exit 4 as conflict, and no literal site reuses them", () => {
+    // `trust-store-malformed` and `bundles-registry-malformed` reach `fail`
+    // from a thrown StoreMalformed, so no literal site spells them.
+    const tmp = vault(GOOD_TYPES);
+    try {
+      const trust = join(tmp, "trust.json");
+      const bundles = join(tmp, "bundles.json");
+      writeFileSync(trust, "not a trust store\n");
+      writeFileSync(bundles, "not a registry\n");
+      for (const [argv, env, code] of [
+        [["trust", "list"], { WIKIWRIGHT_TRUST_FILE: trust }, "trust-store-malformed"],
+        [["bundles", "list"], { WIKIWRIGHT_BUNDLES_FILE: bundles }, "bundles-registry-malformed"],
+      ] as const) {
+        const r = spawnSync(process.execPath, [CLI, ...argv, "--root", "."], {
+          cwd: tmp,
+          encoding: "utf8",
+          env: { ...process.env, ...PINNED_CLOCK, ...env },
+        });
+        const envelope = JSON.parse(r.stdout) as Run["envelope"];
+        assert.equal(r.status, 4, r.stdout);
+        assert.equal(envelope.error?.type, "conflict");
+        assert.equal(envelope.error?.code, code);
+        assert.deepEqual(
+          refusals().filter((site) => site.code === code),
+          [],
+          `${code} is spelled at a literal site`,
+        );
+      }
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
   it("every code is kebab-case, and maps to exactly one exit type across every verb", () => {
     const found = refusals();
     assert.equal(found.length > 40, true, `the scan found the refusal sites (${found.length})`);
