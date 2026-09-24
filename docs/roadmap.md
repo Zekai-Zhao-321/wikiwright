@@ -411,9 +411,15 @@ reads no pipe. What that proves: the file is everything git wrote, so exit 0
 and the file are the whole answer under any runtime, and no runtime can hand
 back a prefix of it. The in-process engine reads a test makes under Bun —
 `judge-property.test.ts` builds states with `indexState` and `revisionState`
-in the test process — go through the same helper. What stays count-checked:
-a batch read's object names go in on stdin, a pipe the runtime writes, and
-each batch read holds its answer to the number of names it sent. The checks
+in the test process — go through the same helper. A batch read's request, the
+object names or paths it asks for, is written to a second file first and
+handed to git as its stdin, so no request travels through a pipe the runtime
+fills either: a request cut inside its last path had made git answer
+`missing` for a shorter path, which a count of rows accepts. Each batch
+read now also holds every row to the request it answers, in order: a row
+git could not resolve must echo its request, and a row it resolved must name
+the requested object, or be a blob where the request was a path; otherwise
+`git-inconsistent-read`. The checks
 from before stay as a second line — every answer with a terminator is held to
 it, and one that ends short is `git-short-read` — and two cross-checks catch
 a listing cut at a record boundary wherever it came from: every path the

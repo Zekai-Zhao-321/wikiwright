@@ -327,10 +327,11 @@ version` prints the engine version and the commit a binary was built from.
   a second line, and none of them alone could close that gap: every answer
   with a terminator is held to it — a `-z` listing to its final NUL, a line
   answer to its final newline — and one that ends short is `git-short-read`
-  (exit 1, `internal`), naming the git command; a batch read, whose object
-  names still go in through a pipe, is held to the count it asked for, and a
-  batch stream that ends inside an object, which the core parser throws as
-  `BatchStreamTruncated`, is the same refusal. Two cross-checks catch a
+  (exit 1, `internal`), naming the git command; a batch read, whose request
+  is handed to git as a file the engine wrote, is held to the count it asked
+  for and each row to the request it answers, and a batch stream that ends
+  inside an object, which the core parser throws as `BatchStreamTruncated`,
+  is the same refusal. Two cross-checks catch a
   listing cut at a record boundary: every path the staged diff names as
   added, modified, retyped, renamed or copied must be in the index listing,
   and `lint --since`'s commit walk must list as many commits as

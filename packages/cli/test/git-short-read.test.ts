@@ -64,8 +64,9 @@ function repo(): string {
  * `cat-file --batch` is cut and `cat-file --batch-check` is not. The cuts that
  * leave a well-formed, shorter answer — the ones no terminator can see — are
  * `record` (without its last NUL-terminated record), `lastline` (without its
- * last line) and `empty` (nothing at all). Every other command passes through
- * untouched. The engine hands git a file for its stdout, so what the shim
+ * last line) and `empty` (nothing at all). `request` cuts the other way: git
+ * gets its request without the last four bytes. Every other command passes
+ * through untouched. The engine hands git a file for its stdout, so what the shim
  * prints is exactly what the engine reads.
  */
 function cuttingGit(tmp: string): string {
@@ -73,6 +74,7 @@ function cuttingGit(tmp: string): string {
   const bin = join(tmp, ".bin");
   mkdirSync(bin);
   const held = join(tmp, "git.out");
+  const heldIn = join(tmp, "git.in");
   writeFileSync(
     join(bin, "git"),
     [
@@ -81,6 +83,12 @@ function cuttingGit(tmp: string): string {
       '  case "$*" in',
       `    *"$WW_CUT"*)`,
       `      if [ "$WW_CUT_MODE" = exact ] && [ "$*" != "$WW_CUT" ]; then exec "${real}" "$@"; fi`,
+      '      if [ "$WW_CUT_MODE" = request ]; then',
+      `        cat > "${heldIn}"`,
+      `        size=$(wc -c < "${heldIn}" | tr -d ' ')`,
+      `        head -c $((size - 4)) "${heldIn}" | "${real}" "$@"`,
+      "        exit $?",
+      "      fi",
       '      if [ "$WW_CUT_MODE" = fail ]; then',
       "        echo 'fatal: this test refuses the command' >&2",
       "        exit 128",
@@ -339,6 +347,16 @@ describe("two git answers that disagree are git-inconsistent-read (docs/roadmap.
     assertInconsistent(run(tmp, PATH, ["lint", "--staged"], "ls-files -s -z", "empty"), "ls-files");
   });
 
+  it("a batch request cut inside its last path is refused, not read as a page HEAD never held", () => {
+    if (POSIX_ONLY) return;
+    // git answers the shortened path `missing` and exits 0; by position that
+    // row would be the whole path's, a base of nothing.
+    assertInconsistent(
+      run(tmp, PATH, ["lint", "--staged"], "cat-file --batch-check", "request"),
+      "cat-file --batch-check",
+    );
+  });
+
   it("a commit walk cut before its last line, or empty, is refused against git's count", () => {
     if (POSIX_ONLY) return;
     const head = git(tmp, "rev-parse", "HEAD");
@@ -353,7 +371,11 @@ describe("two git answers that disagree are git-inconsistent-read (docs/roadmap.
 
 describe("spawnWithStdoutFile: the child writes its answer to its own file", () => {
   const leftovers = (): string[] =>
-    readdirSync(tmpdir()).filter((n) => n.startsWith(`wikiwright-stdout-${process.pid}-`));
+    readdirSync(tmpdir()).filter(
+      (n) =>
+        n.startsWith(`wikiwright-stdout-${process.pid}-`) ||
+        n.startsWith(`wikiwright-stdin-${process.pid}-`),
+    );
 
   it("returns every byte the child wrote, its status and its stderr, and removes the file", () => {
     if (POSIX_ONLY) return;
@@ -370,9 +392,32 @@ describe("spawnWithStdoutFile: the child writes its answer to its own file", () 
     assert.deepEqual(leftovers(), []);
   });
 
+  it("hands the request to the child as a file, not a pipe", () => {
+    const r = spawnWithStdoutFile(
+      process.execPath,
+      ["-e", "process.exit(require('node:fs').fstatSync(0).isFile() ? 0 : 7)"],
+      { cwd: tmpdir(), input: "HEAD:./wiki/Fern.md\n" },
+    );
+    assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(leftovers(), []);
+  });
+
   it("a command that cannot be spawned is an error, and still leaves no file", () => {
-    const r = spawnWithStdoutFile("wikiwright-no-such-command", [], { cwd: tmpdir() });
-    assert.notEqual(r.error, undefined);
+    for (const input of [undefined, "a request\n"]) {
+      const r = spawnWithStdoutFile("wikiwright-no-such-command", [], { cwd: tmpdir(), input });
+      assert.notEqual(r.error, undefined);
+      assert.deepEqual(leftovers(), []);
+    }
+  });
+
+  it("a child stopped by the timeout is an error, and leaves no file", () => {
+    if (POSIX_ONLY) return;
+    const r = spawnWithStdoutFile("sh", ["-c", "cat > /dev/null; sleep 5"], {
+      cwd: tmpdir(),
+      input: "a request\n",
+      timeout: 200,
+    });
+    assert.equal((r.error as NodeJS.ErrnoException | undefined)?.code, "ETIMEDOUT");
     assert.deepEqual(leftovers(), []);
   });
 });

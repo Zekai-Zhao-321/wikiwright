@@ -100,15 +100,15 @@ describe("parseCatFileBatch splits the stream by the header's byte size", () => 
 describe("parseCatFileBatchCheck reads sizes and missing objects", () => {
   it("a missing name keeps its spaces, as a page path's does", () => {
     assert.deepEqual(parseCatFileBatchCheck("HEAD:./wiki/Note 0.md missing\n"), [
-      { name: "HEAD:./wiki/Note 0.md", size: undefined },
+      { name: "HEAD:./wiki/Note 0.md", type: undefined, size: undefined },
     ]);
   });
 
   it("one record per line, in order; a line of neither shape throws", () => {
     assert.deepEqual(parseCatFileBatchCheck(`${A} blob 12\n${B} missing\n${C} blob 0\n`), [
-      { name: A, size: 12 },
-      { name: B, size: undefined },
-      { name: C, size: 0 },
+      { name: A, type: "blob", size: 12 },
+      { name: B, type: undefined, size: undefined },
+      { name: C, type: "blob", size: 0 },
     ]);
     assert.deepEqual(parseCatFileBatchCheck(""), []);
     assert.throws(() => parseCatFileBatchCheck("fatal: not a repository\n"), /unreadable/u);
@@ -148,8 +148,8 @@ describe("a cut answer: what the parsers alone can and cannot tell", () => {
     // `B blob 345` cut to `B blob 3`: a well-formed line with the wrong number,
     // which only the missing final newline gives away.
     assert.deepEqual(parseCatFileBatchCheck(`${A} blob 12\n${B} blob 3`), [
-      { name: A, size: 12 },
-      { name: B, size: 3 },
+      { name: A, type: "blob", size: 12 },
+      { name: B, type: "blob", size: 3 },
     ]);
   });
 });

@@ -38,9 +38,15 @@ export function parseNameStatusZ(raw: string): StagedChange[] {
   return out;
 }
 
-/** One `git cat-file --batch-check` record: the object's byte size, or `undefined` when git answered `missing`. */
+/**
+ * One `git cat-file --batch-check` record. For an object git holds, `name` is
+ * its full object id and `type` and `size` its type and byte size; for one it
+ * does not, `name` is the request git echoed and `type` and `size` are
+ * `undefined`.
+ */
 export interface BatchCheckRecord {
   name: string;
+  type: string | undefined;
   size: number | undefined;
 }
 
@@ -55,7 +61,7 @@ export function parseCatFileBatchCheck(raw: string): BatchCheckRecord[] {
     if (line === "") continue;
     // git echoes a name it cannot resolve, and a name may itself hold spaces.
     if (line.endsWith(" missing")) {
-      out.push({ name: line.slice(0, -" missing".length), size: undefined });
+      out.push({ name: line.slice(0, -" missing".length), type: undefined, size: undefined });
       continue;
     }
     const parts = line.split(" ");
@@ -63,7 +69,7 @@ export function parseCatFileBatchCheck(raw: string): BatchCheckRecord[] {
     if (parts.length !== 3 || parts[0] === undefined || !Number.isInteger(size) || size < 0) {
       throw new Error(`unreadable cat-file --batch-check line: ${JSON.stringify(line)}`);
     }
-    out.push({ name: parts[0], size });
+    out.push({ name: parts[0], type: parts[1], size });
   }
   return out;
 }

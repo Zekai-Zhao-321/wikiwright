@@ -21,9 +21,10 @@ export abstract class GitAnswerRefused extends Error {}
 
 /**
  * docs/cli.md §Exit codes: a git answer that ended before git finished
- * writing it. Every answer is read from a file git wrote itself
- * (`stdoutfile.ts`), so no runtime pipe can cut one; the terminator and count
- * checks stay as a second line. A read whose output has a terminator is held
+ * writing it. Every answer is read from a file git wrote itself, and every
+ * batch request handed over as a file the engine wrote (`stdoutfile.ts`), so no
+ * runtime pipe can cut either; the terminator and count checks stay as a
+ * second line. A read whose output has a terminator is held
  * to it, and one that ends without it is this, refused by name as
  * `git-short-read`. `command` is the git command, for the refusal.
  */
@@ -73,10 +74,14 @@ export function terminated(
 }
 
 /**
- * One git child, its stdout read from the file it wrote (`stdoutfile.ts`).
- * stderr is captured, never inherited: it rides on a thrown error's message
- * (gitShowHead matches on it) instead of printing `fatal:` beside a green
- * envelope (docs/cli.md §The envelope).
+ * One git child: its stdout read from the file it wrote, its stdin, when it has
+ * one, a file the engine wrote (`stdoutfile.ts`). stderr is a pipe, captured,
+ * never inherited: it rides on a thrown error's message instead of printing
+ * `fatal:` beside a green envelope (docs/cli.md §The envelope), and three
+ * answers are recognised from its text — `gitShowHead`'s absent path,
+ * `gitTopLevel`'s "not a git repository", `gitOriginFetch`'s refused filter —
+ * each of which, with the text lost, fails as a plumbing failure or an
+ * unreachable origin rather than a smaller answer.
  */
 export function gitRun(
   cwd: string,
@@ -394,9 +399,11 @@ function utf8(bytes: Uint8Array): string {
 const BATCH_BYTES = 32 * 1024 * 1024;
 
 /**
- * A batch read: the object names go in on stdin, a pipe the runtime writes, and
- * the answer comes back in the file git wrote. What the stdin pipe could lose
- * is caught by the count each batch read holds its answer to.
+ * A batch read: the object names go in as a file the engine wrote, handed to
+ * git as its stdin, and the answer comes back in the file git wrote
+ * (stdoutfile.ts). Neither travels through a pipe the runtime fills or drains.
+ * Each batch read still holds its answer to its request, row by row: the count
+ * of rows, and each row's name against the name it answers.
  */
 function gitBatch(root: string, args: string[], input: string): Buffer {
   const result = gitRun(root, args, { input });
@@ -405,6 +412,22 @@ function gitBatch(root: string, args: string[], input: string): Buffer {
     throw new Error(`git ${args.join(" ")} exited ${String(result.status)}: ${result.stderr}`);
   }
   return result.stdout;
+}
+
+/**
+ * Each row of a batch answer names the request at its position, else the
+ * answer and the request disagree: `git-inconsistent-read`.
+ */
+function answersInOrder(answered: readonly string[], requested: readonly string[]): void {
+  requested.forEach((request, i) => {
+    const answer = answered[i];
+    if (answer !== request) {
+      throw new GitInconsistentRead(
+        ["cat-file --batch-check"],
+        `row ${i + 1} answers ${JSON.stringify(answer)}, and the request there was ${JSON.stringify(request)}`,
+      );
+    }
+  });
 }
 
 /**
@@ -432,6 +455,12 @@ export function gitReadBlobs(root: string, blobs: readonly string[]): Map<string
       `it answered ${records.length} of ${wanted.length} objects`,
     );
   }
+  // The requests are full object ids, and git answers each with its full
+  // object id or echoes it as `missing`: every row names what it answers.
+  answersInOrder(
+    records.map((r) => r.name),
+    wanted,
+  );
   for (const record of records) {
     if (record.size === undefined) throw new Error(`blob ${record.name} is not in the repository`);
     sizes.set(record.name, record.size);
@@ -508,6 +537,22 @@ export function gitHeadBlobs(
       `it answered ${records.length} of ${wanted.length} paths`,
     );
   }
+  // A row git could not resolve echoes the request, which must be the one it
+  // answers; a row it resolved names the object, not the path, so it must at
+  // least be a blob. A request cut inside its path answers `missing` for a
+  // shorter path, and read by position it would be a page HEAD never held.
+  answersInOrder(
+    records.map((r, i) => (r.size === undefined ? r.name : (names[i] ?? ""))),
+    names,
+  );
+  records.forEach((record, i) => {
+    if (record.size !== undefined && record.type !== "blob") {
+      throw new GitInconsistentRead(
+        ["cat-file --batch-check"],
+        `the request ${JSON.stringify(names[i])} was answered with a ${String(record.type)}, not a blob`,
+      );
+    }
+  });
   wanted.forEach((path, i) => {
     const record = records[i];
     out.set(path, record === undefined || record.size === undefined ? undefined : record.name);
