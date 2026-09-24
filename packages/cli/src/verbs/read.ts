@@ -26,6 +26,9 @@ import { loadVault, readPageBytes, walkPages } from "../vaultio.ts";
 /** The section depth a type that declares none is cut at (docs/constitution.md §Sections). */
 const DEFAULT_DEPTH = 2;
 
+/** The position after each line ending the Markdown parser counts: CRLF, LF, or a lone CR. */
+const LINE_END = /(?<=\r\n|\r(?!\n)|\n)/u;
+
 /** How a `<page>` argument was matched, in the order the forms are tried. */
 type ResolvedVia = "path" | "name" | "alias" | "title";
 const FORMS: readonly ResolvedVia[] = ["path", "name", "alias", "title"];
@@ -75,6 +78,11 @@ function resolvePage(
  * heading at that depth runs to the line before the next. Text is the source
  * lines themselves, line endings and trailing blank lines kept; only a byte
  * order mark before the first line is left out.
+ *
+ * A line ends where the parser's lines end — at CRLF, at LF, and at a CR that
+ * no LF follows — so a heading's `line` indexes the same line here that it
+ * does in `ParsedDoc.headings`, whatever mix of endings the page carries, and
+ * each line keeps its own ending.
  */
 function sectionsOf(
   path: string,
@@ -83,7 +91,7 @@ function sectionsOf(
   cuts: readonly Heading[],
 ): Section[] {
   const text = raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw;
-  const lines = text === "" ? [] : text.split(/(?<=\n)/u);
+  const lines = text === "" ? [] : text.split(LINE_END);
   const section = (heading: string | null, line: number, end: number): Section => {
     const body = lines.slice(line - 1, end).join("");
     return {

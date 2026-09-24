@@ -312,7 +312,8 @@ What the registry rows below do not say.
   with `heading: null`, and each heading at that depth runs to the line before
   the next. Each carries `address` (`<path>` for the lead, `<path>#<heading>`
   otherwise), `line`, `end_line`, `bytes` (the UTF-8 length of `text`) and
-  `text`, the page's own lines with their line endings. `--budget` returns
+  `text`, the page's own lines with their line endings as the page has them,
+  CR, LF or CRLF, counted as the parser counts them. `--budget` returns
   sections in page order while their running total fits; the first that would
   not, and every one after it, goes to `omitted` with its address and
   `reason: "budget"`, to be asked for by `--section`. `--section` returns that

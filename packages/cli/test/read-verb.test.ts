@@ -79,6 +79,25 @@ function linesOf(path: string): string[] {
   return readFileSync(path, "utf8").split(/(?<=\n)/u);
 }
 
+/**
+ * A text's lines, each with its own ending, where the Markdown parser ends a
+ * line: at CRLF, at LF, and at a CR that no LF follows. A plain walk, so the
+ * test does not share the verb's own split.
+ */
+function parserLines(text: string): string[] {
+  const out: string[] = [];
+  let start = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (c === "\n" || (c === "\r" && text[i + 1] !== "\n")) {
+      out.push(text.slice(start, i + 1));
+      start = i + 1;
+    }
+  }
+  if (start < text.length) out.push(text.slice(start));
+  return out;
+}
+
 describe("read returns a page's sections with attribution (docs/cli.md §read)", () => {
   it("a whole page: the lead, then each section, the page's own lines verbatim", () => {
     const r = read([PAGE, "--root", ORCHARD]);
@@ -335,5 +354,66 @@ describe("read returns a page's sections with attribution (docs/cli.md §read)",
       [climate(orchard.envelope), climate(allotment.envelope)],
       ["temperate", "arid"],
     );
+  });
+
+  it("a CR-only body and a CRLF page are cut on the parser's lines, their endings kept", () => {
+    // Two pages the parser reads, and lint passes, with endings other than LF:
+    // pruning-roses keeps its LF frontmatter and ends every body line with a
+    // lone CR; thinning-apples is CRLF throughout.
+    const vault = join(tmp, "endings");
+    cpSync(ORCHARD, vault, { recursive: true });
+    const roses = join(vault, PAGE);
+    const lf = readFileSync(roses, "utf8");
+    const fence = lf.indexOf("\n---\n") + "\n---\n".length;
+    writeFileSync(roses, lf.slice(0, fence) + lf.slice(fence).replaceAll("\n", "\r"));
+    const apples = join(vault, "wiki", "thinning-apples.md");
+    writeFileSync(apples, readFileSync(apples, "utf8").replaceAll("\n", "\r\n"));
+
+    const lint = spawnSync(process.execPath, [CLI, "lint", "--root", vault], {
+      cwd: tmp,
+      encoding: "utf8",
+      env: { ...process.env, ...PINNED_CLOCK },
+    });
+    assert.equal(lint.status, 0, lint.stdout);
+
+    for (const [page, ending, bodyStart] of [
+      [PAGE, "\r", fence],
+      ["wiki/thinning-apples.md", "\r\n", -1],
+    ] as const) {
+      const raw = readFileSync(join(vault, page), "utf8");
+      const lines = parserLines(raw);
+      const data = dataOf([page, "--root", vault]);
+      assert.deepEqual(
+        data.sections.map((s) => s.heading),
+        [null, "Steps", "Notes"],
+        page,
+      );
+      for (const [i, section] of data.sections.entries()) {
+        const text = section.text ?? "";
+        assert.equal(text, lines.slice(section.line - 1, section.end_line).join(""), page);
+        assert.equal(section.bytes, Buffer.byteLength(text, "utf8"), page);
+        assert.ok(section.end_line >= section.line, `${page}: ${section.address}`);
+        if (section.heading !== null) {
+          assert.equal(text.startsWith(`## ${section.heading}${ending}`), true, text);
+        }
+        const next: Section | undefined = data.sections[i + 1];
+        if (next !== undefined) assert.equal(next.line, section.end_line + 1, page);
+      }
+      // Everything after the frontmatter, byte for byte, in the page's endings.
+      const after =
+        bodyStart >= 0
+          ? raw.slice(bodyStart)
+          : raw.slice(raw.indexOf(`${ending}---${ending}`) + ending.length * 2 + 3);
+      assert.equal(data.sections.map((s) => s.text).join(""), after, page);
+      if (ending === "\r") assert.doesNotMatch(after, /\n/u);
+
+      const steps = dataOf([page, "--section", "Steps", "--root", vault]).sections;
+      assert.equal(steps.length, 1, page);
+      const whole = data.sections.find((s) => s.heading === "Steps");
+      assert.ok(steps[0] !== undefined && whole !== undefined);
+      assert.notEqual(steps[0].text, "", `${page}: --section Steps returned no text`);
+      assert.equal(steps[0].text, whole.text, page);
+      assert.equal(steps[0].bytes, Buffer.byteLength(steps[0].text ?? "", "utf8"), page);
+    }
   });
 });
