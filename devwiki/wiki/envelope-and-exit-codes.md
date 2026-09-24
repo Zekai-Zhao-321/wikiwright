@@ -3,7 +3,7 @@ type: ops-reference
 title: "The envelope and exit codes"
 description: "Every verb prints one JSON envelope on stdout, and a vault verb's names the bundle it read; the exit code is one of seven, each mapped to one error type; lint, check and gate share one verdict block, and the writing verbs report the pages they wrote."
 tags: [cli]
-pin: 4a577f7daa3be38151a0baa71985261cbabdbd36
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [packages/cli/src/envelope.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts]
 ---
@@ -32,8 +32,8 @@ envelope's (`packages/cli/src/main.ts:23-28`).
 | 1 | `internal` | the engine broke; `unexpected-error` carries the thrown message, `git-short-read` a git answer that ended before its terminator, and `git-inconsistent-read` two git answers about one state that disagree | `envelope.ts:10`; `main.ts:80-111` |
 | 2 | `usage` | a verb, flag, positional, subcommand or environment variable the caller got wrong; `--bundle` beside `--root`; a writing verb aimed at an installed copy | `envelope.ts:11`; `argv.ts:92-151`; `main.ts:127-176`, `:262-285` |
 | 2 | `constitution` | the law did not load, a declared module did not load, or the engine pin refused; nothing was judged | `envelope.ts:12-15` |
-| 3 | `not_found` | the page, section, type, vocabulary entry, revision, directory, grant or connected bundle asked for does not exist | `envelope.ts:16` |
-| 4 | `conflict` | the state refuses the operation: a stale base, a foreign hook, an `--expect` mismatch, unmerged paths, a splice the Writer cannot prove, a machine-local store that does not parse | `envelope.ts:17`; `main.ts:80-111` |
+| 3 | `not_found` | the page, section, type, vocabulary entry, revision, directory or connected bundle asked for does not exist | `envelope.ts:16` |
+| 4 | `conflict` | the state refuses the operation: a stale base, a foreign hook, an `--expect` mismatch, unmerged paths, a splice the Writer cannot prove, the machine-local registry when it does not parse | `envelope.ts:17`; `main.ts:80-111` |
 | 5 | `findings` | the tool worked and the subject failed; read `data.findings` | `envelope.ts:18` |
 | 10 | `confirm_required` | an identity or blast-radius gate wants the plan pinned | `envelope.ts:19` |
 
@@ -45,7 +45,7 @@ The runtime's own codes: `unknown-command` with `valid_commands`
 `feedback`, each before the verb runs (`:127-176`); `git-short-read` with the
 git command as `command`, from any verb whose git answer was cut short, and
 `git-inconsistent-read` with both commands as `commands`, from any verb two
-of whose git answers disagree (`:88-103`, [[git]]); `trust-store-malformed` and `bundles-registry-malformed`
+of whose git answers disagree (`:88-103`, [[git]]); `bundles-registry-malformed`
 with `file` and, for a record, `record` (`:80-111`); `unknown-flag` with `valid_flags`
 (`packages/cli/src/argv.ts:95-104`), `invalid-arguments` (`:105-110`),
 `unexpected-argument` with `expected_positionals` (`:112-129`),

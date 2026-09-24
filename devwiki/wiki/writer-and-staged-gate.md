@@ -3,7 +3,7 @@ type: subsystem
 title: "The Writer and the staged gate"
 description: "The splice-only Writer in core, the shell that proves a splice with a second judge and lands it temp-then-rename, the four state constructors, and the staged gate the hooks run."
 tags: [kernel, cli]
-pin: 4a577f7daa3be38151a0baa71985261cbabdbd36
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [packages/core/src/writer/, packages/core/src/gitplan/, packages/core/src/prefixes/, packages/cli/src/writer.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/staged.ts, packages/cli/src/state.ts, packages/cli/src/hooks.ts, packages/cli/src/verbs/write.ts, packages/cli/src/verbs/gate.ts]
 ---

@@ -1,11 +1,11 @@
 ---
 type: testing-guide
 title: "Testing the engine"
-description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install and grant the code kit in a store the test owns."
+description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install the code kit into a copy."
 tags: [repo]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
-covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts, tools/run-suite.ts]
+covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/store-lock.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts, tools/run-suite.ts]
 ---
 
 # Testing the engine
@@ -59,32 +59,35 @@ sound. The sensitivity predates the connected-bundles work; run the gate on a
 quiet machine (`docs/roadmap.md`, "The suite is sensitive to machine load").
 
 Every test that judges `devwiki` or the `code` starter installs the kit into a
-copy under `os.tmpdir()` and grants it in a store the test owns; the shipped
-tree is never installed into or granted from
-(`packages/cli/test/fixtures/kit-code.ts:1-9`). A fresh clone needs
-`bun install` and a maintainer's `wikiwright trust grant
-module:@wikiwright/kit-code --root devwiki`, with `--scope worktrees` to cover
-every linked worktree of the clone, before `check --root devwiki` judges
-anything, and the suite never reads that grant (`docs/architecture.md`,
-"Developing"). The invariant table
+copy under `os.tmpdir()`; the shipped tree is never installed into
+(`packages/cli/test/fixtures/kit-code.ts:1-6`). A fresh clone needs
+`bun install` and nothing else before `check --root devwiki` judges anything:
+every load proves the kit (`docs/architecture.md`, "Developing"; see
+[[loading-a-module]]). The invariant table
 in `docs/architecture.md` names, for each invariant, the test file that fails
 by name when it breaks: `kernel-import-boundary` for the four layers,
 `judge-property` for one judge at every write path, `routing-xor` and
 `pass-table` for total routing, `dry-run` for the dry-run law and the closed
 set of writers, `generate` and `generated-tracked` for deterministic
-artifacts, `module-conformance`, `pack-install` and `kit-code` for the module
-ladder, `bundle-identity` for the bundle every vault envelope names, and
+artifacts, `module-conformance`, `module-path`, `purity`, `pack-install` and
+`kit-code` for the module ladder, `store-lock` for the lock the bundles
+registry is written under, `bundle-identity` for the bundle every vault envelope names, and
 `multi-bundle` — the connected-bundles scenario end to end — with `bundles`,
 `read-verb` and `bundle-identity` for connected bundles told apart.
 
 The two gardening handbooks under `fixtures/handbooks` are corpora too, and
-declare no module, so nothing is installed or granted to judge them:
+declare no module, so nothing is installed to judge them:
 `fixture-verdicts` holds each at zero findings of any severity under `lint`
 and `check` (`packages/cli/test/fixture-verdicts.test.ts:105-114`),
 `generated-tracked` rebuilds their tracked `generated/` byte for byte
 (`packages/cli/test/generated-tracked.test.ts:20-25`), and `multi-bundle`,
 `bundles`, `read-verb` and `hooks-scripts` read temporary copies of them,
 never the shipped fixtures (`packages/cli/test/multi-bundle.test.ts:22-25`).
+The lock the registry is written under is tested over the registry itself:
+an update reads the store after the lock is held, an empty change writes
+nothing, a lock whose process is gone or that nobody claimed is broken, one a
+live process or another host holds never is, and four `bundles add` at once
+all land (`packages/cli/test/store-lock.test.ts:1-4`, `:70-207`).
 
 ## Writing tests
 
@@ -96,23 +99,24 @@ A test that spawns a verb that stamps a date sets `WIKIWRIGHT_TODAY`: spread
 `PINNED_CLOCK` from `packages/cli/test/fixtures/clock.ts` (`:1-5`, today
 `2026-09-04`) into the spawn's `env`, so no page carries the wall clock. A
 test that connects a bundle points `WIKIWRIGHT_BUNDLES_FILE` at a registry
-under its temporary directory, as it points `WIKIWRIGHT_TRUST_FILE` at its
-own store, so the developer's registry is neither read nor written
-(`packages/cli/test/bundles.test.ts:66-72`).
+under its temporary directory, so the developer's registry is neither read
+nor written
+(`packages/cli/test/bundles.test.ts:65-71`).
 
 For a bundle over the code kit, `packages/cli/test/fixtures/kit-code.ts`
 carries the helpers: `installKit(root)` rewrites the bundle's `package.json`
 to depend on the shipped package by absolute `file:` path and runs
 `bun install`, then replaces every symlink with the bytes it points at so an
 edit in the copy never writes through
-(`packages/cli/test/fixtures/kit-code.ts:54-74`, `:40-52`); `kitEnv(root)`
-is the spawn environment — the pinned clock and `WIKIWRIGHT_TRUST_FILE`
-pointing at `<root>/.wikiwright-trust.json` (`:30-38`); `runKit(root, argv)`
+(`packages/cli/test/fixtures/kit-code.ts:48-68`, `:34-46`); `kitEnv()` is
+the spawn environment, the pinned clock (`:29-32`); `runKit(root, argv)`
 spawns the built CLI with `--root` and parses the envelope, treating a
-non-zero exit as a verdict rather than a failure (`:82-93`); `grantKit`
-grants the kit there and asserts the grant (`:95-100`); `grantedCopy(source,
-prefix)` copies a bundle without its `node_modules`, installs and grants
-(`:102-117`). The judge's own behaviour tests load the memory law — a small
+non-zero exit as a verdict rather than a failure (`:76-87`);
+`installedCopy(source, prefix)` copies a bundle without its `node_modules`
+and installs the kit, nothing else (`:89-103`). A bundle that carries a kit
+by a declared `path` copies the neutral gardening kit,
+`packages/cli/test/fixtures/kit-garden/`, to `kit/garden` in a bundle under
+the temporary directory (`packages/cli/test/fixtures/kit-garden/index.js:1-9`). The judge's own behaviour tests load the memory law — a small
 claims-bearing constitution that is test data, not a starter
 (`packages/cli/test/fixtures/memory-law.ts:1-19`) — and core tests build a
 law in memory through `constitutionOf` in
@@ -120,19 +124,18 @@ law in memory through `constitutionOf` in
 envelope once so no fixture repeats it (`:1-5`, `:26-56`).
 
 A verb that writes is driven twice, dry and real, and the plan's path set is
-asserted equal to the real filesystem delta, and neither the trust store nor
-the bundles registry may move under a dry run; every case owns both, so no
-case reads or writes the developer's
-(`packages/cli/test/dry-run.test.ts:1-13`, `:193-209`). The two verbs an
-installed copy does not refuse, `bundles` and `trust`, are held, with the
-stores placed outside the vault, to plan only absolute store paths; the
-exemption is by verb (`:1006-1057`). The source scans read text: the import
+asserted equal to the real filesystem delta, and the bundles registry may not
+move under a dry run; every case owns one, so no case reads or writes the
+developer's (`packages/cli/test/dry-run.test.ts:1-13`, `:174-200`). The one
+verb an installed copy does not refuse, `bundles`, is held, with the registry
+placed outside the vault, to plan only absolute store paths; the exemption is
+by verb (`:960-995`). The source scans read text: the import
 graph and the vault-loading declaration check share one recognizer of
 runtime import edges (`packages/cli/test/fixtures/imports.ts:1-27`), and
 each scan says where it is defined what it cannot see; the one module
 outside the Writer that writes a file of its own, the stdout file a git
 child writes to, is declared there with its reason
-(`packages/cli/test/dry-run.test.ts:904-924`). A git
+(`packages/cli/test/dry-run.test.ts:859-878`). A git
 answer is tested by cutting it, not by trusting a parser to notice:
 `packages/cli/test/git-short-read.test.ts` puts an `sh` launcher named `git`
 first on PATH that runs the real git and prints one command's answer cut —

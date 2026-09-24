@@ -1,9 +1,9 @@
 ---
 type: integration
 title: "Git"
-description: "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt, and every answer read from a file git wrote itself."
+description: "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt, and every answer read from a file git wrote itself."
 tags: [cli]
-pin: 4a577f7daa3be38151a0baa71985261cbabdbd36
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [packages/cli/src/git.ts, packages/cli/src/stdoutfile.ts, packages/cli/src/state.ts, packages/cli/src/buildinfo.ts, packages/core/src/gitplan/]
 ---
@@ -19,10 +19,9 @@ Git is spawned as plumbing and never linked as a library
 vault root as its working directory, stdout on a file and stderr captured
 onto the thrown error rather than printed beside an envelope; the batch
 reads hand git their object names or paths as a file on stdin
-(`:401-415`), and the reads of a
-vault's worktree identity and of its checkout state pass an environment
-without the variables a git hook exports (`:563-612`, `:614-674`). What
-the engine asks of it:
+(`:401-415`), and the read of a vault's checkout state passes an environment
+without the variables a git hook exports (`:563-564`, `:574-625`). What the
+engine asks of it:
 
 | Call | Where | For |
 | --- | --- | --- |
@@ -34,8 +33,7 @@ the engine asks of it:
 | `cat-file --batch-check` over `HEAD:./<path>` | `git.ts:522-561` | the blob HEAD holds at every path a changed or deleted page is judged against, in one process; a path HEAD does not hold is `missing` |
 | `rev-parse HEAD` | `git.ts:169-173` | the head of origin `.` |
 | `rev-parse --show-toplevel` | `git.ts:182-193` | the repository enclosing the vault |
-| `rev-parse --is-inside-work-tree --git-common-dir --show-prefix` | `git.ts:563-612` | a vault's worktree scope for a trust grant: the common directory every linked worktree of one clone shares, and the vault's path inside its own worktree; asked only when a worktree grant could apply, once per process (`packages/cli/src/trust.ts:286-307`, `:315-363`) |
-| `--no-optional-locks status --porcelain=v2 --branch --untracked-files=all -- .` | `git.ts:614-674` | the checkout a vault root sits in, for the bundle block every vault envelope carries: the `# branch.oid` header is the head, any entry makes it dirty; one process (`packages/cli/src/bundle.ts:124`) |
+| `--no-optional-locks status --porcelain=v2 --branch --untracked-files=all -- .` | `git.ts:574-625` | the checkout a vault root sits in, for the bundle block every vault envelope carries: the `# branch.oid` header is the head, any entry makes it dirty; one process (`packages/cli/src/bundle.ts:124`) |
 | `rev-parse --verify --quiet HEAD` | `git.ts:203-215` | whether the repository has a commit |
 | `ls-remote --quiet <origin> HEAD` | `git.ts:256-265` | a remote head with no clone |
 | `init --bare`, `fetch --filter=blob:none --no-tags <origin> +HEAD:refs/wikiwright/head` | `git.ts:274-300` | the blobless cache per origin, retried whole when a server refuses filters |
@@ -121,27 +119,17 @@ and which the runtime answers as `git-short-read` or
 - "not a git repository" answers `undefined` for the enclosing repository;
   an unborn HEAD answers `false` for "has a commit"; every other exit is
   thrown with its stderr (`git.ts:182-193`, `:195-215`).
-- The worktree identity is read with `GIT_DIR`, `GIT_WORK_TREE`,
+- The checkout state is read with `GIT_DIR`, `GIT_WORK_TREE`,
   `GIT_COMMON_DIR` and `GIT_INDEX_FILE` removed: a hook exports `GIT_DIR`
-  with no work tree, and `rev-parse` would then take the directory it runs in
-  for the top of the work tree, so a vault below the top would read as the
-  top (`git.ts:563-576`). Output that is not exactly three lines is thrown
-  too: git prints a newline inside a path verbatim, so a newline in the
-  vault's path, or in a linked worktree's common directory, would read the
-  vault as a shorter path, another vault's (`:591-607`). A directory outside
-  every work tree, any failure of git and an answer cut short are thrown; the
-  loader refuses `module-scope-unresolved` and
-  `trust` answers `scope-unresolved`, never a quieter verdict
-  (`packages/cli/src/moduleload.ts:224-268`;
-  `packages/cli/src/verbs/trust.ts:102-112`).
-- The checkout state is read the same way, the hook's variables removed, and
-  with `--no-optional-locks`, so it never refreshes the index a dry run must
+  with no work tree, and git would then take the directory it runs in for
+  the top of the work tree (`git.ts:563-564`, `:588-590`). It runs with
+  `--no-optional-locks`, so it never refreshes the index a dry run must
   leave alone; any exit but 0, and a git that does not run, answers
   `undefined`, which the bundle block reports as a `null` head and dirt
-  (`git.ts:614-674`; `packages/cli/src/bundle.ts:124-129`). An answer that
+  (`git.ts:574-625`; `packages/cli/src/bundle.ts:124-129`). An answer that
   ends without its newline is thrown instead, and the envelope goes out
   without the bundle block rather than state a clean checkout
-  (`git.ts:654-661`; see [[command-runtime]]).
+  (`git.ts:605-612`; see [[command-runtime]]).
 - An answer has no buffer to overflow: git writes it to a file of any size,
   and only stderr's pipe is bounded, at 8 MiB
   (`packages/cli/src/stdoutfile.ts:31-32`); a batch read is still chunked at

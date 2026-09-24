@@ -3,7 +3,7 @@ type: subsystem
 title: "Generated artifacts"
 description: "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges."
 tags: [kernel, cli]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [packages/core/src/generate/, packages/core/src/hash/, packages/cli/src/artifacts.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/graph.ts]
 ---
@@ -27,8 +27,8 @@ archetype, title, description, tags and depth-1 `outbound` and `inbound`
 adjacency nested by label under a labelled kind (`:224-301`) — and renders the
 tag catalog (`:303-321`), returning three `ArtifactFile`s (`:325-329`) through
 one serializer (`:24-30`). `packages/core/src/hash/index.ts` is the kernel's
-vendored SHA-256 (`:45`), read by the claim handle, the evidence digest and
-the trust digest, with `node:crypto` as its oracle in a test (`:1-9`).
+vendored SHA-256 (`:45`), read by the claim handle and a finding's evidence
+digest, with `node:crypto` as its oracle in a test (`:1-9`).
 
 In the shell, `regenerate` (`packages/cli/src/artifacts.ts:59-72`) is the
 one generation path `check --write` and `init` share: the kernel's three

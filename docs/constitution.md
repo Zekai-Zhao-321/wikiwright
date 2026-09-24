@@ -331,7 +331,7 @@ The file is a closed set: an unknown key is `schema-invalid`.
 | `move_reasons` | non-empty list of strings | no | `moveReasonsOf`: `move --reason` must be one of them (`invalid-reason`); undeclared, any non-empty reason is accepted and the envelope says `reasons: "undeclared"` |
 | `modules` | list of `{ "package": "<npm name>", "version"?: "<range>", "path"?: "<directory>" }` | no | `loadDeclaredModules`: each package is resolved from the bundle's own `node_modules`, or, when `path` names a bundle-relative directory, from that directory and nowhere else; checked against `version`, purity-scanned, loaded and proved by its determinism fixture before any verb runs. A `path` is held to the path law, as a root is: `".."`, an absolute path or a backslash is refused at load. See [extending.md](extending.md#declaring-a-module) |
 
-Two files the engine reads beside these, which are not configuration: a page's
-`exceptions` field, and the machine-local trust store at
-`~/.config/wikiwright/trust.json` (`WIKIWRIGHT_TRUST_FILE` overrides), which
-never enters the repository.
+Two things the engine reads beside these, which are not configuration: a
+page's `exceptions` field, and, for `bundles` and `--bundle`, this machine's
+registry of connected bundles at `~/.config/wikiwright/bundles.json`
+(`WIKIWRIGHT_BUNDLES_FILE` overrides), which never enters the repository.

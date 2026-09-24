@@ -3,7 +3,7 @@ type: quickstart
 title: wikiwright quickstart
 description: Install, build, and verify the engine from a fresh clone in minutes.
 tags: [repo]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [package.json, devwiki/package.json, scripts/hooks/]
 ---
@@ -23,18 +23,15 @@ bun install
 ```
 bun run build
 node packages/cli/dist/main.js help
-node packages/cli/dist/main.js trust grant module:@wikiwright/kit-code --root devwiki --scope worktrees
 node packages/cli/dist/main.js check --root devwiki
 ```
 
 `devwiki` consumes the code kit, `packages/kit-code`, which `bun install`
-links into `node_modules/` under `devwiki/` because both are workspace members. A
-module runs inside the judge, so a maintainer grants it once on this machine,
-after reading it, before `check` judges the bundle. `--scope worktrees`
-covers `devwiki` in every linked worktree of this clone, existing and
-future; without it the grant covers this checkout's `devwiki` alone. The
-grant is machine-local, a pull never writes one, and an agent must not grant
-trust to unblock its work (`AGENTS.md`, "Discipline").
+links into `node_modules/` under `devwiki/` because both are workspace members
+(`devwiki/package.json:5-8`). Installing the kit is the consent to run it: a
+module runs inside the judge, and `check` loads the kit and proves it — its
+purity scan and its determinism fixture — before it judges the bundle (see
+[[loading-a-module]]).
 
 Every command prints exactly one JSON envelope on stdout; exit code 5 means
 the tool worked and the content failed its checks, exit 2 means the invocation
@@ -56,5 +53,5 @@ as the pre-commit hook with `git config core.hooksPath scripts/hooks`.
 ## Relations
 
 - decided_by [[D-003]]
-- decided_by [[D-006]]
+- decided_by [[D-007]]
 - part_of [[wikiwright-architecture]]

@@ -9,6 +9,16 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- A module declaration may name a bundle-relative directory, `path`, instead
+  of an installation under `node_modules`: `{ "package": "kit-garden",
+  "path": "kit/garden" }`, for a kit a bundle carries in its own tree. The
+  declared path is authoritative, with no fallback to `node_modules`: no
+  directory there is `module-unresolved`, naming the path. It is held to the
+  vault path law, as a content root is, so `"../kit"` or an absolute path is
+  refused when `config/engine.json` loads, and a declared directory whose real
+  path lies outside the bundle is `module-malformed`. One resolver reads both
+  spellings for the loader, the law digest and `modules list`, whose
+  `resolved.path` prints the declared path.
 - Every envelope of a verb that reads a vault's law names the bundle it read,
   in `metadata.bundle`, on an ok envelope and a refusal alike: `label` (the
   basename of the root's real path), `root` (that real path), `head` and
@@ -141,6 +151,22 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- Every load proves a module: after the purity scan and the entry and
+  fixture checks, and after the entry is imported, the loader runs the
+  module's determinism fixture, and a failure refuses the module with the
+  fixture's own code (`module-fixture-failed`, `module-nondeterministic`) and
+  hint, from every verb that reads the law. Both proofs are kept for the
+  process by the digest of the module's bytes and the purity scan's version,
+  so two bundles that install the same bytes are proved once; nothing is
+  kept between processes. `modules list` reports each module's fixture
+  result from its load and no longer reports a grant; `modules plan` refuses
+  a candidate that fails its own fixture as `candidate-unresolved`, with the
+  fixture's issue.
+- The purity scan refuses an import of any form — an `import` declaration,
+  `export … from`, a dynamic `import(` and `require(` — and computed access to
+  `Date`, `Math`, `performance`, `Intl` or `process` (`Date["now"]()`), each by
+  file, line and reason. `docs/extending.md` §The purity scan lists every rule,
+  and says what it is not: it narrows, it does not sandbox.
 - `type show --brief` leads its data with `brief`, `skeleton` and
   `section_lines`, before `fields`; key order only. `new` writes no `title:`
   where `field_sources.title` is `basename` and the title given is the
@@ -250,6 +276,22 @@ version` prints the engine version and the commit a binary was built from.
   devwiki's 178.5 ms and 167.3 ms, interleaved on one build; every agent call
   and git hook that runs `wikiwright` pays the lower figure. `main.js` still
   runs directly, without the cache.
+
+### Removed
+
+- The `trust` verb and the machine-local trust store: `trust grant`, `list`
+  and `revoke`, their `--scope`, `--all` and `--record`, the store at
+  `~/.config/wikiwright/trust.json` and `WIKIWRIGHT_TRUST_FILE`, and the codes
+  `module-untrusted`, `module-modified`, `module-scope-unresolved` and
+  `trust-store-malformed`. Installing a module is the consent to run it, and
+  every load proves it; no machine-local approval stands between a bundle and
+  the law it declares. The loss is stated in `docs/roadmap.md`: a module a
+  bundle declares and has installed, or carries in its tree, runs when a verb
+  reads the bundle's law, and a `git pull` that changes it changes what runs
+  without this machine asking first. The other Unreleased entries that
+  describe the trust verb, its scopes, its store, its lock or its codes
+  describe what this release no longer has; the bundles registry keeps the
+  store lock.
 
 ### Fixed
 

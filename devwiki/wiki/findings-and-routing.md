@@ -3,7 +3,7 @@ type: code-concept
 title: "Findings and total routing"
 description: "Every error or warning finding carries exactly one of a runnable fix and a queue lane; an info finding is a census row; the property is held statically over the pass table and at runtime over every emit path."
 tags: [kernel]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [packages/core/src/passes/index.ts, packages/core/src/modules/index.ts, packages/core/src/judge/index.ts, packages/core/src/fixers/index.ts, packages/cli/src/envelope.ts, packages/cli/src/brief.ts, tools/render-playbook.ts]
 ---
@@ -62,7 +62,7 @@ did not print (`:168-181`).
   vault verb's envelope carries, the bundle the verdict was reached over
   (see [[command-runtime]]). A refusal the runtime makes
   before a verb runs — `one-target`, `bundle-not-found`, `bundle-readonly` —
-  or when a machine-local store does not parse — `trust-store-malformed`,
+  or when the machine-local registry does not parse —
   `bundles-registry-malformed` — or when a git answer was cut short or two
   disagree — `git-short-read`, `git-inconsistent-read` — is an envelope
   error, not a finding, and carries no route (see [[command-runtime]] and

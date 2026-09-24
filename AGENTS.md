@@ -72,11 +72,6 @@ Before a release run `bun run test:node` (the node runner) and
   behaviour the binary has. When unsure, run the binary and quote the
   envelope.
 - **Semantic conflicts go to a maintainer**, never auto-resolved.
-- **Trust is a maintainer's decision.** An agent must not grant trust
-  automatically to unblock work: `module-untrusted`, `module-modified` and
-  `module-scope-unresolved` mean stop and ask, and an explicit maintainer
-  authorization is required. A test grants only in a store it owns under
-  `os.tmpdir()`.
 
 ## Two hard rules
 
@@ -97,7 +92,7 @@ Before a release run `bun run test:node` (the node runner) and
 | the words: page, type, vocabulary, grammar, the judge, findings, the gate | `docs/concepts.md` |
 | a key in `config/constitution.json` or `config/engine.json` | `docs/constitution.md` |
 | a verb, a flag, the envelope, an exit code | `docs/cli.md`, or `wikiwright <verb> --help` |
-| a module, a kit, the loader, trust | `docs/extending.md` |
+| a module, a kit, the loader, the purity scan | `docs/extending.md` |
 | a package, an invariant, a test, the gate | `docs/architecture.md` |
 | what is missing, deferred or unverified | `docs/roadmap.md` |
 | what a release changed | `CHANGELOG.md` |
@@ -114,11 +109,9 @@ Before a release run `bun run test:node` (the node runner) and
   code-specific enters the kernel or the CLI.
 - `devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`: the corpora
   every change is judged against. `devwiki` is a bundle over the kit: after
-  `bun install`, a maintainer grants it once on this machine
-  (`wikiwright trust grant module:@wikiwright/kit-code --root devwiki`, with
-  `--scope worktrees` to cover every linked worktree of this clone) before
-  `check --root devwiki` judges anything; the suite never reads that grant —
-  every test judges a copy under `os.tmpdir()`.
+  `bun install`, `check --root devwiki` loads the kit from
+  `devwiki/node_modules` and proves it; every test judges a copy under
+  `os.tmpdir()`.
 - `fixtures/conformance`: the neutral module fixture and the two bundles that
   consume it. Test infrastructure, not a domain model.
 - `tools/`: the build-info writer, the playbook renderer, the case-fold table

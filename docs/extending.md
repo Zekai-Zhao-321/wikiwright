@@ -252,10 +252,10 @@ names the module.
 The entry point loads a bundle's declared modules once, before a verb that
 declares it reads the vault's law, so a bundle judged without a law it
 declares is refused rather than judged under a quieter one. A verb that
-answers about the engine — `schema`, `version` —, about the one module it
-loads itself — `trust` — or about this machine's registry of connected
-bundles — `bundles`, which reads a connected bundle's files for its identity
-and no law — declares it reads no vault law and loads none.
+answers about the engine — `schema`, `version` — or about this machine's
+registry of connected bundles — `bundles`, which reads a connected bundle's
+files for its identity and no law — declares it reads no vault law and loads
+none. How a load proves a module is [§Loading a module](#loading-a-module).
 
 A bundle names the package in `config/engine.json` and either installs it in
 its own `node_modules`, by a workspace link, a `file:` dependency or a local
@@ -336,12 +336,10 @@ with its refusal rather than omitting it.
 | `module-version-mismatch` | the installed `version` does not satisfy the bundle's declared range |
 | `module-incompatible` | the running engine is outside the module's declared `engine` range |
 | `module-impure` | the [purity scan](#the-purity-scan) found the clock, randomness, locale comparison, the environment, the network, dynamic evaluation, computed access to one of those globals, or an import of any form, with file and line |
-| `module-untrusted` | this machine holds no grant for the package in this vault |
-| `module-modified` | the package's bytes differ from the granted digest |
 | `module-load-failed` | the import failed, the default export is not a manifest, or the manifest states a version the package does not |
 | `module-fixture-missing` | the fixture is absent or outside the digested set |
-| `module-fixture-failed` | the fixture is unreadable, its constitution does not load, the module does not compose with the standard library, or its findings differ from its own expectation |
-| `module-nondeterministic` | two runs over the same bytes produced different findings |
+| `module-fixture-failed` | the [determinism fixture](#the-determinism-fixture) is unreadable, its constitution does not load, the module does not compose with the standard library, or its findings differ from its own expectation |
+| `module-nondeterministic` | two runs of the fixture over the same bytes produced different findings |
 | `module-conflict` | two loaded manifests claim one identifier |
 
 ## The purity scan
@@ -402,80 +400,63 @@ argument for running a module's code with the engine's permissions:
 installing the module is, the decision every package manager asks of its
 user.
 
-## Trust
+## Loading a module
 
-A module runs inside the judge with the user's permissions, so it is granted
-per machine, never per repository:
+Installing a module is the consent to run it. A module that arrived by a
+workspace link, a `file:` dependency, a packed tarball or a copy carried in
+the bundle's own tree was accepted when it was installed, as every package
+manager takes it; this engine asks no second time, and no machine-local
+approval stands between a bundle and the law it declares. What the engine
+adds is proof over the installed bytes, taken at every load, before the
+module judges anything:
 
-```text
-wikiwright trust grant module:@wikiwright-fixture/probe
-wikiwright trust grant module:@wikiwright-fixture/probe --scope worktrees
-wikiwright trust list
-wikiwright trust revoke module:@wikiwright-fixture/probe
-wikiwright trust revoke module:@wikiwright-fixture/probe --scope worktrees
-```
+1. **The digest.** The loader resolves the declaration (under `node_modules`,
+   or at its declared `path`) and takes one sha256 over every file of the
+   package, its own `node_modules` excepted, `package.json` and the fixture
+   included. The law digest every envelope carries names it
+   (`module:<package> <digest>`), and `modules list` reports it, so the bytes
+   that judged are named wherever a verdict is.
+2. **The purity scan.** Every executable file is read and refused by file
+   and line when it holds a construct a verdict may not depend on or an
+   import of any form (§[The purity scan](#the-purity-scan)).
+3. **The entry and the fixture.** Both must resolve inside the package and
+   be in the digested set; the entry is imported, and its default export must
+   be a manifest.
+4. **The determinism fixture.** The module's own fixture runs under the
+   standard library and this module alone, twice, and must reproduce the
+   findings it expects (§[The determinism fixture](#the-determinism-fixture)).
+   `modules list` reports what it judged as `fixture`: its pages and its
+   findings.
 
-A grant approves the sha256 over every file of the package except its own
-`node_modules`, `package.json` and the fixture included, and it lives in
-`~/.config/wikiwright/trust.json`. `git pull` can never write a grant. A
-grant or a revoke reads, changes and writes that file as one operation under
-a lock beside it, so two of them at once cannot lose one another's record. A
-lock is broken only when the process it names is gone from this machine: age
-is no evidence, since a grant that digests a large module holds one for a
-while, and a holder on another machine — a store on a shared home directory —
-cannot be asked about at all. When the lock does not clear, the verb refuses
-`store-busy` rather than overwriting what it cannot see. The
-purity scan runs before the grant, so an impure module cannot be granted and
-then run; and `trust grant` runs the module's determinism fixture before
-writing the grant, so a module that does not reproduce its own findings is
-never granted. A load under the granted digest is the same proof and does not
-run the fixture again.
+A step that fails refuses the module by name (§[The loader's
+refusals](#the-loaders-refusals)): `module-impure` for the scan,
+`module-fixture-missing`, `module-fixture-failed` or `module-nondeterministic`
+for the fixture, each with the hint it carries, and every verb that reads the
+law — `check`, `search`, `type show` and the rest — refuses with it.
 
-A maintainer chooses one of two scopes:
+The two proofs are kept for the process by what they proved: the scan by the
+digest and the scan's version, the fixture by the digest, the scan's version
+and the declared package name. Two bundles that install the same bytes are
+proved once, and other bytes are proved on their own. Neither result is
+written anywhere or outlives the process: the fixture composes the standard
+library and runs the judge, so its outcome is a function of the engine as
+well as of the module's bytes, and a cache kept between runs would have to be
+keyed by the engine too. That cache is deferred (`docs/roadmap.md`), so every
+process that loads a module runs its fixture once.
 
-- `--scope vault`, the default, approves the digest for this vault, keyed by
-  its real path. It holds one digest per module: a re-grant replaces it, and
-  editing any byte or moving the vault revokes it. This is the only scope
-  0.1.0 had, and its grants approve exactly what they approved.
-- `--scope worktrees` approves the digest for this vault's path in every
-  linked worktree of its repository, existing and future, keyed by the real
-  path of the git common directory and the vault's path inside its worktree,
-  spelled as the filesystem spells it: no Unicode normalization, no case
-  folding, and only the platform's own separator converted. It may hold
-  several digests, so approving a module's update on one branch leaves another
-  branch's approved version standing. Another vault in the same repository and
-  a separate clone are other scopes.
-
-A matching digest in either scope approves the installed module. The vault
-grant is read first and needs no git; git is asked for the worktree scope,
-with the variables a git hook exports removed, only when the vault grant does
-not approve and a worktree grant for the module exists. A grant that applies
-but pins other bytes refuses as `module-modified`, none as `module-untrusted`,
-and a worktree scope that was needed and could not be read as
-`module-scope-unresolved`. None of these refusals names a command to run: the
-approval is a maintainer's decision, and an agent must not grant trust
-automatically to unblock its work. `trust list` and `modules list` name the
-scope that approves the installation, and `trust revoke --scope worktrees`
-removes every digest the scope approved and says whether a vault grant still
-approves. A `trust` command that names `--scope worktrees` refuses as
-`scope-unresolved` when git cannot read the scope. `trust list --all` prints
-every record the store holds, each with an identity, the path it is keyed by
-and whether that path is still on this machine; `trust revoke --record
-<identity>` removes one of them without a vault or a repository, which is the
-only way to remove a record whose directory is gone.
-
-What the keys cannot tell apart is stated here rather than hidden. A
-replacement repository at the same common-directory path can inherit approval
-for the same module digest, as a replacement vault at the same path can
-inherit a vault grant. Moving the repository's common directory ends its
-worktree scope. A vault inside a submodule has a separate git directory in
-each worktree, so it does not share one. A newline in the vault's path inside
-its worktree, or in a linked worktree's common-directory path, leaves the
-vault without a worktree scope: git prints each answer on its own line, so such
-a path would read as a shorter one, and the load refuses as
-`module-scope-unresolved`; a vault grant still approves it. Dependency installation is a separate
-setup step: the package manager may run a package's lifecycle scripts, and the
-trust gate does not govern them.
+Consent at install is the argument for running a module's code with the
+engine's permissions; the proofs are not. A module whose bytes change —
+an update, an edit, a different copy — is proved again under its new digest,
+and a change to the modules a bundle declares or carries is a change to its
+`config/engine.json` or its tree, reviewed as any other change to its law.
+What that costs is stated rather than hidden: nothing on this machine asks
+before a module runs. A `git pull` that changes a kit a bundle carries in its
+tree, or the modules it declares, changes the code the next verb over that
+bundle runs, and importing a module runs its top-level code, `modules list`
+included; the purity scan reads it first, and it narrows what the code can
+reach, but it is not a sandbox. Dependency installation is a separate step
+the engine does not govern: the package manager may run a package's lifecycle
+scripts.
 
 ## The determinism fixture
 
@@ -498,8 +479,10 @@ the pages that exercise it, and the findings they must produce:
 ```
 
 It runs under the standard library plus this module alone, never the whole
-bundle's module set, and it runs twice in one process. `expected` is
-`ruleId|path|line|severity` per finding in the engine's own order.
+bundle's module set, and it runs twice in one process, at every load
+(§[Loading a module](#loading-a-module)), before the module judges anything of
+the bundle's. `expected` is `ruleId|path|line|severity` per finding in the
+engine's own order.
 
 ## When a module throws
 
@@ -547,22 +530,23 @@ declares `{ "package": "@wikiwright/kit-code", "version": "^0.1.0" }` (the
 range the installed package must satisfy, checked by the loader — not a
 registry lookup), `package.json` depends on it — the workspace link inside
 this monorepo (`devwiki`), or `file:<path>` to `packages/kit-code` in a
-checkout of this repository anywhere else — the package manager's install
-lands it in the bundle's own `node_modules`, and this machine grants it
-once, after reading it:
+checkout of this repository anywhere else — and the package manager's install
+lands it in the bundle's own `node_modules`. The first verb that reads the
+law loads it and proves it:
 
 ```text
 bun install
-wikiwright trust grant module:@wikiwright/kit-code
+wikiwright check --write
 ```
 
 `wikiwright init --constitution code` lands the starter — concrete subtypes
 of every kit type, `relations` declared registered and empty (the labels are
 the kit's) and `decision_id` shaped `D-nnn` — and, because the modules
-cannot load before those two steps, renders no artifact and no brief: the
-envelope's `modules` block names the install, the grant and `check --write`
-(which lands the brief with the artifacts), and `check` before them refuses `module-unresolved` and then
-`module-untrusted` with the same steps in its hint. A bundle tightens what
+cannot load before the install, renders no artifact and no brief: the
+envelope's `modules` block names the install, says the kit loads on first use
+and is proved then, and names `check --write` (which lands the brief with the
+artifacts), and `check` before the install refuses `module-unresolved` with
+the install in its hint. A bundle tightens what
 the kit left open: `devwiki` adds `"origin": { "kind": "string", "pattern":
 "^\\.$" }` to its anchored types because it lives in the repository it
 documents. A bare `concept` cannot be a concrete type's name — it shadows the

@@ -49,7 +49,8 @@ packages/cli/src/
   law.ts       the loaded vault to a Law; the engine.json consumers
   writer.ts    the shell half of the Writer: prove, then temp-and-rename
   atomicwrite.ts   the one staged replace every non-page write lands through
-  moduleload.ts, modulefixture.ts, trust.ts   the module ladder
+  moduleload.ts, modulefixture.ts   the module ladder: resolve, digest, scan, load, prove
+  sha256.ts    the shell's sha256 over bytes: a module's files, a page, a shipped skill
   storelock.ts the lock a machine-local store is read, changed and written under
   connections.ts   the machine-local bundles registry `bundles` and `--bundle` read
   hooks.ts, staged.ts   the installed hooks and the staged gate
@@ -84,7 +85,7 @@ by name when it breaks. Test files live under `packages/core/test` and
 | The modules import in one direction | no package's `src/` holds a runtime import cycle, however many steps around; a type-only import is erased and is not an edge | `import-graph` |
 | One registration API | the three standard-library modules load through `defineModule` and equal the registry the engine builds; every surface a module registers earns a refusal | `module-expressible`, `module-registration`, `module-boundary` |
 | Every surface of the API is consumed | every field of `ModuleManifest`, `GrammarSpec`, `ArmSpec`, `ParamSpec`, `VocabularySpec` and `CheckSpec` is read somewhere, and every exported resolver is called outside `modules/` | `module-surface-consumed` |
-| A module loads through the whole ladder | resolution from the bundle's `node_modules`, the version range, purity, the grant, the fixture, and then governance: its grammar parses, its arms fire, its severity ratchets, its findings route to its lane | `module-conformance` (which also carries the determinism cases: an impure module refused by file and line, an edited fixture refused as `module-fixture-failed`), `pack-install` (a locally packed tarball), `kit-code` (the shipped kit, from install to a subtype's tightening) |
+| A module loads through the whole ladder | resolution from the bundle's `node_modules` or its declared `path`, the version range, the digest, the purity scan, the determinism fixture at every load, and then governance: its grammar parses, its arms fire, its severity ratchets, its findings route to its lane | `module-conformance` (which also carries the determinism cases: an impure module refused by file and line, a fixture that disagrees refused as `module-fixture-failed` and one that differs between its two runs as `module-nondeterministic` by `check`, `search` and `type show`, and the fixture run once per process for one digest), `module-path` (a kit declared by a bundle-relative path), `purity` (one probe per rule of the scan), `pack-install` (a locally packed tarball), `kit-code` (the shipped kit, from install to a subtype's tightening) |
 | One judge at every write path | the same `judge` is called by the working tree, the staged gate, the stdin overlay, the write draft and the replay; a property test judges one fixture through every constructor and asserts agreement | `judge-property`, `judge`, `staged-gate`, `lint-verb`, `write-verb`, `relation-lifecycle` |
 | Routing is total | every error or warning finding carries exactly one of `fix` and `queue`; every `info` carries neither; over every corpus and every emit path | `routing-xor`, `pass-table` (no unroutable row; every emitted `ruleId` has a row; every POLICY row names a real `engine.json` key; the lane set is closed) |
 | Coverage is coherent | a pass reporting `evaluated: 0` never sits beside its own findings | `coverage-coherence` |
@@ -97,14 +98,15 @@ by name when it breaks. Test files live under `packages/core/test` and
 | The shell has one clock | the verbs that stamp a date read `today()`; a test pins `WIKIWRIGHT_TODAY` and proves the pin reaches the page | `write-verb` |
 | One code per meaning | every `fail(` in the CLI uses a kebab-case code mapped to exactly one exit type | `exit-taxonomy` |
 | The command registry is the only surface | `--help`, `schema`, the brief and the parser render one table; every documented invocation in a shipped skill parses; every writer verb has a brief workflow slot and every slot names a verb; the playbook is byte-identical to its generator's output | `per-command-help`, `schema-walk`, `skills`, `skills-update`, `verbs`, `role-enforcement` |
-| The starters are fixtures | the `code` starter's types over `devwiki`'s own vocabularies yield the error set devwiki's constitution yields; `init` on an empty directory is green on its first `check`, and a starter that declares modules is green once the envelope's named steps are run; every copy a test judges installs the kit from the shipped package and grants it in a store the test owns, never the developer's | `starter-fixtures`, `fixture-verdicts`, `init`, `kit-code` |
+| The starters are fixtures | the `code` starter's types over `devwiki`'s own vocabularies yield the error set devwiki's constitution yields; `init` on an empty directory is green on its first `check`, and a starter that declares modules is green once the envelope's named steps are run; every copy a test judges installs the kit from the shipped package under `os.tmpdir()`, never into the shipped tree | `starter-fixtures`, `fixture-verdicts`, `init`, `kit-code` |
 | Identity is Unicode-aware | NFC and full case folding through one seam, with CJK cases; unique basenames, aliases and titles | `identity`, `names-graph` |
 | Every vault envelope names its bundle | a verb that reads a vault's law adds `metadata.bundle` — label, real root, head, dirty, the law digest over the constitution, `engine.json` and each installed module, the content digest over every page's bytes — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs; the brief's header prints the same law digest | `bundle-identity` |
 | Connected bundles are told apart | from a directory that is no vault, two bundles connected by name hold one page path with different guidance, and every answer carries the bundle that gave it and the page's digest; an installed copy refuses every write to it, a consumer session reads and is refused a write, and a child handed a section's address, while the page is unchanged, reads the same bytes under the same digest — an address names the current tree, not a revision, so a child compares the digest it reads with the one it was handed | `multi-bundle` (the scenario, end to end), `bundles`, `read-verb`, `bundle-identity` |
 
 Two more properties are stated rather than tested, so a reader meets them:
 the purity scan on a module narrows and does not sandbox (a byte scan cannot
-see a name built at runtime), and the artifact write loop is per-file atomic but
+see a name bound or built at runtime, and installing a module, not the scan,
+is the consent to run it), and the artifact write loop is per-file atomic but
 not batch-atomic (a crash mid-loop leaves a mix the next `check --write`
 converges).
 
@@ -178,12 +180,9 @@ invokes it. Windows has no carrier in this repository and is unverified.
   built from and whether the checkout was dirty, so a stale build is never
   mistaken for the checkout.
 - `devwiki` is a bundle over `@wikiwright/kit-code`, which `bun install` links
-  into `devwiki/node_modules`. Before `check --root devwiki` judges anything
-  on a fresh clone, a maintainer grants the kit once on this machine:
-  `wikiwright trust grant module:@wikiwright/kit-code --root devwiki`, with
-  `--scope worktrees` to cover every linked worktree of this clone. The
-  suite never reads that grant. After it, `check --root devwiki` has zero
-  findings of any severity: the brief is tracked with the artifacts, and
+  into `devwiki/node_modules`; `check --root devwiki` loads the kit from there
+  and proves it on every run. `check --root devwiki` has zero findings of any
+  severity: the brief is tracked with the artifacts, and
   `check --write --root devwiki` regenerates all four. `freshness --root devwiki` measures every
   wiki page against this repository and holds its citations to the pin; `bun tools/uncovered.ts` lists the
   source directories no page covers.
@@ -199,7 +198,7 @@ invokes it. Windows has no carrier in this repository and is unverified.
   to `origin`.
 - Generated files have one generator and are never hand-edited:
   `devwiki/generated/*`, the brief included (`wikiwright check --write --root
-  devwiki`, under the grant above),
+  devwiki`, after the install above),
   `packages/cli/skills/wikiwright-maintain/lint-response.md`
   (`bun tools/render-playbook.ts`), `docs/cli.md`'s verb block
   (`bun docs/render-cli.ts --write`), `packages/core/src/identity/casefold-data.ts`

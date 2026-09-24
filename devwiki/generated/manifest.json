@@ -1,13 +1,13 @@
 {
   "schema": "wikiwright/manifest",
   "totals": {
-    "pages": 33,
-    "edges": 237
+    "pages": 34,
+    "edges": 243
   },
   "by_kind": {
     "relation": 69,
-    "tagged": 46,
-    "wikilink": 122
+    "tagged": 47,
+    "wikilink": 127
   },
   "by_label": {
     "relation": {
@@ -61,17 +61,23 @@
       "tags": [
         "meta"
       ],
+      "outbound": {
+        "wikilink": [
+          "meta/D-007.md"
+        ]
+      },
       "inbound": {
         "relation": {
           "decided_by": [
-            "wiki/modules-and-trust.md",
-            "wiki/trust-law.md"
+            "wiki/loading-a-module.md",
+            "wiki/modules.md"
           ]
         },
         "wikilink": [
           "meta/D-006.md",
-          "wiki/modules-and-trust.md",
-          "wiki/trust-law.md"
+          "meta/D-007.md",
+          "wiki/loading-a-module.md",
+          "wiki/modules.md"
         ]
       }
     },
@@ -92,12 +98,12 @@
       "inbound": {
         "relation": {
           "decided_by": [
-            "wiki/modules-and-trust.md",
+            "wiki/modules.md",
             "wiki/wikiwright-quickstart.md"
           ]
         },
         "wikilink": [
-          "wiki/modules-and-trust.md",
+          "wiki/modules.md",
           "wiki/wikiwright-quickstart.md"
         ]
       }
@@ -123,7 +129,7 @@
           ]
         },
         "wikilink": [
-          "wiki/trust-law.md",
+          "wiki/loading-a-module.md",
           "wiki/wikiwright-architecture.md"
         ]
       }
@@ -169,20 +175,49 @@
       ],
       "outbound": {
         "wikilink": [
-          "meta/D-002.md"
+          "meta/D-002.md",
+          "meta/D-007.md"
+        ]
+      },
+      "inbound": {
+        "wikilink": [
+          "meta/D-007.md"
+        ]
+      }
+    },
+    {
+      "path": "meta/D-007.md",
+      "type": "decision",
+      "archetype": "reference",
+      "chain": [
+        "decision",
+        "code/decision",
+        "reference"
+      ],
+      "title": "D-007 — Installing is consent; every load proves the module",
+      "description": "The machine-local grant and the trust verb are removed: a module a bundle declares and has installed, or carries by a bundle-relative path, runs because it was installed, and every load proves it — the purity scan and the determinism fixture, once per digest in a process — before it judges anything.",
+      "tags": [
+        "meta"
+      ],
+      "outbound": {
+        "wikilink": [
+          "meta/D-002.md",
+          "meta/D-006.md"
         ]
       },
       "inbound": {
         "relation": {
           "decided_by": [
-            "wiki/modules-and-trust.md",
-            "wiki/trust-law.md",
+            "wiki/loading-a-module.md",
+            "wiki/modules.md",
             "wiki/wikiwright-quickstart.md"
           ]
         },
         "wikilink": [
-          "wiki/modules-and-trust.md",
-          "wiki/trust-law.md",
+          "meta/D-002.md",
+          "meta/D-006.md",
+          "wiki/loading-a-module.md",
+          "wiki/modules.md",
           "wiki/wikiwright-quickstart.md"
         ]
       }
@@ -248,12 +283,10 @@
           "wiki/fields-and-shapes.md",
           "wiki/findings-and-routing.md",
           "wiki/git.md",
-          "wiki/modules-and-trust.md",
           "wiki/one-judge-five-states.md",
           "wiki/parser-and-names.md",
           "wiki/registry-pipeline.md",
-          "wiki/skills-and-brief.md",
-          "wiki/trust-law.md"
+          "wiki/skills-and-brief.md"
         ]
       }
     },
@@ -284,7 +317,8 @@
         "wikilink": [
           "meta/D-001.md",
           "wiki/generated-artifacts.md",
-          "wiki/modules-and-trust.md",
+          "wiki/loading-a-module.md",
+          "wiki/modules.md",
           "wiki/parser-and-names.md",
           "wiki/search.md",
           "wiki/skills-and-brief.md",
@@ -341,7 +375,7 @@
         "reference"
       ],
       "title": "Environment variables",
-      "description": "The five WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes.",
+      "description": "The four WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes.",
       "tags": [
         "cli"
       ],
@@ -571,7 +605,7 @@
         "concept"
       ],
       "title": "Git",
-      "description": "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt, and every answer read from a file git wrote itself.",
+      "description": "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt, and every answer read from a file git wrote itself.",
       "tags": [
         "cli"
       ],
@@ -600,10 +634,8 @@
           "wiki/environment-variables.md",
           "wiki/fixers.md",
           "wiki/freshness.md",
-          "wiki/modules-and-trust.md",
           "wiki/one-judge-five-states.md",
           "wiki/testing-guide.md",
-          "wiki/trust-law.md",
           "wiki/writer-and-staged-gate.md"
         ]
       }
@@ -651,15 +683,58 @@
         "wikilink": [
           "wiki/fields-and-shapes.md",
           "wiki/fixers.md",
-          "wiki/modules-and-trust.md",
+          "wiki/loading-a-module.md",
+          "wiki/modules.md",
           "wiki/one-judge-five-states.md",
-          "wiki/section-grammars.md",
-          "wiki/trust-law.md"
+          "wiki/section-grammars.md"
         ]
       }
     },
     {
-      "path": "wiki/modules-and-trust.md",
+      "path": "wiki/loading-a-module.md",
+      "type": "code-concept",
+      "archetype": "concept",
+      "chain": [
+        "code-concept",
+        "code/concept",
+        "concept"
+      ],
+      "title": "Loading a module",
+      "description": "Module code runs inside the judge, and installing a module is the consent to run it; what the engine adds is proof over the installed bytes at every load — the digest the law names, a purity scan that refuses by file and line, and the module's own determinism fixture — once per digest in a process; a stranger's bug is one attributed finding, never a crash.",
+      "tags": [
+        "cli",
+        "kit"
+      ],
+      "outbound": {
+        "relation": {
+          "decided_by": [
+            "meta/D-002.md",
+            "meta/D-007.md"
+          ],
+          "part_of": [
+            "wiki/wikiwright-architecture.md"
+          ]
+        },
+        "wikilink": [
+          "meta/D-002.md",
+          "meta/D-004.md",
+          "meta/D-007.md",
+          "wiki/judge.md",
+          "wiki/modules.md",
+          "wiki/wikiwright-architecture.md"
+        ]
+      },
+      "inbound": {
+        "wikilink": [
+          "wiki/deterministic-artifacts.md",
+          "wiki/testing-guide.md",
+          "wiki/wikiwright-architecture.md",
+          "wiki/wikiwright-quickstart.md"
+        ]
+      }
+    },
+    {
+      "path": "wiki/modules.md",
       "type": "subsystem",
       "archetype": "concept",
       "chain": [
@@ -667,8 +742,8 @@
         "code/subsystem",
         "concept"
       ],
-      "title": "Modules, trust and the fixture",
-      "description": "The registration API every module goes through, the loader's ladder from the bundle's own node_modules to the judge, the machine-local content-hashed grant for one vault or for its path across a clone's linked worktrees, the purity scan and the determinism fixture proved at the grant.",
+      "title": "Modules, the loader and the fixture",
+      "description": "The registration API every module goes through, the loader's ladder from the bundle's own node_modules or a declared bundle-relative path to the judge, the purity scan and the determinism fixture run at every load and kept once per digest in a process, and the modules verb.",
       "tags": [
         "kernel",
         "cli"
@@ -678,7 +753,7 @@
           "decided_by": [
             "meta/D-002.md",
             "meta/D-003.md",
-            "meta/D-006.md"
+            "meta/D-007.md"
           ],
           "mapped_in": [
             "wiki/repository-layout.md"
@@ -693,9 +768,7 @@
         "wikilink": [
           "meta/D-002.md",
           "meta/D-003.md",
-          "meta/D-006.md",
-          "wiki/command-runtime.md",
-          "wiki/git.md",
+          "meta/D-007.md",
           "wiki/judge.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
@@ -705,8 +778,9 @@
       "inbound": {
         "wikilink": [
           "wiki/deterministic-artifacts.md",
-          "wiki/section-grammars.md",
-          "wiki/trust-law.md"
+          "wiki/loading-a-module.md",
+          "wiki/registry-pipeline.md",
+          "wiki/section-grammars.md"
         ]
       }
     },
@@ -815,6 +889,7 @@
         },
         "wikilink": [
           "wiki/command-runtime.md",
+          "wiki/modules.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
@@ -859,7 +934,7 @@
             "wiki/generated-artifacts.md",
             "wiki/git.md",
             "wiki/judge.md",
-            "wiki/modules-and-trust.md",
+            "wiki/modules.md",
             "wiki/parser-and-names.md",
             "wiki/registry-pipeline.md",
             "wiki/repository-scripts.md",
@@ -880,7 +955,7 @@
           "wiki/generated-artifacts.md",
           "wiki/git.md",
           "wiki/judge.md",
-          "wiki/modules-and-trust.md",
+          "wiki/modules.md",
           "wiki/parser-and-names.md",
           "wiki/registry-pipeline.md",
           "wiki/repository-scripts.md",
@@ -990,7 +1065,7 @@
         },
         "wikilink": [
           "wiki/judge.md",
-          "wiki/modules-and-trust.md",
+          "wiki/modules.md",
           "wiki/standard-library.md",
           "wiki/wikiwright-architecture.md"
         ]
@@ -1086,7 +1161,7 @@
         "procedure"
       ],
       "title": "Testing the engine",
-      "description": "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install and grant the code kit in a store the test owns.",
+      "description": "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install the code kit into a copy.",
       "tags": [
         "repo"
       ],
@@ -1098,6 +1173,7 @@
         },
         "wikilink": [
           "wiki/git.md",
+          "wiki/loading-a-module.md",
           "wiki/wikiwright-architecture.md"
         ]
       },
@@ -1110,7 +1186,7 @@
             "wiki/freshness.md",
             "wiki/generated-artifacts.md",
             "wiki/judge.md",
-            "wiki/modules-and-trust.md",
+            "wiki/modules.md",
             "wiki/parser-and-names.md",
             "wiki/registry-pipeline.md",
             "wiki/search.md",
@@ -1128,7 +1204,7 @@
           "wiki/freshness.md",
           "wiki/generated-artifacts.md",
           "wiki/judge.md",
-          "wiki/modules-and-trust.md",
+          "wiki/modules.md",
           "wiki/parser-and-names.md",
           "wiki/registry-pipeline.md",
           "wiki/search.md",
@@ -1136,43 +1212,6 @@
           "wiki/standard-library.md",
           "wiki/wikiwright-architecture.md",
           "wiki/writer-and-staged-gate.md"
-        ]
-      }
-    },
-    {
-      "path": "wiki/trust-law.md",
-      "type": "code-concept",
-      "archetype": "concept",
-      "chain": [
-        "code-concept",
-        "code/concept",
-        "concept"
-      ],
-      "title": "The trust law",
-      "description": "Module code runs inside the judge, so a module is admitted by a machine-local grant pinned to the sha256 over every file of the installed package, for one vault or for its path in every linked worktree of one clone, taken only after a purity scan and a determinism fixture, and revoked by any edit; a stranger's bug is one attributed finding, never a crash.",
-      "tags": [
-        "cli",
-        "kit"
-      ],
-      "outbound": {
-        "relation": {
-          "decided_by": [
-            "meta/D-002.md",
-            "meta/D-006.md"
-          ],
-          "part_of": [
-            "wiki/wikiwright-architecture.md"
-          ]
-        },
-        "wikilink": [
-          "meta/D-002.md",
-          "meta/D-004.md",
-          "meta/D-006.md",
-          "wiki/command-runtime.md",
-          "wiki/git.md",
-          "wiki/judge.md",
-          "wiki/modules-and-trust.md",
-          "wiki/wikiwright-architecture.md"
         ]
       }
     },
@@ -1208,6 +1247,7 @@
         },
         "wikilink": [
           "meta/D-004.md",
+          "wiki/loading-a-module.md",
           "wiki/registry-pipeline.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
@@ -1223,7 +1263,8 @@
             "wiki/freshness.md",
             "wiki/generated-artifacts.md",
             "wiki/judge.md",
-            "wiki/modules-and-trust.md",
+            "wiki/loading-a-module.md",
+            "wiki/modules.md",
             "wiki/one-judge-five-states.md",
             "wiki/parser-and-names.md",
             "wiki/registry-pipeline.md",
@@ -1232,7 +1273,6 @@
             "wiki/section-grammars.md",
             "wiki/standard-library.md",
             "wiki/testing-guide.md",
-            "wiki/trust-law.md",
             "wiki/wikiwright-quickstart.md",
             "wiki/writer-and-staged-gate.md"
           ]
@@ -1244,7 +1284,8 @@
           "wiki/freshness.md",
           "wiki/generated-artifacts.md",
           "wiki/judge.md",
-          "wiki/modules-and-trust.md",
+          "wiki/loading-a-module.md",
+          "wiki/modules.md",
           "wiki/one-judge-five-states.md",
           "wiki/parser-and-names.md",
           "wiki/registry-pipeline.md",
@@ -1253,7 +1294,6 @@
           "wiki/section-grammars.md",
           "wiki/standard-library.md",
           "wiki/testing-guide.md",
-          "wiki/trust-law.md",
           "wiki/wikiwright-quickstart.md",
           "wiki/writer-and-staged-gate.md"
         ]
@@ -1277,7 +1317,7 @@
         "relation": {
           "decided_by": [
             "meta/D-003.md",
-            "meta/D-006.md"
+            "meta/D-007.md"
           ],
           "part_of": [
             "wiki/wikiwright-architecture.md"
@@ -1285,7 +1325,8 @@
         },
         "wikilink": [
           "meta/D-003.md",
-          "meta/D-006.md",
+          "meta/D-007.md",
+          "wiki/loading-a-module.md",
           "wiki/wikiwright-architecture.md"
         ]
       },

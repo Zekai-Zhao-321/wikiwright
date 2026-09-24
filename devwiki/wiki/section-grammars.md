@@ -74,7 +74,7 @@ its items graph edges, and `observes` makes them census rows
 - The registration API, the parameter laws and the resolvers `resolveParsers`,
   `admittedKinds`, `canonicalizeOf`, `edgesOf`, `observedValues`,
   `transitionSeam`: `packages/core/src/modules/index.ts` (see
-  [[modules-and-trust]]).
+  [[modules]]).
 - The bindings' construction and the two lint passes that use them:
   `packages/core/src/lint/index.ts:856`, `:1105`, `:1205`.
 - The three shipped grammars: [[standard-library]]. The code kit declares

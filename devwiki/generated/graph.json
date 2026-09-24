@@ -38,6 +38,12 @@
       "title": "D-006 — A grant may cover a vault's path in every linked worktree of one clone"
     },
     {
+      "id": "meta/D-007.md",
+      "kind": "page",
+      "type": "decision",
+      "title": "D-007 — Installing is consent; every load proves the module"
+    },
+    {
       "id": "meta/charter.md",
       "kind": "page",
       "type": "charter",
@@ -134,10 +140,16 @@
       "title": "The judge and its passes"
     },
     {
-      "id": "wiki/modules-and-trust.md",
+      "id": "wiki/loading-a-module.md",
+      "kind": "page",
+      "type": "code-concept",
+      "title": "Loading a module"
+    },
+    {
+      "id": "wiki/modules.md",
       "kind": "page",
       "type": "subsystem",
-      "title": "Modules, trust and the fixture"
+      "title": "Modules, the loader and the fixture"
     },
     {
       "id": "wiki/one-judge-five-states.md",
@@ -200,12 +212,6 @@
       "title": "Testing the engine"
     },
     {
-      "id": "wiki/trust-law.md",
-      "kind": "page",
-      "type": "code-concept",
-      "title": "The trust law"
-    },
-    {
       "id": "wiki/wikiwright-architecture.md",
       "kind": "page",
       "type": "architecture-overview",
@@ -229,6 +235,11 @@
       "from": "meta/D-001.md",
       "to": "tag:meta",
       "kind": "tagged"
+    },
+    {
+      "from": "meta/D-002.md",
+      "to": "meta/D-007.md",
+      "kind": "wikilink"
     },
     {
       "from": "meta/D-002.md",
@@ -257,6 +268,26 @@
     },
     {
       "from": "meta/D-006.md",
+      "to": "meta/D-007.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "meta/D-006.md",
+      "to": "tag:meta",
+      "kind": "tagged"
+    },
+    {
+      "from": "meta/D-007.md",
+      "to": "meta/D-002.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "meta/D-007.md",
+      "to": "meta/D-006.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "meta/D-007.md",
       "to": "tag:meta",
       "kind": "tagged"
     },
@@ -336,7 +367,12 @@
     },
     {
       "from": "wiki/deterministic-artifacts.md",
-      "to": "wiki/modules-and-trust.md",
+      "to": "wiki/loading-a-module.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/deterministic-artifacts.md",
+      "to": "wiki/modules.md",
       "kind": "wikilink"
     },
     {
@@ -796,93 +832,141 @@
       "kind": "wikilink"
     },
     {
-      "from": "wiki/modules-and-trust.md",
+      "from": "wiki/loading-a-module.md",
       "to": "meta/D-002.md",
       "kind": "relation",
       "label": "decided_by"
     },
     {
-      "from": "wiki/modules-and-trust.md",
+      "from": "wiki/loading-a-module.md",
       "to": "meta/D-002.md",
       "kind": "wikilink"
     },
     {
-      "from": "wiki/modules-and-trust.md",
-      "to": "meta/D-003.md",
+      "from": "wiki/loading-a-module.md",
+      "to": "meta/D-004.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/loading-a-module.md",
+      "to": "meta/D-007.md",
       "kind": "relation",
       "label": "decided_by"
     },
     {
-      "from": "wiki/modules-and-trust.md",
-      "to": "meta/D-003.md",
+      "from": "wiki/loading-a-module.md",
+      "to": "meta/D-007.md",
       "kind": "wikilink"
     },
     {
-      "from": "wiki/modules-and-trust.md",
-      "to": "meta/D-006.md",
-      "kind": "relation",
-      "label": "decided_by"
-    },
-    {
-      "from": "wiki/modules-and-trust.md",
-      "to": "meta/D-006.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/modules-and-trust.md",
+      "from": "wiki/loading-a-module.md",
       "to": "tag:cli",
       "kind": "tagged"
     },
     {
-      "from": "wiki/modules-and-trust.md",
-      "to": "tag:kernel",
+      "from": "wiki/loading-a-module.md",
+      "to": "tag:kit",
       "kind": "tagged"
     },
     {
-      "from": "wiki/modules-and-trust.md",
-      "to": "wiki/command-runtime.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/modules-and-trust.md",
-      "to": "wiki/git.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/modules-and-trust.md",
+      "from": "wiki/loading-a-module.md",
       "to": "wiki/judge.md",
       "kind": "wikilink"
     },
     {
-      "from": "wiki/modules-and-trust.md",
-      "to": "wiki/repository-layout.md",
-      "kind": "relation",
-      "label": "mapped_in"
-    },
-    {
-      "from": "wiki/modules-and-trust.md",
-      "to": "wiki/repository-layout.md",
+      "from": "wiki/loading-a-module.md",
+      "to": "wiki/modules.md",
       "kind": "wikilink"
     },
     {
-      "from": "wiki/modules-and-trust.md",
-      "to": "wiki/testing-guide.md",
-      "kind": "relation",
-      "label": "verified_by"
-    },
-    {
-      "from": "wiki/modules-and-trust.md",
-      "to": "wiki/testing-guide.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/modules-and-trust.md",
+      "from": "wiki/loading-a-module.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
       "label": "part_of"
     },
     {
-      "from": "wiki/modules-and-trust.md",
+      "from": "wiki/loading-a-module.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "meta/D-002.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "meta/D-002.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "meta/D-003.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "meta/D-003.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "meta/D-007.md",
+      "kind": "relation",
+      "label": "decided_by"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "meta/D-007.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "tag:cli",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "tag:kernel",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "wiki/judge.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "relation",
+      "label": "mapped_in"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "wiki/repository-layout.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "relation",
+      "label": "verified_by"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "wiki/testing-guide.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "wiki/wikiwright-architecture.md",
+      "kind": "relation",
+      "label": "part_of"
+    },
+    {
+      "from": "wiki/modules.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "wikilink"
     },
@@ -993,6 +1077,11 @@
     {
       "from": "wiki/registry-pipeline.md",
       "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/registry-pipeline.md",
+      "to": "wiki/modules.md",
       "kind": "wikilink"
     },
     {
@@ -1130,7 +1219,7 @@
     },
     {
       "from": "wiki/section-grammars.md",
-      "to": "wiki/modules-and-trust.md",
+      "to": "wiki/modules.md",
       "kind": "wikilink"
     },
     {
@@ -1247,80 +1336,17 @@
     },
     {
       "from": "wiki/testing-guide.md",
+      "to": "wiki/loading-a-module.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/testing-guide.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
       "label": "part_of"
     },
     {
       "from": "wiki/testing-guide.md",
-      "to": "wiki/wikiwright-architecture.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "meta/D-002.md",
-      "kind": "relation",
-      "label": "decided_by"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "meta/D-002.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "meta/D-004.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "meta/D-006.md",
-      "kind": "relation",
-      "label": "decided_by"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "meta/D-006.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "tag:cli",
-      "kind": "tagged"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "tag:kit",
-      "kind": "tagged"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "wiki/command-runtime.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "wiki/git.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "wiki/judge.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "wiki/modules-and-trust.md",
-      "kind": "wikilink"
-    },
-    {
-      "from": "wiki/trust-law.md",
-      "to": "wiki/wikiwright-architecture.md",
-      "kind": "relation",
-      "label": "part_of"
-    },
-    {
-      "from": "wiki/trust-law.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "wikilink"
     },
@@ -1354,6 +1380,11 @@
       "from": "wiki/wikiwright-architecture.md",
       "to": "tag:stdlib",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/wikiwright-architecture.md",
+      "to": "wiki/loading-a-module.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/wikiwright-architecture.md",
@@ -1406,19 +1437,24 @@
     },
     {
       "from": "wiki/wikiwright-quickstart.md",
-      "to": "meta/D-006.md",
+      "to": "meta/D-007.md",
       "kind": "relation",
       "label": "decided_by"
     },
     {
       "from": "wiki/wikiwright-quickstart.md",
-      "to": "meta/D-006.md",
+      "to": "meta/D-007.md",
       "kind": "wikilink"
     },
     {
       "from": "wiki/wikiwright-quickstart.md",
       "to": "tag:repo",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/wikiwright-quickstart.md",
+      "to": "wiki/loading-a-module.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/wikiwright-quickstart.md",

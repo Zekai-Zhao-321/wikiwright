@@ -6,7 +6,7 @@
       "mode": "registered",
       "entries": {
         "cli": {
-          "description": "The wikiwright binary under packages/cli: verbs, envelopes, the shell half of the Writer, modules and trust, freshness."
+          "description": "The wikiwright binary under packages/cli: verbs, envelopes, the shell half of the Writer, modules and their loading, freshness."
         },
         "kernel": {
           "description": "The kernel of @wikiwright/core: parse, identity, types, shapes, the judge, routing, the Writer, generation, search."

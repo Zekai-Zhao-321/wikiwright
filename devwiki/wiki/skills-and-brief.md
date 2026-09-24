@@ -3,7 +3,7 @@ type: subsystem
 title: "Skills and the brief"
 description: "The three shipped skills copied into a vault under a stamp the engine can audit, the per-role brief rendered from the verb registry and the loaded constitution under its law digest, and the machine-local findings that say when either is behind the binary."
 tags: [cli]
-pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [packages/cli/src/skills.ts, packages/cli/src/brief.ts, packages/cli/src/shipped.ts, packages/cli/src/verbs/skills.ts, packages/cli/src/verbs/brief.ts, packages/cli/src/artifacts.ts, packages/cli/skills/]
 ---

@@ -3,7 +3,7 @@ type: architecture-overview
 title: wikiwright architecture
 description: The four-layer shape of the engine and how a page's obligations flow through it.
 tags: [kernel, stdlib, cli, kit]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/connections.ts, packages/cli/src/law.ts, packages/kit-code/]
 ---
@@ -45,10 +45,11 @@ sections verbatim with the page's digest.
 2. The standard library, under `packages/core/src/stdlib/`: the `claims`,
    `relations` and `entries` modules, registered through the same API a kit
    uses. The kernel imports nothing from them.
-3. A domain kit: an npm package a bundle installs, registering grammars,
-   vocabularies, checks, lanes and constitution data through that API, loaded
-   behind a purity scan, a machine-local trust grant and its own determinism
-   fixture. `@wikiwright/kit-code`, under `packages/kit-code/`, is the shipped
+3. A domain kit: an npm package a bundle installs, or a directory it carries
+   and declares by a bundle-relative path, registering grammars,
+   vocabularies, checks, lanes and constitution data through that API.
+   Installing it is the consent to run it, and every load proves it first by
+   a purity scan and its own determinism fixture (see [[loading-a-module]]). `@wikiwright/kit-code`, under `packages/kit-code/`, is the shipped
    one: the page kinds, relation labels, templates and reading discipline of
    a code wiki, registered as declarations only; this bundle consumes it.
 4. The bundle: one corpus with its pages, its constitution, its local

@@ -3,7 +3,7 @@ type: subsystem
 title: Registry pipeline
 description: Loads, validates and flattens config/constitution.json and config/engine.json into the effective contracts every pass reads.
 tags: [kernel, cli]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/verbs/read.ts, packages/cli/src/verbs/bundles.ts]
 ---
@@ -33,10 +33,13 @@ one cause is reported once with its sites (`:93-116`).
 `loadConstitution(json, modules)` in `packages/core/src/registry/index.ts:54`:
 the document and the composed module registry in, `{ok, registry}` or
 `{ok: false, issues}` out (`packages/core/src/registry/model.ts:249`).
-`loadEngineConfig(json)` in `packages/core/src/registry/engine.ts:145` reads
-the bootstrap through a closed zod schema (`:113`) and returns the config or
-`schema-invalid` issues (`:146-156`); `ENGINE_CONFIG_CONSUMERS` (`:120-138`)
-names the reader of every key so the meta-test can resolve each. The CLI's
+`loadEngineConfig(json)` in `packages/core/src/registry/engine.ts:163` reads
+the bootstrap through a closed zod schema (`:131`) and returns the config or
+`schema-invalid` issues (`:164-174`); `ENGINE_CONFIG_CONSUMERS` (`:138-156`)
+names the reader of every key so the meta-test can resolve each. A module
+declaration's optional `path`, a bundle-relative directory, is held to the
+vault path law as a content root is, so a path that leaves the bundle is
+`schema-invalid` at load (`:55-67`, `:97-117`). The CLI's
 `loadVault` in `packages/cli/src/vaultio.ts:70` wraps both with file reading
 through `loadVaultVia` (`:100`), which reads the config through a
 `VaultReader`, the working tree's or the git index's; the two config paths,
@@ -45,7 +48,8 @@ the reader, the page walk and the page reads live below the loader, in
 exist (`packages/cli/src/vaultio.ts:105-116`), `engine.json` loads first
 because the modules it declares compose the registry the constitution is
 validated under (`:133-168`), the module set is the preloaded one or a
-refusal (`:177-241`), `content_roots` is required (`:243-257`), and every
+refusal, each module proved by the load that preloaded it (`:177-241`; see
+[[modules]]), `content_roots` is required (`:243-257`), and every
 declared template or example must exist and, for an example, pass its own
 type (`:264-361`); a loaded vault keeps the two config texts as they were
 read, the inputs of the law digest (`:49-55`, `:369`). Every verb that needs

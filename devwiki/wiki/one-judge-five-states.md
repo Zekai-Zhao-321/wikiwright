@@ -3,7 +3,7 @@ type: code-concept
 title: "One judge, five states"
 description: "Every write path — the working tree, the staged gate, a draft on stdin, a write, a replay of history — constructs a state and calls the one judge under the one law, so no verb can be told one thing at write time and another at the gate."
 tags: [kernel, cli]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
 covers: [packages/core/src/judge/index.ts, packages/cli/src/state.ts, packages/cli/src/writer.ts, packages/cli/src/staged.ts, packages/cli/src/law.ts, packages/cli/src/verbs/lint.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/fix.ts, packages/cli/src/verbs/write.ts]
 ---
@@ -48,13 +48,13 @@ A verb that reports findings without judging — `okf check`, `move`, `new`,
 Whichever state a verb builds, its envelope names the bundle it was built
 over: `metadata.bundle` carries the root, the checkout, a digest of the
 pages and the law digest over the config and module bytes the law is built
-from (`packages/cli/src/bundle.ts:38-54`, `:118-140`;
+from (`packages/cli/src/bundle.ts:38-53`, `:118-140`;
 see [[command-runtime]]). A bundle named by `--bundle`
 is resolved to the root `--root` would name before any module loads, so it is
 judged by the same constructors under the same law; the runtime's refusals —
 `one-target`, `bundle-not-found`, `bundle-readonly`, and
-`trust-store-malformed` or `bundles-registry-malformed` for a machine-local
-store that does not parse — are answered before a verb builds a state, and
+`bundles-registry-malformed` for a machine-local registry that does not
+parse — are answered before a verb builds a state, and
 are envelope errors, not findings (see [[command-runtime]] and
 [[envelope-and-exit-codes]]). A constructor reads git through a file git
 writes itself, and holds the answers to their terminators, their counts

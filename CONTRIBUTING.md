@@ -30,25 +30,13 @@ printf '#!/bin/sh\nexec node /path/to/wikiwright/packages/cli/dist/bin.js "$@"\n
 chmod +x ~/.local/bin/wikiwright
 ```
 
-`bun install` links `@wikiwright/kit-code` into `devwiki/node_modules`.
-Before `check --root devwiki` judges anything, a maintainer grants the kit
-once on this machine, after reading it. `--scope worktrees` covers `devwiki`
-in every linked worktree of this clone, existing and future, which suits a
-workflow that opens a worktree per session; without it the grant covers this
-checkout's `devwiki` alone:
-
-```sh
-node packages/cli/dist/main.js trust grant module:@wikiwright/kit-code --root devwiki --scope worktrees
-```
-
-An agent must not grant trust to unblock its own work; see AGENTS.md.
-
-Until the install, `check` refuses `module-unresolved`; until the grant,
-`module-untrusted`; each hint names the step. The grant is this machine's,
-per vault path, and the suite never reads it — every test judges a copy under
-`os.tmpdir()` that installs the kit from the shipped package and grants it in
-its own store. Editing any byte of the kit revokes the grant; re-grant after
-reading the diff.
+`bun install` links `@wikiwright/kit-code` into `devwiki/node_modules`, and
+that is all `check --root devwiki` needs: the kit loads from there, and every
+load proves it — its purity scan and its determinism fixture run before it
+judges anything (`docs/extending.md` §Loading a module). Until the install,
+`check` refuses `module-unresolved`, and the hint names the install. Every
+test judges a copy under `os.tmpdir()` that installs the kit from the shipped
+package; the shipped tree is never installed into from a test.
 
 ## The gate
 
@@ -99,8 +87,8 @@ else is not covered.
   synchronous spawn has cut a child's output short (`docs/roadmap.md`), and
   the engine ships for Node. A test that means Bun names `bun`.
 - Every test writes under `os.tmpdir()`, never in the repository.
-- A test that spawns a verb that stamps a date (`write`, `new`,
-  `trust grant`) sets `WIKIWRIGHT_TODAY`, or the stamp moves with the day.
+- A test that spawns a verb that stamps a date (`write`, `new`) sets
+  `WIKIWRIGHT_TODAY`, or the stamp moves with the day.
 - Bun's per-test budget is five seconds. A case that installs a kit and
   drives a dozen verbs exceeds it: build the bundle in `before` and keep one
   `it` per verb, or state `{ timeout }` on a deliberately sequential walk.
@@ -143,7 +131,7 @@ logical change is one commit).
 
 | File | Generator |
 |---|---|
-| `devwiki/generated/*`, the brief included | `wikiwright check --write --root devwiki`, under the grant above |
+| `devwiki/generated/*`, the brief included | `wikiwright check --write --root devwiki`, after the install above |
 | `fixtures/handbooks/*/generated/*`, the briefs included | `wikiwright check --write --root fixtures/handbooks/orchard`, and the same for `allotment` |
 | `packages/cli/skills/wikiwright-maintain/lint-response.md` | `bun tools/render-playbook.ts` (`--check` verifies) |
 | the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies) |

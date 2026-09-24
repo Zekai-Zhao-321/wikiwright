@@ -10,7 +10,7 @@ that would close the gap, rather than left for a reader to discover.
 
 wikiwright 0.1.0 is two packages and a kit. `@wikiwright/core` is the
 kernel and the standard library (claims, relations, entries), a pure
-library over bytes. `wikiwright` is the binary: 24 verbs, one module each,
+library over bytes. `wikiwright` is the binary: 23 verbs, one module each,
 one JSON envelope per invocation; `docs/cli.md` lists every verb and flag.
 Every envelope of a verb that reads a vault's law names the bundle it read —
 its label, real root, head, whether it is dirty, and digests of its law and
@@ -23,7 +23,7 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,593 tests across 108 files. At `29dbfb9`, when it held 1,590,
+The suite is 1,587 tests across 109 files. At `29dbfb9`, when it held 1,590,
 the full gate, `bun run check`, passed them all with the test files under
 Bun and the CLI under Node (`tools/run-suite.ts`), and the full node runner,
 `bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
@@ -33,11 +33,12 @@ judges five corpora (`devwiki`, `fixtures/memory-synth`,
 the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
-`freshness --root devwiki` holds every citation to its pin. Measured at
-`4a577f7`, on a clone with the kit granted in a temporary store because the
-kit is ungranted on the development machine, `freshness` reads all 26 pinned
-pages `current` (4) or `unchanged` (22) and none `stale`, with no
-`stale-capture`, `stale-source-cited` or `citation-unresolved` finding.
+`freshness --root devwiki` holds every citation to its pin. Measured on
+2026-09-24 on the development machine, where `check --root devwiki` now needs
+the install and nothing else, `freshness` reads all 26 pinned pages `current`
+(17) or `unchanged` (9) and none `stale`, with no `stale-capture`,
+`stale-source-cited` or `citation-unresolved` finding, before the commit
+that carries those pins; once it lands, the 17 are `unchanged`.
 A citation into a file its page does not cover is held to the pin but not
 to the file's later changes, so such a reference either is covered or goes
 through the page that covers the file.
@@ -59,12 +60,12 @@ would want.
 The module preload is the one asynchronous step in `main.ts`, keyed on the
 target root's existing `engine.json`, and a verb's `plan` is synchronous.
 So `init --constitution code` always lands without artifacts and brief,
-even when the kit is already installed and granted, and its envelope names
-the steps to run next (`bun install`, a maintainer's approval, `check --write`).
+even when the kit is already installed, and its envelope names the steps to
+run next (`bun install`, the first load that proves the kit, `check --write`).
 
 Wanted: `wikiwright init --constitution code`, in a directory where the
-install and the grant already happened, rendering `generated/` and the
-brief in that one run. That needs the plan to be asynchronous — a change to
+install already happened, rendering `generated/` and the brief in that one
+run. That needs the plan to be asynchronous — a change to
 the dry-run law's machinery, not to `init`.
 
 ### `freshness` holds a citation to its pin, not to what the lines say
@@ -104,12 +105,51 @@ checkout, and `init --constitution code` says so in its envelope.
 Wanted: a published package, so a bundle's `package.json` can name a
 version range and `bun install` resolves it.
 
+### A module runs because it is installed
+
+There is no approval step between a bundle and the law it declares: a module
+a bundle declares and has installed, or carries in its own tree by `path`,
+runs when a verb reads the bundle's law. Installing it is the consent, the
+decision every package manager asks of its user. So nothing on this machine
+asks before a module's code runs: a `git pull` that changes a kit the bundle
+carries, or the modules its `config/engine.json` declares, changes the code
+the next verb over that bundle runs, and `modules list`, which imports each
+module to report it, runs its top-level code too. What guards it is review of
+the change that brings it, as for any dependency. The `trust` verb and its
+machine-local store, which once stood there, are removed.
+
+Wanted: a `modules list` that reports a declared module — its resolution,
+its digest, its scan — without importing it, so a reader can see what a
+pulled change would run before anything runs it. Not a machine-local
+approval: that was removed on purpose.
+
 ### The purity scan narrows; it does not sandbox
 
-`trust grant` scans a module's bytes for the calls a pure module must not
-make and refuses by file and line. A byte scan cannot see a name built at
-runtime. The grant is a machine-local statement that a human read the
-module; it is not a sandbox, and nothing here claims otherwise.
+Every load scans a module's bytes for the constructs a pure module must not
+reach — the clock, randomness, the locale, the environment, the network,
+dynamic evaluation, computed access to those globals, and an import of any
+form — and refuses by file and line (`docs/extending.md` §The purity scan).
+A byte scan cannot see a name bound or built at runtime: `const D = Date;
+D.now()` passes it. It narrows what a module can reach; it is not a sandbox,
+and it is not the argument for running the module, which is the install.
+
+### A module's proofs are taken once per process
+
+Every load proves a module on its installed bytes: the purity scan and the
+determinism fixture, which composes the standard library with the module and
+judges the fixture's pages twice. Both are kept for the process by the digest
+of the module's bytes and the scan's version, so two bundles installing one
+kit are proved once, and nothing is kept between processes. So every process
+that loads a module runs its fixture: measured on 2026-09-24 on one
+Apple-silicon machine under Node 22.22.0, the code kit's fixture (seven pages,
+judged twice) took a median of 32.7 ms over eleven fresh processes, measured
+alone, which every verb that reads `devwiki`'s law now pays once.
+
+Wanted: a cache kept between runs, keyed by the module's digest, the scan's
+version and the engine's version and build, since the fixture's outcome is a
+function of the engine as well as of the module. It is a second state that
+can disagree with the first (§Every run parses the whole corpus), and it is
+deferred until the fixture's cost is measured to matter.
 
 ### Artifact writes are per-file atomic, not batch-atomic
 
@@ -185,15 +225,16 @@ block is a difference in every envelope), median of five fresh processes over
 1,000 pages: `check` 273 ms to 298 ms, `lint --staged` 351 ms to 383 ms.
 
 The law digest in that block reads the bytes of every declared module
-installed under the bundle, and so does the brief's law digest, beside the
-preload's own reading: each reading hashes every file of the package and
+installed under the bundle or carried at its declared path, and so does the
+brief's law digest, beside the preload's own reading: each reading hashes every file of the package and
 purity-scans its executable ones. `bundles list` computes each connection's
 identity the same way, so discovery scans a module's purity and discards the
 result; it loads no module and judges nothing. A package's digest is now
 taken once per process and reused by the preload, the brief and the
 envelope; nothing of it outlives the process. Measured on 2026-09-24 on one
-Apple-silicon machine under Node 22.22.0 over a granted temporary copy of
-`devwiki`, whose one module is the kit (three files, 28 KB), median of eleven
+Apple-silicon machine under Node 22.22.0 over a temporary copy of
+`devwiki` (the kit installed and, at the time, granted), whose one module is
+the kit (three files, 28 KB), median of eleven
 fresh processes alternating the build before the change and the build with
 it: `check --all` 190.2 ms before and 190.2 ms after, `read` 114.2 ms and
 113.8 ms. One digest of the kit takes about 0.9 ms, so the two readings a
@@ -227,28 +268,6 @@ shapes with the `z` core re-exports, and a schema from one zod instance is
 not a schema to another. It would also ship third-party code without its
 notices. Bundling only the CLI's own files saved 7%, not enough to put a
 bundler in the path of what ships.
-
-### A grant is keyed by where things are
-
-A vault grant is keyed by the vault's real path, and a worktree grant by the
-real path of the repository's git common directory and the vault's path
-inside its worktree. A replacement vault, or a replacement repository, at the
-same path can inherit approval for the same module digest. Grants for paths
-that no longer exist stay in the store until revoked, and `trust list` shows
-only the ones that apply to the vault it is run in. A fresh CI clone on a new
-machine still needs its own authorized setup; the worktree scope covers
-linked worktrees on one machine.
-
-`trust list --all` is the inventory: every record with its identity, the path
-it is keyed by and whether that path is still on this machine. `trust revoke
---record <identity>` removes one, needing neither a vault nor a repository, so
-a record whose directory is gone can be removed at all.
-
-Wanted still: a prune that selects records itself. It needs a rule that tells
-a path which is gone from one which is merely unavailable — an unmounted
-volume, a disk not attached — and an exact dry-run output, since a prune that
-guesses wrong removes approvals nobody meant to withdraw. Until then, removal
-is one named record at a time.
 
 ### Two operating systems
 
@@ -545,18 +564,13 @@ alternative is to carry the history with the tree.
 
 ## Developing against it
 
-- **A fresh clone runs two steps before `check --root devwiki` judges
-  anything:** `bun install` (links `@wikiwright/kit-code` into
-  `devwiki/node_modules`), then a maintainer's `wikiwright trust grant
-  module:@wikiwright/kit-code --root devwiki`, with `--scope worktrees` when
-  sessions open linked worktrees of one clone. Until the first, `check` is
-  `module-unresolved`; until the second, `module-untrusted`; each hint names
-  the step and neither hands out a grant command. The grant is this
-  machine's, per vault path or per worktree scope, and the suite never reads
-  it: every test judges a copy under `os.tmpdir()` that
-  installs the kit from the shipped package and grants it in its own store
-  (`packages/cli/test/fixtures/kit-code.ts`). Editing any byte of the kit
-  revokes the grant; re-grant after reading the diff.
+- **A fresh clone runs one step before `check --root devwiki` judges
+  anything:** `bun install`, which links `@wikiwright/kit-code` into
+  `devwiki/node_modules`. Until it, `check` is `module-unresolved`, and the
+  hint names the install; after it, every load proves the kit before it
+  judges anything. Every test judges a copy under `os.tmpdir()` that installs
+  the kit from the shipped package (`packages/cli/test/fixtures/kit-code.ts`),
+  never the shipped tree.
 - **Bun's per-test budget is five seconds.** A case that installs a kit and
   drives a dozen verbs exceeds it: build the bundle in `before` and keep one
   `it` per verb, or state `{ timeout }` on a deliberately sequential walk.
@@ -565,8 +579,7 @@ alternative is to carry the history with the tree.
   longer under that load than alone; write against the five seconds a single
   `bun test ./<file>` keeps, and the case holds under both.
 - **A test that stamps a date reads the clock.** Set `WIKIWRIGHT_TODAY` in
-  any test that spawns `write`, `new` or `trust grant`, or the stamp moves
-  with the day.
+  any test that spawns `write` or `new`, or the stamp moves with the day.
 - **The corpora are fixtures.** A change to `devwiki`'s pages or
   constitution is judged by `starter-fixtures` (under the `code` starter's
   types merged with devwiki's own vocabularies the error set must equal
@@ -579,5 +592,5 @@ alternative is to carry the history with the tree.
   `fixtures/handbooks` are held at zero findings under `check` by
   `fixture-verdicts` and their tracked `generated/` by `generated-tracked`;
   an engine change that moves the writer's brief moves theirs too, and
-  `wikiwright check --write --root fixtures/handbooks/<name>` regenerates each,
-  with no grant, since they declare no module.
+  `wikiwright check --write --root fixtures/handbooks/<name>` regenerates each;
+  they declare no module.

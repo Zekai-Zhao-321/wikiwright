@@ -3,9 +3,9 @@ type: subsystem
 title: "The command runtime"
 description: "One spec-driven registry of 24 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the `--bundle` target and the bundle every vault envelope names, the one clock, and the place a loaded vault becomes the judge's law."
 tags: [cli]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
 origin: .
-covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/bundle.ts, packages/cli/src/connections.ts, packages/cli/src/verbs/]
+covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/bundle.ts, packages/cli/src/connections.ts, packages/cli/src/storelock.ts, packages/cli/src/verbs/]
 ---
 
 # The command runtime
@@ -22,8 +22,8 @@ verbs the caller may run listed (`:231-254`, `:278-285`); `--help` prints the
 spec's own row and is never a usage error (`:30-46`). `runCommand` parses
 under the registry and resolves `--bundle` to the connection's root before
 anything else, refusing `one-target` beside `--root`, a name no connection
-carries, and a writing verb aimed at an installed copy unless its writes are
-this machine's own stores (`:127-176`, `:178-188`); it preloads the modules
+carries, and a writing verb aimed at an installed copy unless its write is
+this machine's own registry (`:127-176`, `:178-188`); it preloads the modules
 `engine.json` declares for a verb that declares it reads the vault's law —
 the shell's one asynchronous step — runs the verb, turns a throw into
 `unexpected-error`, into `git-short-read` or `git-inconsistent-read` when a
@@ -41,11 +41,18 @@ path its override names made absolute (`:46-55`), which refuses as
 malformed a record whose root is not an absolute path rather than resolving
 it against the working directory, and two records with one name or one real
 root rather than answering with the first (`:66-93`, `:95-149`), beside
-`MACHINE_LOCAL_WRITERS`, the two verbs an installed copy answers — an
-exemption by verb, not by where the stores lie (`:154-164`).
+`MACHINE_LOCAL_WRITERS`, the one verb an installed copy answers — an
+exemption by verb, not by where the store lies (`:154-164`). The registry is
+read, changed and written as one operation (`:172-187`) under the lock every
+machine-local store takes, `packages/cli/src/storelock.ts`: the store is read
+after the lock is held, so two writes at once keep each other's record; the
+lock names the process and the host that hold it and is broken only when
+that process is gone from this machine, never because it is old, and one that
+does not clear is `StoreBusy`, which `bundles` answers as `store-busy`
+(`:114-162`, `:177-198`).
 
 `packages/cli/src/commands.ts` is the registry, the `COMMANDS` array and
-nothing else, one module per verb under `verbs/` (`:2-6`, `:33-58`).
+nothing else, one module per verb under `verbs/` (`:2-6`, `:32-56`).
 `packages/cli/src/spec.ts` is the vocabulary they share: `CommandSpec` with a
 required `writes`, a required `needsVaultModules` and a `plan` for every
 writing verb (`:131-175`), the global flags `--root`, `--bundle` and `--help`
@@ -71,7 +78,7 @@ argument: `lawFor` (`:63-84`) carries the registry, the module set the loader
 validated under, the lint options and the policy keys; `rootsOf`,
 `lintOptionsFor`, `generateOptionsFor`, `moveReasonsOf` and `checkEnginePin`
 (`:20-61`, `:86-118`) are the named readers of every `engine.json` key
-(`packages/core/src/registry/engine.ts:115-138`). `packages/cli/src/clock.ts`
+(`packages/core/src/registry/engine.ts:133-156`). `packages/cli/src/clock.ts`
 is the shell's one clock: `today()` reads `WIKIWRIGHT_TODAY` or the wall
 clock once per process, and nothing the judge does reads it (`:1-4`,
 `:11-22`). `packages/cli/src/pages.ts` holds the page-shaped helpers verbs
@@ -114,10 +121,10 @@ and `directory-not-found` names the directory it looked in as
   switches on Node's compile cache for the engine's own JavaScript and then
   loads `dist/main.js`, the engine's entry, which also runs directly
   (`packages/cli/src/bin.ts:1-14`; `docs/architecture.md`, "Developing").
-- `COMMANDS` (`packages/cli/src/commands.ts:33`) — `brief`, `bundles`,
+- `COMMANDS` (`packages/cli/src/commands.ts:32`) — `brief`, `bundles`,
   `check`, `freshness`, `gate`, `graph`, `hook`, `init`, `fix`, `lint`,
   `modules`, `move`, `new`, `okf`, `read`, `retire`, `schema`, `search`,
-  `skills`, `trust`, `type`, `version`, `vocabulary`, `write` — each exporting
+  `skills`, `type`, `version`, `vocabulary`, `write` — each exporting
   its `CommandSpec` with `run` and, when it writes, `plan`.
 - `parseInvocation`, `scanInvocation` (`packages/cli/src/argv.ts:68`, `:41`);
   `ok`, `fail`, `verdictEnvelope`, `capOptions`
@@ -127,10 +134,8 @@ and `directory-not-found` names the directory it looked in as
 ## State
 
 Per process: the clock's one read (`packages/cli/src/clock.ts:8-9`), the
-module preload cache (`packages/cli/src/moduleload.ts:523`), each vault
-root's real path (`packages/cli/src/paths.ts:18`) and each vault root's
-worktree scope for a trust grant, read from git at most once
-(`packages/cli/src/trust.ts:286-307`). Nothing of a vault between
+module preload cache (`packages/cli/src/moduleload.ts:593`) and each vault
+root's real path (`packages/cli/src/paths.ts:18`). Nothing of a vault between
 processes; between them Node keeps its compile cache of the engine's
 JavaScript, which `bin.ts` switches on and `NODE_DISABLE_COMPILE_CACHE=1`
 turns off.
@@ -181,8 +186,8 @@ turns off.
   `directory-not-found` at exit 3 with `details.resolved` (`:874-882`).
 - `one-target`, `bundle-not-found` and `bundle-readonly`, each before
   anything runs (`packages/cli/src/main.ts:127-176`);
-  `trust-store-malformed` and `bundles-registry-malformed` at exit 4 when a
-  machine-local store does not parse, `git-short-read` at exit 1 with
+  `bundles-registry-malformed` at exit 4 when the machine-local registry does
+  not parse, `git-short-read` at exit 1 with
   `details.command` when a git answer was cut short, `git-inconsistent-read`
   at exit 1 with `details.commands` when two git answers disagree, and
   `unexpected-error`
