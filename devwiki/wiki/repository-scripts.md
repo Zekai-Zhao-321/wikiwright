@@ -3,7 +3,7 @@ type: ops-reference
 title: "Repository scripts"
 description: "The package.json scripts, the development gate, the release matrix run by hand, the tools that generate what nothing hand-edits, and the CLI reference renderer."
 tags: [repo]
-pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
+pin: fcc4c6996a4b3d6976bed6ee3163130e0c6b6603
 origin: .
 covers: [package.json, scripts/, tools/, docs/render-cli.ts, tsconfig.test.json, biome.json, .github/]
 ---

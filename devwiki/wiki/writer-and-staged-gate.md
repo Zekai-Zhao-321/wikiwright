@@ -3,7 +3,7 @@ type: subsystem
 title: "The Writer and the staged gate"
 description: "The splice-only Writer in core, the shell that proves a splice with a second judge and lands it temp-then-rename, the four state constructors, and the staged gate the hooks run."
 tags: [kernel, cli]
-pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
+pin: fcc4c6996a4b3d6976bed6ee3163130e0c6b6603
 origin: .
 covers: [packages/core/src/writer/, packages/core/src/gitplan/, packages/core/src/prefixes/, packages/cli/src/writer.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/staged.ts, packages/cli/src/state.ts, packages/cli/src/hooks.ts, packages/cli/src/verbs/write.ts, packages/cli/src/verbs/gate.ts]
 ---
@@ -94,7 +94,7 @@ newest open claims of the category it stands beside and a count of the rest
 - `proveWrites`, `proveWrite`, `commitWrites`, `commitWrite`, `splicePlan`,
   `blobSha` (`packages/cli/src/writer.ts`), called by `write`, `new`, `fix`,
   `move`, `retire` and `freshness --fast-forward`
-  (`packages/cli/src/verbs/freshness.ts:178-209`).
+  (`packages/cli/src/verbs/freshness.ts:188-219`).
 - `fsState`, `indexState`, `overlayState`, `revisionState`, `commitPairs`,
   `revisionReader` (`packages/cli/src/state.ts`), chosen by `lint`
   (`packages/cli/src/verbs/lint.ts:62`, `:84`, `:101`, `:210`), `check`, `fix`

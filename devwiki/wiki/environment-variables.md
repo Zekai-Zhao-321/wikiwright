@@ -3,7 +3,7 @@ type: ops-reference
 title: "Environment variables"
 description: "The five WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes."
 tags: [cli]
-pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
+pin: fcc4c6996a4b3d6976bed6ee3163130e0c6b6603
 origin: .
 covers: [packages/cli/src/clock.ts, packages/cli/src/main.ts, packages/cli/src/spec.ts, packages/cli/src/trust.ts, packages/cli/src/connections.ts, packages/cli/src/hooks.ts, packages/cli/src/git.ts]
 ---
@@ -22,7 +22,7 @@ These are every `process.env` read under
 | `WIKIWRIGHT_TRUST_FILE` | `trust.ts:58-68`, by `trust` and by the module loader | the path of the machine-local grant store, a relative one resolved against the working directory; default `~/.config/wikiwright/trust.json`. The suite points it at a file beside each test's bundle (`packages/cli/test/fixtures/kit-code.ts:30-38`) |
 | `WIKIWRIGHT_BUNDLES_FILE` | `connections.ts:46-55`, by `bundles` and by the `--bundle` resolution | the path of the machine-local bundles registry, a relative one resolved against the working directory; default `~/.config/wikiwright/bundles.json`. The suite points it at a file under each test's temporary directory (`packages/cli/test/bundles.test.ts:66-72`) |
 | `WIKIWRIGHT_BYPASS` | the installed `pre-commit` and `commit-msg` hooks, rendered by `hooks.ts:19-31` | when non-empty, the hook logs the UTC time, the reason with tabs and newlines collapsed, and the author into `<git-dir>/wikiwright-bypass.log`, prints one line and exits 0 — after the bundle's chained script has run (`hooks.ts:12-18`, `:124-130`) |
-| `GIT_TERMINAL_PROMPT` | set to `0` by `git.ts:215` on every call that may reach the network | a private origin fails instead of hanging on a credential prompt; the call also runs under a 30-second timeout (`git.ts:195`, `:214-222`) |
+| `GIT_TERMINAL_PROMPT` | set to `0` by `git.ts:216` on every call that may reach the network | a private origin fails instead of hanging on a credential prompt; the call also runs under a 30-second timeout (`git.ts:196`, `:215-223`) |
 
 The installed hooks also read `PATH`: when no `wikiwright` is found they
 print one line and let the commit through (`hooks.ts:42-49`). The
@@ -40,7 +40,7 @@ The engine removes `GIT_DIR`, `GIT_WORK_TREE`, `GIT_COMMON_DIR` and
 worktree scope for a trust grant, and the `status` behind the head and dirt an
 envelope's bundle block reports — for the same reason: inside a hook, `git`
 would take the directory it runs in for the top of the work tree
-(`git.ts:510-559`, `:569-621`; see [[git]]).
+(`git.ts:523-572`, `:582-634`; see [[git]]).
 
 ## Relations
 

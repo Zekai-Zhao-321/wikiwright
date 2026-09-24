@@ -23,7 +23,7 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,571 tests across 108 files, green under Bun and under the
+The suite is 1,578 tests across 108 files, green under Bun and under the
 node runner. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the connection tests read end to end) and proves
@@ -31,9 +31,9 @@ the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured at
-`1d76c5a`, on a clone with the kit granted in a temporary store because the
+`fcc4c69`, on a clone with the kit granted in a temporary store because the
 kit is ungranted on the development machine, `freshness` reads all 26 pinned
-pages `current` (18) or `unchanged` (8) and none `stale`, with no
+pages `current` (7) or `unchanged` (19) and none `stale`, with no
 `stale-capture`, `stale-source-cited` or `citation-unresolved` finding.
 
 The gate is `bun run check` (biome, the build, the test-project typecheck,
