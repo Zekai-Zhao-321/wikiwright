@@ -65,8 +65,8 @@ version` prints the engine version and the commit a binary was built from.
   basename of the root's real path), `root` (that real path), `head` and
   `dirty` from the enclosing repository (`null` where git names none), `law`
   (sha256 over `config/constitution.json`, `config/engine.json` and the digest
-  of each declared module installed under the bundle's `node_modules`, trusted
-  on this machine or not, so a grant does not change it) and `content` (sha256
+  of each declared module installed under the bundle's `node_modules` or
+  carried at its declared `path`, whether or not it loads) and `content` (sha256
   over every page under the content roots, path and bytes, as the working tree
   holds them). An answer read from one bundle can be told from an answer read
   from another, and an uncommitted edit shows in `content` and `dirty` while
@@ -96,14 +96,7 @@ version` prints the engine version and the commit a binary was built from.
   into its `SKILL.md` frontmatter, and the root that shadows it — and one row
   per directory whose marker it cannot take. It reads markers only: no law, no
   kit, no page.
-- The consume skill is the runtime skill every bundle skill requires: how to
-  run the engine (the one route today, since no published package exists
-  yet: clone the repository, `bun install`, `bun run build`, and run
-  `node packages/cli/dist/main.js`), what a bundle skill is and how to find
-  one, the consumer's commands with their discipline, where a proposal goes
-  by a copy's contribution mode, and what is left without the engine. It is
-  the one hand-written skill that names verbs, and each of its invocations is
-  held to the parser. The maintain skill gains the export practices: which
+- The maintain skill gains the export practices: which
   output fits, the distribution repository as the copy's identity, a pull
   request against a generated tree ported by hand, and that an external
   export is not a redaction boundary.
@@ -117,12 +110,6 @@ version` prints the engine version and the commit a binary was built from.
   the words of the copy's contribution mode, and a marker that is not one is
   `export-marker-invalid` before any module loads. A courtesy on the CLI, not
   isolation.
-- The plugin's session-start hook names each installed bundle skill with the
-  action that fits how it was installed — linked to a checkout, pinned, an
-  installer's update, or installed by hand — and checks nothing remote. The
-  post-edit hook finds the bundle an edited file belongs to by its ancestry:
-  in an installed copy it says the next update overwrites the edit and where
-  a change goes, and lints nothing; elsewhere it lints the page with `--root`.
 - `read <page> [--section <heading>] [--budget <bytes>]` returns a page's
   sections verbatim, cut at its type's section depth, each with its address,
   lines and byte length, beside the page's type, chain, frontmatter and
@@ -159,55 +146,33 @@ version` prints the engine version and the commit a binary was built from.
   plus the identity matches, not a literal line search. `search --band identity|relevance` keeps one band of the ranked
   results, and of `--files`, where it is applied after every match is
   classified, so no identity match is listed as a substring match.
-- A third shipped skill, `wikiwright-consume`: the judgment for using what a
-  bundle knows rather than writing it. Choose the bundle and say which one
-  every answer came from; read the coherent section, qualifications with
-  their claims; hand a subagent the words verbatim with the bundle, the path
-  and the digest, never an alias; report a knowledge problem as a proposal to
-  the connection's feedback destination, never an edit to an installed copy.
-  It names no verb: the engine prints the brief for any connected bundle, from
-  any directory. `init` and `skills update` install it beside the other two.
+- A third shipped skill, `wikiwright-consume`, the runtime skill every bundle
+  skill requires: how to run the engine (the one route today, since no
+  published package exists yet: clone the repository, `bun install`,
+  `bun run build`, and run `node packages/cli/dist/main.js`), what a bundle
+  skill is and how to find one, the consumer's commands with their
+  discipline — say which bundle answered, read the coherent section, hand a
+  subagent the words verbatim with the bundle, the path and the digest —
+  where a proposal goes by a copy's contribution mode, never into an
+  installed copy, and what is left without the engine. It is the one
+  hand-written skill that names verbs, and each of its invocations is held to
+  the parser. `init` and `skills update` install it beside the other two.
 - The package is a Claude Code plugin: `.claude-plugin/plugin.json` beside
   the three skills, and `hooks/hooks.json` with two plain-Node scripts. At
-  session start one names each connected bundle that is present — kind,
-  label, head, dirty, the page to read first — and how a command names one,
-  saying so again after a compaction or a resume. After an Edit or a Write to
-  a connected bundle's page the other says what the edit means there: an
-  installed copy is read only and its changes go to its feedback
-  destination; a session whose role may not write is told so; otherwise the
-  page's findings, each with its route, a fix's argv quoted for a POSIX
-  shell, and each pass the page could not be judged by without a base, which
-  the staged gate judges against HEAD. It routes by `bundles list --records`,
-  the content roots the engine read inside each bundle, and by the path the
-  edit named, the file's real path held inside the bundle: the root is the
-  first of the edited path's ancestors whose real path is the bundle's, so an
-  edit through a link to the root reaches it, and a page or a content
-  directory that is a link inside the vault keeps its path; a config linked
-  out of the vault routes nothing. Both print nothing when there is nothing to say or anything goes wrong,
-  and exit 0. They are tested against the documented hook input and output;
-  host behaviour is not verified here.
-
-- `trust list --all` prints every record in this machine's store: its
-  identity, its scope, the path it is keyed by, its digest, when it was
-  granted, and whether that path is still present. `trust revoke --record
-  <identity>` removes exactly one record and needs neither a vault nor a
-  repository, so a grant whose directory is gone can be removed at all —
-  revoke resolved the vault path first and refused `root-not-found`.
-
-- `trust grant --scope worktrees` approves a module's digest for a vault's
-  path in every linked worktree of its repository, existing and future, keyed
-  by the real path of the git common directory and the vault's path inside
-  its worktree, spelled as the filesystem spells it. The default scope
-  is the vault, unchanged: a 0.1.0 grant approves exactly what it approved,
-  and only an explicit grant or revoke writes the store as version 2, whose
-  worktree records carry no `vault` field so an older engine ignores them and
-  keeps them. A matching digest in either scope approves; the vault grant
-  needs no git, and git is read, with a hook's exported variables removed,
-  only when a worktree grant could apply. A worktree scope may hold several
-  approved digests. `trust list` and `modules list` name the approving scope,
-  and `trust revoke --scope worktrees` removes every digest the scope approved
-  and says whether a vault grant still approves. `module-scope-unresolved` is
-  a new refusal for a worktree scope git could not read.
+  session start one runs `bundles list`, which reads markers only, and names
+  each installed bundle skill with the action that fits how it was installed
+  — linked to a checkout, pinned, an installer's update, or installed by
+  hand — and how a command names one, saying so again after a compaction or
+  a resume; it checks nothing remote. After an Edit or a Write the other finds
+  the bundle the file belongs to by its ancestry: in an installed copy it
+  says the next update overwrites the edit and where a change goes, and lints
+  nothing; elsewhere it lints the page with `--root` and names its findings,
+  each with its route, a fix's argv quoted for a POSIX shell, and each pass
+  the page could not be judged by without a base, which the staged gate
+  judges against HEAD. A page or a content directory that is a link inside
+  the vault keeps the path it was edited at. Both print nothing when there is
+  nothing to say or anything goes wrong, and exit 0. They are tested against
+  the documented hook input and output; host behaviour is not verified here.
 
 ### Changed
 
@@ -272,8 +237,9 @@ version` prints the engine version and the commit a binary was built from.
   every bundle; the evidence discipline stays (the hedge kept verbatim, the
   context envelope, a contrary observation added rather than overwritten).
   `wikiwright-maintain` gains one section: a bundle's guidance governs that
-  bundle alone, a connection's kind and a session's role are guardrails on
-  the command line and not isolation, and no skill grants trust.
+  bundle alone, a copy's read-only guard and a session's role are guardrails
+  on the command line and not isolation, and which modules run is the
+  bundle's reviewed declaration, never a skill's.
 - The shell's modules import in one direction, and a test holds them to it.
   The registry imported every verb while `schema` and the brief imported the
   registry back, and the artifact writer imported the brief *verb*: eight
@@ -288,10 +254,9 @@ version` prints the engine version and the commit a binary was built from.
   declaration to the code.
 
 - A verb declares whether it reads the vault's law, and the entry point
-  preloads a bundle's declared modules only for one that does. `schema`,
-  `trust` and `version` no longer digest, purity-scan and trust-check a
-  bundle's modules — nor resolve a worktree scope with git — to answer a
-  question about the engine or about the one module they load themselves.
+  preloads a bundle's declared modules only for one that does. `schema` and
+  `version` no longer digest and purity-scan a bundle's modules to answer a
+  question about the engine.
   The declaration is held against what each verb's imports reach, so a verb
   that starts reading a vault cannot keep saying it does not.
 
@@ -310,10 +275,6 @@ version` prints the engine version and the commit a binary was built from.
   rather than attached to an earlier file, and every unresolved row carries
   its `reason`.
 
-- Refusal hints (`module-unresolved`, `module-untrusted`, `module-modified`)
-  and `init`'s next steps no longer print a `trust grant` command: the
-  approval is a maintainer's decision, and an agent follows a printed command
-  literally. AGENTS.md says an agent must not grant trust to unblock its work.
 - `gate` and `lint --staged` read the index once: the staged diff and the
   index listing were each spawned again for the second pass, the one over the
   roots the staged constitution names, and the diff a third time before both.
@@ -341,29 +302,20 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
-- The machine-local registry of connected bundles, added and removed within
-  this release: `bundles add` and `bundles remove`, `--name`, `--kind`,
-  `--guide`, `--feedback` and `--records`, the file
-  `~/.config/wikiwright/bundles.json` and `WIKIWRIGHT_BUNDLES_FILE`, a
-  connection's kind, feedback destination and guide, the store lock, and the
-  codes `bundles-registry-malformed`, `store-busy`, `bundle-name-taken`,
-  `bundle-root-registered`, `guide-not-found`, `guide-not-a-page`,
-  `invalid-kind` and `vault-not-found`. Installing a bundle skill is copying
-  its directory, and `--bundle` finds it there; a maintained checkout is named
-  with `--root`.
-- The `trust` verb and the machine-local trust store: `trust grant`, `list`
-  and `revoke`, their `--scope`, `--all` and `--record`, the store at
-  `~/.config/wikiwright/trust.json` and `WIKIWRIGHT_TRUST_FILE`, and the codes
-  `module-untrusted`, `module-modified`, `module-scope-unresolved` and
-  `trust-store-malformed`. Installing a module is the consent to run it, and
-  every load proves it; no machine-local approval stands between a bundle and
-  the law it declares. The loss is stated in `docs/roadmap.md`: a module a
-  bundle declares and has installed, or carries in its tree, runs when a verb
-  reads the bundle's law, and a `git pull` that changes it changes what runs
-  without this machine asking first. The other Unreleased entries that
-  describe the trust verb, its scopes, its store, its lock or its codes
-  describe what this release no longer has; the bundles registry keeps the
-  store lock.
+- A machine-local registry of connected bundles, added and removed on the way
+  to this release, so none shipped: registering a bundle by name, its kinds,
+  feedback destination and guide, and the file and lock it lived in. The scan
+  of the skill directories replaced it: installing a bundle skill is copying
+  its directory, `--bundle` and `bundles list` find it there, and a
+  maintained checkout is named with `--root`.
+- The `trust` verb and the machine-local trust store it wrote: `trust grant`,
+  `list` and `revoke`, the store at `~/.config/wikiwright/trust.json`, and the
+  refusals of a module no grant approved. Two things replace it: consent at
+  install — installing a module, or carrying it in the bundle's tree, is the
+  consent to run it — and proof at load: every load purity-scans the module's
+  bytes and runs its determinism fixture before it judges anything. The loss
+  is stated in `docs/roadmap.md`: a `git pull` that changes a module changes
+  what runs without this machine asking first.
 
 ### Fixed
 
@@ -381,26 +333,14 @@ version` prints the engine version and the commit a binary was built from.
   without it the brief is the session's `WIKIWRIGHT_ROLE`, or the writer's
   when the session declares none: a consumer session that asked for its
   brief was handed the writer's.
-- A trust store or a bundles registry this engine cannot read — not JSON, not
-  the store's schema, a version it does not read, a record of no known shape —
-  is refused by name, `trust-store-malformed` or `bundles-registry-malformed`,
-  at exit 4 with the file and the failing record in `details`, from the verb
-  and from the module load that checks a grant; it was an `unexpected-error`.
 - Every file the shell writes outside a content page — the generated
-  artifacts, the machine-local trust store, the shipped skills' files and
-  stamps, the freshness report — lands through the Writer's staged replace:
+  artifacts, the rendered exports, the shipped skills' files and stamps, the
+  freshness report — lands through the Writer's staged replace:
   an exclusive temp beside the target, renamed into place, every file of a
   batch staged before the first rename. An interrupted write leaves the old
   bytes, and a reader never sees half a file. A replacement keeps the mode the
-  file had, so a store a maintainer made private stays private; ownership is
+  file had, so a file a maintainer made private stays private; ownership is
   not preserved, which needs privilege the engine does not ask for.
-- `trust grant` and `trust revoke` read, change and write the store as one
-  operation under a lock beside it. Two of them at once each kept their own
-  snapshot and the last write won, so a grant could vanish while both
-  commands reported success. A lock is broken only when the process named in
-  it is gone from this machine, never because it is old — a grant that digests
-  a large module holds one for a while, and breaking it brings a revoked grant
-  back. A lock that does not clear refuses `store-busy`.
 
 - `check` reads and parses the tree once: the artifacts, the brief and the
   verdict take one state's pages through `parsedPages`, and the brief already
@@ -472,7 +412,7 @@ version` prints the engine version and the commit a binary was built from.
 - `fixtures/handbooks/orchard` and `fixtures/handbooks/allotment`: two small
   gardening handbooks, each a `procedure-page` type with a required climate
   and a `guide-page` for the page to read first, and a page with one title
-  and different steps in both. The connection tests read them; both are
+  and different steps in both. The two-bundle tests read them; both are
   clean under `check`, their `generated/` included.
 - `bun run check` and `bun run test` run the suite through
   `tools/run-suite.ts`: one `bun test` process per file, as many at once as
