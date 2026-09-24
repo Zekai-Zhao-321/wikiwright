@@ -26,8 +26,12 @@ version` prints the engine version and the commit a binary was built from.
   location, the files its pages embed, `generated/` over the selection with a
   consumer's brief that names the export, a `SKILL.md`, and the marker,
   `config/export.json`, which names the export and the bundle and records the
-  digests it was cut with. A symbolic link is never carried: the export is
-  refused, `export-symlink`.
+  digests it was cut with. A copy holds bytes, never a link: the working tree
+  is read through its links, so a kit a package manager installed as links
+  travels as files under the same law digest, and a link in a rendered copy is
+  replaced by bytes. A file reached through a link that leaves the bundle, or
+  a link the index tracks at the staged gate, refuses the export,
+  `export-symlink`.
 - `check --write` renders every `output: skills` export and the plugin
   manifests, replacing what differs and removing what the plan no longer
   holds, and nothing else; `check` holds each rendered copy to a fresh render,

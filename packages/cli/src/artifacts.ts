@@ -2,7 +2,7 @@
 // `init` both land artifacts through it, so a fresh init's first check is green
 // by construction) · write-then-rename · docs/architecture.md §Directories.
 
-import { existsSync, readdirSync, rmdirSync, rmSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, rmdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { buildNameIndex, generateArtifacts, type PageInput } from "@wikiwright/core";
 import { replaceFiles } from "./atomicwrite.ts";
@@ -114,19 +114,40 @@ export function writeExports(root: string, exports: RepositoryExports): string[]
     }
   }
   if (replacements.length > 0) {
-    // A planned file whose place a link holds is replaced by bytes: the link
-    // goes first, so the rename lands a file and not whatever it pointed at.
+    // A copy holds bytes, never a link. A planned file whose place a link
+    // holds, or that lies under a linked directory, is replaced by bytes: each
+    // link goes first, itself and never what it names, so the rename lands a
+    // file here and nothing is written or removed through the link.
     for (const replacement of replacements) {
-      const abs = join(root, replacement.path);
-      rmSync(abs, { force: true });
+      unlinkLinks(root, replacement.path, exports.destinations);
+      rmSync(join(root, replacement.path), { force: true });
     }
     replaceFiles(replacements.map((r) => ({ path: join(root, r.path), contents: r.contents })));
   }
   for (const path of removals) {
+    // A link removed above to make room for a directory is one now.
+    if (lstatSync(join(root, path), { throwIfNoEntry: false })?.isDirectory() === true) continue;
     rmSync(join(root, path), { force: true });
     pruneEmpty(root, dirname(path), exports.destinations);
   }
   return [...replacements.map((r) => r.path), ...removals].sort();
+}
+
+/**
+ * Remove every symbolic link from the owned directory down to `path`, itself
+ * included: the link, never what it names. The owned directory is the export's
+ * `skills/<name>`, or the root for a manifest; nothing above it is touched.
+ */
+function unlinkLinks(root: string, path: string, destinations: readonly string[]): void {
+  const parts = path.split("/");
+  const owner = destinations.find((dest) => path.startsWith(`${dest}/`));
+  const from = owner === undefined ? 1 : owner.split("/").length;
+  for (let i = from; i <= parts.length; i += 1) {
+    const abs = join(root, ...parts.slice(0, i));
+    const stat = lstatSync(abs, { throwIfNoEntry: false });
+    if (stat === undefined) return;
+    if (stat.isSymbolicLink()) rmSync(abs, { force: true });
+  }
 }
 
 /** Remove the directories a removal left empty, up to and never including the destination's own parent. */

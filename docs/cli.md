@@ -245,8 +245,9 @@ What the registry rows below do not say.
   `export-stale` (error, fixed by `check --write`) names the first ten files
   that differ, each `missing`, `extra` or `changed`. The render's own findings
   are queued to `export-review`: `export-tag-unknown`, `export-guide-outside`,
-  `export-skill-invalid`, `export-symlink` and `export-destination-invalid`
-  (errors, and the export is not rendered), `export-not-closed` (a warning: a
+  `export-skill-invalid`, `export-symlink` (a file reached through a link
+  that leaves the bundle) and `export-destination-invalid` (errors, and the
+  export is not rendered), `export-not-closed` (a warning: a
   selected page links to a page left out under `links: closed`), and
   `export-orphan` (a warning: a `skills/<name>/` holds a marker no declaration
   names; the engine never removes it). A root that holds `config/export.json`
@@ -262,8 +263,9 @@ What the registry rows below do not say.
   refuses a name the config does not declare (`export-not-declared`, exit 2,
   the declared names in `details.valid_values`), an `output: skills` export
   (`export-output-skills`, exit 2: `check --write` renders those), a `<dir>`
-  that is not a directory, is the bundle's root or lies in one of its content
-  roots (`export-destination-invalid`, exit 2), a `<dir>/skills/<name>/` that
+  that is not a directory (`directory-not-found`, exit 3, with
+  `details.resolved`), a `<dir>` that is the bundle's root or lies in one of
+  its content roots (`export-destination-inside-bundle`, exit 2), a `<dir>/skills/<name>/` that
   exists and holds no `config/export.json` (`export-destination-occupied`,
   exit 4), and a symbolic link at `<dir>/skills` or anywhere under
   `<dir>/skills/<name>/` (`export-destination-linked`, exit 4). An export a
@@ -282,16 +284,21 @@ What the registry rows below do not say.
   **`lint --page <p> --explain`** adds the page's chain, section lines,
   vocabularies and a paste-ready `exceptions` stanza per queued finding.
 - **`gate`** checks `engine.json`'s `engine` pin against the staged
-  constitution, then judges the index. `generated-drift` is judged over the
-  staged artifacts, never the working tree's, so a partial staging passes when
-  the staged artifacts describe the staged pages. The rendered exports are
-  judged the same way, when the index tracks one: each is rendered from the
+  constitution, then judges the index. `generated-drift` and `export-stale`
+  are judged over the staged state, never the working tree's, and each only
+  when the index tracks what it compares — an artifact under `generated/`, a
+  rendered export under `skills/` or a plugin manifest — so a partial staging
+  passes when the staged artifacts and copies describe the staged pages, and
+  a bundle whose index tracks none has the pass in the coverage block as not
+  run (`capability-unavailable`). Each rendered export is rendered from the
   staged pages, config, templates, attachments and a kit declared by `path`,
   and compared with the staged bytes under `skills/`, so a page or a kit
-  staged without its re-rendered export is `export-stale`. A kit installed
-  under `node_modules` is not in the index: it is read from the working tree,
-  as the module preload reads it, so a change to it is judged as the tree
-  holds it, not as a commit would. `--commit-msg <file>` is the
+  staged without its re-rendered export is `export-stale`. A link the index
+  tracks is refused as `export-symlink`, since the index holds a link's target
+  and not its bytes; the working tree is read through its links. A kit
+  installed under `node_modules` is not in the index: it is read from the
+  working tree, as the module preload reads it, so a change to it is judged as
+  the tree holds it, not as a commit would. `--commit-msg <file>` is the
   commit-msg arm: with `commit_prefixes` declared, the message's first line
   must open with a registered prefix in one of the four Conventional Commits
   shapes — `fix:`, `fix(scope):`, `fix!:`, `fix(scope)!:`, a scope being any

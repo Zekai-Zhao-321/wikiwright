@@ -13,11 +13,13 @@ import { execFileSync, spawnSync } from "node:child_process";
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -421,5 +423,133 @@ describe("export --to over an earlier export (docs/cli.md §export)", () => {
     );
     assert.equal(readFileSync(join(to, ".git", "HEAD"), "utf8"), head);
     assert.equal(git(to, "status", "--porcelain", "--", "README.md", "skills/other"), "");
+  });
+});
+
+describe("the working tree is read through its links; the index's links are refused (docs/cli.md §check, §gate)", () => {
+  const PLANTING_LAW = `${JSON.stringify({
+    schema: "wikiwright/constitution",
+    schema_version: 3,
+    vocabularies: { tags: { mode: "registered", entries: {} } },
+    types: {
+      planting: {
+        extends: "garden/planting",
+        description: "One planting in one bed.",
+        checks: [{ use: "garden/known-bed", config: { beds: ["north", "south"] } }],
+      },
+    },
+  })}\n`;
+  const GARLIC =
+    "---\ntype: planting\ntitle: Garlic\ndescription: Garlic cloves set in the north bed.\ntags: []\nbed: north\nsown: 2026-10-12\n---\n\n# Garlic\n\nGarlic cloves set in the north bed.\n\n## Care\n\nWeed by hand; stop watering once the leaves yellow.\n";
+
+  /** A bundle over the garden kit installed under node_modules as a package manager links it. */
+  function linkedKit(layout: "files" | "directory"): string {
+    const root = join(scratch(), "garden");
+    write(root, {
+      "config/constitution.json": PLANTING_LAW,
+      "config/engine.json": `${JSON.stringify({
+        content_roots: ["wiki"],
+        modules: [{ package: "kit-garden", version: "^1.0.0" }],
+        exports: [{ select: { kind: "all" }, contribution: { mode: "none" } }],
+      })}\n`,
+      "wiki/garlic.md": GARLIC,
+    });
+    const installed = join(root, "node_modules", "kit-garden");
+    if (layout === "directory") {
+      // A workspace link: the package directory is a link to one outside the bundle.
+      const outside = join(dirname(root), "kit-garden-source");
+      cpSync(KIT_GARDEN, outside, { recursive: true });
+      mkdirSync(dirname(installed), { recursive: true });
+      symlinkSync(outside, installed);
+    } else {
+      // A `file:` install: every file is a link back into the package's own tree.
+      mkdirSync(installed, { recursive: true });
+      for (const name of readdirSync(KIT_GARDEN)) {
+        symlinkSync(join(KIT_GARDEN, name), join(installed, name));
+      }
+    }
+    return root;
+  }
+
+  for (const layout of ["files", "directory"] as const) {
+    it(`a kit linked under node_modules (${layout}) exports as real files, under its source's law`, () => {
+      if (process.platform === "win32") return;
+      const root = linkedKit(layout);
+      const rendered = run(root, ["check", "--write"]);
+      assert.equal(rendered.status, 0, JSON.stringify(rendered.envelope));
+      const kit = join(root, "skills", "garden", "node_modules", "kit-garden");
+      for (const name of readdirSync(KIT_GARDEN)) {
+        assert.equal(
+          lstatSync(join(kit, name)).isFile(),
+          true,
+          `${name} is not a file in the copy`,
+        );
+        assert.deepEqual(readFileSync(join(kit, name)), readFileSync(join(KIT_GARDEN, name)));
+      }
+      assert.equal(lstatSync(kit).isDirectory(), true);
+      const copy = install(root, "garden");
+      const r = run(copy, ["type", "show", "planting", "--brief"]);
+      assert.equal(r.status, 0, JSON.stringify(r.envelope));
+      assert.equal(r.envelope.metadata.bundle?.law, lawOf(root));
+      assert.equal(r.envelope.metadata.bundle?.export?.intact, undefined);
+    });
+  }
+
+  it("a link in a rendered copy is export-stale, and check --write replaces it with bytes", () => {
+    if (process.platform === "win32") return;
+    const root = join(scratch(), "garden");
+    write(root, {
+      "config/constitution.json": CONSTITUTION,
+      "config/engine.json": `${JSON.stringify({
+        content_roots: ["wiki"],
+        exports: [{ select: { kind: "all" }, contribution: { mode: "none" } }],
+      })}\n`,
+      "wiki/turning-compost.md": note("Turning compost", ["compost"], "Turn it weekly."),
+    });
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    const rendered = join(root, "skills", "garden", "wiki", "turning-compost.md");
+    rmSync(rendered);
+    symlinkSync(join(root, "wiki", "turning-compost.md"), rendered);
+    const stale = findings(run(root, ["check"]).envelope).find((f) => f.ruleId === "export-stale");
+    assert.match(stale?.message ?? "", /skills\/garden\/wiki\/turning-compost\.md \(changed\)/u);
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    assert.equal(lstatSync(rendered).isFile(), true);
+    assert.equal(lstatSync(join(root, "wiki", "turning-compost.md")).isFile(), true);
+    assert.equal(run(root, ["check"]).status, 0);
+  });
+
+  it("the staged gate refuses a link the index tracks, since the index holds no bytes for it", () => {
+    if (process.platform === "win32") return;
+    const root = join(scratch(), "garden");
+    cpSync(KIT_GARDEN, join(root, "kit", "garden"), { recursive: true });
+    write(root, {
+      "config/constitution.json": PLANTING_LAW,
+      "config/engine.json": `${JSON.stringify({
+        content_roots: ["wiki"],
+        modules: [{ package: "kit-garden", version: "^1.0.0", path: "kit/garden" }],
+        exports: [{ select: { kind: "all" }, contribution: { mode: "none" } }],
+      })}\n`,
+      "wiki/garlic.md": GARLIC,
+    });
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    git(root, "init", "-q");
+    git(root, "add", "-A");
+    git(root, "commit", "-q", "-m", "baseline");
+    // The same bytes, reached through a link inside the bundle: the working
+    // tree renders the same copy, and the index tracks the link.
+    const fixture = join(root, "kit", "garden", "fixture.json");
+    cpSync(fixture, join(root, "kit-fixture.json"));
+    rmSync(fixture);
+    symlinkSync(join(root, "kit-fixture.json"), fixture);
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    git(root, "add", "-A");
+    const refused = run(root, ["lint", "--staged"]);
+    assert.equal(refused.status, 5, JSON.stringify(refused.envelope));
+    const symlink = findings(refused.envelope).find((f) => f.ruleId === "export-symlink");
+    assert.match(
+      symlink?.message ?? "",
+      /the index tracks 1 symbolic link\(s\).*kit\/garden\/fixture\.json/u,
+    );
+    assert.equal(symlink?.queue, "export-review");
   });
 });

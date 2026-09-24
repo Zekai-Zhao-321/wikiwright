@@ -389,7 +389,13 @@ describe("every export finding routes (docs/constitution.md §exports)", () => {
         content_roots: ["wiki"],
         exports: [{ name: "g", select: { kind: "all" }, contribution: none }],
       });
-      symlinkSync(join(linked, "wiki", "raised-beds.md"), join(linked, "wiki", "beds-again.md"));
+      // An embedded file reached through a link that leaves the bundle.
+      writeFileSync(join(dirname(linked), "shed.png"), "not an image\n");
+      symlinkSync(join(dirname(linked), "shed.png"), join(linked, "wiki", "shed.png"));
+      writeFileSync(
+        join(linked, "wiki", "raised-beds.md"),
+        note("Raised beds", ["beds"], "Beds edged in timber.\n\n![[shed.png]]"),
+      );
       roots.push(invalid, linked);
       for (const root of roots) {
         const found = findingsIn(run(root, ["check"]).envelope);

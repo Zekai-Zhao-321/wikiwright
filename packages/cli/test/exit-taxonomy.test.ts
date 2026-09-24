@@ -230,7 +230,13 @@ describe("the export codes exit as their types (docs/cli.md §Exit codes)", () =
       const cases: [string[], number, string, string][] = [
         [["export", "no-such-export", "--to", "out"], 2, "usage", "export-not-declared"],
         [["export", "garden", "--to", "out"], 2, "usage", "export-output-skills"],
-        [["export", "garden-notes", "--to", "wiki"], 2, "usage", "export-destination-invalid"],
+        [
+          ["export", "garden-notes", "--to", "wiki"],
+          2,
+          "usage",
+          "export-destination-inside-bundle",
+        ],
+        [["export", "garden-notes", "--to", "absent"], 3, "not_found", "directory-not-found"],
         [["export", "garden-notes", "--to", "out"], 4, "conflict", "export-destination-occupied"],
         [["export", "garden-notes", "--to", "linked"], 4, "conflict", "export-destination-linked"],
       ];

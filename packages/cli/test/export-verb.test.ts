@@ -197,11 +197,14 @@ describe("export <name> --to <dir> (docs/cli.md §export)", () => {
 
   it("refuses the bundle's root, a content root, and a directory that is not there", () => {
     const { root } = garden();
-    for (const to of [root, join(root, "wiki"), join(root, "no-such-dir")]) {
+    for (const to of [root, join(root, "wiki")]) {
       const r = run(root, ["export", "garden-roses", "--to", to]);
       assert.equal(r.status, 2, `${to}: ${JSON.stringify(r.envelope)}`);
-      assert.equal(r.envelope.error?.code, "export-destination-invalid");
+      assert.equal(r.envelope.error?.code, "export-destination-inside-bundle");
     }
+    const absent = run(root, ["export", "garden-roses", "--to", join(root, "no-such-dir")]);
+    assert.equal(absent.status, 3, JSON.stringify(absent.envelope));
+    assert.equal(absent.envelope.error?.code, "directory-not-found");
     assert.equal(existsSync(join(root, "skills")), false);
     assert.equal(existsSync(join(root, "wiki", "skills")), false);
   });

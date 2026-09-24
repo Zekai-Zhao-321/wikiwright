@@ -56,6 +56,14 @@ function run(root: string, argv: readonly string[]): { status: number; envelope:
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Envelope };
 }
 
+/** The coverage block's rows by pass, or none. */
+function coverageOf(envelope: Envelope): Record<string, { reason?: string }> {
+  const coverage = envelope.data?.["coverage"] as
+    | { passes: Record<string, { reason?: string }> }
+    | undefined;
+  return coverage?.passes ?? {};
+}
+
 function findings(envelope: Envelope): Finding[] {
   return (envelope.data?.["findings"] ?? []) as Finding[];
 }
@@ -241,6 +249,23 @@ describe("the staged gate compares the staged exports (docs/cli.md §gate)", () 
     assert.match(stale[0]?.message ?? "", /the staged copy differs/u);
     git(root, "add", "-A");
     assert.equal(run(root, ["gate"]).status, 0);
+  });
+
+  it("a bundle whose index tracks no rendered export is not judged on it, and the coverage says so", () => {
+    const root = garden({ content_roots: ["wiki"], exports: [ALL] });
+    git(root, "init", "-q");
+    git(root, "add", "config", "wiki");
+    const r = run(root, ["gate"]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    const passes = coverageOf(r.envelope);
+    assert.equal(passes["export-stale"]?.reason, "capability-unavailable");
+    assert.equal(passes["generated-drift"]?.reason, "capability-unavailable");
+    // Tracked, the pass runs.
+    run(root, ["check", "--write"]);
+    git(root, "add", "-A");
+    const tracked = run(root, ["gate"]);
+    const ran = coverageOf(tracked.envelope);
+    assert.equal(ran["export-stale"]?.reason, undefined, JSON.stringify(ran["export-stale"]));
   });
 
   it("a kit declared by path, staged without its re-rendered export, is refused", () => {

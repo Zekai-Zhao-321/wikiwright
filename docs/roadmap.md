@@ -28,7 +28,7 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,640 tests across 114 files. At `29dbfb9`, when it held 1,590,
+The suite is 1,646 tests across 114 files. At `29dbfb9`, when it held 1,590,
 the full gate, `bun run check`, passed them all with the test files under
 Bun and the CLI under Node (`tools/run-suite.ts`), and the full node runner,
 `bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
@@ -39,11 +39,14 @@ the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured on
-2026-09-25 on the development machine, where `check --root devwiki` needs
-the install and nothing else, `freshness` reads all 27 pinned pages `current`
-(18) or `unchanged` (9) and none `stale`, with no `stale-capture`,
-`stale-source-cited` or `citation-unresolved` finding, before the commit
-that carries those pins; once it lands, the 18 are `unchanged`.
+2026-09-25 on the development machine at `5af44d8`, where `check --root
+devwiki` needs the install and nothing else, `freshness` read all 27 pinned
+pages `unchanged` and none `stale`, with no `stale-capture`,
+`stale-source-cited` or `citation-unresolved` finding. A later change to
+code a page covers makes that page `stale` until it is re-read and
+re-pinned, and `freshness` names it: the pages covering `exports.ts`,
+`artifacts.ts` and `verbs/export.ts` are `stale` after the commit that reads
+exports through links, until they are.
 A citation into a file its page does not cover is held to the pin but not
 to the file's later changes, so such a reference either is covered or goes
 through the page that covers the file.
@@ -410,19 +413,6 @@ selection.
 
 Wanted: a runtime skill a copy's `SKILL.md` can locate exactly, and the
 export practices, with that warning, in the maintainer's skill.
-
-### An export does not carry a kit installed by link
-
-A copy holds bytes, never a link, so `export-symlink` refuses an export that
-would carry one. A kit a package manager installs as a workspace link, or
-whose files it links from a `file:` dependency, is a link: a bundle over such
-a kit cannot export until the kit's directory holds its own bytes. The
-suite's installs of the code kit replace each link with the bytes it points
-at (`packages/cli/test/fixtures/kit-code.ts`), which is why their copies
-export.
-
-Wanted: a render that reads a linked kit's bytes through the link, contained
-and stated, or an install that copies.
 
 ### The staged gate reads a `node_modules` kit from the working tree
 

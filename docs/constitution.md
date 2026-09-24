@@ -408,8 +408,16 @@ either. A name, a repository, a guide or a skill outside its own grammar is
   `skill` fragment when one is declared;
 - `config/export.json`, the marker.
 
-A copy holds bytes, never a link: a symbolic link anywhere in that set
-refuses the export (`export-symlink`). The render's other refusals are
+A copy holds bytes, never a link. The working tree is read through its
+links and the copy carries the bytes each names: a declared kit's files as
+the module digest reads them, so a kit a package manager installed as links
+travels as files under the same law digest, and every other file contained
+in the bundle, as every read of the vault is, so a file reached through a link
+that leaves the bundle refuses the export (`export-symlink`). The staged gate
+reads the index, which holds a link's target and not its bytes, so a link the
+index tracks refuses it too. A link found in a rendered copy is a difference
+(`export-stale`, `changed`) and `check --write` replaces it with bytes,
+removing the link and never what it names. The render's other refusals are
 `export-tag-unknown` (a selected tag the vocabulary does not register),
 `export-guide-outside` (a guide the selection does not hold),
 `export-skill-invalid` (a fragment under a content root, or absent),

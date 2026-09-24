@@ -6,7 +6,15 @@
 // engine renders, its defaults applied. What a copy carries, byte for byte, is
 // the plan's (below); what a declaration means is here, in one place, so the
 // renderer, the comparison and the `export` verb read one answer.
-import { type Dirent, existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
+import {
+  type Dirent,
+  existsSync,
+  lstatSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+} from "node:fs";
 import { join, posix } from "node:path";
 import {
   buildNameIndex,
@@ -137,24 +145,42 @@ export const SKILL_PATH = "SKILL.md";
  * Where an export's bytes are read from: the working tree, or the git index
  * for the staged gate. A kit under `node_modules` is read from the working tree
  * whatever the source, as the loader reads it (`root`).
+ *
+ * The working tree is read THROUGH every symbolic link, and a copy carries the
+ * bytes a link points at: the law digest reads a module's files through links,
+ * so a copy that carries them as files digests as its source does. A file of
+ * the vault is read contained, as every vault read is, so a link that leaves
+ * the bundle is refused rather than carried; a kit's file is read as the
+ * module digest reads it. The index holds a link's target text and no bytes,
+ * so the index refuses to carry a link it tracks.
  */
 export interface ExportSource {
   /** The bundle root on disk. */
   root: string;
   /** Every page of the state, parsed: the selection is made from these. */
   pages: readonly PageInput[];
-  /** A vault-relative file's bytes. */
+  /** A vault-relative file's bytes, contained in the vault, read through its links. */
   read(rel: string): Buffer;
+  /** A declared module's file's bytes, read as the module digest reads them. */
+  readKit(rel: string): Buffer;
   /** Whether a vault-relative file is there. */
   exists(rel: string): boolean;
-  /** Whether a vault-relative path is a symbolic link; a link is never followed. */
+  /** Whether a vault-relative path, or a directory above it, is a symbolic link. */
   isLink(rel: string): boolean;
+  /** Whether this source cannot carry a path because it is a link: the index's tracked links. */
+  refusesLink(rel: string): boolean;
   /**
-   * Every file under a vault-relative directory, recursively, a link listed
-   * and never followed, `.git` and `.obsidian` skipped. None when the
-   * directory is not there.
+   * Every file under a vault-relative directory, recursively, for a plan:
+   * the working tree's links are followed into the directories they name,
+   * `.git` and `.obsidian` skipped. None when the directory is not there.
    */
   list(dir: string): string[];
+  /**
+   * Every file and link under a vault-relative directory as it stands, a link
+   * listed and never followed: what a rendered copy holds, compared with its
+   * plan.
+   */
+  present(dir: string): string[];
 }
 
 /** The names a listing never descends into: a repository's own state and an editor's. */
@@ -173,39 +199,70 @@ export function fsExportSource(root: string, pages: readonly PageInput[]): Expor
       throw error;
     }
   };
+  // A path is a link when it, or a directory above it under the root, is one.
   const isLink = (rel: string): boolean => {
-    try {
-      return lstatSync(join(root, rel)).isSymbolicLink();
-    } catch {
-      return false;
-    }
-  };
-  const list = (dir: string): string[] => {
-    const out: string[] = [];
-    const walk = (rel: string): void => {
-      let entries: Dirent[];
+    const parts = rel.split("/");
+    for (let i = 1; i <= parts.length; i += 1) {
       try {
-        entries = readdirSync(join(root, rel), { withFileTypes: true, encoding: "utf8" });
+        if (lstatSync(join(root, ...parts.slice(0, i))).isSymbolicLink()) return true;
       } catch {
-        return;
+        return false;
       }
-      for (const entry of entries) {
-        if (SKIPPED_DIRECTORIES.has(entry.name)) continue;
-        const path = `${rel}/${entry.name.normalize("NFC")}`;
-        if (entry.isDirectory()) walk(path);
-        else out.push(path);
-      }
-    };
-    walk(dir);
-    return out.sort(codeUnitCompare);
+    }
+    return false;
   };
+  const walker =
+    (follow: boolean) =>
+    (dir: string): string[] => {
+      const out: string[] = [];
+      // A linked directory is walked once: a link back to a directory above it
+      // would otherwise be walked without end.
+      const seen = new Set<string>();
+      const walk = (rel: string): void => {
+        let entries: Dirent[];
+        try {
+          const real = realpathSync(join(root, rel));
+          if (seen.has(real)) return;
+          seen.add(real);
+          entries = readdirSync(join(root, rel), { withFileTypes: true, encoding: "utf8" });
+        } catch {
+          return;
+        }
+        for (const entry of entries) {
+          if (SKIPPED_DIRECTORIES.has(entry.name)) continue;
+          const path = `${rel}/${entry.name.normalize("NFC")}`;
+          if (entry.isDirectory()) {
+            walk(path);
+            continue;
+          }
+          if (follow && entry.isSymbolicLink()) {
+            let directory = false;
+            try {
+              directory = statSync(join(root, path)).isDirectory();
+            } catch {
+              // A dangling link is listed, and reading it is the failure it is.
+            }
+            if (directory) {
+              walk(path);
+              continue;
+            }
+          }
+          out.push(path);
+        }
+      };
+      walk(dir);
+      return out.sort(codeUnitCompare);
+    };
   return {
     root,
     pages,
     read,
+    readKit: (rel) => readFileSync(join(root, rel)),
     exists: (rel) => existsSync(join(root, rel)),
     isLink,
-    list,
+    refusesLink: () => false,
+    list: walker(true),
+    present: walker(false),
   };
 }
 
@@ -430,22 +487,25 @@ export function planExport(input: ExportInput): ExportPlan {
   }
 
   // 4. The files the copy carries beside its pages.
+  // A link is read through and its bytes carried. Two links cannot be: one
+  // the index tracks, whose bytes the index does not hold, and one that leaves
+  // the bundle, which the contained reader refuses as it refuses every read
+  // outside the vault. A kit's file is read as the module digest reads it.
   const files = new Map<string, Buffer | undefined>();
-  const linked: string[] = [];
-  const carry = (path: string, from: ExportSource = source): void => {
+  const tracked: string[] = [];
+  const leaving: string[] = [];
+  const carry = (path: string, from: ExportSource = source, kit = false): void => {
     if (files.has(path)) return;
-    if (from.isLink(path)) {
-      linked.push(path);
+    if (from.refusesLink(path)) {
+      tracked.push(path);
       files.set(path, undefined);
       return;
     }
     try {
-      files.set(path, from.read(path));
+      files.set(path, kit ? from.readKit(path) : from.read(path));
     } catch (error) {
-      // A file reached through a linked directory resolves outside the
-      // bundle, and the reader refuses it: it is a link as surely as one named.
       if (!(error instanceof Error) || !error.message.includes("resolves outside")) throw error;
-      linked.push(path);
+      leaving.push(path);
       files.set(path, undefined);
     }
   };
@@ -516,8 +576,8 @@ export function planExport(input: ExportInput): ExportPlan {
   for (const module of vault.engine.modules ?? []) {
     const location = moduleLocation(module);
     const from = module.path === undefined ? tree : source;
-    if (from.isLink(location)) {
-      linked.push(location);
+    if (from.refusesLink(location)) {
+      tracked.push(location);
       continue;
     }
     for (const file of from.list(location)) {
@@ -528,18 +588,32 @@ export function planExport(input: ExportInput): ExportPlan {
           .includes("node_modules")
       )
         continue;
-      carry(file, from);
+      carry(file, from, true);
     }
   }
-  if (linked.length > 0) {
-    const first = [...new Set(linked)].sort(codeUnitCompare).slice(0, 10);
+  if (tracked.length + leaving.length > 0) {
+    const listed = (paths: readonly string[]): string =>
+      [...new Set(paths)].sort(codeUnitCompare).slice(0, 10).join(", ");
+    const reasons = [
+      ...(tracked.length === 0
+        ? []
+        : [
+            `the index tracks ${tracked.length} symbolic link(s) it would carry, and holds a link's target, not its bytes: ${listed(tracked)}`,
+          ]),
+      ...(leaving.length === 0
+        ? []
+        : [
+            `${leaving.length} file(s) it would carry are reached through a symbolic link that leaves the bundle: ${listed(leaving)}`,
+          ]),
+    ];
     findings.push(
       exportFinding(declaration, {
         ruleId: "export-symlink",
         severity: "error",
-        message: `it would carry ${linked.length} symbolic link(s), and a copy holds bytes, never a link: ${first.join(", ")}`,
-        remediation: "replace each link with the file it points at, or leave it out of the export",
-        details: { links: linked.length },
+        message: reasons.join("; "),
+        remediation:
+          "replace each link with the file it points at, inside the bundle, or leave it out of the export",
+        details: { links: tracked.length + leaving.length },
       }),
     );
   }
@@ -761,7 +835,8 @@ const LINK_MODE = "120000";
 /**
  * docs/cli.md §gate: the git index at `root` as an export's source — each
  * staged file's bytes, read in one batch the first time one is asked for, a
- * link known by its mode and never read. A kit under `node_modules` is not in
+ * link known by its mode and never read: the index holds a link's target, not
+ * its bytes, so a tracked link is refused. A kit under `node_modules` is not in
  * the index; the plan reads it from the working tree, as the preload does.
  */
 export function indexExportSource(
@@ -785,16 +860,21 @@ export function indexExportSource(
       throw new Error(`the index names blob ${entry.blob} for "${rel}" and git did not return it`);
     return bytes;
   };
+  const isLink = (rel: string): boolean => byPath.get(rel)?.mode === LINK_MODE;
+  const list = (dir: string): string[] =>
+    [...byPath.keys()]
+      .filter((path) => path.startsWith(`${dir}/`) && !skippedPath(path))
+      .sort(codeUnitCompare);
   return {
     root,
     pages,
     read,
+    readKit: read,
     exists: (rel) => byPath.has(rel),
-    isLink: (rel) => byPath.get(rel)?.mode === LINK_MODE,
-    list: (dir) =>
-      [...byPath.keys()]
-        .filter((path) => path.startsWith(`${dir}/`) && !skippedPath(path))
-        .sort(codeUnitCompare),
+    isLink,
+    refusesLink: isLink,
+    list,
+    present: list,
   };
 }
 
@@ -861,7 +941,7 @@ export function repositoryExports(input: {
   }
   const names = new Set(declared.map((d) => d.name));
   const orphans = new Set<string>();
-  for (const path of source.list(SKILLS_DIR)) {
+  for (const path of source.present(SKILLS_DIR)) {
     const parts = path.split("/");
     const name = parts[1];
     if (name === undefined || parts.slice(2).join("/") !== MARKER_PATH) continue;
@@ -915,7 +995,7 @@ export function exportDifferences(
     compare(
       dest,
       new Map(plan.files.map((file) => [`${dest}/${file.path}`, file.bytes] as const)),
-      source.list(dest),
+      source.present(dest),
     );
   }
   if (exports.manifests.length > 0) {
@@ -968,7 +1048,7 @@ export function exportStaleFindings(
 /** docs/cli.md §gate: whether the index tracks any rendered export or manifest, and so whether the gate judges them. */
 export function exportsTracked(exports: RepositoryExports, source: ExportSource): boolean {
   return (
-    exports.destinations.some((dest) => source.list(dest).length > 0) ||
+    exports.destinations.some((dest) => source.present(dest).length > 0) ||
     exports.manifests.some((file) => source.exists(file.path))
   );
 }

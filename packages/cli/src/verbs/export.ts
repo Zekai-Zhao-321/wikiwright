@@ -116,22 +116,29 @@ function prepare(args: CommandArgs): Prepared | CommandResult {
   } catch {
     // Not there: refused below.
   }
+  if (!isDirectory) {
+    return fail(
+      "export",
+      "not_found",
+      "directory-not-found",
+      `no directory at "${to}" (--to is resolved against --root)`,
+      { details: { to, resolved: destination } },
+    );
+  }
   const bundle = realpathSync(args.root);
   const real = realOf(destination);
   const insideContent = rootsOf(vault).some((root) => {
     const abs = realOf(join(bundle, root));
     return real === abs || real.startsWith(abs + sep);
   });
-  if (!isDirectory || real === bundle || insideContent) {
+  if (real === bundle || insideContent) {
     return fail(
       "export",
       "usage",
-      "export-destination-invalid",
-      !isDirectory
-        ? `no directory at "${to}"`
-        : real === bundle
-          ? `"${to}" is this bundle's own root`
-          : `"${to}" lies in one of this bundle's content roots`,
+      "export-destination-inside-bundle",
+      real === bundle
+        ? `"${to}" is this bundle's own root`
+        : `"${to}" lies in one of this bundle's content roots`,
       {
         details: { destination },
         hint: "--to names the root of another repository, outside this bundle's content roots",

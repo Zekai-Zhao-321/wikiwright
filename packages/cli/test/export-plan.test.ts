@@ -469,7 +469,7 @@ describe("the plan of an export (docs/constitution.md §exports)", () => {
     );
   });
 
-  it("a symbolic link is never carried: the export is refused, naming it", async () => {
+  it("a link inside the bundle is read through, and the copy carries its bytes", async () => {
     if (process.platform === "win32") return;
     const root = garden(
       {
@@ -483,9 +483,26 @@ describe("the plan of an export (docs/constitution.md §exports)", () => {
     );
     symlinkSync(join(root, "outside.png"), join(root, "wiki", "bed.png"));
     const [plan] = await plans(root, "garden");
+    assert.deepEqual(rules(plan as ExportPlan), []);
+    assert.deepEqual(plan?.files?.find((file) => file.path === "wiki/bed.png")?.bytes, PNG);
+  });
+
+  it("a link that leaves the bundle is not carried: the export is refused, naming it", async () => {
+    if (process.platform === "win32") return;
+    const root = garden(
+      {
+        content_roots: ["wiki"],
+        exports: [{ name: "garden", select: { kind: "all" }, contribution: { mode: "none" } }],
+      },
+      { "wiki/turning-compost.md": note("Turning compost", ["compost"], "![[shed.png]]") },
+    );
+    const elsewhere = join(SCRATCH, `shed-${serial}.png`);
+    writeFileSync(elsewhere, PNG);
+    symlinkSync(elsewhere, join(root, "wiki", "shed.png"));
+    const [plan] = await plans(root, "garden");
     assert.deepEqual(rules(plan as ExportPlan), ["export-symlink"]);
     assert.equal(plan?.files, undefined);
-    assert.match(plan?.findings[0]?.message ?? "", /wiki\/bed\.png/u);
+    assert.match(plan?.findings[0]?.message ?? "", /leaves the bundle: wiki\/shed\.png/u);
   });
 
   it("a skill's description is cut at a word, within 1024 characters", async () => {
