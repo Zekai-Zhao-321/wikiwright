@@ -52,8 +52,10 @@ version` prints the engine version and the commit a binary was built from.
   `resolved_via` says which; a miss names no page. Its title and description
   are the manifest's, derived under `field_sources` where the frontmatter
   carries none. Under `--budget` the sections come in page order while they
-  fit and the rest are listed by address. A consumer's verb: the envelope's
-  bundle block says which bundle every passage came from.
+  fit and the rest are listed by address. A heading a type admits more than
+  once keeps its one address, each of its sections carries `occurrence`, and
+  `--section` returns every one of them in page order. A consumer's verb: the
+  envelope's bundle block says which bundle every passage came from.
 - A third shipped skill, `wikiwright-consume`: the judgment for using what a
   bundle knows rather than writing it. Choose the bundle and say which one
   every answer came from; read the coherent section, qualifications with

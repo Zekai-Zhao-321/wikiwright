@@ -36,6 +36,11 @@ const FORMS: readonly ResolvedVia[] = ["path", "name", "alias", "title"];
 interface Section {
   heading: string | null;
   address: string;
+  /**
+   * Which of a repeated heading's sections this is, 1-based in page order;
+   * absent when the heading appears once on the page.
+   */
+  occurrence?: number;
   line: number;
   end_line: number;
   bytes: number;
@@ -83,6 +88,11 @@ function resolvePage(
  * no LF follows — so a heading's `line` indexes the same line here that it
  * does in `ParsedDoc.headings`, whatever mix of endings the page carries, and
  * each line keeps its own ending.
+ *
+ * A type may admit one heading more than once. The address stays
+ * `<path>#<heading>`, so the sections of a heading that repeats — by the
+ * identity `--section` matches on — each carry `occurrence`, 1-based in page
+ * order, and a heading that appears once carries none.
  */
 function sectionsOf(
   path: string,
@@ -109,7 +119,22 @@ function sectionsOf(
   cuts.forEach((cut, i) => {
     out.push(section(cut.text, cut.line, (cuts[i + 1]?.line ?? lines.length + 1) - 1));
   });
-  return out;
+  const identityOf = (s: Section): string | null =>
+    s.heading === null ? null : normalizeIdentity(s.heading);
+  const total = new Map<string, number>();
+  for (const s of out) {
+    const id = identityOf(s);
+    if (id !== null) total.set(id, (total.get(id) ?? 0) + 1);
+  }
+  const seen = new Map<string, number>();
+  return out.map((s) => {
+    const id = identityOf(s);
+    if (id === null || (total.get(id) ?? 0) < 2) return s;
+    const occurrence = (seen.get(id) ?? 0) + 1;
+    seen.set(id, occurrence);
+    const { heading, address, ...rest } = s;
+    return { heading, address, occurrence, ...rest };
+  });
 }
 
 /** `--budget`: a non-negative integer number of bytes, or none. */
@@ -166,12 +191,17 @@ function run(args: CommandArgs): CommandResult {
   const firstLine = doc.frontmatter.present ? doc.frontmatter.endLine + 1 : 1;
   const all = sectionsOf(path, raw, firstLine, cuts);
 
+  // docs/cli.md §read: `--section` returns every section under that heading,
+  // in page order, so a repeated heading's later occurrence — one a budget
+  // omitted, say — is reached through the address it was listed under.
   const sectionFlag = args.flags["section"];
   let chosen = all;
   if (typeof sectionFlag === "string") {
     const identity = normalizeIdentity(sectionFlag);
-    const match = all.find((s) => s.heading !== null && normalizeIdentity(s.heading) === identity);
-    if (match === undefined) {
+    const matches = all.filter(
+      (s) => s.heading !== null && normalizeIdentity(s.heading) === identity,
+    );
+    if (matches.length === 0) {
       return fail(
         "read",
         "not_found",
@@ -183,7 +213,7 @@ function run(args: CommandArgs): CommandResult {
         },
       );
     }
-    chosen = [match];
+    chosen = matches;
   }
 
   // docs/cli.md §read: in page order while the running total stays within the
@@ -240,7 +270,7 @@ export const readCommand: CommandSpec = {
     {
       name: "section",
       type: "string",
-      summary: "return only the section under this heading",
+      summary: "return only the section under this heading, every one where it repeats",
     },
     {
       name: "budget",

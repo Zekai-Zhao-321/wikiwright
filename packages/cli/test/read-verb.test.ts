@@ -21,6 +21,7 @@ const PAGE = "wiki/pruning-roses.md";
 interface Section {
   heading: string | null;
   address: string;
+  occurrence?: number;
   line: number;
   end_line: number;
   bytes: number;
@@ -353,6 +354,106 @@ describe("read returns a page's sections with attribution (docs/cli.md §read)",
     assert.deepEqual(
       [climate(orchard.envelope), climate(allotment.envelope)],
       ["temperate", "arid"],
+    );
+  });
+
+  it("a heading the type admits twice: each occurrence numbered, and --section returns both", () => {
+    // The handbook's type admits `Steps` up to twice, and the page uses both:
+    // a conformant page, not an invalid one.
+    const vault = join(tmp, "repeated");
+    cpSync(ORCHARD, vault, { recursive: true });
+    const constitution = join(vault, "config", "constitution.json");
+    const law = JSON.parse(readFileSync(constitution, "utf8")) as {
+      types: Record<string, { sections: { list: { heading: string; max?: number }[] } }>;
+    };
+    const steps = law.types["procedure-page"]?.sections.list.find((s) => s.heading === "Steps");
+    assert.ok(steps !== undefined);
+    steps.max = 2;
+    writeFileSync(constitution, `${JSON.stringify(law, null, 2)}\n`);
+    const page = join(vault, PAGE);
+    writeFileSync(
+      page,
+      readFileSync(page, "utf8").replace(
+        "## Notes",
+        "## Steps\n\n1. Water the bush well once it is pruned.\n\n## Notes",
+      ),
+    );
+    const lint = spawnSync(process.execPath, [CLI, "lint", "--page", PAGE, "--root", vault], {
+      cwd: tmp,
+      encoding: "utf8",
+      env: { ...process.env, ...PINNED_CLOCK },
+    });
+    assert.equal(lint.status, 0, lint.stdout);
+    assert.deepEqual(
+      (JSON.parse(lint.stdout) as { data: { findings: unknown[] } }).data.findings,
+      [],
+    );
+
+    const whole = dataOf([PAGE, "--root", vault]);
+    assert.deepEqual(
+      whole.sections.map((s) => [s.heading, s.address, s.occurrence]),
+      [
+        [null, PAGE, undefined],
+        ["Steps", `${PAGE}#Steps`, 1],
+        ["Steps", `${PAGE}#Steps`, 2],
+        ["Notes", `${PAGE}#Notes`, undefined],
+      ],
+    );
+    const [lead, first, second, notes] = whole.sections;
+    assert.ok(
+      lead !== undefined && first !== undefined && second !== undefined && notes !== undefined,
+    );
+    assert.equal("occurrence" in lead, false, "the lead carries no occurrence");
+    assert.equal("occurrence" in notes, false, "a heading that appears once carries none");
+    assert.deepEqual(Object.keys(first), [
+      "heading",
+      "address",
+      "occurrence",
+      "line",
+      "end_line",
+      "bytes",
+      "text",
+    ]);
+    assert.match(second.text ?? "", /Water the bush well/u);
+    assert.equal(whole.coverage["sections"], 4);
+
+    // --section returns every occurrence, in page order.
+    const both = dataOf([PAGE, "--section", "Steps", "--root", vault]);
+    assert.deepEqual(both.sections, [first, second]);
+    assert.deepEqual(both.omitted, []);
+    assert.equal(both.coverage["sections"], 4, "coverage still counts the page's sections");
+    assert.equal(both.coverage["returned"], 2);
+
+    // A budget that holds only the first lists the second by its address and
+    // its occurrence, and asking for that address again returns it beside its sibling.
+    const cut = dataOf([
+      PAGE,
+      "--section",
+      "Steps",
+      "--budget",
+      String(first.bytes),
+      "--root",
+      vault,
+    ]);
+    assert.deepEqual(cut.sections, [first]);
+    assert.deepEqual(cut.omitted, [
+      {
+        heading: "Steps",
+        address: `${PAGE}#Steps`,
+        occurrence: 2,
+        line: second.line,
+        end_line: second.end_line,
+        bytes: second.bytes,
+        reason: "budget",
+      },
+    ]);
+    const paged = dataOf([PAGE, "--budget", String(lead.bytes + first.bytes), "--root", vault]);
+    assert.deepEqual(
+      paged.omitted.map((s) => [s.address, s.occurrence]),
+      [
+        [`${PAGE}#Steps`, 2],
+        [`${PAGE}#Notes`, undefined],
+      ],
     );
   });
 

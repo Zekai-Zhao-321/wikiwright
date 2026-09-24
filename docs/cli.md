@@ -313,11 +313,15 @@ What the registry rows below do not say.
   the next. Each carries `address` (`<path>` for the lead, `<path>#<heading>`
   otherwise), `line`, `end_line`, `bytes` (the UTF-8 length of `text`) and
   `text`, the page's own lines with their line endings as the page has them,
-  CR, LF or CRLF, counted as the parser counts them. `--budget` returns
-  sections in page order while their running total fits; the first that would
-  not, and every one after it, goes to `omitted` with its address and
-  `reason: "budget"`, to be asked for by `--section`. `--section` returns that
-  one section, the budget still applied, or refuses `section-not-found` with
+  CR, LF or CRLF, counted as the parser counts them. A heading that appears
+  more than once at that depth, as a type may admit, keeps the one address,
+  and each of its sections carries `occurrence`, 1-based in page order; a
+  heading that appears once carries none. `--budget` returns sections in page
+  order while their running total fits; the first that would not, and every
+  one after it, goes to `omitted` with its address (and its
+  `occurrence`, where it has one) and `reason: "budget"`, to be asked for by
+  `--section`. `--section` returns every section under that heading, in page
+  order, the budget still applied, or refuses `section-not-found` with
   the page's headings at that depth in `details.valid_values`; a `--budget`
   that is not a whole number is `invalid-value`. `coverage` counts the page's
   sections, the returned ones and their bytes, beside the budget. The
@@ -827,7 +831,7 @@ Role: `consumer`. Writes: no.
 
 | Flag | Meaning |
 |---|---|
-| `--section <value>` | return only the section under this heading |
+| `--section <value>` | return only the section under this heading, every one where it repeats |
 | `--budget <value>` | the most bytes of section text to return; the rest are listed by address |
 
 ```text
