@@ -35,9 +35,9 @@ claim absence while `caps.hit` is true — the cap cut the list before the end.
 wikiwright brief --role writer
 ```
 
-### `bundles` — which bundles are connected, and which one an answer came from
+### `bundles` — which bundle skills are installed in the skill directories, and which one --bundle would read
 
-`wikiwright bundles <subcommand> [target]` — subcommands: add, list, remove — flags: --name <v> --kind <v> --feedback <v> --guide <v> --records --dry-run
+`wikiwright bundles <subcommand>` — subcommands: list
 
 ```text
 wikiwright bundles list

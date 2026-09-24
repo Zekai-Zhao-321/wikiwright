@@ -26,7 +26,6 @@ import { dirname, join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
-import { MACHINE_LOCAL_WRITERS } from "../src/connections.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
@@ -248,19 +247,15 @@ describe("--bundle resolves by scanning the skill directories (docs/cli.md §bun
       assert.equal(r.envelope.error?.code, "bundle-readonly");
     }
     assert.equal(readFileSync(join(copy, "wiki", "turning-compost.md"), "utf8"), before);
-    // Every writing verb, but the one whose write is this machine's registry.
+    // Every writing verb.
     for (const spec of COMMANDS.filter((c) => c.writes)) {
       const lead = spec.subcommands === undefined ? [] : [spec.subcommands[0] ?? ""];
       const r = run(cwd, [spec.name, ...lead, "--bundle", "garden"], { HOME: home });
-      if (MACHINE_LOCAL_WRITERS.has(spec.name)) {
-        assert.notEqual(r.envelope.error?.code, "bundle-readonly", spec.name);
-      } else {
-        assert.equal(
-          r.envelope.error?.code,
-          "bundle-readonly",
-          `${spec.name}: ${JSON.stringify(r.envelope)}`,
-        );
-      }
+      assert.equal(
+        r.envelope.error?.code,
+        "bundle-readonly",
+        `${spec.name}: ${JSON.stringify(r.envelope)}`,
+      );
     }
     const one = run(cwd, ["search", "compost", "--bundle", "garden", "--root", copy], {
       HOME: home,

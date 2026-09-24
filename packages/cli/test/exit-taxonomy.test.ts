@@ -4,8 +4,7 @@
 //
 // The one-code-one-meaning scan reads LITERAL sites, `fail(<command>,
 // "<type>", "<code>", …)` spelled out in the shell's sources. A code handed to
-// `fail` at runtime — a machine-local store's own refusal, a module issue's —
-// is outside it; the two store codes are held by an explicit case below.
+// `fail` at runtime — a module issue's — is outside it.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
@@ -161,36 +160,6 @@ function refusals(): { file: string; type: string; code: string }[] {
 }
 
 describe("the error-code taxonomy: one code, one meaning (docs/cli.md §The envelope)", () => {
-  it("the store code the scan cannot read exits 4 as conflict, and no literal site reuses it", () => {
-    // `bundles-registry-malformed` reaches `fail` from a thrown StoreMalformed,
-    // so no literal site spells it.
-    const tmp = vault(GOOD_TYPES);
-    try {
-      const bundles = join(tmp, "bundles.json");
-      writeFileSync(bundles, "not a registry\n");
-      for (const [argv, env, code] of [
-        [["bundles", "list"], { WIKIWRIGHT_BUNDLES_FILE: bundles }, "bundles-registry-malformed"],
-      ] as const) {
-        const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", "."], {
-          cwd: tmp,
-          encoding: "utf8",
-          env: { ...process.env, ...PINNED_CLOCK, ...env },
-        });
-        const envelope = JSON.parse(r.stdout) as Run["envelope"];
-        assert.equal(r.status, 4, r.stdout);
-        assert.equal(envelope.error?.type, "conflict");
-        assert.equal(envelope.error?.code, code);
-        assert.deepEqual(
-          refusals().filter((site) => site.code === code),
-          [],
-          `${code} is spelled at a literal site`,
-        );
-      }
-    } finally {
-      rmSync(tmp, { recursive: true, force: true });
-    }
-  });
-
   it("every code is kebab-case, and maps to exactly one exit type across every verb", () => {
     const found = refusals();
     assert.equal(found.length > 40, true, `the scan found the refusal sites (${found.length})`);

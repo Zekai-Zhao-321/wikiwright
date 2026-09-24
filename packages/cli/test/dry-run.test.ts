@@ -21,18 +21,15 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
-  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
+import { join, relative } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
-import { MACHINE_LOCAL_WRITERS } from "../src/connections.ts";
-import type { CommandArgs } from "../src/spec.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
@@ -107,11 +104,10 @@ function treeHash(root: string): string {
 
 /**
  * Path → sha256 for every file the fidelity check compares, which is a WIDER
- * set than `treeHash`: `.git/hooks` (where `hook install` lands) and the
- * machine-local bundles registry (where `bundles add` lands) are exactly the
- * writes a vault-shaped hash cannot see (docs/cli.md §The dry-run law).
+ * set than `treeHash`: `.git/hooks` (where `hook install` lands) is exactly
+ * the write a vault-shaped hash cannot see (docs/cli.md §The dry-run law).
  */
-function snapshot(root: string, registry: string): Map<string, string> {
+function snapshot(root: string): Map<string, string> {
   const out = new Map<string, string>();
   const walk = (rel: string): void => {
     let entries: string[];
@@ -138,10 +134,6 @@ function snapshot(root: string, registry: string): Map<string, string> {
     }
   };
   walk("");
-  // The machine-local store, outside the vault: the bundles registry.
-  if (existsSync(registry)) {
-    out.set(registry, createHash("sha256").update(readFileSync(registry)).digest("hex"));
-  }
   return out;
 }
 
@@ -172,26 +164,25 @@ function vault(engine: Record<string, unknown> = FOLDER_MODE): string {
 }
 
 /**
- * The machine-local store a run uses: the bundles registry the case passes,
- * or, for a run that passes none, one under this file's scratch directory.
- * Never the developer's: a test that guards against a write must not be able
- * to make one where a person keeps their connections, and a dry run must not
- * read its answer from a store it does not own.
+ * A home of this file's own: a verb that scans the skill directories reads
+ * none of the developer's.
  */
-const SCRATCH = mkdtempSync(join(tmpdir(), "ww-dryrun-stores-"));
-const SCRATCH_REGISTRY = join(SCRATCH, "bundles.json");
+const HOME = mkdtempSync(join(tmpdir(), "ww-dryrun-home-"));
 after(() => {
-  rmSync(SCRATCH, { recursive: true, force: true });
+  rmSync(HOME, { recursive: true, force: true });
 });
 
 function run(
   cwd: string,
   args: string[],
-  registry?: string,
   stdin?: string,
 ): { status: number; envelope: Record<string, unknown> } {
-  const env: Record<string, string | undefined> = { ...process.env, ...PINNED_CLOCK };
-  env["WIKIWRIGHT_BUNDLES_FILE"] = registry ?? SCRATCH_REGISTRY;
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    ...PINNED_CLOCK,
+    HOME,
+    WIKIWRIGHT_SKILL_DIRS: "",
+  };
   const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
@@ -254,7 +245,6 @@ function exportDestination(dir: string): void {
 
 /** One dry-run invocation per writing verb, each one that succeeds on the fixture. */
 const DRY_RUNS: Record<string, string[]> = {
-  bundles: ["bundles", "add", ".", "--name", "dry-run-vault", "--dry-run"],
   check: ["check", "--dry-run"],
   export: ["export", "dry-run-export", "--to", "out", "--dry-run"],
   fix: [
@@ -355,27 +345,17 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
       const setup = DRY_RUN_SETUP[command.name];
       const tmp = vault(setup?.engine);
       setup?.arrange(tmp);
-      // A registry this case owns, absent, so a write to it shows and nothing
-      // of the developer's is read.
-      const stores = mkdtempSync(join(tmpdir(), "ww-dryrun-case-"));
-      const registry = join(stores, "bundles.json");
       try {
         const before = treeHash(tmp);
         const argv = DRY_RUNS[command.name] ?? [];
-        const r = run(tmp, argv, registry, DRY_RUN_STDIN[command.name]?.(tmp));
+        const r = run(tmp, argv, DRY_RUN_STDIN[command.name]?.(tmp));
         assert.equal(r.status, 0, `${command.name}: ${JSON.stringify(r.envelope)}`);
         const data = (r.envelope["data"] ?? {}) as Record<string, unknown>;
         assert.equal(data["wrote"], false, `${command.name} does not report wrote: false`);
         assert.equal(Array.isArray(data["ops"]), true, `${command.name} reports no ops array`);
         assert.equal(treeHash(tmp), before, `${command.name} --dry-run changed the vault tree`);
-        assert.equal(
-          existsSync(registry),
-          false,
-          `${command.name} --dry-run wrote the bundles registry`,
-        );
       } finally {
         rmSync(tmp, { recursive: true, force: true });
-        rmSync(stores, { recursive: true, force: true });
       }
     });
   }
@@ -499,10 +479,6 @@ const REFUSALS: Refusal[] = [
   },
   { name: "hook with an unknown subcommand", argv: ["hook", "frobnicate"] },
   {
-    name: "bundles add under a name that is not one",
-    argv: ["bundles", "add", ".", "--name", "Not A Name"],
-  },
-  {
     name: "move with no --reason",
     argv: ["move", "wiki/test-execution/warm-reset.md", "wiki/other/warm-reset.md"],
   },
@@ -576,13 +552,12 @@ const REFUSALS: Refusal[] = [
 describe("a dry run answers a valid invocation, never a typo (docs/cli.md §The dry-run law)", () => {
   for (const refusal of REFUSALS) {
     it(`${refusal.name} is refused with and without --dry-run`, () => {
-      const registry = join(mkdtempSync(join(tmpdir(), "ww-registry-")), "bundles.json");
       const tmp = refusal.make === undefined ? vault(refusal.engine) : refusal.make();
       try {
         refusal.arrange?.(tmp);
-        const real = run(tmp, refusal.argv, registry);
+        const real = run(tmp, refusal.argv);
         assert.notEqual(real.status, 0, `${refusal.name}: the real run does not refuse`);
-        const dry = run(tmp, [...refusal.argv, "--dry-run"], registry);
+        const dry = run(tmp, [...refusal.argv, "--dry-run"]);
         const realError = (real.envelope["error"] ?? {}) as Record<string, unknown>;
         const dryError = (dry.envelope["error"] ?? {}) as Record<string, unknown>;
         assert.equal(
@@ -595,14 +570,8 @@ describe("a dry run answers a valid invocation, never a typo (docs/cli.md §The 
           realError["code"],
           `${refusal.name}: --dry-run and the run name different errors`,
         );
-        assert.equal(
-          existsSync(registry),
-          false,
-          `${refusal.name}: the bundles registry was written`,
-        );
       } finally {
         rmSync(tmp, { recursive: true, force: true });
-        rmSync(dirname(registry), { recursive: true, force: true });
       }
     });
   }
@@ -627,13 +596,6 @@ interface Fidelity {
 }
 
 const FIDELITY: Fidelity[] = [
-  {
-    // The plan's one path is the machine-local registry, absolute, the one
-    // the case owns.
-    name: "bundles add",
-    argv: ["bundles", "add", ".", "--name", "fidelity-vault"],
-    writes: true,
-  },
   { name: "check (no --write writes nothing)", argv: ["check"], writes: false },
   { name: "check --write", argv: ["check", "--write"], writes: true },
   {
@@ -772,8 +734,6 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
 
   for (const c of FIDELITY) {
     it(`${c.name}: the plan's paths are the delta's paths`, () => {
-      const storeDir = mkdtempSync(join(tmpdir(), "ww-registry-"));
-      const registry = join(storeDir, "bundles.json");
       const make = (): string => {
         if (c.empty !== true) {
           const dir = vault(c.engine);
@@ -790,7 +750,7 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
       const planned = make();
       const applied = make();
       try {
-        const dry = run(planned, [...c.argv, "--dry-run"], registry, c.stdin?.(planned));
+        const dry = run(planned, [...c.argv, "--dry-run"], c.stdin?.(planned));
         assert.equal(dry.status, 0, `${c.name} --dry-run: ${JSON.stringify(dry.envelope)}`);
         const ops = opsOf(dry.envelope);
         assert.equal(
@@ -800,10 +760,10 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
             ? `${c.name}: the plan is empty — a vacuous fidelity case proves nothing`
             : `${c.name}: the invocation as typed writes nothing and the plan names paths`,
         );
-        const before = snapshot(applied, registry);
-        const real = run(applied, c.argv, registry, c.stdin?.(applied));
+        const before = snapshot(applied);
+        const real = run(applied, c.argv, c.stdin?.(applied));
         assert.notEqual(real.status, 1, `${c.name}: ${JSON.stringify(real.envelope)}`);
-        const actual = delta(before, snapshot(applied, registry));
+        const actual = delta(before, snapshot(applied));
         assert.deepEqual(
           actual,
           plannedPaths(ops),
@@ -812,7 +772,6 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
       } finally {
         rmSync(planned, { recursive: true, force: true });
         rmSync(applied, { recursive: true, force: true });
-        rmSync(storeDir, { recursive: true, force: true });
       }
     });
   }
@@ -933,15 +892,12 @@ function source(rel: string): string {
 const DIRECT_WRITERS: Readonly<Record<string, string>> = {
   "atomicwrite.ts":
     "the shell's one staged replace: an exclusive temp beside the target, renamed into place",
-  "connections.ts": "the machine-local bundles registry",
   "artifacts.ts":
     "the generated artifacts, the writer's brief and the in-repository exports, whose obsolete files it removes — one generator, byte-reproducible",
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
   "skills.ts": "the shipped skills' install and its stamp",
   "stdoutfile.ts":
     "the file a git child writes its stdout to: created exclusively under os.tmpdir(), removed once read, never a vault path (docs/roadmap.md)",
-  "storelock.ts":
-    "the lock file beside a machine-local store, created exclusively and removed once the change lands",
   "writer.ts": "THE Writer: every content page, temp-then-rename",
   // `init`'s tree copy is the one declared exception: it lands a starter,
   // it does not edit a page, and a starter is a directory rather than a splice.
@@ -1027,44 +983,6 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
       'import fs from "node:fs";\nconst text = fs.readFileSync(path, "utf8");',
     ]) {
       assert.equal(writesDirectly(reads), false, reads);
-    }
-  });
-});
-
-describe("the writer the readonly guard exempts plans only this machine's store (docs/cli.md §bundles)", () => {
-  // `--bundle` naming an installed copy refuses every writing verb but this
-  // one: its one write is the machine-local registry. The set is closed here,
-  // and with the registry placed outside the vault, as it is by default, the
-  // member's declared plan names only it. Where the environment puts the
-  // registry is the caller's; the exemption is by verb.
-  it("the set is bundles, and it plans only absolute paths outside the vault", () => {
-    assert.deepEqual([...MACHINE_LOCAL_WRITERS].sort(), ["bundles"]);
-    const tmp = vault();
-    const stores = mkdtempSync(join(tmpdir(), "ww-dryrun-stores-"));
-    const saved = process.env["WIKIWRIGHT_BUNDLES_FILE"];
-    process.env["WIKIWRIGHT_BUNDLES_FILE"] = join(stores, "bundles.json");
-    try {
-      const argsOf: Record<string, CommandArgs> = {
-        bundles: { root: tmp, positionals: ["add", tmp], flags: { name: "x" }, commands: COMMANDS },
-      };
-      const inside = realpathSync(tmp);
-      for (const name of MACHINE_LOCAL_WRITERS) {
-        const spec = COMMANDS.find((c) => c.name === name);
-        const args = argsOf[name];
-        assert.ok(spec?.writes === true && args !== undefined, `${name} is a writer with a case`);
-        const ops = spec.plan(args).ops;
-        assert.notEqual(ops.length, 0, `${name}: a vacuous plan proves nothing`);
-        for (const op of ops) {
-          assert.equal(isAbsolute(op.path), true, `${name} plans ${op.path}`);
-          const real = join(realpathSync(dirname(op.path)), basename(op.path));
-          assert.equal(real.startsWith(inside + sep), false, `${name} plans a path in the vault`);
-        }
-      }
-    } finally {
-      if (saved === undefined) delete process.env["WIKIWRIGHT_BUNDLES_FILE"];
-      else process.env["WIKIWRIGHT_BUNDLES_FILE"] = saved;
-      rmSync(tmp, { recursive: true, force: true });
-      rmSync(stores, { recursive: true, force: true });
     }
   });
 });

@@ -440,18 +440,15 @@ bundle: `wikiwright-consume` for using what it knows, `wikiwright-write` for
 writing into it, `wikiwright-maintain` for answering its findings and changing
 its law. None names a verb: the brief does.
 
-## Connected bundles
+## Naming a bundle
 
-A **connection** names a bundle by a short name in this machine's registry,
-`~/.config/wikiwright/bundles.json`: its root, its **kind** — `maintained`, a
-checkout the caller may write to within its role, or `installed`, a copy that
-is read only — where a problem with it is reported, and the page to read
-first. `wikiwright bundles` adds, lists and removes connections.
-`--bundle <name>` names the target of any verb in place of `--root` by the
-name of a bundle skill installed in a skill directory (§A copy), found by a
-scan, never a registration. A verb that can write, aimed at a copy however
-it is named, is refused `bundle-readonly` with where a change goes instead;
-like the role, this is a guardrail on the command line, not a permission.
+A verb names the bundle it works on by its directory, `--root <dir>`, or by
+the name of a bundle skill installed in a skill directory, `--bundle <name>`
+(§A copy): the engine finds it by a scan of those directories, and nothing
+registers it. `wikiwright bundles list` prints what the scan finds. A verb
+that can write, aimed at a copy however it is named, is refused
+`bundle-readonly` with where a change goes instead; like the role, this is a
+guardrail on the command line, not a permission.
 
 Every envelope of a verb that reads a vault's law names the bundle it read in
 `metadata.bundle`: its **label** (the root directory's name, not an

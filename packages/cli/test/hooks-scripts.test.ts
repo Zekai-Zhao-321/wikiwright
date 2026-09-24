@@ -36,11 +36,10 @@ const CLI = join(PACKAGE, "dist", "main.js");
 const SESSION_START = join(PACKAGE, "hooks", "session-start.mjs");
 const POST_EDIT = join(PACKAGE, "hooks", "post-edit.mjs");
 const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
-const ALLOTMENT_FEEDBACK = "send a proposal to the allotment handbook's maintainers";
 
 let tmp = "";
 let orchard = "";
-let allotment = "";
+let home = "";
 let env: NodeJS.ProcessEnv = {};
 
 /** One hook run: what it printed, and its exit status. */
@@ -69,7 +68,7 @@ function contextOf(stdout: string, event: string): string {
   return String(specific["additionalContext"]);
 }
 
-/** The engine itself, over the hooks' registry. */
+/** The engine itself, under the hooks' environment. */
 function cli(argv: readonly string[]): { status: number; stdout: string } {
   const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
     encoding: "utf8",
@@ -110,17 +109,18 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
   before(() => {
     tmp = mkdtempSync(join(tmpdir(), "ww-hooks-"));
     orchard = join(tmp, "orchard");
-    allotment = join(tmp, "allotment");
     cpSync(join(HANDBOOKS, "orchard"), orchard, { recursive: true });
-    cpSync(join(HANDBOOKS, "allotment"), allotment, { recursive: true });
-    env = { WIKIWRIGHT_BUNDLES_FILE: join(tmp, "bundles.json") };
-    // No connection yet: the first case reads an empty registry.
+    // A home of the test's own: the scan reads no skill directory of the
+    // developer's. Nothing is installed yet: the first case reads an empty scan.
+    home = join(tmp, "home");
+    mkdirSync(home);
+    env = { HOME: home, WIKIWRIGHT_SKILL_DIRS: "" };
   });
   after(() => {
     rmSync(tmp, { recursive: true, force: true });
   });
 
-  it("session start with no connection prints nothing, and exits 0", () => {
+  it("session start with no bundle skill installed prints nothing, and exits 0", () => {
     const r = hook(
       SESSION_START,
       JSON.stringify({ hook_event_name: "SessionStart", source: "startup" }),
@@ -129,26 +129,10 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     assert.equal(r.stdout, "");
   });
 
-  it("session start names each connected bundle and how a command names one", () => {
-    for (const argv of [
-      ["bundles", "add", orchard, "--name", "orchard", "--guide", "wiki/start-here.md"],
-      [
-        "bundles",
-        "add",
-        allotment,
-        "--name",
-        "allotment",
-        "--kind",
-        "installed",
-        "--feedback",
-        ALLOTMENT_FEEDBACK,
-      ],
-    ]) {
-      const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
-        encoding: "utf8",
-        env: { ...process.env, ...env },
-      });
-      assert.equal(r.status, 0, r.stdout);
+  it("session start names each installed bundle skill and how a command names one", () => {
+    const skills = join(home, ".claude", "skills");
+    for (const name of ["orchard", "allotment"]) {
+      cpSync(join(HANDBOOKS, name, "skills", name), join(skills, name), { recursive: true });
     }
     const r = hook(
       SESSION_START,
@@ -156,16 +140,12 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     );
     assert.equal(r.status, 0);
     const lines = contextOf(r.stdout, "SessionStart").split("\n");
-    assert.equal(lines[0], "Connected wikiwright bundles:");
-    assert.match(
-      lines[1] ?? "",
-      /^- allotment \(installed\): allotment at no commit, no repository$/u,
-    );
-    assert.match(
-      lines[2] ?? "",
-      /^- orchard \(maintained\): orchard at no commit, no repository; read first: wiki\/start-here\.md$/u,
-    );
-    assert.match(lines[3] ?? "", /--root <dir>, or --bundle <name> for a bundle skill/u);
+    assert.deepEqual(lines.slice(0, 3), [
+      "Installed wikiwright bundle skills:",
+      `- allotment: the bundle allotment, in the user skill directory ${join(skills, "allotment")}`,
+      `- orchard: the bundle orchard, in the user skill directory ${join(skills, "orchard")}`,
+    ]);
+    assert.match(lines[3] ?? "", /--bundle <name> for one of these, or --root <dir>/u);
     assert.equal(lines.length, 4);
     // Context names bundles; it never carries a page's words.
     assert.doesNotMatch(r.stdout, /outward-facing bud|How to use this handbook/u);
@@ -177,7 +157,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
       const [first] = contextOf(r.stdout, "SessionStart").split("\n");
       assert.equal(
         first,
-        "Re-establishing the connected wikiwright bundles from their current state:",
+        "Re-establishing the installed wikiwright bundle skills from their current state:",
       );
     }
   });

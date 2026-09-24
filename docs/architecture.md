@@ -54,11 +54,9 @@ packages/cli/src/
   atomicwrite.ts   the one staged replace every non-page write lands through
   moduleload.ts, modulefixture.ts   the module ladder: resolve, digest, scan, load, prove
   sha256.ts    the shell's sha256 over bytes: a module's files, a page, a shipped skill
-  storelock.ts the lock a machine-local store is read, changed and written under
-  connections.ts   the machine-local bundles registry `bundles` reads
-  discovery.ts the skill directories `--bundle` scans: a name to the nearest copy of one bundle, reading markers only
+  discovery.ts the skill directories `--bundle` and `bundles list` scan: a name to the nearest copy of one bundle, reading markers only
   hooks.ts, staged.ts   the installed hooks and the staged gate
-  verbs/<name>.ts   one CommandSpec per verb; verbs/bundles.ts keeps the connections, verbs/read.ts is the consumer's read
+  verbs/<name>.ts   one CommandSpec per verb; verbs/bundles.ts lists the scan, verbs/read.ts is the consumer's read
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit
 packages/cli/skills/          the three shipped skills (consume, write, maintain) and the generated playbook
 packages/cli/.claude-plugin/  the plugin manifest: the package root is a Claude Code plugin
@@ -66,7 +64,7 @@ packages/cli/hooks/           hooks.json and its two scripts, session-start.mjs 
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
 devwiki/                      this repository's own bundle, over the kit, judged by the suite
 fixtures/conformance/         the neutral module fixture and two bundles consuming it
-fixtures/handbooks/           two small gardening handbooks the connection tests read, one page title in both, each with its exports rendered under skills/
+fixtures/handbooks/           two small gardening handbooks the two-bundle tests read, one page title in both, each with its exports rendered under skills/
 fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories)
 fixtures/minimal-vault/       the smallest bundle that loads
 fixtures/okf-upstream/        the OKF pin: repository, commit, grounding line
@@ -106,7 +104,7 @@ by name when it breaks. Test files live under `packages/core/test` and
 | Identity is Unicode-aware | NFC and full case folding through one seam, with CJK cases; unique basenames, aliases and titles | `identity`, `names-graph` |
 | Every vault envelope names its bundle | a verb that reads a vault's law adds `metadata.bundle` — label, real root, head, dirty, the law digest over the constitution, `engine.json` and each installed module, the content digest over every page's bytes — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs; over a copy, the export its marker names, with no head; the brief's header prints the same law digest | `bundle-identity` |
 | A copy is a vault | an export is planned by one function behind `check --write`, `check`, the staged gate and `export`, and carries its resource closure — its pages, `config/` verbatim, the templates and examples the loader validates, each declared kit at its declared location, the files its pages embed — so every reader answers over a plain copy of it with nothing installed, under the identity its marker gives it; two renders are byte-identical, a rendered copy is held to a fresh render, and a copy never carries a symbolic link: the working tree is read through its links, so a kit installed as links travels as files under its source's law digest, and a link the index tracks is refused | `export-copy` (end to end), `export-plan`, `export-check`, `export-verb`, `generated-tracked`, `bundle-identity` |
-| Connected bundles are told apart | from a directory that is no vault, two bundles connected by name hold one page path with different guidance, and every answer carries the bundle that gave it and the page's digest; an installed copy refuses every write to it, a consumer session reads and is refused a write, and a child handed a section's address, while the page is unchanged, reads the same bytes under the same digest — an address names the current tree, not a revision, so a child compares the digest it reads with the one it was handed | `multi-bundle` (the scenario, end to end), `bundles`, `read-verb`, `bundle-identity` |
+| Two bundles are told apart | from a directory that is no vault, two bundle skills found by name hold one page path with different guidance, and every answer carries the bundle that gave it and the page's digest; an installed copy refuses every write to it, a consumer session reads and is refused a write, and a child handed a section's address, while the page is unchanged, reads the same bytes under the same digest — an address names the current tree, not a revision, so a child compares the digest it reads with the one it was handed | `multi-bundle` (the scenario, end to end), `bundles`, `read-verb`, `bundle-identity` |
 
 Two more properties are stated rather than tested, so a reader meets them:
 the purity scan on a module narrows and does not sandbox (a byte scan cannot

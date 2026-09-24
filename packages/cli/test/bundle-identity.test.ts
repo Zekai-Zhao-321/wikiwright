@@ -327,12 +327,11 @@ describe("the law digest names every installed module (docs/cli.md §The envelop
     assert.equal(moved.content, first.content);
   });
 
-  it("an engine.json with a byte order mark declares its modules to the law, listed or loaded", () => {
+  it("an engine.json with a byte order mark declares its modules to the law", () => {
     // The loader reads a config that starts with a byte order mark. The law
     // digest and the preload read the same declarations, so the module loads
     // rather than the vault being refused by a preload that saw none, and a
-    // module-only edit moves the law where the registry lists it and where a
-    // vault verb reads it.
+    // module-only edit moves the law a vault verb reads.
     const marked = join(tmp, "marked");
     for (const part of ["config", "wiki", "package.json"]) {
       cpSync(join(root, part), join(marked, part), { recursive: true });
@@ -341,32 +340,17 @@ describe("the law digest names every installed module (docs/cli.md §The envelop
     cpSync(join(CONFORMANCE, "module-fixture"), module, { recursive: true });
     const engine = join(marked, "config", "engine.json");
     writeFileSync(engine, `\ufeff${readFileSync(engine, "utf8")}`);
-    const owned = { WIKIWRIGHT_BUNDLES_FILE: join(tmp, "marked-bundles.json") };
-    assert.equal(run(tmp, ["bundles", "add", marked, "--name", "marked"], owned).status, 0);
-
-    const listed = (): string => {
-      const r = run(tmp, ["bundles", "list"], owned);
-      const rows = (r.envelope.data?.["bundles"] ?? []) as { identity: Bundle | null }[];
-      const law = rows[0]?.identity?.law;
-      assert.ok(law !== undefined, JSON.stringify(r.envelope));
-      return law;
-    };
     const read = (): string => {
-      const r = run(marked, ["type", "list"], owned);
+      const r = run(marked, ["type", "list"]);
       assert.equal(r.envelope.ok, true, JSON.stringify(r.envelope));
       const law = r.envelope.metadata.bundle?.law;
       assert.ok(law !== undefined, JSON.stringify(r.envelope));
       return law;
     };
-
-    const first = { listed: listed(), read: read() };
-    assert.equal(first.listed, first.read);
-    assert.notEqual(first.listed, lawFormula(marked, []), "the module's line is in the law");
+    const first = read();
+    assert.notEqual(first, lawFormula(marked, []), "the module's line is in the law");
     writeFileSync(join(module, "NOTES.txt"), "a file only the module holds\n");
-    const second = { listed: listed(), read: read() };
-    assert.notEqual(second.listed, first.listed, "a module-only edit moves the listed law");
-    assert.notEqual(second.read, first.read, "and the law a vault verb reads");
-    assert.equal(second.listed, second.read);
+    assert.notEqual(read(), first, "a module-only edit moves the law a vault verb reads");
   });
 
   it("a declared module that is not installed contributes no line", () => {

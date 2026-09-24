@@ -14,8 +14,8 @@ library over bytes. `wikiwright` is the binary: 24 verbs, one module each,
 one JSON envelope per invocation; `docs/cli.md` lists every verb and flag.
 Every envelope of a verb that reads a vault's law names the bundle it read —
 its label, real root, head, whether it is dirty, and digests of its law and
-its content. `bundles` connects vaults by name in a machine-local registry,
-`--bundle` names an installed bundle skill as the target of any verb, and `read` returns a page's sections
+its content. `bundles list` lists the bundle skills installed in the skill
+directories, `--bundle` names one as the target of any verb, and `read` returns a page's sections
 verbatim with the page's digest, under a byte budget. A bundle declares its
 exports in `config/engine.json`, read-only copies of itself or of part of it
 that a host installs as skills: `check --write` renders them into its own
@@ -34,7 +34,7 @@ Bun and the CLI under Node (`tools/run-suite.ts`), and the full node runner,
 `bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
 judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
-`fixtures/handbooks`, which the connection tests read end to end) and proves
+`fixtures/handbooks`, which the two-bundle tests read end to end) and proves
 the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
@@ -235,9 +235,7 @@ block is a difference in every envelope), median of five fresh processes over
 The law digest in that block reads the bytes of every declared module
 installed under the bundle or carried at its declared path, and so does the
 brief's law digest, beside the preload's own reading: each reading hashes every file of the package and
-purity-scans its executable ones. `bundles list` computes each connection's
-identity the same way, so discovery scans a module's purity and discards the
-result; it loads no module and judges nothing. A package's digest is now
+purity-scans its executable ones. A package's digest is now
 taken once per process and reused by the preload, the brief and the
 envelope; nothing of it outlives the process. Measured on 2026-09-24 on one
 Apple-silicon machine under Node 22.22.0 over a temporary copy of
@@ -295,15 +293,14 @@ package spelling needs both forms tested.
 
 ### A bundle cannot declare the bundles it relies on
 
-A connection is this machine's: `bundles add` names a root here, and nothing
-in a bundle says which other bundles it depends on, at which law and content
+Nothing in a bundle says which other bundles it depends on, at which law and content
 digest a maintainer reviewed them, or which of its pages rest on which of
 theirs. No record ties a page to a page of another bundle it rests on, with
 the digests both had when a person last reviewed the pair, so a change on
 one side marks nothing on the other for review.
 
 Wanted: a declaration in `config/engine.json` naming another bundle and the
-digests it was reviewed at, which `check` holds against the connected copy,
+digests it was reviewed at, which `check` holds against the installed copy,
 and a review record per dependent pair of pages.
 
 ### The graph knows which pages link, not where
@@ -332,9 +329,8 @@ Wanted: a declaration naming which fields state applicability, and a flag on
 ### A problem is reported to a destination the engine only names
 
 An export declares where a problem with a copy is reported (its
-`contribution`); a `bundle-readonly` refusal and the post-edit hook say it,
-and a connection in this machine's registry records a destination too. The
-engine sends nothing, and no bundle declares the shape a proposal must take.
+`contribution`); a `bundle-readonly` refusal, the post-edit hook and
+`bundles list` say it. The engine sends nothing, and no bundle declares the shape a proposal must take.
 
 Wanted: a report type a bundle declares in its constitution, and a verb that
 writes a proposal in it where the export's contribution says.
@@ -365,7 +361,7 @@ nothing to say. Neither layout has been run inside a host here (below).
 Wanted: a plugin that carries its dependencies, or a supported install that
 provides them, and a hook smoke test from that layout.
 
-### What the connected bundles have not been evaluated for
+### What installed bundles have not been evaluated for
 
 The scenario test drives two handbooks end to end, mechanically. No
 evaluation has measured whether an agent that writes a bundle and an agent
@@ -386,14 +382,13 @@ whether and when a session shows their context is unverified.
 
 Wanted: a recorded run inside a host, kept beside the test.
 
-### `bundles list` lists the registry, not the skill directories
+### The session-start hook does not say how to update a copy
 
-`--bundle` finds a copy by its name in the skill directories, but
-`bundles list` still lists the registry's connections, not what those
-directories hold, and the session-start hook still reads the registry.
+The session-start hook names each installed bundle skill and where it was
+found, and nothing about how the copy was installed or how it is updated.
 
-Wanted: `bundles list` over the scan, and the session-start hook rebased on
-it. It is the next slice of work.
+Wanted: the action that fits how each copy was installed. It is the next
+commit's work.
 
 ### The shipped skills do not yet speak of copies
 
@@ -611,7 +606,7 @@ alternative is to carry the history with the tree.
    carry the gate to Windows, which nothing reaches.
 2. Close the limitations above in the order a bundle asks for them: the
    asynchronous plan for `init`, `freshness --shift`, the ledger layout
-   for `code/decision`, a published kit; for connected bundles, a declared
+   for `code/decision`, a published kit; for installed bundles, a declared
    dependency between bundles, `references` and `outline`, a report type a
    proposal is written in, and a filter by applicability.
 3. Run the two hook scripts inside a host and record what a session sees.

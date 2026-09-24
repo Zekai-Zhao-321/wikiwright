@@ -25,7 +25,7 @@ the verdict in `data` beside `error`.
 Every verb that reads a vault's law names the bundle it read in
 `metadata.bundle`, when its root holds `config/constitution.json`, on an ok
 envelope and a refusal alike. `version` and `schema` answer about the engine
-and `bundles` about this machine's registry, so they carry none; a `bundles list` row carries each connection's identity instead.
+and `bundles` about the skill directories, so they carry none; a `bundles list` row carries each copy's identity from its marker instead.
 
 ```json
 "bundle": {
@@ -125,8 +125,8 @@ findings that refused it.
 | 1 | `internal` | the engine broke; `unexpected-error` carries the message, `git-short-read` names a git answer that ended before its terminator, and `git-inconsistent-read` two git answers about one state that disagree — the staged diff and the index listing, or a commit walk and its count — each refused rather than judged |
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
-| 3 | `not_found` | the page, type, vocabulary entry, revision or connection asked for does not exist |
-| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a machine-local store this engine cannot read (`bundles-registry-malformed`), a copy's marker that is not one (`export-marker-invalid`) |
+| 3 | `not_found` | the page, type, vocabulary entry, revision, directory or bundle skill asked for does not exist |
+| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a copy's marker that is not one (`export-marker-invalid`) |
 | 5 | `findings` | the tool worked and the subject failed: read `data.findings` |
 | 10 | `confirm_required` | an identity or blast-radius gate wants the plan pinned: `identity-candidates`, `open-claim-of-category` |
 
@@ -175,8 +175,7 @@ the report it always writes.
 | `WIKIWRIGHT_ROLE` | the shell, before parsing; `brief`, as its default `--role` | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
 | `WIKIWRIGHT_TODAY` | `write`, `new`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
-| `WIKIWRIGHT_SKILL_DIRS` | `--bundle` | more skill directories to probe after the project's and the user's, colon-separated, in order |
-| `WIKIWRIGHT_BUNDLES_FILE` | `bundles` | the path of the machine-local bundles registry (default `~/.config/wikiwright/bundles.json`); a relative path is resolved against the working directory |
+| `WIKIWRIGHT_SKILL_DIRS` | `--bundle`, `bundles list` | more skill directories to probe after the project's and the user's, colon-separated, in order |
 
 ## The plugin and its hooks
 
@@ -191,15 +190,15 @@ object whose `hookSpecificOutput` carries `hookEventName` and
 `additionalContext`, and exits 0 whatever happens: on stdin that is not a JSON
 object, a missing binary or any error, it prints nothing.
 
-- `hooks/session-start.mjs` runs `bundles list` and, when a connected bundle
-  is present, names each one: its name, kind, label, head (or `no commit`),
-  whether it is dirty, and the page to read first where the connection sets
-  one; then that every command takes `--root <dir>`, or `--bundle <name>` for
-  a bundle skill installed in a skill directory, and
-  that the brief prints for the session's role. When the hook's `source` is
-  `compact` or `resume`, the first line says the connections are being
-  re-established from current state. It prints no page content, and nothing
-  when no bundle is connected.
+- `hooks/session-start.mjs` runs `bundles list`, which reads markers only,
+  and, when a bundle skill is installed, names each one `--bundle` would
+  choose: its name, the bundle it was cut from, the tier and the directory it
+  was found in; then that every command takes `--bundle <name>` for one of
+  these or `--root <dir>` for any bundle's directory, and that the brief
+  prints for the session's role. When the hook's `source` is `compact` or
+  `resume`, the first line says they are being re-established from current
+  state. It prints no page content and no digest, and nothing when no bundle
+  skill is installed.
 - `hooks/post-edit.mjs` takes `tool_input.file_path` (a leading byte order
   mark on stdin ignored, as the engine ignores it) and finds the bundle by
   ancestry: the nearest directory above the file's real path that holds
@@ -565,48 +564,23 @@ What the registry rows below do not say.
   There is no approval step: installing a module is the consent to run it,
   and every load proves it (a purity scan of its bytes and its determinism
   fixture, once per digest in each process) before it judges anything.
-- **`bundles add <root> --name <n> | list | remove <name>`** keeps this
-  machine's registry of connected bundles, `~/.config/wikiwright/bundles.json`
-  unless `WIKIWRIGHT_BUNDLES_FILE` names another file: a JSON document,
-  `schema` `wikiwright/bundles`, `schema_version` 1, whose `bundles` each
-  carry `name`, `root`, `kind`, `feedback` and `guide`. By default it is
-  outside every vault and every repository; an override is resolved to an
-  absolute path, and where it points is the caller's choice, not something
-  the engine checks. It is read, changed and written as one operation under a
-  lock beside it (`store-busy` when another process holds it; a lock is
-  broken only when the process it names is gone from this machine), and the
-  verb is a consumer's: connecting a bundle changes no bundle. `add` records the root as given, made absolute, and compares real
-  paths: it refuses `bundle-name-invalid` for a name outside
-  `^[a-z0-9][a-z0-9-]{0,63}$`, `invalid-kind`, `vault-not-found` for a root
-  with no `config/constitution.json`, `guide-not-found` when `--guide` names
-  no file under the root, `guide-not-a-page` (exit 2, with
-  `details.content_roots`) when it names a file that is not a Markdown page
-  under a content root `config/engine.json` declares, which is all `read`
-  returns, `bundle-name-taken` when the name is connected, and
-  `bundle-root-registered` when the root is connected under another name,
-  named in `details.name`. `--kind` is `maintained`, the default, for a
-  checkout the caller may write to within its role, or `installed`, for a copy
-  that is read only; `--feedback` says where a problem with the bundle is
-  reported, and `--guide` which page to read first, a page under a content
-  root. `list` prints every
-  connection sorted by name with `root` as registered, `realpath`, `present`
-  (the root exists and holds a constitution), `kind`, `feedback`, `guide`,
-  `content_roots` (as `config/engine.json` declares them, read inside the
-  vault as every verb reads it, or `null` when the bundle is not present or
-  that file cannot be read inside it) and `identity`: the envelope's bundle
-  block without `root` (`label`, `head`, `dirty`, `law`, `content`), or `null`
-  when the root is not present or its identity cannot be read. `list
-  --records` prints the same rows without `identity`, reading no page and
-  running no git, for a caller that only routes by them. Listing loads no law
-  and no module, so a bundle whose modules do not load still lists. `remove` refuses a
-  name that is not connected with `bundle-not-found` and `details.valid_values`.
-  A plan's one path is the registry, absolute. A registry this engine cannot
-  read is `bundles-registry-malformed` (exit 4), with `details.file` and, for a
-  record, `details.record`, from `bundles`; the file is
-  never rewritten. A record whose `root` is not an absolute path is one of
-  these, never resolved against the working directory, where one name would
-  answer for a different bundle from each directory; so are two records with
-  one name or one real root, as a registry restored by hand can hold.
+- **`bundles list`** walks the skill directories `--bundle` probes, in the
+  same order, one directory listing each, and prints one row per directory
+  that holds a marker: `name`, `bundle`, `tier` (`project`, `user` or
+  `extra`), `root` as found and its `realpath`, `linked` (the found path is a
+  symbolic link), `source` (`repository`, and the `law` and `content`
+  digests the marker recorded), `select`, `pages`, `contribution`,
+  `provenance` — every key of the copy's `SKILL.md` frontmatter outside the
+  generated `name`, `description`, `license` and `metadata`, each as a string,
+  as an installer wrote it — and `shadowed_by`, the root `--bundle <name>`
+  would choose instead, `null` for the one it chooses and for every copy of a
+  name two different bundles answer. A directory whose marker does not parse,
+  or names another name, is a row of its own with `code`
+  `export-marker-invalid` and its `reason`. It loads no law, runs no kit and
+  hashes no page: the digests are the marker's, so a copy changed since it
+  was cut lists as it was cut; its envelope over `--root` says
+  `intact: false`. Nothing registers a bundle: installing one is copying its
+  directory.
 - **`--bundle <name>`** names the target of any verb by the name of a bundle
   skill installed in a skill directory, in place of `--root`; nothing is
   registered. The shell resolves it before any module loads, probing
@@ -641,8 +615,7 @@ What the registry rows below do not say.
   <repository>/issues"; `pull-requests`, "clone <repository> and write
   there"; `local-folder`, "write a proposal under <folder>"; `none`, "this
   copy takes no reports". The repository is the contribution's, or the
-  export's when it names none. `bundles` is exempt by verb: its write is this
-  machine's registry. The guard is a courtesy on this CLI, not a guarantee:
+  export's when it names none. The guard is a courtesy on this CLI, not a guarantee:
   a copy's files are protected by their permissions, and a process that does
   not go through the CLI is not stopped.
 - **`freshness [--fetch] [--fast-forward]`** measures every `pin` field
@@ -702,7 +675,7 @@ Global flags, accepted by every verb:
 | Verb | Role | Writes | Summary |
 |---|---|---|---|
 | [`brief`](#brief) | consumer | no | Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/. |
-| [`bundles`](#bundles) | consumer | yes | Connect a vault by name in this machine's registry, list the connections with their identity, or remove one. |
+| [`bundles`](#bundles) | consumer | no | List every bundle skill installed in the skill directories, as --bundle finds them, with its identity and what its installer recorded. |
 | [`check`](#check) | writer | yes | The aggregate pass: registry + lint + generated-drift comparison. |
 | [`export`](#export) | maintainer | yes | Write one declared external export into another repository, as skills/<name>/. |
 | [`fix`](#fix) | writer | yes | Apply the mechanical ops one rule licenses, all-or-nothing, and prove them gone. |
@@ -746,26 +719,14 @@ wikiwright brief --role consumer
 
 ### bundles
 
-`wikiwright bundles <add|list|remove> [target]`
+`wikiwright bundles <list>`
 
-Connect a vault by name in this machine's registry, list the connections with their identity, or remove one.
+List every bundle skill installed in the skill directories, as --bundle finds them, with its identity and what its installer recorded.
 
-Role: `consumer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--name <value>` | with `add`: the name the bundle is connected as |
-| `--kind <value>` | with `add`: maintained (the default) \| installed, a copy that is read only |
-| `--feedback <value>` | with `add`: where a problem with this bundle is reported |
-| `--guide <value>` | with `add`: the page to read first, a page under a content root, relative to the bundle's root |
-| `--records` | with `list`: each connection's record and content roots, reading no bundle's identity |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
+Role: `consumer`. Writes: no.
 
 ```text
 wikiwright bundles list
-wikiwright bundles add ../handbooks/orchard --name orchard --guide wiki/start-here.md
-wikiwright bundles add /srv/handbooks/allotment --name allotment --kind installed --feedback "send a proposal to the handbook's maintainers"
-wikiwright bundles remove allotment
 ```
 
 ### check

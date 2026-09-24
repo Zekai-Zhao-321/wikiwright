@@ -25,7 +25,6 @@ import { dirname, join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
-import { MACHINE_LOCAL_WRITERS } from "../src/connections.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
@@ -166,21 +165,17 @@ describe("a marked root refuses every write path (docs/cli.md §bundles)", () =>
     }
   });
 
-  it("every writing verb but this machine's store writer is refused over a copy", () => {
+  it("every writing verb is refused over a copy", () => {
     const copy = copyWith({ mode: "none" });
     const before = treeHash(copy);
     for (const spec of COMMANDS.filter((c) => c.writes)) {
       const lead = spec.subcommands === undefined ? [] : [spec.subcommands[0] ?? ""];
       const r = run(tmp, [spec.name, ...lead, "--root", copy]);
-      if (MACHINE_LOCAL_WRITERS.has(spec.name)) {
-        assert.notEqual(r.envelope.error?.code, "bundle-readonly", spec.name);
-      } else {
-        assert.equal(
-          r.envelope.error?.code,
-          "bundle-readonly",
-          `${spec.name}: ${JSON.stringify(r.envelope)}`,
-        );
-      }
+      assert.equal(
+        r.envelope.error?.code,
+        "bundle-readonly",
+        `${spec.name}: ${JSON.stringify(r.envelope)}`,
+      );
     }
     assert.equal(treeHash(copy), before, "a refused write touched the copy");
   });

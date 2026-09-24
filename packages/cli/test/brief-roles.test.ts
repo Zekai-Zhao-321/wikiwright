@@ -103,13 +103,12 @@ describe("every role prints its own brief (docs/cli.md §brief)", () => {
   it("the consumer's verb list holds no verb that writes a bundle, and only verbs a consumer may run", () => {
     const listed = listedVerbs(consumer.text);
     const writing = COMMANDS.filter((c) => c.writes).map((c) => c.name);
-    // The one writing verb a consumer runs is `bundles`: its one write is this
-    // machine's registry, outside every vault, and connecting a bundle changes
-    // no bundle (docs/cli.md §bundles). Any other writing verb in the list
-    // fails here, so adding one is a decision.
+    // A consumer runs no writing verb: `bundles` lists what the skill
+    // directories hold and writes nothing (docs/cli.md §bundles). A writing
+    // verb in the list fails here, so adding one is a decision.
     assert.deepEqual(
       listed.filter((name) => writing.includes(name)),
-      ["bundles"],
+      [],
     );
     assert.deepEqual(
       listed,

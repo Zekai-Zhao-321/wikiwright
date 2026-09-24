@@ -83,8 +83,8 @@ project has already paid for once.
 ## A bundle's guidance is for that bundle; guardrails are not walls
 
 Guidance a bundle carries — its brief, its skill fragments, its start page —
-governs operations on that bundle and on no other. A connection's kind and the
-session's role are guardrails on the command line, not isolation: a path reaches
+governs operations on that bundle and on no other. A copy's read-only guard and
+the session's role are guardrails on the command line, not isolation: a path reaches
 any directory, and nothing stops a process that does not ask the engine. Which
 modules run is what the bundle declares and has installed; adding or changing
 one is a reviewed change to the bundle's law, and no skill, brief or page makes

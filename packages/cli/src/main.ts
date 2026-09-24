@@ -6,7 +6,6 @@ import { isSkillName, SKILL_NAME, SKILL_NAME_MAX } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
-import { MACHINE_LOCAL_WRITERS } from "./connections.ts";
 import { resolveBundle } from "./discovery.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
 import { GitInconsistentRead, GitShortRead } from "./git.ts";
@@ -21,7 +20,6 @@ import {
   ROLE_RANK,
   type Role,
 } from "./spec.ts";
-import { StoreMalformed } from "./storelock.ts";
 
 function emit(result: CommandResult): void {
   process.stdout.write(`${JSON.stringify(result.envelope, null, 2)}\n`);
@@ -89,11 +87,8 @@ type Target =
   | { ok: false; result: CommandResult };
 
 /**
- * docs/cli.md §Exit codes: what a thrown error becomes. A machine-local store
- * this engine cannot read — the bundles registry — is the state refusing the
- * operation, named by the store's own code with the file and the failing
- * record, from whichever verb reached it. A git answer
- * cut short is `git-short-read`; two git answers that disagree are
+ * docs/cli.md §Exit codes: what a thrown error becomes. A git answer cut
+ * short is `git-short-read`; two git answers that disagree are
  * `git-inconsistent-read`. Anything else is the engine breaking.
  */
 function thrown(command: string, e: unknown): CommandResult {
@@ -110,12 +105,6 @@ function thrown(command: string, e: unknown): CommandResult {
     return fail(command, "internal", "git-inconsistent-read", e.message, {
       details: { commands: e.commands.map((c) => `git ${c}`) },
       hint: "two git answers about one state disagree; nothing was judged from them — run the command again",
-    });
-  }
-  if (e instanceof StoreMalformed) {
-    return fail(command, "conflict", e.code, e.message, {
-      details: { file: e.file, ...(e.record === undefined ? {} : { record: e.record }) },
-      hint: "the file is this machine's store, not a vault's; repair it or move it aside — the engine does not rewrite a store it cannot read",
     });
   }
   return fail(command, "internal", "unexpected-error", e instanceof Error ? e.message : String(e));
@@ -230,8 +219,7 @@ function contributionHint(marker: ExportMarker): string {
  * `--dry-run` included, with where a change goes instead (`bundle-readonly`):
  * a copy is overwritten by its next install. A courtesy, not a guarantee —
  * the files' permissions protect a copy, and a process that does not go
- * through the CLI is not stopped. `bundles` writes this machine's registry,
- * not the copy, so it is answered.
+ * through the CLI is not stopped.
  */
 function markedRootRefusal(spec: CommandSpec, root: string): CommandResult | undefined {
   if (!spec.needsVaultModules && !spec.writes) return undefined;
@@ -249,7 +237,7 @@ function markedRootRefusal(spec: CommandSpec, root: string): CommandResult | und
       },
     );
   }
-  if (!spec.writes || MACHINE_LOCAL_WRITERS.has(spec.name)) return undefined;
+  if (!spec.writes) return undefined;
   const copy = marker.marker;
   return fail(
     spec.name,

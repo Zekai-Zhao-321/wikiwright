@@ -252,10 +252,9 @@ names the module.
 The entry point loads a bundle's declared modules once, before a verb that
 declares it reads the vault's law, so a bundle judged without a law it
 declares is refused rather than judged under a quieter one. A verb that
-answers about the engine — `schema`, `version` — or about this machine's
-registry of connected bundles — `bundles`, which reads a connected bundle's
-files for its identity and no law — declares it reads no vault law and loads
-none. How a load proves a module is [§Loading a module](#loading-a-module).
+answers about the engine — `schema`, `version` — or about the skill
+directories — `bundles`, which reads a copy's marker and no law — declares it
+reads no vault law and loads none. How a load proves a module is [§Loading a module](#loading-a-module).
 
 A bundle names the package in `config/engine.json` and either installs it in
 its own `node_modules`, by a workspace link, a `file:` dependency or a local

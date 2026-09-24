@@ -1,13 +1,12 @@
 // docs/cli.md §The plugin and its hooks: the SessionStart hook. It reads the
-// hook's JSON on stdin, asks the engine for this machine's connected bundles,
-// and prints one compact block of context naming each bundle that is present —
-// its kind, its label, its head and whether it is dirty, and the page to read
-// first — then how every command names a bundle. It prints no page content.
+// hook's JSON on stdin, asks the engine for the bundle skills installed in the
+// skill directories (`bundles list`, which reads markers only: it executes no
+// kit and hashes no page), and prints one compact block of context naming each
+// — its name, the bundle it was cut from, and where it was found — then how
+// every command names a bundle. It prints no page content and no digest.
 //
-// Plain Node, no dependencies. It inherits the environment, so the registry
-// and the session's role are the ones the engine would read.
-// It asks for the full listing, not `--records`: each line names the bundle's
-// label, its head and whether it is dirty, which only the identity carries.
+// Plain Node, no dependencies. It inherits the environment, so the skill
+// directories and the session's role are the ones the engine would read.
 // Whatever goes wrong — stdin that is not JSON, a binary that is missing, an
 // envelope that is not one — it prints nothing and exits 0: a hook that fails
 // must not stand between a session and its start.
@@ -25,12 +24,7 @@ function wikiwright(args) {
 }
 
 function describe(row) {
-  const identity = row.identity;
-  const head = typeof identity.head === "string" ? identity.head.slice(0, 12) : "no commit";
-  const state =
-    identity.dirty === true ? "dirty" : identity.dirty === false ? "clean" : "no repository";
-  const guide = typeof row.guide === "string" ? `; read first: ${row.guide}` : "";
-  return `- ${row.name} (${row.kind}): ${identity.label} at ${head}, ${state}${guide}`;
+  return `- ${row.name}: the bundle ${row.bundle}, in the ${row.tier} skill directory ${row.root}`;
 }
 
 function main() {
@@ -39,17 +33,17 @@ function main() {
   if (input === null || typeof input !== "object" || Array.isArray(input)) return;
   const listed = wikiwright(["bundles", "list"]);
   if (listed?.ok !== true) return;
-  const present = (listed.data?.bundles ?? []).filter(
-    (row) => row.present === true && row.identity !== null,
+  const installed = (listed.data?.bundles ?? []).filter(
+    (row) => typeof row.bundle === "string" && row.shadowed_by === null,
   );
-  if (present.length === 0) return;
+  if (installed.length === 0) return;
   const again = input.source === "compact" || input.source === "resume";
   const lines = [
     again
-      ? "Re-establishing the connected wikiwright bundles from their current state:"
-      : "Connected wikiwright bundles:",
-    ...present.map(describe),
-    "Every wikiwright command takes --root <dir>, or --bundle <name> for a bundle skill installed in a skill directory; `wikiwright brief --root <dir>` prints that bundle's brief for the role this session declares in WIKIWRIGHT_ROLE, the writer's when it declares none.",
+      ? "Re-establishing the installed wikiwright bundle skills from their current state:"
+      : "Installed wikiwright bundle skills:",
+    ...installed.map(describe),
+    "Every wikiwright command takes --bundle <name> for one of these, or --root <dir> for any bundle's directory; `wikiwright brief --bundle <name>` prints that bundle's brief for the role this session declares in WIKIWRIGHT_ROLE, the writer's when it declares none.",
   ];
   process.stdout.write(
     `${JSON.stringify({

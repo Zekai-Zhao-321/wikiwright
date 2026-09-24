@@ -1,418 +1,116 @@
-// docs/cli.md §bundles (connect a vault by name in this machine's registry,
-// list the connections with the identity of each, remove one) · docs/cli.md
-// §The dry-run law (the plan names the machine-local registry, absolute).
+// docs/cli.md §bundles (every bundle skill the skill directories hold, as
+// `--bundle` would find it) · docs/concepts.md §A copy.
 //
-// A consumer verb that writes: what it writes is this machine's registry, not a
-// bundle, so connecting a bundle changes no bundle. It loads no law and no
-// module — `list` is discovery, and a bundle whose modules do not load still
-// lists, with its identity.
-import { existsSync, realpathSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { codeUnitCompare, isContentPath, PATH_REFUSALS, pathRefusal } from "@wikiwright/core";
-import { bundleIdentity, contentRootsAt } from "../bundle.ts";
-import {
-  bundlesFilePath,
-  type Connection,
-  type ConnectionStore,
-  KINDS,
-  type Kind,
-  NAME_PATTERN,
-  readConnections,
-  updateConnections,
-} from "../connections.ts";
-import { type CommandResult, fail, ok } from "../envelope.ts";
-import { vaultReadAbsolute } from "../paths.ts";
-import { type CommandArgs, type CommandSpec, isDryRun, type Plan, planOf } from "../spec.ts";
-import { StoreBusy } from "../storelock.ts";
-import { CONSTITUTION_PATH } from "../vaultfiles.ts";
+// A consumer verb that reads markers and writes nothing: one directory listing
+// per skill directory, one marker and one SKILL.md frontmatter per directory
+// that holds a marker. It loads no law, executes no kit and hashes no page:
+// the digests a row carries are the marker's.
+import { readFileSync, realpathSync } from "node:fs";
+import { join } from "node:path";
+import { parseDoc } from "@wikiwright/core";
+import { type Candidate, identityOf, scanAll } from "../discovery.ts";
+import { ok } from "../envelope.ts";
+import { SKILL_PATH } from "../exports.ts";
+import type { CommandSpec } from "../spec.ts";
+
+/** The frontmatter keys the engine's SKILL.md renderer writes; any other key is an installer's. */
+const GENERATED_KEYS: ReadonlySet<string> = new Set(["name", "description", "license", "metadata"]);
 
 /**
- * A connection as `list --records` prints it: the record, where it resolves,
- * whether a bundle is there, and the content roots its config declares.
+ * docs/cli.md §bundles: what an installer wrote into a copy's SKILL.md
+ * frontmatter, whatever it calls it — every key outside the generated set,
+ * each value as a string. None when there is no SKILL.md or it holds none.
  */
-interface RecordRow {
-  name: string;
-  root: string;
-  realpath: string | null;
-  present: boolean;
-  kind: Kind;
-  feedback: string | null;
-  guide: string | null;
-  /**
-   * `config/engine.json`'s content roots, read through the contained reader;
-   * null when the bundle is not present or its config cannot be read inside
-   * it, so a caller that routes by them never routes by a file the engine
-   * would refuse to read.
-   */
-  content_roots: string[] | null;
-}
-
-/** A connection as `list` prints it: the record row and the bundle's identity. */
-interface Row extends RecordRow {
-  identity: {
-    label: string;
-    head: string | null;
-    dirty: boolean | null;
-    law: string;
-    content: string;
-  } | null;
-}
-
-function realpathOf(root: string): string | null {
+function provenanceOf(root: string): Record<string, string> {
+  let text: string;
   try {
-    return realpathSync(root);
+    text = readFileSync(join(root, SKILL_PATH), "utf8");
   } catch {
-    return null;
+    return {};
   }
+  const out: Record<string, string> = {};
+  const value = parseDoc(text).frontmatter.value;
+  for (const [key, entry] of Object.entries(value)) {
+    if (GENERATED_KEYS.has(key)) continue;
+    out[key] = typeof entry === "string" ? entry : JSON.stringify(entry);
+  }
+  return out;
 }
 
-/** docs/cli.md §bundles: one connection as a caller routes by it, reading no identity. */
-function recordOf(connection: Connection): RecordRow {
-  const realpath = realpathOf(connection.root);
-  const present = realpath !== null && existsSync(join(connection.root, CONSTITUTION_PATH));
-  const roots = present ? contentRootsAt(connection.root) : null;
-  return {
-    name: connection.name,
-    root: connection.root,
-    realpath,
-    present,
-    kind: connection.kind,
-    feedback: connection.feedback,
-    guide: connection.guide,
-    content_roots: roots === null ? null : [...roots],
-  };
+function realOf(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
 }
 
 /**
- * docs/cli.md §bundles: one connection with the identity the envelope's bundle
- * block carries, read without loading the law. `identity` is null when the root
- * is not present, or when its identity cannot be read inside it.
+ * For every candidate the root `--bundle <its name>` would choose instead, or
+ * null: null for the one it chooses, and for every candidate of a name two
+ * different bundles answer, which `--bundle` refuses as ambiguous.
  */
-function rowOf(connection: Connection): Row {
-  const record = recordOf(connection);
-  let identity: Row["identity"] = null;
-  if (record.present) {
-    try {
-      const bundle = bundleIdentity(connection.root);
-      if (bundle !== undefined) {
-        const { label, head, dirty, law, content } = bundle;
-        identity = { label, head, dirty, law, content };
-      }
-    } catch {
-      identity = null;
-    }
+function shadowing(candidates: readonly Candidate[]): Map<Candidate, string | null> {
+  const out = new Map<Candidate, string | null>();
+  const byName = new Map<string, Candidate[]>();
+  for (const candidate of candidates) {
+    byName.set(candidate.name, [...(byName.get(candidate.name) ?? []), candidate]);
   }
-  return { ...record, identity };
-}
-
-function names(store: ConnectionStore): string[] {
-  return store.bundles.map((b) => b.name).sort(codeUnitCompare);
-}
-
-function notFound(name: string, store: ConnectionStore): CommandResult {
-  return fail("bundles", "not_found", "bundle-not-found", `no bundle is connected as "${name}"`, {
-    details: { valid_values: names(store) },
-    hint: "`bundles list` names every connection on this machine",
-  });
-}
-
-/** A registry another process holds is a named refusal: run again once that write finishes. */
-function storeBusy(error: unknown): CommandResult {
-  if (!(error instanceof StoreBusy)) throw error;
-  return fail("bundles", "conflict", "store-busy", error.message, {
-    hint: "another wikiwright process is updating this machine's bundles registry; run the command again once it finishes",
-  });
-}
-
-/** Why `connection` cannot join `store`: its name is taken, or its root is connected already. */
-function conflictOf(
-  store: ConnectionStore,
-  connection: Connection,
-  realpath: string,
-): CommandResult | undefined {
-  const named = store.bundles.find((b) => b.name === connection.name);
-  if (named !== undefined) {
-    return fail(
-      "bundles",
-      "conflict",
-      "bundle-name-taken",
-      `a bundle is already connected as "${connection.name}", at ${named.root}`,
-      {
-        details: { name: named.name, root: named.root },
-        hint: "choose another name, or `bundles remove` the existing connection first",
-      },
+  for (const group of byName.values()) {
+    const [first] = group;
+    const ambiguous = group.some(
+      (c) => c.realpath !== first?.realpath && identityOf(c) !== identityOf(first as Candidate),
     );
-  }
-  const same = store.bundles.find((b) => realpathOf(b.root) === realpath);
-  if (same !== undefined) {
-    return fail(
-      "bundles",
-      "conflict",
-      "bundle-root-registered",
-      `${realpath} is already connected as "${same.name}"`,
-      {
-        details: { name: same.name, root: same.root, realpath },
-        hint: "one root has one name on this machine; use the connected name",
-      },
-    );
-  }
-  return undefined;
-}
-
-/** A flag's text, or null when absent or empty. */
-function textFlag(args: CommandArgs, name: string): string | null {
-  const value = args.flags[name];
-  return typeof value === "string" && value !== "" ? value : null;
-}
-
-/** The connection `add` would record, or the refusal the real run would reach before writing. */
-function connectionOf(
-  args: CommandArgs,
-): { ok: true; connection: Connection; realpath: string } | { ok: false; result: CommandResult } {
-  const target = args.positionals[1];
-  if (target === undefined) {
-    return {
-      ok: false,
-      result: fail("bundles", "usage", "missing-argument", "`bundles add` needs a vault root", {
-        details: { expected_positionals: ["subcommand", "target"] },
-      }),
-    };
-  }
-  const name = args.flags["name"];
-  if (typeof name !== "string") {
-    return {
-      ok: false,
-      result: fail("bundles", "usage", "missing-argument", "`bundles add` needs --name", {
-        details: { flag: "name" },
-      }),
-    };
-  }
-  if (!NAME_PATTERN.test(name)) {
-    return {
-      ok: false,
-      result: fail("bundles", "usage", "bundle-name-invalid", `"${name}" is not a bundle name`, {
-        details: { name, pattern: NAME_PATTERN.source },
-        hint: "lower-case letters, digits and hyphens, a letter or digit first, at most 64 characters",
-      }),
-    };
-  }
-  const rawKind = args.flags["kind"];
-  if (rawKind !== undefined && !(KINDS as readonly unknown[]).includes(rawKind)) {
-    return {
-      ok: false,
-      result: fail(
-        "bundles",
-        "usage",
-        "invalid-kind",
-        `--kind must be one of ${KINDS.join(", ")}`,
-        {
-          details: { flag: "kind", valid_values: [...KINDS] },
-        },
-      ),
-    };
-  }
-  const root = resolve(target);
-  if (!existsSync(join(root, CONSTITUTION_PATH))) {
-    return {
-      ok: false,
-      result: fail("bundles", "not_found", "vault-not-found", `no vault at "${target}"`, {
-        hint: `a bundle's root is the directory that holds ${CONSTITUTION_PATH}`,
-      }),
-    };
-  }
-  const guide = textFlag(args, "guide");
-  if (guide !== null) {
-    const refusal = pathRefusal(guide);
-    let found = false;
-    if (refusal === undefined) {
-      try {
-        found = statSync(vaultReadAbsolute(root, guide)).isFile();
-      } catch {
-        found = false;
-      }
-    }
-    if (!found) {
-      return {
-        ok: false,
-        result: fail(
-          "bundles",
-          "not_found",
-          "guide-not-found",
-          refusal === undefined
-            ? `--guide "${guide}" names no file under ${root}`
-            : `--guide "${guide}" is not a vault path: it ${PATH_REFUSALS[refusal]}`,
-          { hint: "--guide is a page's path relative to the bundle's root" },
-        ),
-      };
-    }
-    // The guide is what a consumer is told to read first, and `read` returns
-    // a Markdown page under a content root and nothing else; a file that is
-    // not one would be advertised at every session start and never open.
-    const roots = contentRootsAt(root) ?? [];
-    if (!isContentPath(guide, roots)) {
-      return {
-        ok: false,
-        result: fail(
-          "bundles",
-          "usage",
-          "guide-not-a-page",
-          `--guide "${guide}" is not a page: a guide is a .md file under a content root`,
-          {
-            details: { guide, content_roots: [...roots] },
-            hint: "name a page `read` can return: a Markdown file under one of details.content_roots, as config/engine.json declares them",
-          },
-        ),
-      };
+    for (const candidate of group) {
+      out.set(candidate, ambiguous || candidate === first ? null : (first?.root ?? null));
     }
   }
-  return {
-    ok: true,
-    connection: {
-      name,
-      root,
-      kind: (rawKind as Kind | undefined) ?? "maintained",
-      feedback: textFlag(args, "feedback"),
-      guide,
-    },
-    realpath: realpathSync(root),
-  };
-}
-
-/**
- * docs/cli.md §The dry-run law: the plan's one path is the registry, absolute,
- * so a reader of the plan sees exactly which file the write lands in — by
- * default outside every vault, wherever the environment put it otherwise.
- * `list` writes nothing and plans nothing.
- */
-function planForBundles(args: CommandArgs): Plan {
-  const [action, target] = args.positionals;
-  const file = bundlesFilePath();
-  const kind = existsSync(file) ? ("write" as const) : ("create" as const);
-  if (action === "add" && target !== undefined) {
-    const name = String(args.flags["name"] ?? "");
-    return planOf([
-      { kind, path: file, summary: `connect ${resolve(target)} as "${name}" on this machine` },
-    ]);
-  }
-  if (action === "remove" && target !== undefined) {
-    return planOf([
-      { kind: "write", path: file, summary: `remove the connection "${target}" from this machine` },
-    ]);
-  }
-  return planOf([]);
-}
-
-function add(args: CommandArgs): CommandResult {
-  const built = connectionOf(args);
-  if (!built.ok) return built.result;
-  const { connection, realpath } = built;
-  // Checked BEFORE the dry run answers, so a plan never names a write the real
-  // run would refuse; the authoritative check is the one under the lock.
-  const conflict = conflictOf(readConnections(), connection, realpath);
-  if (conflict !== undefined) return conflict;
-  if (isDryRun(args)) return ok("bundles", planForBundles(args));
-  let refused: CommandResult | undefined;
-  try {
-    refused = updateConnections((store) => {
-      const late = conflictOf(store, connection, realpath);
-      if (late !== undefined) return { result: late };
-      return { store: { ...store, bundles: [...store.bundles, connection] }, result: undefined };
-    });
-  } catch (error) {
-    return storeBusy(error);
-  }
-  if (refused !== undefined) return refused;
-  return ok("bundles", { registry: bundlesFilePath(), added: rowOf(connection) });
-}
-
-function remove(args: CommandArgs): CommandResult {
-  const name = args.positionals[1];
-  if (name === undefined) {
-    return fail("bundles", "usage", "missing-argument", "`bundles remove` needs a bundle name", {
-      details: { expected_positionals: ["subcommand", "target"] },
-    });
-  }
-  const current = readConnections();
-  if (!current.bundles.some((b) => b.name === name)) return notFound(name, current);
-  if (isDryRun(args)) return ok("bundles", planForBundles(args));
-  let outcome: { removed: Connection } | { missing: ConnectionStore };
-  try {
-    outcome = updateConnections<{ removed: Connection } | { missing: ConnectionStore }>((store) => {
-      const found = store.bundles.find((b) => b.name === name);
-      if (found === undefined) return { result: { missing: store } };
-      return {
-        store: { ...store, bundles: store.bundles.filter((b) => b.name !== name) },
-        result: { removed: found },
-      };
-    });
-  } catch (error) {
-    return storeBusy(error);
-  }
-  if ("missing" in outcome) return notFound(name, outcome.missing);
-  return ok("bundles", {
-    registry: bundlesFilePath(),
-    removed: { name, root: outcome.removed.root },
-  });
+  return out;
 }
 
 export const bundlesCommand: CommandSpec = {
   name: "bundles",
   role: "consumer",
   summary:
-    "Connect a vault by name in this machine's registry, list the connections with their identity, or remove one.",
-  positionals: [
-    { name: "subcommand", required: true },
-    { name: "target", required: false },
-  ],
-  subcommands: ["add", "list", "remove"],
-  flags: [
-    { name: "name", type: "string", summary: "with `add`: the name the bundle is connected as" },
-    {
-      name: "kind",
-      type: "string",
-      summary: "with `add`: maintained (the default) | installed, a copy that is read only",
-    },
-    {
-      name: "feedback",
-      type: "string",
-      summary: "with `add`: where a problem with this bundle is reported",
-    },
-    {
-      name: "guide",
-      type: "string",
-      summary:
-        "with `add`: the page to read first, a page under a content root, relative to the bundle's root",
-    },
-    {
-      name: "records",
-      type: "boolean",
-      summary:
-        "with `list`: each connection's record and content roots, reading no bundle's identity",
-    },
-  ],
-  examples: [
-    "wikiwright bundles list",
-    "wikiwright bundles add ../handbooks/orchard --name orchard --guide wiki/start-here.md",
-    'wikiwright bundles add /srv/handbooks/allotment --name allotment --kind installed --feedback "send a proposal to the handbook\'s maintainers"',
-    "wikiwright bundles remove allotment",
-  ],
-  writes: true,
+    "List every bundle skill installed in the skill directories, as --bundle finds them, with its identity and what its installer recorded.",
+  positionals: [{ name: "subcommand", required: true }],
+  subcommands: ["list"],
+  flags: [],
+  examples: ["wikiwright bundles list"],
+  writes: false,
   needsVaultModules: false,
-  plan: planForBundles,
-  run: (args) => {
-    const [action] = args.positionals;
-    if (action === "add") return add(args);
-    if (action === "remove") return remove(args);
-    // `list` writes nothing, and the flag is registry-rendered for the whole
-    // verb — so it is ANSWERED with an empty plan rather than ignored.
-    if (isDryRun(args)) return ok("bundles", planOf([]));
-    const sorted = [...readConnections().bundles].sort((a, b) => codeUnitCompare(a.name, b.name));
-    // A caller that only routes — the post-edit hook — asks for the records:
-    // no page is read or hashed and no git runs for a bundle it may not need.
-    const rows =
-      args.flags["records"] === true
-        ? sorted.map((connection) => recordOf(connection))
-        : sorted.map((connection) => rowOf(connection));
-    return ok("bundles", { registry: bundlesFilePath(), bundles: rows });
+  run: () => {
+    const { candidates, skipped } = scanAll();
+    const shadowedBy = shadowing(candidates);
+    const rows = [
+      ...candidates.map((c) => ({
+        name: c.name,
+        bundle: c.marker.bundle,
+        tier: c.tier,
+        root: c.root,
+        realpath: c.realpath,
+        linked: c.linked,
+        source: {
+          repository: c.marker.source.repository,
+          law: c.marker.source.law,
+          content: c.marker.source.content,
+        },
+        select: c.marker.select,
+        pages: c.marker.pages,
+        contribution: c.marker.contribution,
+        provenance: provenanceOf(c.root),
+        shadowed_by: shadowedBy.get(c) ?? null,
+      })),
+      ...skipped.map((s) => ({
+        name: s.name,
+        tier: s.tier,
+        root: s.root,
+        realpath: realOf(s.root),
+        linked: s.linked,
+        code: "export-marker-invalid",
+        reason: s.reason,
+      })),
+    ];
+    return ok("bundles", { bundles: rows });
   },
 };

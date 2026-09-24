@@ -81,8 +81,8 @@ export type PlanOpKind = "create" | "write" | "append" | "copy" | "rename" | "de
 
 export interface PlanOp {
   kind: PlanOpKind;
-  /** Repo-relative inside the vault; absolute where the target is not (the
-   * machine-local bundles registry, `.git/hooks`). */
+  /** Repo-relative inside the vault; absolute where the target is not
+   * (`.git/hooks`, an `export --to` destination outside the vault). */
   path: string;
   /**
    * docs/cli.md §The dry-run law: where the file LEFT, for the kinds that have

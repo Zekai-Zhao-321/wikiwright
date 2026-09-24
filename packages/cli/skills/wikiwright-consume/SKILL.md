@@ -54,9 +54,10 @@ page may be out of date, and so may you.
 When a page is wrong, stale, missing or ambiguous for your task, write a
 proposal, not an edit. Give the bundle's name and content digest; the page's
 path and the section's address; what you observed; the conditions and the
-evidence you had; and the change you suggest. It goes to the connection's
-feedback destination, or back to whoever asked you when there is none. It never
-goes into an installed copy, and never into the project you are working in.
+evidence you had; and the change you suggest. It goes where the copy's
+`bundle-readonly` refusal and its SKILL.md say, or back to whoever asked you
+when they name nowhere. It never goes into an installed copy, and never into
+the project you are working in.
 
 ## Loading this skill grants nothing
 

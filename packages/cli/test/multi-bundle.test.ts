@@ -16,6 +16,7 @@
 //      content digest, mark it dirty and leave its head where it was, and an
 //      edit to an installed copy mark that copy changed since export;
 //   6. is refused a write or a dry run into an installed copy;
+//   7. finds both in the listing, with where a problem with each goes;
 //   8. reads under a budget that leaves a section out by its address;
 //   9. hands a child that address, and the child — a second process under a
 //      consumer session — reads the same bytes under the same page digest.
@@ -216,6 +217,21 @@ describe("two handbooks from an unrelated directory, end to end (docs/cli.md §b
       assert.equal(r.status, 2, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
       assert.equal(r.envelope.error?.code, "bundle-readonly");
     }
+  });
+
+  it("7. the listing names both, with where a problem with each goes", () => {
+    const rows = (ok(["bundles", "list"]).data?.["bundles"] ?? []) as {
+      name: string;
+      tier: string;
+      contribution: { mode: string };
+    }[];
+    assert.deepEqual(
+      rows.map((r) => [r.name, r.tier, r.contribution.mode]),
+      [
+        ["allotment", "user", "none"],
+        ["orchard", "user", "none"],
+      ],
+    );
   });
 
   it("8. a budget on the longer page leaves Notes out, by its address", () => {

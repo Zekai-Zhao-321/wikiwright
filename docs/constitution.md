@@ -450,7 +450,5 @@ whole content — `plugin.json`, which also names its schema, and
 `.claude-plugin/plugin.json` — and neither names the skills, which both hosts
 find under `skills/`.
 
-Two things the engine reads beside these, which are not configuration: a
-page's `exceptions` field, and, for `bundles`, this machine's
-registry of connected bundles at `~/.config/wikiwright/bundles.json`
-(`WIKIWRIGHT_BUNDLES_FILE` overrides), which never enters the repository.
+One thing the engine reads beside these, which is not configuration: a
+page's `exceptions` field.

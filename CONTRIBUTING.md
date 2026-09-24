@@ -103,7 +103,7 @@ else is not covered.
   what this build renders). The two handbooks under `fixtures/handbooks`
   are held at zero findings of any severity under `check` by
   `fixture-verdicts`, their tracked `generated/` and their rendered exports
-  under `skills/` by `generated-tracked`, the connected-bundles scenario over
+  under `skills/` by `generated-tracked`, the two-bundle scenario over
   them by `multi-bundle`, and a copy of their exports, installed as a host
   installs it, by `export-copy`.
 
