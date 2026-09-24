@@ -439,6 +439,47 @@ describe("a machine-local store that does not parse is a named refusal (docs/cli
     assert.match(String(bad.envelope.error?.message ?? ""), /bundle 0 has the kind "borrowed"/u);
   });
 
+  it("a record whose root is relative is bundles-registry-malformed, from every directory", () => {
+    // Two directories that each hold a `vault/`, distinguishable handbooks: a
+    // relative root resolved against the working directory would read one or
+    // the other under the same name. It is refused instead, from either one.
+    const { file, env } = registry("relative-root");
+    for (const [dir, handbook] of [
+      ["alpha", ORCHARD],
+      ["beta", ALLOTMENT],
+    ] as const) {
+      cpSync(handbook, join(tmp, "relative-root", dir, "vault"), { recursive: true });
+    }
+    writeFileSync(
+      file,
+      `${JSON.stringify({
+        schema: "wikiwright/bundles",
+        schema_version: 1,
+        bundles: [
+          { name: "handbook", root: "vault", kind: "installed", feedback: null, guide: null },
+        ],
+      })}\n`,
+    );
+    for (const dir of ["alpha", "beta"]) {
+      const cwd = join(tmp, "relative-root", dir);
+      for (const argv of [
+        ["read", "wiki/start-here.md", "--bundle", "handbook"],
+        ["bundles", "list"],
+      ]) {
+        const r = run(cwd, argv, env);
+        assert.equal(r.status, 4, `${dir}: ${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
+        assert.equal(r.envelope.error?.code, "bundles-registry-malformed");
+        assert.equal(r.envelope.error?.details?.["file"], file);
+        assert.equal(r.envelope.error?.details?.["record"], 0);
+        assert.match(
+          String(r.envelope.error?.message ?? ""),
+          /bundle 0 has a root that is not an absolute path/u,
+        );
+        assert.equal(r.envelope.data, undefined);
+      }
+    }
+  });
+
   it("a trust store of junk, or with a record of no shape, is trust-store-malformed", () => {
     const store = join(tmp, "malformed-trust", "trust.json");
     mkdirSync(join(tmp, "malformed-trust"), { recursive: true });

@@ -8,7 +8,7 @@
 // exactly as `--root` would judge it.
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { codeUnitCompare } from "@wikiwright/core";
 import { replaceFile } from "./atomicwrite.ts";
 import { parseStoreFile, type StoreChange, StoreMalformed, updateStore } from "./storelock.ts";
@@ -20,7 +20,10 @@ export type Kind = (typeof KINDS)[number];
 /** One connection, in the order the registry file spells its keys. */
 export interface Connection {
   name: string;
-  /** The root as it was given, made absolute; its real path is what identity compares. */
+  /**
+   * The root as it was given, made absolute; a record whose root is relative
+   * is refused. Its real path is what identity compares.
+   */
   root: string;
   kind: Kind;
   /** Where a problem with this bundle is reported, in the connector's words. */
@@ -51,6 +54,11 @@ function connectionOf(value: unknown): Connection | string {
   const name = record["name"];
   if (typeof name !== "string" || !NAME_PATTERN.test(name)) return "has no valid name";
   if (typeof record["root"] !== "string" || record["root"] === "") return "has no root";
+  // `add` stores a root made absolute. A relative one — a file edited or
+  // restored by hand — would name a different directory from every working
+  // directory, so one name would answer for different bundles: it is refused,
+  // never resolved against wherever the caller happens to be.
+  if (!isAbsolute(record["root"])) return "has a root that is not an absolute path";
   if (!(KINDS as readonly unknown[]).includes(record["kind"])) {
     return `has the kind ${JSON.stringify(record["kind"] ?? null)}, not one of ${KINDS.join(", ")}`;
   }

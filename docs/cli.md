@@ -425,7 +425,9 @@ What the registry rows below do not say.
   A plan's one path is the registry, absolute. A registry this engine cannot
   read is `bundles-registry-malformed` (exit 4), with `details.file` and, for a
   record, `details.record`, from `bundles` and from `--bundle`; the file is
-  never rewritten.
+  never rewritten. A record whose `root` is not an absolute path is one of
+  these, never resolved against the working directory, where one name would
+  answer for a different bundle from each directory.
 - **`--bundle <name>`** names the target of any verb by its connection, in
   place of `--root`: the shell resolves it before any module loads, and the
   envelope's `metadata.bundle.label` says which bundle answered. It refuses

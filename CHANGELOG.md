@@ -32,7 +32,9 @@ version` prints the engine version and the commit a binary was built from.
   every connection with the identity the envelope's bundle block carries and
   loads no law and no module, so a bundle whose modules are not approved on
   this machine still lists. The verb is a consumer's: the registry is outside
-  every vault, and connecting a bundle grants nothing.
+  every vault, and connecting a bundle grants nothing. A record whose root is
+  not an absolute path, as a registry edited by hand may hold, is refused as
+  `bundles-registry-malformed`, never resolved against the working directory.
 - `--bundle <name>` names the target of any verb by its connection, in place
   of `--root`, so an agent working in an unrelated directory reads two
   handbooks by name and every answer says which one it came from. It refuses
