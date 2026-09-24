@@ -209,7 +209,22 @@ What the registry rows below do not say.
   rows read `not_applicable`, reason `external-origin`, on every page;
   `freshness` measures them. `--write` regenerates `generated/graph.json`,
   `manifest.json`, `tag-catalog.md` and the writer's `generated/BRIEF.md`
-  first, through one write loop, then judges; `brief-stale` names it.
+  first, through one write loop, then judges; `brief-stale` names it. It also
+  renders every `output: skills` export into `skills/<name>/` under the root
+  (docs/constitution.md §exports), and the plugin manifests when `plugin` is
+  declared: every planned file is replaced and every file under an export's
+  own `skills/<name>/` that the plan no longer holds is removed, and nothing
+  else is touched. `check` compares each rendered copy with a fresh render:
+  `export-stale` (error, fixed by `check --write`) names the first ten files
+  that differ, each `missing`, `extra` or `changed`. The render's own findings
+  are queued to `export-review`: `export-tag-unknown`, `export-guide-outside`,
+  `export-skill-invalid`, `export-symlink` and `export-destination-invalid`
+  (errors, and the export is not rendered), `export-not-closed` (a warning: a
+  selected page links to a page left out under `links: closed`), and
+  `export-orphan` (a warning: a `skills/<name>/` holds a marker no declaration
+  names; the engine never removes it). A root that holds `config/export.json`
+  is a copy and renders nothing. `data.generated.exports` lists the export
+  directories judged.
 - **`lint --stdin --path <p>`** judges a draft in place of the page at `<p>`
   with the disk bytes as its base. **`lint --staged`** judges the git index
   against HEAD, exactly as `gate` does. **`lint --since <rev>`** replays every
@@ -220,7 +235,14 @@ What the registry rows below do not say.
 - **`gate`** checks `engine.json`'s `engine` pin against the staged
   constitution, then judges the index. `generated-drift` is judged over the
   staged artifacts, never the working tree's, so a partial staging passes when
-  the staged artifacts describe the staged pages. `--commit-msg <file>` is the
+  the staged artifacts describe the staged pages. The rendered exports are
+  judged the same way, when the index tracks one: each is rendered from the
+  staged pages, config, templates, attachments and a kit declared by `path`,
+  and compared with the staged bytes under `skills/`, so a page or a kit
+  staged without its re-rendered export is `export-stale`. A kit installed
+  under `node_modules` is not in the index: it is read from the working tree,
+  as the module preload reads it, so a change to it is judged as the tree
+  holds it, not as a commit would. `--commit-msg <file>` is the
   commit-msg arm: with `commit_prefixes` declared, the message's first line
   must open with a registered prefix in one of the four Conventional Commits
   shapes — `fix:`, `fix(scope):`, `fix!:`, `fix(scope)!:`, a scope being any

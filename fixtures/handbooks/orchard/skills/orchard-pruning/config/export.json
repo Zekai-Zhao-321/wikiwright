@@ -1,0 +1,32 @@
+{
+  "schema": "wikiwright/export",
+  "version": 1,
+  "name": "orchard-pruning",
+  "bundle": "orchard",
+  "select": {
+    "kind": "tag",
+    "tags": [
+      "pruning"
+    ]
+  },
+  "sources": "exclude",
+  "output": "skills",
+  "links": "cut",
+  "cut": {
+    "links": 0,
+    "citations": 0,
+    "attachments": 0
+  },
+  "pages": 1,
+  "source": {
+    "repository": null,
+    "law": "17c24bf3d04783c421973851f164dfe433ee9243ea0aff988d38d9715007f190",
+    "content": "72d7176b9e017b907ace1fbf19f54e63425b292f22048f57f812b4e86de07e05"
+  },
+  "contribution": {
+    "mode": "none"
+  },
+  "guide": "wiki/pruning-roses.md",
+  "license": null,
+  "engine": "0.1.0"
+}

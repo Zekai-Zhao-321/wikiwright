@@ -24,6 +24,9 @@ export const KERNEL_LANES: readonly string[] = [
   // look at and it may not sit in a lane about the page.
   "module-review",
   "exception-review",
+  // docs/constitution.md §exports: an export's selection or its rendered copy
+  // needs a maintainer's decision.
+  "export-review",
   "grammar-review",
   "identity-review",
   "link-review",
@@ -380,6 +383,50 @@ export const PASS_TABLE: readonly PassRow[] = [
   // hook from an older build runs that build's contract on every commit.
   // Machine-local, so warning is the ceiling; the reinstall is the fixer.
   { id: "hook-stale", kind: "LAW", severity: "warning", fixer: "hook install", input: "shell" },
+
+  // --- LAW: the exports a bundle declares (docs/constitution.md §exports) --
+  // `check` renders each in-repository export with `--write` and compares it
+  // with a fresh plan; the plan judges the declaration against the pages it
+  // selects. A rendered copy that differs is the renderer's to refresh; every
+  // other finding is a maintainer's decision about the declaration.
+  { id: "export-stale", kind: "LAW", severity: "error", fixer: "check --write", input: "shell" },
+  { id: "export-orphan", kind: "LAW", severity: "warning", lane: "export-review", input: "shell" },
+  {
+    id: "export-not-closed",
+    kind: "LAW",
+    severity: "warning",
+    lane: "export-review",
+    input: "shell",
+  },
+  {
+    id: "export-tag-unknown",
+    kind: "LAW",
+    severity: "error",
+    lane: "export-review",
+    input: "shell",
+  },
+  {
+    id: "export-guide-outside",
+    kind: "LAW",
+    severity: "error",
+    lane: "export-review",
+    input: "shell",
+  },
+  {
+    id: "export-skill-invalid",
+    kind: "LAW",
+    severity: "error",
+    lane: "export-review",
+    input: "shell",
+  },
+  {
+    id: "export-destination-invalid",
+    kind: "LAW",
+    severity: "error",
+    lane: "export-review",
+    input: "shell",
+  },
+  { id: "export-symlink", kind: "LAW", severity: "error", lane: "export-review", input: "shell" },
 
   // --- the judge's own rows (docs/concepts.md §The gate, docs/concepts.md §Findings and routing) -----
   // P4 needs a base: an Obsidian rename that drops the alias ritual is the one

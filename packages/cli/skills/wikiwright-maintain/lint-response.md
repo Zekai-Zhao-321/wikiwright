@@ -62,6 +62,14 @@ only when you name the rule.
 | `skills-missing` | `info` | advisory: `skills update` |
 | `brief-stale` | `info` | advisory: `check --write` |
 | `hook-stale` | `warning` | fixer `hook install` (MachineApplicable) — else queue `—` |
+| `export-stale` | `error` | fixer `check --write` (MachineApplicable) — else queue `—` |
+| `export-orphan` | `warning` | queue `export-review` |
+| `export-not-closed` | `warning` | queue `export-review` |
+| `export-tag-unknown` | `error` | queue `export-review` |
+| `export-guide-outside` | `error` | queue `export-review` |
+| `export-skill-invalid` | `error` | queue `export-review` |
+| `export-destination-invalid` | `error` | queue `export-review` |
+| `export-symlink` | `error` | queue `export-review` |
 | `renamed-without-alias` | `error` | fixer `frontmatter-set` (MachineApplicable) — else queue `—` |
 | `exception-stale` | `warning` | queue `exception-review` |
 | `exception-illegal` | `error` | queue `exception-review` |
@@ -114,7 +122,7 @@ only when you name the rule.
 
 ## The queues
 
-The lane set is closed: `category-review`, `exception-review`, `grammar-review`, `identity-review`, `label-review`, `link-review`, `module-review`, `provenance-backfill`, `skills-review`, `source-review`, `syntax-review`, `tag-review`, `template-review`, `type-review`.
+The lane set is closed: `category-review`, `exception-review`, `export-review`, `grammar-review`, `identity-review`, `label-review`, `link-review`, `module-review`, `provenance-backfill`, `skills-review`, `source-review`, `syntax-review`, `tag-review`, `template-review`, `type-review`.
 
 A lane is a human queue. Its depth is the evidence a row is ready to ratchet from
 warning to error, which is why a queued finding is counted rather than silenced.

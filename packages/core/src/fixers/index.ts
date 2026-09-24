@@ -68,7 +68,7 @@ function fixVerbArgv(target: FixTarget): string[] {
 export const FIXER_REGISTRY: Readonly<Record<string, FixerEntry>> = {
   "check --write": {
     applicability: "MachineApplicable",
-    rules: ["generated-drift"],
+    rules: ["generated-drift", "export-stale"],
     argv: () => ["check", "--write"],
   },
   /** Reinstall the marker hooks, keeping the chained script the stale one named. */

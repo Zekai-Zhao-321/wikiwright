@@ -2,12 +2,22 @@
 //  designs/design-registry.md invariant 6: `check
 // --write` on every shipped vault whose `generated/` is tracked reproduces it
 // byte-for-byte — the tag-catalog risk of folding `tags` into the
-// vocabularies, and the graph risk of moving a fragment's registry path.
+// vocabularies, and the graph risk of moving a fragment's registry path. A
+// vault that renders exports into its own `skills/` tracks them too
+// (docs/constitution.md §exports), and they are rebuilt from nothing the same way.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
@@ -29,24 +39,42 @@ const TRACKED = [
  * a kit (devwiki, over the code kit): its copy installs the kit, so the
  * shipped tree is never installed into.
  */
-function copyOf(source: string): string {
-  if (existsSync(join(source, "package.json"))) return installedCopy(source, "tracked");
-  const tmp = mkdtempSync(join(tmpdir(), "ww-tracked-"));
-  cpSync(source, tmp, { recursive: true });
-  return tmp;
+function copyOf(source: string): { root: string; scratch: string } {
+  if (existsSync(join(source, "package.json"))) {
+    const root = installedCopy(source, "tracked");
+    return { root, scratch: root };
+  }
+  // Under the source's own name: an export's marker names the bundle it was
+  // cut from by its label, the basename of its root.
+  const scratch = mkdtempSync(join(tmpdir(), "ww-tracked-"));
+  const root = join(scratch, basename(source));
+  mkdirSync(root);
+  cpSync(source, root, { recursive: true });
+  return { root, scratch };
+}
+
+/** Every file under `dir`, relative to it, recursively. */
+function filesUnder(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { recursive: true, withFileTypes: true, encoding: "utf8" })
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name).slice(dir.length + 1))
+    .sort();
 }
 
 describe("the tracked generated/ of every shipped vault is what this build renders", () => {
   for (const vault of TRACKED) {
     it(`${vault}: check --write on a copy rebuilds every tracked byte, the brief included`, () => {
       const source = join(REPO, vault);
-      const tmp = copyOf(source);
+      const { root: tmp, scratch } = copyOf(source);
       try {
         // From nothing: the copy's generated/ is removed, so a tracked file the
         // generator no longer writes is a missing file, never a stale copy
         // that happens to match. One generator: `check --write` lands the
         // artifacts and the brief.
         rmSync(join(tmp, "generated"), { recursive: true, force: true });
+        const exported = filesUnder(join(source, "skills"));
+        rmSync(join(tmp, "skills"), { recursive: true, force: true });
         const r = spawnSync(CLI_RUNTIME, [CLI, "check", "--write", "--root", tmp], {
           encoding: "utf8",
           env: kitEnv(),
@@ -63,8 +91,16 @@ describe("the tracked generated/ of every shipped vault is what this build rende
             `${vault}/generated/${file} moved`,
           );
         }
+        assert.deepEqual(filesUnder(join(tmp, "skills")), exported, `${vault}/skills/ moved`);
+        for (const file of exported) {
+          assert.equal(
+            readFileSync(join(tmp, "skills", file), "utf8"),
+            readFileSync(join(source, "skills", file), "utf8"),
+            `${vault}/skills/${file} moved`,
+          );
+        }
       } finally {
-        rmSync(tmp, { recursive: true, force: true });
+        rmSync(scratch, { recursive: true, force: true });
       }
     });
   }

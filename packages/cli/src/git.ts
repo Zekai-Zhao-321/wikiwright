@@ -149,6 +149,8 @@ export interface IndexEntry {
   blob: string;
   /** 0 for a resolved entry; 1 to 3 are the stages of an unmerged path. */
   stage: number;
+  /** The entry's mode as git prints it: `120000` is a symbolic link. */
+  mode: string;
 }
 
 /** The index's entries, for staged-state identity and the one read of its pages. */
@@ -159,9 +161,9 @@ export function gitIndexEntries(root: string): IndexEntry[] {
   for (const record of terminated(args, git(root, args), "\0").split("\0")) {
     const tab = record.indexOf("\t");
     if (tab < 0) continue;
-    const [, blob, stage] = record.slice(0, tab).split(" ");
-    if (blob === undefined || stage === undefined) continue;
-    entries.push({ path: record.slice(tab + 1), blob, stage: Number(stage) });
+    const [mode, blob, stage] = record.slice(0, tab).split(" ");
+    if (mode === undefined || blob === undefined || stage === undefined) continue;
+    entries.push({ path: record.slice(tab + 1), blob, stage: Number(stage), mode });
   }
   return entries;
 }
@@ -440,7 +442,11 @@ function answersInOrder(answered: readonly string[], requested: readonly string[
  * to read and four to judge (docs/roadmap.md §Every run parses the whole
  * corpus). A blob the repository does not hold is a broken repository, thrown.
  */
-export function gitReadBlobs(root: string, blobs: readonly string[]): Map<string, string> {
+export function gitReadBlobs(
+  root: string,
+  blobs: readonly string[],
+  decode: (bytes: Uint8Array) => string = utf8,
+): Map<string, string> {
   const wanted = [...new Set(blobs)];
   const out = new Map<string, string>();
   if (wanted.length === 0) return out;
@@ -478,7 +484,7 @@ export function gitReadBlobs(root: string, blobs: readonly string[]): Map<string
     }
     let read: Map<string, string>;
     try {
-      read = parseCatFileBatch(bytes, utf8);
+      read = parseCatFileBatch(bytes, decode);
     } catch (error) {
       if (!(error instanceof BatchStreamTruncated)) throw error;
       throw new GitShortRead(
@@ -506,6 +512,21 @@ export function gitReadBlobs(root: string, blobs: readonly string[]): Map<string
     chunkBytes += size;
   }
   flush();
+  return out;
+}
+
+/**
+ * The bytes of many blobs, by id, through the same batch read: an export
+ * carries files that are not text (docs/constitution.md §exports). Each blob
+ * is carried through a byte-for-byte decoding and back.
+ */
+export function gitReadBlobBytes(root: string, blobs: readonly string[]): Map<string, Buffer> {
+  const latin1 = (bytes: Uint8Array): string =>
+    Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("latin1");
+  const out = new Map<string, Buffer>();
+  for (const [blob, text] of gitReadBlobs(root, blobs, latin1)) {
+    out.set(blob, Buffer.from(text, "latin1"));
+  }
   return out;
 }
 

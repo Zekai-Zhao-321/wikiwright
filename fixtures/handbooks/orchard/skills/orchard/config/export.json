@@ -1,0 +1,29 @@
+{
+  "schema": "wikiwright/export",
+  "version": 1,
+  "name": "orchard",
+  "bundle": "orchard",
+  "select": {
+    "kind": "all"
+  },
+  "sources": "exclude",
+  "output": "skills",
+  "links": "closed",
+  "cut": {
+    "links": 0,
+    "citations": 0,
+    "attachments": 0
+  },
+  "pages": 3,
+  "source": {
+    "repository": null,
+    "law": "17c24bf3d04783c421973851f164dfe433ee9243ea0aff988d38d9715007f190",
+    "content": "9d9e1c97c4e61881db8d87c76b0b900312b40a61bb77f8a5ec33d7c7321704e5"
+  },
+  "contribution": {
+    "mode": "none"
+  },
+  "guide": "wiki/start-here.md",
+  "license": null,
+  "engine": "0.1.0"
+}

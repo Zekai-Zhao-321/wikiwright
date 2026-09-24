@@ -2,11 +2,18 @@
 // `init` both land artifacts through it, so a fresh init's first check is green
 // by construction) · write-then-rename · docs/architecture.md §Directories.
 
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, rmdirSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { buildNameIndex, generateArtifacts, type PageInput } from "@wikiwright/core";
 import { replaceFiles } from "./atomicwrite.ts";
 import { BRIEF_PATH, briefOf } from "./brief.ts";
+import { bundleLabel } from "./bundle.ts";
+import {
+  exportDifferences,
+  fsExportSource,
+  type RepositoryExports,
+  repositoryExports,
+} from "./exports.ts";
 import { generateOptionsFor, rootsOf, type VaultOk } from "./law.ts";
 import { collectPages } from "./pages.ts";
 import type { CommandSpec, PlanOp } from "./spec.ts";
@@ -68,7 +75,97 @@ export function regenerate(
     buildNameIndex(pages),
     generateOptionsFor(vault),
   );
-  return writeArtifacts(root, [...plans, briefPlan(root, vault, pages, commands)]);
+  const written = writeArtifacts(root, [...plans, briefPlan(root, vault, pages, commands)]);
+  const exports = repositoryExports({
+    vault,
+    source: fsExportSource(root, pages),
+    label: bundleLabel(root),
+    commands,
+  });
+  return [...written, ...writeExports(root, exports)];
+}
+
+/**
+ * docs/cli.md §check: render the bundle's in-repository exports. Every planned
+ * file is replaced, through the one staged replace, and every file under an
+ * export's own `skills/<name>/` that the plan no longer holds is removed, with
+ * the directories it leaves empty: a shrunk selection leaves no formerly
+ * exported page behind. The plugin manifests are written at the root when
+ * declared. An export a finding refuses is not rendered, and nothing outside
+ * the owned directories and the two manifests is touched. Returns the paths
+ * written or removed.
+ */
+export function writeExports(root: string, exports: RepositoryExports): string[] {
+  const differences = exportDifferences(exports, fsExportSource(root, []));
+  const replacements: { path: string; contents: Buffer }[] = [];
+  const removals: string[] = [];
+  const planned = new Map<string, Buffer>();
+  for (const plan of exports.plans) {
+    for (const file of plan.files ?? []) {
+      planned.set(`${plan.export.destination}/${file.path}`, file.bytes);
+    }
+  }
+  for (const file of exports.manifests) planned.set(file.path, file.bytes);
+  for (const difference of [...differences.values()].flat()) {
+    if (difference.kind === "extra") removals.push(difference.path);
+    else {
+      const bytes = planned.get(difference.path);
+      if (bytes !== undefined) replacements.push({ path: difference.path, contents: bytes });
+    }
+  }
+  if (replacements.length > 0) {
+    // A planned file whose place a link holds is replaced by bytes: the link
+    // goes first, so the rename lands a file and not whatever it pointed at.
+    for (const replacement of replacements) {
+      const abs = join(root, replacement.path);
+      rmSync(abs, { force: true });
+    }
+    replaceFiles(replacements.map((r) => ({ path: join(root, r.path), contents: r.contents })));
+  }
+  for (const path of removals) {
+    rmSync(join(root, path), { force: true });
+    pruneEmpty(root, dirname(path), exports.destinations);
+  }
+  return [...replacements.map((r) => r.path), ...removals].sort();
+}
+
+/** Remove the directories a removal left empty, up to and never including the destination's own parent. */
+function pruneEmpty(root: string, dir: string, destinations: readonly string[]): void {
+  let current = dir;
+  while (destinations.some((dest) => current === dest || current.startsWith(`${dest}/`))) {
+    const abs = join(root, current);
+    try {
+      if (readdirSync(abs).length > 0) return;
+      rmdirSync(abs);
+    } catch {
+      return;
+    }
+    if (current.includes("/")) current = dirname(current);
+    else return;
+  }
+}
+
+/** docs/cli.md §The dry-run law: what `writeExports` would write and remove, as plan ops. */
+export function exportOps(root: string, exports: RepositoryExports): PlanOp[] {
+  const ops: PlanOp[] = [];
+  for (const difference of [
+    ...exportDifferences(exports, fsExportSource(root, [])).values(),
+  ].flat()) {
+    ops.push(
+      difference.kind === "extra"
+        ? {
+            kind: "delete",
+            path: difference.path,
+            summary: "a file the export's plan no longer holds",
+          }
+        : {
+            kind: difference.kind === "missing" ? "create" : "write",
+            path: difference.path,
+            summary: "render the export",
+          },
+    );
+  }
+  return ops.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
 
 /**
@@ -78,7 +175,11 @@ export function regenerate(
  * reason `check` compares against a fresh `generateArtifacts` rather than a
  * remembered set.
  */
-export function artifactOps(root: string, vault: VaultOk): PlanOp[] {
+export function artifactOps(
+  root: string,
+  vault: VaultOk,
+  commands: readonly CommandSpec[],
+): PlanOp[] {
   const pages = collectPages(root, walkPages(root, rootsOf(vault)));
   const plans = generateArtifacts(
     vault.registry,
@@ -97,5 +198,14 @@ export function artifactOps(root: string, vault: VaultOk): PlanOp[] {
       path: BRIEF_PATH,
       summary: "the writer's generated brief, from the verb registry and the constitution",
     },
+    ...exportOps(
+      root,
+      repositoryExports({
+        vault,
+        source: fsExportSource(root, pages),
+        label: bundleLabel(root),
+        commands,
+      }),
+    ),
   ];
 }

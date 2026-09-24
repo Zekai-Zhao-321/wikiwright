@@ -337,9 +337,10 @@ The file is a closed set: an unknown key is `schema-invalid`.
 
 An export is a read-only copy of the bundle, or of part of it, that an agent
 host installs as a skill: its pages, its configuration verbatim and what the
-loader needs to judge them. Each entry of `exports` declares one. This build
-validates the declarations when the config loads and resolves their defaults;
-it renders no copy yet, and no verb writes one.
+loader needs to judge them. Each entry of `exports` declares one. `check
+--write` renders each `output: skills` export into `skills/<name>/` under the
+bundle root, and `check` and the staged gate hold the rendered copy to a fresh
+render (docs/cli.md §check); no verb writes an `external` export yet.
 
 ```json
 "exports": [

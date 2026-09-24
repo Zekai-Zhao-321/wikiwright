@@ -14,7 +14,15 @@ import {
   judge,
   parsedPages,
 } from "@wikiwright/core";
+import { bundleLabel } from "./bundle.ts";
 import { type CommandResult, capOptions, fail, ok, verdictEnvelope } from "./envelope.ts";
+import {
+  EXPORT_PASSES,
+  exportStaleFindings,
+  exportsTracked,
+  indexExportSource,
+  repositoryExports,
+} from "./exports.ts";
 import { GitAnswerRefused } from "./git.ts";
 import { checkEnginePin, generateOptionsFor, lawFor, rootsOf, type VaultOk } from "./law.ts";
 import { formerFolderTagFindings } from "./pages.ts";
@@ -111,12 +119,35 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
   }
   const drift = stagedDriftFindings(state, vault);
   shellFindings.push(...drift.findings);
+  // docs/cli.md §gate: the exports over the STAGED state. Pages, config,
+  // templates, attachments and a kit declared by path are the index's; a kit
+  // under node_modules is not in the index and is read from the working tree,
+  // as the preload reads it. The rendered copies are compared with the index's
+  // bytes under skills/, and only when the index tracks one — as the artifacts
+  // are — and each export's own findings are the staged declaration's.
+  const exportSource = indexExportSource(args.root, parsedPages(state), snapshot.entries);
+  const exports = repositoryExports({
+    vault,
+    source: exportSource,
+    label: bundleLabel(args.root),
+    commands: args.commands,
+  });
+  const exportsJudged = exportsTracked(exports, exportSource);
+  shellFindings.push(...exports.findings);
+  if (exportsJudged) shellFindings.push(...exportStaleFindings(exports, exportSource, "index"));
+  const declaresExports = (vault.engine.exports ?? []).length > 0;
   const verdict = judge(state, lawFor(vault), {
     ...capOptions(args),
     gate: true,
     configChanged,
     shellFindings,
-    shellPasses: ["former-folder-tags-review", ...(drift.judged ? ["generated-drift"] : [])],
+    shellPasses: [
+      "former-folder-tags-review",
+      ...(drift.judged ? ["generated-drift"] : []),
+      ...(declaresExports
+        ? EXPORT_PASSES.filter((id) => id !== "export-stale" || exportsJudged)
+        : []),
+    ],
   });
   const data = verdictEnvelope(verdict);
   if (verdict.summary.errors > 0) {

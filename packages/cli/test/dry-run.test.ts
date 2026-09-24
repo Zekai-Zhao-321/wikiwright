@@ -861,7 +861,7 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
     "the shell's one staged replace: an exclusive temp beside the target, renamed into place",
   "connections.ts": "the machine-local bundles registry",
   "artifacts.ts":
-    "the generated artifacts and the writer's brief — one generator, byte-reproducible",
+    "the generated artifacts, the writer's brief and the in-repository exports, whose obsolete files it removes — one generator, byte-reproducible",
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
   "skills.ts": "the shipped skills' install and its stamp",
   "stdoutfile.ts":

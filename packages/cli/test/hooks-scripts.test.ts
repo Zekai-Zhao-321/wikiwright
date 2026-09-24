@@ -340,10 +340,21 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     git(root, "add", "-A");
     const staged = cli(["lint", "--staged", "--root", root]);
     assert.equal(staged.status, 5, staged.stdout);
-    const envelope = JSON.parse(staged.stdout) as { data: { findings: { ruleId: string }[] } };
+    const envelope = JSON.parse(staged.stdout) as {
+      data: { findings: { ruleId: string; path: string }[] };
+    };
+    // The page is exported by both of the handbook's exports, whose rendered
+    // copies were staged before the edit: the gate refuses those as stale too.
     assert.deepEqual(
-      envelope.data.findings.map((f) => f.ruleId),
+      envelope.data.findings.filter((f) => f.ruleId !== "export-stale").map((f) => f.ruleId),
       ["body-append-only"],
+    );
+    assert.deepEqual(
+      envelope.data.findings
+        .filter((f) => f.ruleId === "export-stale")
+        .map((f) => f.path)
+        .sort(),
+      ["skills/orchard", "skills/orchard-pruning"],
     );
   });
 

@@ -27,6 +27,7 @@ import {
 import { BRIEF_PATH, briefOf } from "./brief.ts";
 import { contentDigestOf, lawDigest } from "./bundle.ts";
 import { ENGINE_VERSION } from "./envelope.ts";
+import { gitReadBlobBytes, type IndexEntry } from "./git.ts";
 import { generateOptionsFor, rootsOf, type VaultOk } from "./law.ts";
 import { moduleLocation } from "./moduleload.ts";
 import { vaultReadAbsolute } from "./paths.ts";
@@ -253,24 +254,28 @@ export interface ExportInput {
   siblings?: readonly ResolvedExport[];
 }
 
-/** A finding about an export, reported on `config/engine.json` with the export's name. */
-function exportFinding(
-  ruleId: string,
-  severity: "error" | "warning",
-  declaration: ResolvedExport,
-  message: string,
-  remediation: string,
-  details: Record<string, string | number | boolean> = {},
-): Finding {
+/** What a finding about an export says; its rule id and severity are written at the emit site. */
+interface ExportFindingText {
+  ruleId: string;
+  severity: "error" | "warning";
+  message: string;
+  remediation: string;
+  details?: Record<string, string | number | boolean>;
+  /** Where it is reported; `config/engine.json`, the declaration, unless a rendered file is meant. */
+  path?: string;
+}
+
+/** A finding about an export, reported with the export's name. */
+export function exportFinding(declaration: { name: string }, text: ExportFindingText): Finding {
   return {
-    ruleId,
-    severity,
-    path: ENGINE_PATH,
-    message: `export "${declaration.name}": ${message}`,
-    remediation,
+    ruleId: text.ruleId,
+    severity: text.severity,
+    path: text.path ?? ENGINE_PATH,
+    message: `export "${declaration.name}": ${text.message}`,
+    remediation: text.remediation,
     contributedBy: "engine",
     layer: "constitution",
-    details: { export: declaration.name, ...details },
+    details: { export: declaration.name, ...(text.details ?? {}) },
   };
 }
 
@@ -341,14 +346,14 @@ export function planExport(input: ExportInput): ExportPlan {
     for (const tag of select.tags) {
       if (tagByName(vault.registry, tag) !== undefined) continue;
       findings.push(
-        exportFinding(
-          "export-tag-unknown",
-          "error",
-          declaration,
-          `selects the tag "${tag}", which the tags vocabulary does not register`,
-          "select a registered tag, or register it in the constitution's tags vocabulary",
-          { tag },
-        ),
+        exportFinding(declaration, {
+          ruleId: "export-tag-unknown",
+          severity: "error",
+          message: `selects the tag "${tag}", which the tags vocabulary does not register`,
+          remediation:
+            "select a registered tag, or register it in the constitution's tags vocabulary",
+          details: { tag },
+        }),
       );
     }
   }
@@ -388,14 +393,13 @@ export function planExport(input: ExportInput): ExportPlan {
   // 2. The guide and the maintainer's fragment.
   if (declaration.guide !== null && !selected.has(declaration.guide)) {
     findings.push(
-      exportFinding(
-        "export-guide-outside",
-        "error",
-        declaration,
-        `its guide "${declaration.guide}" is not a page it selects`,
-        "name a guide among the export's pages, or widen the selection",
-        { guide: declaration.guide },
-      ),
+      exportFinding(declaration, {
+        ruleId: "export-guide-outside",
+        severity: "error",
+        message: `its guide "${declaration.guide}" is not a page it selects`,
+        remediation: "name a guide among the export's pages, or widen the selection",
+        details: { guide: declaration.guide },
+      }),
     );
   }
   let fragment: string | undefined;
@@ -403,16 +407,16 @@ export function planExport(input: ExportInput): ExportPlan {
     const skill = declaration.skill;
     if (under(skill, roots) || !source.exists(skill)) {
       findings.push(
-        exportFinding(
-          "export-skill-invalid",
-          "error",
-          declaration,
-          under(skill, roots)
+        exportFinding(declaration, {
+          ruleId: "export-skill-invalid",
+          severity: "error",
+          message: under(skill, roots)
             ? `its skill fragment "${skill}" lies under a content root, where it would be a page`
             : `its skill fragment "${skill}" does not exist`,
-          "keep the fragment in a file outside every content root, and name it by its path",
-          { skill },
-        ),
+          remediation:
+            "keep the fragment in a file outside every content root, and name it by its path",
+          details: { skill },
+        }),
       );
     } else {
       fragment = source.read(skill).toString("utf8");
@@ -435,14 +439,14 @@ export function planExport(input: ExportInput): ExportPlan {
   if (declaration.links === "closed" && cutLinks + cutCitations > 0) {
     const first = [...cutTargets].sort(codeUnitCompare).slice(0, 10);
     findings.push(
-      exportFinding(
-        "export-not-closed",
-        "warning",
-        declaration,
-        `its pages link to ${cutTargets.size} page(s) it does not carry: ${first.join(", ")}`,
-        'select the linked pages too, or declare `"links": "cut"` to carry the counts instead',
-        { links: cutLinks, citations: cutCitations },
-      ),
+      exportFinding(declaration, {
+        ruleId: "export-not-closed",
+        severity: "warning",
+        message: `its pages link to ${cutTargets.size} page(s) it does not carry: ${first.join(", ")}`,
+        remediation:
+          'select the linked pages too, or declare `"links": "cut"` to carry the counts instead',
+        details: { links: cutLinks, citations: cutCitations },
+      }),
     );
   }
 
@@ -551,14 +555,13 @@ export function planExport(input: ExportInput): ExportPlan {
   if (linked.length > 0) {
     const first = [...new Set(linked)].sort(codeUnitCompare).slice(0, 10);
     findings.push(
-      exportFinding(
-        "export-symlink",
-        "error",
-        declaration,
-        `it would carry ${linked.length} symbolic link(s), and a copy holds bytes, never a link: ${first.join(", ")}`,
-        "replace each link with the file it points at, or leave it out of the export",
-        { links: linked.length },
-      ),
+      exportFinding(declaration, {
+        ruleId: "export-symlink",
+        severity: "error",
+        message: `it would carry ${linked.length} symbolic link(s), and a copy holds bytes, never a link: ${first.join(", ")}`,
+        remediation: "replace each link with the file it points at, or leave it out of the export",
+        details: { links: linked.length },
+      }),
     );
   }
 
@@ -769,3 +772,236 @@ function skillText(input: {
   }
   return lines.join("\n");
 }
+
+// ---------------------------------------------------------------------------
+// the exports under the bundle's own root (docs/cli.md §check)
+
+/** docs/constitution.md §exports: the git mode of a symbolic link. */
+const LINK_MODE = "120000";
+
+/**
+ * docs/cli.md §gate: the git index at `root` as an export's source — each
+ * staged file's bytes, read in one batch the first time one is asked for, a
+ * link known by its mode and never read. A kit under `node_modules` is not in
+ * the index; the plan reads it from the working tree, as the preload does.
+ */
+export function indexExportSource(
+  root: string,
+  pages: readonly PageInput[],
+  entries: readonly IndexEntry[],
+): ExportSource {
+  const byPath = new Map(
+    entries.filter((entry) => entry.stage === 0).map((entry) => [entry.path, entry] as const),
+  );
+  let blobs: Map<string, Buffer> | undefined;
+  const read = (rel: string): Buffer => {
+    const entry = byPath.get(rel);
+    if (entry === undefined) throw new Error(`the index holds no "${rel}"`);
+    blobs ??= gitReadBlobBytes(
+      root,
+      [...byPath.values()].filter((e) => e.mode !== LINK_MODE).map((e) => e.blob),
+    );
+    const bytes = blobs.get(entry.blob);
+    if (bytes === undefined)
+      throw new Error(`the index names blob ${entry.blob} for "${rel}" and git did not return it`);
+    return bytes;
+  };
+  return {
+    root,
+    pages,
+    read,
+    exists: (rel) => byPath.has(rel),
+    isLink: (rel) => byPath.get(rel)?.mode === LINK_MODE,
+    list: (dir) =>
+      [...byPath.keys()]
+        .filter((path) => path.startsWith(`${dir}/`) && !skippedPath(path))
+        .sort(codeUnitCompare),
+  };
+}
+
+/** docs/cli.md §check: the exports rendered under the bundle's own root, planned. */
+export interface RepositoryExports {
+  /** Each `output: skills` export whose destination is valid, planned. */
+  plans: ExportPlan[];
+  /** Every destination this bundle owns under its root: `skills/<name>` per such export. */
+  destinations: string[];
+  /** The plugin manifests, when `plugin` is declared, at the bundle's root. */
+  manifests: PlannedFile[];
+  /** The plans' findings, and the destinations and orphans judged beside them. */
+  findings: Finding[];
+}
+
+/**
+ * docs/cli.md §check: the exports a bundle renders into its own `skills/` —
+ * every `output: skills` export, planned from `source`, the plugin manifests
+ * when declared, and the findings about them: each plan's, a destination that
+ * lies in a content root (`export-destination-invalid`), and a `skills/<name>`
+ * holding a marker no declaration names (`export-orphan`, never removed). A
+ * root that carries a marker is itself a copy, and a copy renders nothing.
+ */
+export function repositoryExports(input: {
+  vault: VaultOk;
+  source: ExportSource;
+  label: string;
+  commands: readonly CommandSpec[];
+}): RepositoryExports {
+  const { vault, source } = input;
+  const none: RepositoryExports = { plans: [], destinations: [], manifests: [], findings: [] };
+  if (source.exists(MARKER_PATH)) return none;
+  const roots = rootsOf(vault);
+  const declared = exportPlans(vault, input.label);
+  const findings: Finding[] = [];
+  const plans: ExportPlan[] = [];
+  const destinations: string[] = [];
+  for (const declaration of declared) {
+    if (declaration.output !== "skills") continue;
+    const dest = declaration.destination;
+    if (under(dest, roots) || roots.some((root) => root === dest || root.startsWith(`${dest}/`))) {
+      findings.push(
+        exportFinding(declaration, {
+          ruleId: "export-destination-invalid",
+          severity: "error",
+          message: `its destination "${dest}" lies in a content root, where its files would be pages`,
+          remediation: "rename the export, or move the content root out of `skills/`",
+          details: { destination: dest },
+        }),
+      );
+      continue;
+    }
+    destinations.push(dest);
+    const plan = planExport({
+      vault,
+      source,
+      declaration,
+      label: input.label,
+      commands: input.commands,
+      siblings: declared,
+    });
+    plans.push(plan);
+    findings.push(...plan.findings);
+  }
+  const names = new Set(declared.map((d) => d.name));
+  const orphans = new Set<string>();
+  for (const path of source.list(SKILLS_DIR)) {
+    const parts = path.split("/");
+    const name = parts[1];
+    if (name === undefined || parts.slice(2).join("/") !== MARKER_PATH) continue;
+    if (!names.has(name)) orphans.add(name);
+  }
+  for (const name of [...orphans].sort(codeUnitCompare)) {
+    findings.push(
+      exportFinding(
+        { name },
+        {
+          ruleId: "export-orphan",
+          severity: "warning",
+          path: `${SKILLS_DIR}/${name}`,
+          message: `"${SKILLS_DIR}/${name}" holds an export's marker, and config/engine.json declares no export of that name`,
+          remediation:
+            "declare the export again, or remove the directory: the engine never removes it",
+        },
+      ),
+    );
+  }
+  return { plans, destinations, manifests: pluginManifests(vault), findings };
+}
+
+/** One file of a rendered export against its plan. */
+export interface ExportDifference {
+  path: string;
+  kind: "missing" | "extra" | "changed";
+}
+
+/** docs/cli.md §check: every file the plans write that `source` holds otherwise, and every file it holds that they do not. */
+export function exportDifferences(
+  exports: RepositoryExports,
+  source: ExportSource,
+): Map<string, ExportDifference[]> {
+  const out = new Map<string, ExportDifference[]>();
+  const compare = (key: string, planned: Map<string, Buffer>, present: readonly string[]): void => {
+    const differences: ExportDifference[] = [];
+    for (const [path, bytes] of planned) {
+      if (!source.exists(path)) differences.push({ path, kind: "missing" });
+      else if (source.isLink(path) || !source.read(path).equals(bytes)) {
+        differences.push({ path, kind: "changed" });
+      }
+    }
+    for (const path of present) if (!planned.has(path)) differences.push({ path, kind: "extra" });
+    differences.sort((a, b) => codeUnitCompare(a.path, b.path));
+    if (differences.length > 0) out.set(key, differences);
+  };
+  for (const plan of exports.plans) {
+    if (plan.files === undefined) continue;
+    const dest = plan.export.destination;
+    compare(
+      dest,
+      new Map(plan.files.map((file) => [`${dest}/${file.path}`, file.bytes] as const)),
+      source.list(dest),
+    );
+  }
+  if (exports.manifests.length > 0) {
+    compare(
+      "plugin",
+      new Map(exports.manifests.map((file) => [file.path, file.bytes] as const)),
+      [],
+    );
+  }
+  return out;
+}
+
+/**
+ * docs/cli.md §check: `export-stale`, one finding per rendered export or for
+ * the plugin manifests, naming the first ten files that differ from a fresh
+ * plan and how each differs; `check --write` renders them again.
+ */
+export function exportStaleFindings(
+  exports: RepositoryExports,
+  source: ExportSource,
+  where: "tree" | "index" = "tree",
+): Finding[] {
+  const findings: Finding[] = [];
+  for (const [key, differences] of exportDifferences(exports, source)) {
+    const listed = differences
+      .slice(0, 10)
+      .map((d) => `${d.path} (${d.kind})`)
+      .join(", ");
+    const more = differences.length > 10 ? ` and ${differences.length - 10} more` : "";
+    findings.push(
+      exportFinding(
+        { name: key === "plugin" ? "plugin" : key.slice(SKILLS_DIR.length + 1) },
+        {
+          ruleId: "export-stale",
+          severity: "error",
+          path: key === "plugin" ? PLUGIN_MANIFESTS[0] : key,
+          message: `${where === "index" ? "the staged copy" : "the rendered copy"} differs from a fresh render: ${listed}${more}`,
+          remediation:
+            where === "index"
+              ? "run `wikiwright check --write` while the working tree holds what is being staged, then stage the rendered copy with it"
+              : "run `wikiwright check --write`",
+          details: { files: differences.length },
+        },
+      ),
+    );
+  }
+  return findings;
+}
+
+/** docs/cli.md §gate: whether the index tracks any rendered export or manifest, and so whether the gate judges them. */
+export function exportsTracked(exports: RepositoryExports, source: ExportSource): boolean {
+  return (
+    exports.destinations.some((dest) => source.list(dest).length > 0) ||
+    exports.manifests.some((file) => source.exists(file.path))
+  );
+}
+
+/** docs/cli.md §check: the rule ids the exports' passes emit, named to the judge as run. */
+export const EXPORT_PASSES: readonly string[] = [
+  "export-stale",
+  "export-orphan",
+  "export-not-closed",
+  "export-tag-unknown",
+  "export-guide-outside",
+  "export-skill-invalid",
+  "export-destination-invalid",
+  "export-symlink",
+];

@@ -11,9 +11,16 @@ import {
   judge,
   parsedPages,
 } from "@wikiwright/core";
-import { artifactOps, briefPlan, writeArtifacts } from "../artifacts.ts";
+import { artifactOps, briefPlan, writeArtifacts, writeExports } from "../artifacts.ts";
 import { BRIEF_PATH } from "../brief.ts";
+import { bundleLabel } from "../bundle.ts";
 import { capOptions, fail, ok, verdictEnvelope } from "../envelope.ts";
+import {
+  EXPORT_PASSES,
+  exportStaleFindings,
+  fsExportSource,
+  repositoryExports,
+} from "../exports.ts";
 import { installedHooks } from "../hooks.ts";
 import { generateOptionsFor, lawFor, rootsOf } from "../law.ts";
 import { templateFindings } from "../pages.ts";
@@ -38,7 +45,7 @@ function planForCheck(args: CommandArgs): Plan {
   if (args.flags["write"] !== true) return planOf([]);
   const vault = loadVault("check", args.root);
   if (!vault.ok) return planOf([]);
-  return planOf(artifactOps(args.root, vault));
+  return planOf(artifactOps(args.root, vault, args.commands));
 }
 
 export const checkCommand: CommandSpec = {
@@ -73,10 +80,20 @@ export const checkCommand: CommandSpec = {
     const shellFindings: Finding[] = [...templateFindings(args.root, vault)];
     const plans = generateArtifacts(vault.registry, pages, names, generateOptionsFor(vault));
     const brief = briefPlan(args.root, vault, pages, args.commands);
+    // docs/constitution.md §exports: the exports rendered into this bundle's
+    // own `skills/`, planned from the same pages.
+    const exports = repositoryExports({
+      vault,
+      source: fsExportSource(args.root, pages),
+      label: bundleLabel(args.root),
+      commands: args.commands,
+    });
     // The brief lands with the artifacts, through the one write loop;
-    // its drift is `brief-stale` below, the artifacts' is `generated-drift`.
+    // its drift is `brief-stale` below, the artifacts' is `generated-drift`,
+    // and the exports' `export-stale`.
     if (args.flags["write"] === true) {
       writeArtifacts(args.root, [...plans, brief]);
+      writeExports(args.root, exports);
     }
     for (const plan of plans) {
       const abs = join(args.root, plan.path);
@@ -96,6 +113,12 @@ export const checkCommand: CommandSpec = {
         });
       }
     }
+    // docs/cli.md §check: each export's own findings, and the rendered copy
+    // against a fresh plan.
+    shellFindings.push(
+      ...exports.findings,
+      ...exportStaleFindings(exports, fsExportSource(args.root, pages)),
+    );
     // docs/cli.md §skills: the installed skills against what this binary
     // ships. Machine-local state, so warning is the ceiling — a `check` that
     // went red because a machine is behind would flake on every machine but
@@ -140,6 +163,7 @@ export const checkCommand: CommandSpec = {
       "skills-stale",
       "skills-missing",
       "hook-stale",
+      ...EXPORT_PASSES,
     ];
     // docs/concepts.md §Findings and routing: one judge, one envelope. `check` runs the passes whose
     // input is the artifact tree and the machine, names them, and hands them to
@@ -152,7 +176,10 @@ export const checkCommand: CommandSpec = {
     });
     const data = {
       ...verdictEnvelope(verdict),
-      generated: { files: [...plans.map((p) => p.path), BRIEF_PATH] },
+      generated: {
+        files: [...plans.map((p) => p.path), BRIEF_PATH],
+        exports: exports.destinations,
+      },
     };
     if (verdict.summary.errors > 0) {
       return fail("check", "findings", "findings", `${verdict.summary.errors} error finding(s)`, {

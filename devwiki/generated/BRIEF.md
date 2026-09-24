@@ -20,7 +20,7 @@ If a finding has `fix`, run its `argv` (fill any placeholders first). If it has
 `queue`, it is not yours — continue. A queued finding on a line you did not write
 is a warning, not a block.
 
-Of 73 passes, 14 name a fixer; the rest are queues or census rows.
+Of 81 passes, 15 name a fixer; the rest are queues or census rows.
 
 One sentence on search: not-found is only as good as the coverage block. Never
 claim absence while `caps.hit` is true — the cap cut the list before the end.

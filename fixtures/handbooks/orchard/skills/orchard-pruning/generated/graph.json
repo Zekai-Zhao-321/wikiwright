@@ -1,0 +1,30 @@
+{
+  "schema": "wikiwright/graph",
+  "nodes": [
+    {
+      "id": "tag:fruit",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:orientation",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:pruning",
+      "kind": "tag"
+    },
+    {
+      "id": "wiki/pruning-roses.md",
+      "kind": "page",
+      "type": "procedure-page",
+      "title": "Pruning roses"
+    }
+  ],
+  "edges": [
+    {
+      "from": "wiki/pruning-roses.md",
+      "to": "tag:pruning",
+      "kind": "tagged"
+    }
+  ]
+}
