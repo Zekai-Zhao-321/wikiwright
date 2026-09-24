@@ -335,7 +335,7 @@ with its refusal rather than omitting it.
 | `module-malformed` | no `package.json`, no `wikiwright` block, no semver `version`, an entry outside the package or outside the digested file set, a non-portable entry suffix, the same package declared twice, or a declared `path` that is not a directory inside the bundle |
 | `module-version-mismatch` | the installed `version` does not satisfy the bundle's declared range |
 | `module-incompatible` | the running engine is outside the module's declared `engine` range |
-| `module-impure` | the purity scan found the clock, randomness, locale comparison, the environment, the network, dynamic evaluation or a filesystem import, with file and line |
+| `module-impure` | the [purity scan](#the-purity-scan) found the clock, randomness, locale comparison, the environment, the network, dynamic evaluation, computed access to one of those globals, or an import of any form, with file and line |
 | `module-untrusted` | this machine holds no grant for the package in this vault |
 | `module-modified` | the package's bytes differ from the granted digest |
 | `module-load-failed` | the import failed, the default export is not a manifest, or the manifest states a version the package does not |
@@ -343,6 +343,64 @@ with its refusal rather than omitting it.
 | `module-fixture-failed` | the fixture is unreadable, its constitution does not load, the module does not compose with the standard library, or its findings differ from its own expectation |
 | `module-nondeterministic` | two runs over the same bytes produced different findings |
 | `module-conflict` | two loaded manifests claim one identifier |
+
+## The purity scan
+
+Before any of a module's code runs, the loader reads every executable file of
+the package (`.js`, `.mjs`, `.cjs`, `.ts`, `.mts`, `.cts`, and the entry
+whatever its suffix) and refuses the module, `module-impure`, when a file
+holds a construct a verdict may not depend on, naming the file, the line and
+the reason. A module imports nothing, in any form: a kit carries its own
+directory, every file it needs is in its digest, and an import is how code
+the scan never read would reach the judge — a package, a file outside the
+kit, or Node's own modules.
+
+| The scan refuses | The reason it reports |
+|---|---|
+| `Date.now(` | reads the clock (Date.now) |
+| `new Date()`, with no argument | reads the clock (new Date with no argument) |
+| `performance.now(` | reads the clock (performance.now) |
+| `Math.random(` | is not deterministic (Math.random) |
+| `.localeCompare(` | compares under the machine's locale (localeCompare) |
+| `Intl.` | reads the machine's locale (Intl) |
+| `process.env` | reads the environment (process.env) |
+| `fetch(` | reaches the network (fetch) |
+| `eval(` | evaluates code built at runtime (eval) |
+| `new Function(` | evaluates code built at runtime (the Function constructor) |
+| `globalThis`, in any form, `globalThis[…]` included | reaches a global by name (globalThis) |
+| `Date[…]`, `Math[…]`, `performance[…]`, `Intl[…]`, `process[…]` | reaches a banned global by computed access (Date, Math, performance, Intl or process) |
+| a statement that opens with `import`: a binding, a namespace, a side effect or a type | imports a module (an import declaration) |
+| `export * from`, `export * as … from`, `export { … } from` | re-exports a module (export … from) |
+| `import(` | imports a module at runtime (import()) |
+| `require(` | requires a module (require) |
+
+An import is also named by what it reaches when its specifier, with or
+without `node:`, is one of these; the specifier follows the reason:
+
+| The specifier | The reason it reports |
+|---|---|
+| `fs`, `path`, or a subpath of either | imports the filesystem |
+| `http`, `https`, `net`, `tls`, `dgram`, `dns`, or a subpath of one | imports the network |
+| `child_process` | imports a child process |
+| `process` | imports the process |
+| `os` | imports the operating system |
+
+A line is reported once per rule it matches.
+
+The scan's result is kept for the process by the digest of the package's
+bytes and the scan's version, a number in `packages/core/src/modules/purity.ts`
+raised whenever a rule changes, so two bundles that install the same bytes
+are scanned once, and no result outlives the process.
+
+What the scan does not do is stated here rather than implied. It narrows; it
+is not a sandbox. It reads bytes, so a name bound or built at runtime is
+outside it: `const D = Date; D.now()`, a banned method taken by reference
+and called later, a constructor reached through a prototype chain, and the
+members of `process` other than `env` all pass it. A module that means to
+reach the clock can. Neither the scan nor the determinism fixture is the
+argument for running a module's code with the engine's permissions:
+installing the module is, the decision every package manager asks of its
+user.
 
 ## Trust
 

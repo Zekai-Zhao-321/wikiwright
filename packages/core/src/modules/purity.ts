@@ -11,7 +11,13 @@
 // It narrows; it does not sandbox, and nothing here claims otherwise. A module
 // determined to reach the clock can still do it through a name this scan cannot
 // see. What the scan buys is that the ORDINARY way of reaching one is refused by
-// name, at load, with the line that reached.
+// name, at load, with the line that reached. It is not the argument for running
+// a module at all: installing the module is the consent to run it.
+//
+// A module imports nothing, in any form. A kit a bundle carries travels as its
+// own directory and nothing else, and every file it needs is in the digest; an
+// import is how code the scan never read reaches the judge — a package, a file
+// outside the kit, or Node's own modules.
 
 /**
  * The version of the rules below. A proof is cached by the module's digest and
@@ -19,7 +25,7 @@
  * passed are scanned again under the newer ones rather than served a verdict
  * the rules that gave it no longer give.
  */
-export const PURITY_SCAN_VERSION = 1;
+export const PURITY_SCAN_VERSION = 2;
 
 export interface PurityViolation {
   /** The construct that was found, as this scan names it. */
@@ -64,9 +70,34 @@ const BANNED: readonly { readonly reason: string; readonly pattern: RegExp }[] =
   // `globalThis["Da"+"te"].now` reaches the clock without spelling it. The
   // rules above read plain spellings; this one reads the way around them.
   { reason: "reaches a global by name (globalThis)", pattern: /\bglobalThis\b/gu },
+  // `Date["now"]()` and `process["env"]` are the rules above with the member
+  // named by a string: computed access to a global the rules above name is
+  // refused whatever the string says.
+  {
+    reason: "reaches a banned global by computed access (Date, Math, performance, Intl or process)",
+    pattern: /\b(?:Date|Math|performance|Intl|process)\s*\[/gu,
+  },
+  // No import of any form. A statement that opens with `import` (a binding, a
+  // namespace, a side effect, a type), an `export … from`, a dynamic
+  // `import(` and a `require(`: each brings in code the scan never read.
+  {
+    reason: "imports a module (an import declaration)",
+    pattern: /(?<=^|;)[ \t]*import\b\s*(?=[\w$*{"'])/gmu,
+  },
+  {
+    reason: "re-exports a module (export … from)",
+    pattern:
+      /(?<=^|;)[ \t]*export\s*(?:type\s+)?(?:\*\s*(?:as\s+[\w$]+\s*)?|\{[^}]*\}\s*)from\s*["']/gmu,
+  },
+  { reason: "imports a module at runtime (import())", pattern: /\bimport\s*\(/gu },
+  { reason: "requires a module (require)", pattern: /\brequire\s*\(/gu },
 ];
 
-/** Import specifiers a module may not reach for: the filesystem and the network. */
+/**
+ * What an import reaches, named beside the import itself: an import is refused
+ * in any form above, and one of these specifiers says which capability it was
+ * reaching for.
+ */
 const BANNED_IMPORTS: readonly {
   readonly reason: string;
   readonly test: (s: string) => boolean;
@@ -82,6 +113,16 @@ const BANNED_IMPORTS: readonly {
   { reason: "imports a child process", test: (s) => /^(node:)?child_process$/u.test(s) },
   { reason: "imports the process", test: (s) => /^(node:)?process$/u.test(s) },
   { reason: "imports the operating system", test: (s) => /^(node:)?os$/u.test(s) },
+];
+
+/**
+ * docs/extending.md §The purity scan: every reason this scan reports, as it
+ * reports it (a specifier rule adds the specifier after its reason). The
+ * documentation names each; a test holds the two to one list.
+ */
+export const PURITY_REASONS: readonly string[] = [
+  ...BANNED.map((rule) => rule.reason),
+  ...BANNED_IMPORTS.map((rule) => rule.reason),
 ];
 
 const IMPORT_SPECIFIERS: readonly RegExp[] = [
