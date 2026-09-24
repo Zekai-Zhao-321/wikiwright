@@ -6,6 +6,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import {
   type EngineConfig,
+  exportNameIssues,
   type FlattenedRegistry,
   lintPage,
   loadConstitution,
@@ -20,6 +21,7 @@ import {
   STANDARD_LIBRARY,
   standardLibrary,
 } from "@wikiwright/core";
+import { bundleLabel } from "./bundle.ts";
 import { type CommandResult, fail } from "./envelope.ts";
 import { type LoadedModule, preloadedModules } from "./moduleload.ts";
 import { vaultReadAbsolute } from "./paths.ts";
@@ -165,6 +167,24 @@ export function loadVaultVia(
       };
     }
     engine = loadedEngine.config;
+    // docs/constitution.md §exports: a name an export derives from the bundle's
+    // label is refused at load like a declared one, so the label is read here,
+    // where the root is known.
+    if (engine.exports !== undefined && options?.root !== undefined && existsSync(options.root)) {
+      const nameIssues = exportNameIssues(engine.exports, bundleLabel(options.root));
+      if (nameIssues.length > 0) {
+        return {
+          ok: false,
+          result: fail(
+            command,
+            "constitution",
+            "constitution-invalid",
+            `config/engine.json has ${nameIssues.length} validation issue(s)`,
+            { data: { issues: nameIssues } },
+          ),
+        };
+      }
+    }
   }
   // docs/extending.md §What a module registers: compose once. The bundle's declared modules are validated under
   // one registry and never reconstructed differently by the judge.

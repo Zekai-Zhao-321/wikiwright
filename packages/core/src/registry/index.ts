@@ -20,8 +20,24 @@ export { boundVocabularies } from "./validate.ts";
 import { resolveVocabularies } from "./vocabularies.ts";
 
 export { BASE_OPTIONAL_FIELDS, BASE_REQUIRED_FIELDS } from "./combine.ts";
-export type { EngineConfig, EngineConfigLoadResult, FolderTagMode } from "./engine.ts";
-export { ENGINE_CONFIG_CONSUMERS, ENGINE_CONFIG_SCHEMA, loadEngineConfig } from "./engine.ts";
+export type {
+  EngineConfig,
+  EngineConfigLoadResult,
+  ExportContribution,
+  ExportDeclaration,
+  ExportSelect,
+  FolderTagMode,
+  PluginDeclaration,
+} from "./engine.ts";
+export {
+  ENGINE_CONFIG_CONSUMERS,
+  ENGINE_CONFIG_SCHEMA,
+  exportNameIssues,
+  exportNameOf,
+  isSkillName,
+  loadEngineConfig,
+  RESERVED_SKILL_PREFIX,
+} from "./engine.ts";
 export type {
   Attributed,
   EffectiveBody,

@@ -109,6 +109,16 @@ export function contentRootsAt(root: string): readonly string[] | null {
 }
 
 /**
+ * docs/cli.md §The envelope: a bundle's label, the basename of its root's real
+ * path — a name for a reader, not an identity. The envelope names a bundle by
+ * it, and an export that declares no name is named from it
+ * (docs/constitution.md §exports).
+ */
+export function bundleLabel(root: string): string {
+  return basename(realpathSync(root));
+}
+
+/**
  * docs/cli.md §The envelope: the bundle at `root`, or undefined when the root
  * holds no constitution. It loads nothing, so it answers the same for a bundle
  * whose modules do not load.
@@ -123,7 +133,7 @@ export function bundleIdentity(root: string): BundleIdentity | undefined {
   const engine = reader.exists(ENGINE_PATH) ? reader.read(ENGINE_PATH) : undefined;
   const checkout = gitCheckoutState(real);
   return {
-    label: basename(real),
+    label: bundleLabel(root),
     root: real,
     head: checkout?.head ?? null,
     dirty: checkout?.dirty ?? null,

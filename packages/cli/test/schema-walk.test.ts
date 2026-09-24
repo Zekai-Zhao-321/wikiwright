@@ -9,6 +9,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as core from "@wikiwright/core";
 import * as commands from "../src/commands.ts";
+import * as exportsModule from "../src/exports.ts";
 import * as law from "../src/law.ts";
 import * as moduleload from "../src/moduleload.ts";
 import * as vaultio from "../src/vaultio.ts";
@@ -41,11 +42,12 @@ function consumers(): Record<string, string | readonly string[]> {
  * engine-config readers out of `commands.ts` — the walk resolves NAMES, so the
  * module list has to name every place a consumer can live, or a key's consumer
  * could be deleted while the walk stayed green. `moduleload.ts` joined it with
- * the `modules` key, for the same reason.
+ * the `modules` key, and `exports.ts` with the `exports` and `plugin` keys, for
+ * the same reason.
  */
 function exportedFunctions(): Set<string> {
   const names = new Set<string>();
-  for (const mod of [core, commands, law, moduleload, vaultio] as unknown as Record<
+  for (const mod of [core, commands, exportsModule, law, moduleload, vaultio] as unknown as Record<
     string,
     unknown
   >[]) {

@@ -330,6 +330,64 @@ The file is a closed set: an unknown key is `schema-invalid`.
 | `commit_prefixes` | `{ "prefixes": [non-empty list] }` | no | `commitPrefixVerdict`: `gate --commit-msg` refuses a commit whose first line does not open with a registered prefix as `<prefix>:`, `<prefix>(<scope>):`, `<prefix>!:` or `<prefix>(<scope>)!:` — the list names prefixes, never scopes; `hook install` adds the `commit-msg` hook when the key is declared |
 | `move_reasons` | non-empty list of strings | no | `moveReasonsOf`: `move --reason` must be one of them (`invalid-reason`); undeclared, any non-empty reason is accepted and the envelope says `reasons: "undeclared"` |
 | `modules` | list of `{ "package": "<npm name>", "version"?: "<range>", "path"?: "<directory>" }` | no | `loadDeclaredModules`: each package is resolved from the bundle's own `node_modules`, or, when `path` names a bundle-relative directory, from that directory and nowhere else; checked against `version`, purity-scanned, loaded and proved by its determinism fixture before any verb runs. A `path` is held to the path law, as a root is: `".."`, an absolute path or a backslash is refused at load. See [extending.md](extending.md#declaring-a-module) |
+| `exports` | list of export declarations | no | `exportPlans`: the read-only copies this bundle renders as skills. See [§exports](#exports) |
+| `plugin` | `{ "name", "version", "description" }` | no | `pluginManifests`: the plugin manifests written beside the exports. See [§plugin](#plugin) |
+
+### exports
+
+An export is a read-only copy of the bundle, or of part of it, that an agent
+host installs as a skill: its pages, its configuration verbatim and what the
+loader needs to judge them. Each entry of `exports` declares one. This build
+validates the declarations when the config loads and resolves their defaults;
+it renders no copy yet, and no verb writes one.
+
+```json
+"exports": [
+  { "name": "orchard", "select": { "kind": "all" }, "guide": "wiki/start-here.md",
+    "contribution": { "mode": "none" } },
+  { "name": "orchard-pruning", "select": { "kind": "tag", "tags": ["pruning"] }, "links": "cut",
+    "guide": "wiki/pruning-roses.md", "contribution": { "mode": "none" } }
+]
+```
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `name` | a skill name: lower-case letters and digits in hyphen-separated runs, at most 64 characters | no | the export's name, which is its skill's name and its directory's under `skills/`. Undeclared, it is the bundle's label for an `all` selection and `<label>-<selection>` otherwise, `<selection>` being the selected tags, or the last segment of each selected directory, joined by hyphens in the order declared. The label is the basename of the bundle root's real path, so a derived name follows the directory the bundle sits in |
+| `select` | `{ "kind": "all" }`, `{ "kind": "tag", "tags": [non-empty list] }` or `{ "kind": "directory", "directories": [non-empty list] }` | yes | which pages the copy carries: every page under the content roots, the pages carrying one of the tags, or the pages under one of the directories. Each directory is a vault path under a content root |
+| `sources` | `"exclude"` or `"include"` | no; undeclared is `exclude` | whether the files under the source roots travel |
+| `output` | `"skills"` or `"external"` | no; undeclared is `skills` | `skills`: the copy is rendered into this repository's `skills/<name>/`. `external`: it is declared here and written into another repository's tree |
+| `repository` | an `https://` URL | yes for `external`, else no | the repository others install this export from. Undeclared, none: `config/engine.json` names no repository of the bundle's own |
+| `links` | `"closed"` or `"cut"` | no; undeclared is `closed` | whether a link from a selected page to a page left out is refused (`closed`) or counted and accepted (`cut`) |
+| `guide` | a vault path | no | the page to read first, which must lie in the selection |
+| `contribution` | `{ "mode": "issues" \| "pull-requests" \| "local-folder" \| "none", "repository"?, "folder"? }` | yes | where a problem with the copy is reported. `issues` and `pull-requests` report to `repository`, or the export's when it names none; `local-folder` to `folder`, a relative path; `none` nowhere |
+| `skill` | a vault path outside every content root | no | a page the maintainer writes for the skill, copied into its text |
+| `license` | a non-empty string | no | the copy's license, an SPDX identifier by convention |
+
+When `config/engine.json` loads, each of these is refused by name, as
+`constitution-invalid` with the issue under `engine.exports.<n>`:
+`export-name-reserved` for a name beginning `wikiwright-`, the prefix of the
+engine's own skills; `export-name-taken` for two exports under one name;
+`export-name-derived-invalid` for a derived name outside the grammar, judged
+once the root's label is known; `export-select-invalid` for a selected
+directory that is not a vault path under a content root;
+`export-repository-required` for an `external` export with no repository;
+`export-contribution-invalid` for an `issues` or `pull-requests` mode with no
+repository to report to, a `local-folder` mode with no folder, a folder that
+is not a relative path, or a repository beside it, and a `none` mode with
+either. A name, a repository, a guide or a skill outside its own grammar is
+`schema-invalid`.
+
+### plugin
+
+```json
+"plugin": { "name": "orchard-handbook", "version": "1.0.0", "description": "The orchard handbook." }
+```
+
+Three strings, all required: `name`, a skill name; `version`, non-empty and
+declared, never computed; `description`. They are the plugin manifests'
+whole content — `plugin.json`, which also names its schema, and
+`.claude-plugin/plugin.json` — and neither names the skills, which both hosts
+find under `skills/`.
 
 Two things the engine reads beside these, which are not configuration: a
 page's `exceptions` field, and, for `bundles` and `--bundle`, this machine's

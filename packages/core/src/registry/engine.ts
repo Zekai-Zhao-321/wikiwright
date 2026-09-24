@@ -1,7 +1,8 @@
 // docs/cli.md §hook, docs/cli.md, docs/cli.md §move · docs/architecture.md §The invariants (
 // every engine.json key names its consumer) (a closed
 // set; unknown keys fail) · docs/extending.md §Declaring a module (the module packages a
-// bundle loads).
+// bundle loads) · docs/constitution.md §exports, §plugin (what a bundle exports as a
+// skill, and the plugin manifests beside them).
 import { z } from "zod";
 import { PATH_REFUSALS, pathRefusal } from "../paths/index.ts";
 import { parseEngineRange } from "../version/index.ts";
@@ -31,6 +32,129 @@ export interface EngineConfig {
    * bundle expects, and an installed version outside it is a load error.
    */
   modules?: { package: string; version?: string; path?: string }[];
+  /** docs/constitution.md §exports: the read-only copies this bundle renders as skills. */
+  exports?: ExportDeclaration[];
+  /** docs/constitution.md §plugin: the plugin manifests written beside the exports. */
+  plugin?: PluginDeclaration;
+}
+
+/** docs/constitution.md §exports: which pages an export carries. */
+export type ExportSelect =
+  | { kind: "all" }
+  | { kind: "tag"; tags: string[] }
+  | { kind: "directory"; directories: string[] };
+
+/** docs/constitution.md §exports: where a problem with a copy is reported, as the bundle declares it. */
+export interface ExportContribution {
+  mode: "issues" | "pull-requests" | "local-folder" | "none";
+  repository?: string;
+  folder?: string;
+}
+
+/** docs/constitution.md §exports: one export, as `config/engine.json` spells it, no default applied. */
+export interface ExportDeclaration {
+  name?: string;
+  select: ExportSelect;
+  sources?: "exclude" | "include";
+  output?: "skills" | "external";
+  repository?: string;
+  links?: "closed" | "cut";
+  guide?: string;
+  contribution: ExportContribution;
+  skill?: string;
+  license?: string;
+}
+
+/** docs/constitution.md §plugin: the three strings both plugin manifests carry. */
+export interface PluginDeclaration {
+  name: string;
+  version: string;
+  description: string;
+}
+
+/**
+ * docs/constitution.md §exports: the Agent Skills name grammar — lower-case
+ * letters and digits in hyphen-separated runs, at most 64 characters. An export's
+ * name is its skill's name and its directory's.
+ */
+export const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+export const SKILL_NAME_MAX = 64;
+
+/** docs/constitution.md §exports: the prefix the engine's own skills are named under, refused to an export. */
+export const RESERVED_SKILL_PREFIX = "wikiwright-";
+
+/** Whether a string is a skill name: the grammar and the length. */
+export function isSkillName(name: string): boolean {
+  return name.length <= SKILL_NAME_MAX && SKILL_NAME.test(name);
+}
+
+/**
+ * docs/constitution.md §exports: the name an export is known by — its declared
+ * `name`, or, when it declares none, the bundle's label for an `all` selection
+ * and `<label>-<selection>` otherwise, `<selection>` being the selected tags, or
+ * the last segment of each selected directory, joined by hyphens in the order
+ * declared. The label is the caller's: the basename of the bundle's real root.
+ */
+export function exportNameOf(declaration: ExportDeclaration, label: string): string {
+  if (declaration.name !== undefined) return declaration.name;
+  const select = declaration.select;
+  if (select.kind === "all") return label;
+  const parts =
+    select.kind === "tag"
+      ? select.tags
+      : select.directories.map(
+          (d) =>
+            d
+              .split("/")
+              .filter((s) => s.length > 0)
+              .pop() ?? d,
+        );
+  return [label, ...parts].join("-");
+}
+
+/**
+ * docs/constitution.md §exports: the refusals an export's NAME earns once the
+ * bundle's label is known — a derived name outside the grammar, the engine's
+ * reserved prefix, and two exports under one name. The declared names' own
+ * grammar is the schema's, before a label exists.
+ */
+export function exportNameIssues(
+  declarations: readonly ExportDeclaration[],
+  label: string,
+): RegistryIssue[] {
+  const issues: RegistryIssue[] = [];
+  const seen = new Map<string, number>();
+  declarations.forEach((declaration, i) => {
+    const name = exportNameOf(declaration, label);
+    const where = `engine.exports.${i}.name`;
+    if (declaration.name === undefined && !isSkillName(name)) {
+      issues.push({
+        code: "export-name-derived-invalid",
+        where,
+        message: `the name derived for this export, "${name}", is not a skill name (lower-case letters and digits in hyphen-separated runs, at most ${SKILL_NAME_MAX})`,
+      });
+      return;
+    }
+    if (name.startsWith(RESERVED_SKILL_PREFIX)) {
+      issues.push({
+        code: "export-name-reserved",
+        where,
+        message: `"${name}" begins with "${RESERVED_SKILL_PREFIX}", the prefix the engine's own skills are named under`,
+      });
+      return;
+    }
+    const first = seen.get(name);
+    if (first !== undefined) {
+      issues.push({
+        code: "export-name-taken",
+        where,
+        message: `"${name}" is the name of export ${first} too; an export's name is its directory`,
+      });
+      return;
+    }
+    seen.set(name, i);
+  });
+  return issues;
 }
 
 /**
@@ -51,6 +175,168 @@ const RootArraySchema = z
     }),
   )
   .min(1);
+
+/** A vault path, held to the path law, with the message naming what it is. */
+function vaultPathSchema(what: string) {
+  return z.string().superRefine((value, ctx) => {
+    const refusal = pathRefusal(value);
+    if (refusal === undefined) return;
+    ctx.addIssue({ code: "custom", message: `not ${what}: it ${PATH_REFUSALS[refusal]}` });
+  });
+}
+
+/** docs/constitution.md §exports: an `https://` URL, the only scheme a repository is named by. */
+const RepositorySchema = z
+  .string()
+  .regex(/^https:\/\/[^\s/]+\/\S*$/u, "a repository is an https:// URL");
+
+/**
+ * docs/constitution.md §exports. The shapes only: which paths lie under a
+ * content root, which repository a mode needs and whether a name is reserved
+ * are refused by name after the parse (`exportIssues`), where every issue can
+ * carry its own code.
+ */
+const ExportSchema = z.strictObject({
+  name: z
+    .string()
+    .max(SKILL_NAME_MAX)
+    .regex(
+      SKILL_NAME,
+      "an export's name is a skill name: lower-case letters and digits in hyphen-separated runs",
+    )
+    .optional(),
+  select: z.discriminatedUnion("kind", [
+    z.strictObject({ kind: z.literal("all") }),
+    z.strictObject({ kind: z.literal("tag"), tags: z.array(z.string().min(1)).min(1) }),
+    z.strictObject({
+      kind: z.literal("directory"),
+      directories: z.array(z.string()).min(1),
+    }),
+  ]),
+  sources: z.enum(["exclude", "include"]).optional(),
+  output: z.enum(["skills", "external"]).optional(),
+  repository: RepositorySchema.optional(),
+  links: z.enum(["closed", "cut"]).optional(),
+  guide: vaultPathSchema("a page of the bundle").optional(),
+  contribution: z.strictObject({
+    mode: z.enum(["issues", "pull-requests", "local-folder", "none"]),
+    repository: RepositorySchema.optional(),
+    folder: z.string().optional(),
+  }),
+  skill: vaultPathSchema("a file of the bundle").optional(),
+  license: z.string().min(1).optional(),
+});
+
+/** docs/constitution.md §plugin: the manifests' three strings; the name is a skill name. */
+const PluginSchema = z.strictObject({
+  name: z
+    .string()
+    .max(SKILL_NAME_MAX)
+    .regex(
+      SKILL_NAME,
+      "a plugin's name is a skill name: lower-case letters and digits in hyphen-separated runs",
+    ),
+  version: z.string().min(1),
+  description: z.string().min(1),
+});
+
+/** Whether a vault path lies under one of the roots (the root itself included). */
+function underRoot(path: string, roots: readonly string[]): boolean {
+  return roots.some((root) => path === root || path.startsWith(`${root}/`));
+}
+
+/**
+ * docs/constitution.md §exports: the refusals a parsed export earns from the
+ * rest of the config — a selected directory that is not a vault path under a
+ * content root, an external export with no repository, a contribution whose
+ * mode lacks what it needs or carries what it may not, and an explicit name
+ * under the reserved prefix or taken twice. A derived name waits for the
+ * bundle's label (`exportNameIssues`).
+ */
+function exportIssues(config: EngineConfig): RegistryIssue[] {
+  const issues: RegistryIssue[] = [];
+  const roots = config.content_roots ?? [];
+  const explicit = new Map<string, number>();
+  (config.exports ?? []).forEach((declaration, i) => {
+    const at = `engine.exports.${i}`;
+    if (declaration.name !== undefined) {
+      if (declaration.name.startsWith(RESERVED_SKILL_PREFIX)) {
+        issues.push({
+          code: "export-name-reserved",
+          where: `${at}.name`,
+          message: `"${declaration.name}" begins with "${RESERVED_SKILL_PREFIX}", the prefix the engine's own skills are named under`,
+        });
+      }
+      const first = explicit.get(declaration.name);
+      if (first !== undefined) {
+        issues.push({
+          code: "export-name-taken",
+          where: `${at}.name`,
+          message: `"${declaration.name}" is the name of export ${first} too; an export's name is its directory`,
+        });
+      } else {
+        explicit.set(declaration.name, i);
+      }
+    }
+    if (declaration.select.kind === "directory") {
+      declaration.select.directories.forEach((directory, j) => {
+        const refusal = pathRefusal(directory);
+        if (refusal !== undefined || !underRoot(directory, roots)) {
+          issues.push({
+            code: "export-select-invalid",
+            where: `${at}.select.directories.${j}`,
+            message:
+              refusal !== undefined
+                ? `"${directory}" is not a vault path: it ${PATH_REFUSALS[refusal]}`
+                : `"${directory}" is not under a content root (${roots.join(", ") || "none declared"})`,
+          });
+        }
+      });
+    }
+    if (declaration.output === "external" && declaration.repository === undefined) {
+      issues.push({
+        code: "export-repository-required",
+        where: `${at}.repository`,
+        message:
+          "an external export is installed from another repository, and names it: declare `repository`",
+      });
+    }
+    const contribution = declaration.contribution;
+    const where = `${at}.contribution`;
+    const invalid = (message: string): void => {
+      issues.push({ code: "export-contribution-invalid", where, message });
+    };
+    if (contribution.mode === "issues" || contribution.mode === "pull-requests") {
+      if (contribution.repository === undefined && declaration.repository === undefined) {
+        invalid(
+          `mode "${contribution.mode}" reports to a repository: declare contribution.repository, or the export's repository`,
+        );
+      }
+      if (contribution.folder !== undefined) {
+        invalid(`mode "${contribution.mode}" takes no folder`);
+      }
+    } else if (contribution.mode === "local-folder") {
+      if (contribution.repository !== undefined) {
+        invalid('mode "local-folder" takes no repository: a local folder is where a report goes');
+      }
+      if (contribution.folder === undefined) {
+        invalid('mode "local-folder" names its folder: declare contribution.folder');
+      } else {
+        const refusal = pathRefusal(contribution.folder);
+        if (refusal !== undefined) {
+          invalid(
+            `contribution.folder "${contribution.folder}" is not a relative path: it ${PATH_REFUSALS[refusal]}`,
+          );
+        }
+      }
+    } else {
+      if (contribution.repository !== undefined || contribution.folder !== undefined) {
+        invalid('mode "none" takes no repository and no folder');
+      }
+    }
+  });
+  return issues;
+}
 
 /**
  * docs/extending.md §Declaring a module: a module's bundle-relative directory is a vault path
@@ -115,6 +401,8 @@ const EngineConfigSchema = z.strictObject({
       }),
     )
     .optional(),
+  exports: z.array(ExportSchema).optional(),
+  plugin: PluginSchema.optional(),
   field_sources: z
     .strictObject({
       title: z.literal("basename").optional(),
@@ -153,6 +441,11 @@ export const ENGINE_CONFIG_CONSUMERS: Readonly<Record<string, string | readonly 
   // docs/extending.md §Declaring a module: the shell resolves, digests, scans, loads and
   // proves each declared module before any vault is judged under it.
   modules: "loadDeclaredModules",
+  // docs/constitution.md §exports: the shell resolves each declaration, with its
+  // defaults, into the export `check --write` and `export` render.
+  exports: "exportPlans",
+  // docs/constitution.md §plugin: the two manifests written beside the exports.
+  plugin: "pluginManifests",
 };
 
 export type EngineConfigLoadResult =
@@ -209,5 +502,42 @@ export function loadEngineConfig(json: unknown): EngineConfigLoadResult {
     config.commit_prefixes = { prefixes: parsed.data.commit_prefixes.prefixes };
   }
   if (parsed.data.move_reasons !== undefined) config.move_reasons = parsed.data.move_reasons;
+  if (parsed.data.exports !== undefined) {
+    config.exports = parsed.data.exports.map(exportDeclarationOf);
+  }
+  if (parsed.data.plugin !== undefined) {
+    config.plugin = {
+      name: parsed.data.plugin.name,
+      version: parsed.data.plugin.version,
+      description: parsed.data.plugin.description,
+    };
+  }
+  const issues = exportIssues(config);
+  if (issues.length > 0) return { ok: false, issues };
   return { ok: true, config };
+}
+
+/** One parsed export, its absent keys left absent, never set to `undefined`. */
+function exportDeclarationOf(raw: z.infer<typeof ExportSchema>): ExportDeclaration {
+  const select: ExportSelect =
+    raw.select.kind === "all"
+      ? { kind: "all" }
+      : raw.select.kind === "tag"
+        ? { kind: "tag", tags: [...raw.select.tags] }
+        : { kind: "directory", directories: [...raw.select.directories] };
+  const contribution: ExportContribution = { mode: raw.contribution.mode };
+  if (raw.contribution.repository !== undefined) {
+    contribution.repository = raw.contribution.repository;
+  }
+  if (raw.contribution.folder !== undefined) contribution.folder = raw.contribution.folder;
+  const out: ExportDeclaration = { select, contribution };
+  if (raw.name !== undefined) out.name = raw.name;
+  if (raw.sources !== undefined) out.sources = raw.sources;
+  if (raw.output !== undefined) out.output = raw.output;
+  if (raw.repository !== undefined) out.repository = raw.repository;
+  if (raw.links !== undefined) out.links = raw.links;
+  if (raw.guide !== undefined) out.guide = raw.guide;
+  if (raw.skill !== undefined) out.skill = raw.skill;
+  if (raw.license !== undefined) out.license = raw.license;
+  return out;
 }
