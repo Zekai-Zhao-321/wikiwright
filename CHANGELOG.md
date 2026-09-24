@@ -75,6 +75,11 @@ version` prints the engine version and the commit a binary was built from.
   an item holding a term only inside a longer word follows unranked, as a line
   search would find it. The coverage block counts the pages and the items
   considered. `--all` lifts the result cap of either form.
+- `search <query> --files` lists every page with a match, path and reasons
+  only, in code-unit order and uncapped: the pages the ranked search finds
+  plus every page holding a term inside a longer word, the set a line search
+  lists. `search --band identity|relevance` keeps one band of the ranked
+  results.
 - A third shipped skill, `wikiwright-consume`: the judgment for using what a
   bundle knows rather than writing it. Choose the bundle and say which one
   every answer came from; read the coherent section, qualifications with

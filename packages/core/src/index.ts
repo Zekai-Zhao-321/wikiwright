@@ -209,13 +209,15 @@ export {
   rankLexical,
 } from "./search/bm25.ts";
 export type {
+  FileHit,
+  FilesCoverage,
   SearchBand,
   SearchCoverage,
   SearchFilters,
   SearchOutcome,
   SearchResult,
 } from "./search/index.ts";
-export { pageFilter, RRF_K, searchPages } from "./search/index.ts";
+export { pageFilter, RRF_K, SEARCH_BANDS, searchFiles, searchPages } from "./search/index.ts";
 export type {
   ItemCandidate,
   ItemCoverage,

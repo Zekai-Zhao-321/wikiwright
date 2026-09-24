@@ -17,7 +17,7 @@ import {
   nearCandidatesAll,
   stripQualifier,
 } from "./near.ts";
-import { TOKENIZATION_MODE } from "./tokenize.ts";
+import { TOKENIZATION_MODE, tokenize } from "./tokenize.ts";
 
 export interface SearchFilters {
   type?: string;
@@ -31,6 +31,9 @@ export interface SearchFilters {
  * (docs/concepts.md §Generated artifacts).
  */
 export type SearchBand = "identity" | "relevance";
+
+/** Every band, in the order results come in: `--band` takes one of these. */
+export const SEARCH_BANDS: readonly SearchBand[] = ["identity", "relevance"];
 
 export interface SearchResult {
   path: string;
@@ -125,6 +128,8 @@ export interface SearchOptions {
    */
   lexicalIndex?: LexicalIndex | undefined;
   nearIndex?: NearIndex | undefined;
+  /** `--band`: keep only the results of one band, before the cap is applied. */
+  band?: SearchBand | undefined;
 }
 
 interface LadderRow {
@@ -351,6 +356,14 @@ export function searchPages(
     if (a.score !== b.score) return b.score - a.score;
     return codeUnitCompare(a.path, b.path);
   });
+  // `--band` is a post-filter: the ranks are computed over every result, and
+  // the kept band's results keep the order they had.
+  if (options?.band !== undefined) {
+    const band = options.band;
+    const kept = results.filter((r) => r.band === band);
+    results.length = 0;
+    results.push(...kept);
+  }
 
   const capped = results.length > limit;
   // A query-less invocation matched by filter membership and consulted no tier
@@ -389,4 +402,66 @@ export function searchPages(
     outcome.coverage.caps.near_hit = all.length > NEAR_LIMIT;
   }
   return outcome;
+}
+
+/** One page `--files` lists: its path and why it matched. */
+export interface FileHit {
+  path: string;
+  match_reasons: string[];
+}
+
+/** The coverage block of `--files`: the page search's, with no cap to hit. */
+export type FilesCoverage = Omit<SearchCoverage, "caps"> & {
+  caps: { limit: null; found: number; hit: false };
+};
+
+/** A page whose source holds a query term only inside a longer word. */
+const CONTAINS_TIER = "text:contains";
+
+/**
+ * docs/cli.md §search: `--files`, every page with at least one match, in
+ * code-unit order by path, unranked and uncapped. The pages the ranked search
+ * finds, each with its reasons, and every other page whose source holds a
+ * query term inside a longer word, as a line search would list it; with no
+ * query, every page the filters keep.
+ */
+export function searchFiles(
+  pages: NamedPage[],
+  query: string | undefined,
+  filters: SearchFilters,
+  options?: SearchOptions,
+): { files: FileHit[]; coverage: FilesCoverage } {
+  const ranked = searchPages(pages, query, filters, Number.MAX_SAFE_INTEGER, options);
+  // The fusion's list positions are a ranking's; an unranked list keeps the
+  // tiers that matched and drops where each list put the page.
+  const files: FileHit[] = ranked.results.map((r) => ({
+    path: r.path,
+    match_reasons: r.match_reasons.filter((reason) => !reason.startsWith("rrf:")),
+  }));
+  const tiers = [...ranked.coverage.tiers_executed];
+  if (query !== undefined) {
+    const terms = [...new Set(tokenize(query))];
+    const found = new Set(files.map((f) => f.path));
+    const keeps = pageFilter(filters, options);
+    // A page only a substring found is relevance-band by construction.
+    const containsKept = options?.band === undefined || options.band === "relevance";
+    for (const page of pages) {
+      if (!containsKept || found.has(page.path) || !keeps(page)) continue;
+      const source = normalizeIdentity(page.doc.source);
+      if (terms.some((t) => source.includes(t))) {
+        files.push({ path: page.path, match_reasons: [CONTAINS_TIER] });
+      }
+    }
+    tiers.push(CONTAINS_TIER);
+  }
+  files.sort((a, b) => codeUnitCompare(a.path, b.path));
+  const { caps: _caps, ...coverage } = ranked.coverage;
+  return {
+    files,
+    coverage: {
+      ...coverage,
+      tiers_executed: tiers,
+      caps: { limit: null, found: files.length, hit: false },
+    },
+  };
 }

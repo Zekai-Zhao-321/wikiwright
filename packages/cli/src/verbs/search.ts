@@ -3,6 +3,9 @@
 
 import {
   resolveVocabularyEntry,
+  SEARCH_BANDS,
+  type SearchBand,
+  searchFiles,
   searchItems,
   searchPages,
   tagByName,
@@ -36,6 +39,16 @@ export const searchCommand: CommandSpec = {
       summary:
         "rank the grammar items themselves — claims, relations, entries — with their line, section and fields",
     },
+    {
+      name: "files",
+      type: "boolean",
+      summary: "every page with a match, by path with its reasons: unranked, uncapped",
+    },
+    {
+      name: "band",
+      type: "string",
+      summary: "keep only the results of one band: identity | relevance",
+    },
   ],
   examples: [
     "wikiwright search 张伟",
@@ -43,6 +56,8 @@ export const searchCommand: CommandSpec = {
     "wikiwright search parser --type subsystem",
     'wikiwright search "Zhang Wei" --near',
     'wikiwright search "aphids roses" --items',
+    'wikiwright search "aphids codling" --files',
+    "wikiwright search pruning-roses --band identity",
   ],
   writes: false,
   needsVaultModules: true,
@@ -88,6 +103,48 @@ export const searchCommand: CommandSpec = {
         hint: "an item has no name to filter by; the filter flags narrow the pages its items come from",
       });
     }
+    const bandRaw = args.flags["band"];
+    if (bandRaw !== undefined && !(SEARCH_BANDS as readonly unknown[]).includes(bandRaw)) {
+      return fail(
+        "search",
+        "usage",
+        "invalid-value",
+        `--band must be one of ${SEARCH_BANDS.join(", ")}`,
+        {
+          details: { flag: "band", value: bandRaw, valid_values: [...SEARCH_BANDS] },
+        },
+      );
+    }
+    const band = bandRaw as SearchBand | undefined;
+    const files = args.flags["files"] === true;
+    // Items have no band and are not pages: `--items` stands alone.
+    for (const [flag, set] of [
+      ["files", files],
+      ["band", band !== undefined],
+    ] as const) {
+      if (items && set) {
+        return fail(
+          "search",
+          "usage",
+          "invalid-arguments",
+          `--${flag} is a page search's, and --items ranks items`,
+          {
+            details: { flag, conflicts_with: ["items"] },
+          },
+        );
+      }
+    }
+    if (files && args.flags["near"] === true) {
+      return fail(
+        "search",
+        "usage",
+        "invalid-arguments",
+        "--near ranks page names, and --files ranks nothing",
+        {
+          details: { flag: "near", conflicts_with: ["files"] },
+        },
+      );
+    }
     if (items && args.flags["near"] === true) {
       return fail(
         "search",
@@ -121,10 +178,21 @@ export const searchCommand: CommandSpec = {
         }),
       );
     }
+    if (files) {
+      return ok(
+        "search",
+        searchFiles(pages, query, filters, {
+          fieldSources: vault.engine.field_sources,
+          typeChains,
+          band,
+        }),
+      );
+    }
     const outcome = searchPages(pages, query, filters, limit, {
       fieldSources: vault.engine.field_sources,
       typeChains,
       near: args.flags["near"] === true,
+      band,
     });
     return ok("search", outcome);
   },

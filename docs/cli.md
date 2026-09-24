@@ -319,6 +319,20 @@ What the registry rows below do not say.
   unranked, as a line search would find it (`text:contains`). The identity
   ladder does not apply, a query is required, and `--near` is refused beside
   it. The coverage block counts `pages_considered` and `items_considered`.
+  A multi-word query matches a page or an item that holds any one of its
+  terms. `--files` lists every page with a match instead of ranking them:
+  `{ path, match_reasons }` in code-unit order by path, uncapped
+  (`caps.limit` is `null`), the pages the ranked search finds plus every page
+  whose text holds a query term only inside a longer word (`text:contains`),
+  which is the set a line search lists; with no query, every page the filters
+  keep. Each result of the ranked page search carries a `band`, and `--band`
+  keeps one: `identity` for a page the query names — by its name, an alias,
+  the name without a trailing `(…)` qualifier, or its whole title
+  (`name:exact`, `alias:exact`, `name:stem`, `title:exact`) — and `relevance`
+  for every other match; the cap then counts the kept band, and an unknown
+  band is `invalid-value` with `details.valid_values`. `--items` stands alone:
+  `--files` and `--band` beside it are `invalid-arguments`, as is `--near`
+  beside `--files`.
 - **`read <page> [--section <heading>] [--budget <bytes>]`** returns one page's
   sections, verbatim. `<page>` is tried, in order, as a vault path under a
   content root, a basename or an alias through the name index, and a title
@@ -927,6 +941,8 @@ Role: `consumer`. Writes: no.
 | `--all` | lift the result cap |
 | `--near` | add the advisory name:near candidate list (never changes ranks) |
 | `--items` | rank the grammar items themselves — claims, relations, entries — with their line, section and fields |
+| `--files` | every page with a match, by path with its reasons: unranked, uncapped |
+| `--band <value>` | keep only the results of one band: identity \| relevance |
 
 ```text
 wikiwright search 张伟
@@ -934,6 +950,8 @@ wikiwright search --tag reset
 wikiwright search parser --type subsystem
 wikiwright search "Zhang Wei" --near
 wikiwright search "aphids roses" --items
+wikiwright search "aphids codling" --files
+wikiwright search pruning-roses --band identity
 ```
 
 ### skills
