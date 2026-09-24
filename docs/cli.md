@@ -191,14 +191,22 @@ object whose `hookSpecificOutput` carries `hookEventName` and
 object, a missing binary or any error, it prints nothing.
 
 - `hooks/session-start.mjs` runs `bundles list`, which reads markers only,
-  and, when a bundle skill is installed, names each one `--bundle` would
-  choose: its name, the bundle it was cut from, the tier and the directory it
-  was found in; then that every command takes `--bundle <name>` for one of
-  these or `--root <dir>` for any bundle's directory, and that the brief
-  prints for the session's role. When the hook's `source` is `compact` or
+  and prints one line per row: the copy's name, the bundle it was cut from,
+  its tier, and the action that fits how it was installed, read off the row
+  and the provenance its installer recorded — a copy that is a link: "linked
+  to a local checkout; the checkout's own gate keeps it current", and no
+  remote advice; a recorded value shaped like a version tag or a commit id
+  (a tree id aside): "pinned at <key> <value>", reported, not judged; a
+  recorded repository: "update with `gh skill update <name>`"; nothing
+  recorded: "installed by hand; `gh skill install` makes it updatable". A
+  copy another shadows says by which root; a directory whose marker the scan
+  cannot take is named with its reason. A last line names `--bundle <name>`
+  and `--root ${CLAUDE_SKILL_DIR}`. When the hook's `source` is `compact` or
   `resume`, the first line says they are being re-established from current
-  state. It prints no page content and no digest, and nothing when no bundle
-  skill is installed.
+  state. It checks nothing remote: what an installer records names a ref and
+  a tree, not the commit a copy came from, so the installer's update is the
+  comparison, and the hook names it. It prints no page content and no
+  digest, and nothing when no bundle skill is installed.
 - `hooks/post-edit.mjs` takes `tool_input.file_path` (a leading byte order
   mark on stdin ignored, as the engine ignores it) and finds the bundle by
   ancestry: the nearest directory above the file's real path that holds

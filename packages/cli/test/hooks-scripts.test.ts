@@ -129,26 +129,59 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     assert.equal(r.stdout, "");
   });
 
-  it("session start names each installed bundle skill and how a command names one", () => {
+  it("session start names each installed bundle skill with the action that fits how it was installed", () => {
     const skills = join(home, ".claude", "skills");
-    for (const name of ["orchard", "allotment"]) {
-      cpSync(join(HANDBOOKS, name, "skills", name), join(skills, name), { recursive: true });
-    }
+    /** A handbook's export copied into the skill directory, its SKILL.md frontmatter given `recorded`. */
+    const install = (handbook: string, name: string, recorded: string): void => {
+      const at = join(skills, name);
+      cpSync(join(HANDBOOKS, handbook, "skills", name), at, { recursive: true });
+      const skill = join(at, "SKILL.md");
+      writeFileSync(
+        skill,
+        readFileSync(skill, "utf8").replace(
+          `---\nname: ${name}\n`,
+          `---\nname: ${name}\n${recorded}`,
+        ),
+      );
+    };
+    // What an installer records, whatever it calls it: a repository and a
+    // tree for one that tracks a branch, a tag for one that is pinned, and
+    // nothing for a copy made by hand.
+    install(
+      "allotment",
+      "allotment",
+      "source-repository: https://example.invalid/allotment\ntree: 0123456789abcdef0123456789abcdef01234567\n",
+    );
+    install(
+      "orchard",
+      "orchard",
+      "source-repository: https://example.invalid/orchard\nref: v1.4.0\n",
+    );
+    install("orchard", "orchard-pruning", "");
+    // A link into a checkout of the handbook: its own gate keeps it current.
+    const checkout = join(tmp, "orchard-checkout");
+    cpSync(join(HANDBOOKS, "allotment"), checkout, { recursive: true });
+    mkdirSync(join(home, ".agents", "skills"), { recursive: true });
+    symlinkSync(
+      join(checkout, "skills", "allotment"),
+      join(home, ".agents", "skills", "allotment"),
+    );
     const r = hook(
       SESSION_START,
       JSON.stringify({ hook_event_name: "SessionStart", source: "startup" }),
     );
     assert.equal(r.status, 0);
-    const lines = contextOf(r.stdout, "SessionStart").split("\n");
-    assert.deepEqual(lines.slice(0, 3), [
+    assert.deepEqual(contextOf(r.stdout, "SessionStart").split("\n"), [
       "Installed wikiwright bundle skills:",
-      `- allotment: the bundle allotment, in the user skill directory ${join(skills, "allotment")}`,
-      `- orchard: the bundle orchard, in the user skill directory ${join(skills, "orchard")}`,
+      "- allotment: the bundle allotment, user tier; update with `gh skill update allotment`",
+      "- orchard: the bundle orchard, user tier; pinned at ref v1.4.0",
+      "- orchard-pruning: the bundle orchard, user tier; installed by hand; `gh skill install` makes it updatable",
+      "- allotment: the bundle allotment, user tier; linked to a local checkout; the checkout's own gate keeps it current",
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: the host's variable, named literally
+      "A wikiwright command names one with --bundle <name>, or, from within its skill, with --root ${CLAUDE_SKILL_DIR}.",
     ]);
-    assert.match(lines[3] ?? "", /--bundle <name> for one of these, or --root <dir>/u);
-    assert.equal(lines.length, 4);
-    // Context names bundles; it never carries a page's words.
-    assert.doesNotMatch(r.stdout, /outward-facing bud|How to use this handbook/u);
+    // Context names bundles; it never carries a page's words or a digest.
+    assert.doesNotMatch(r.stdout, /outward-facing bud|How to use this handbook|[0-9a-f]{64}/u);
   });
 
   it("after a compaction or a resume, the block says it re-establishes them", () => {

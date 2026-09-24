@@ -382,13 +382,16 @@ whether and when a session shows their context is unverified.
 
 Wanted: a recorded run inside a host, kept beside the test.
 
-### The session-start hook does not say how to update a copy
+### The engine never checks a copy against its source
 
-The session-start hook names each installed bundle skill and where it was
-found, and nothing about how the copy was installed or how it is updated.
+The session-start hook names the action that fits how each copy was
+installed, from what its installer recorded, and checks nothing remote: a
+recorded ref and tree say what was copied, not which commit, so whether a
+copy is behind cannot be computed without the installer's own comparison,
+which is its update command. No environment variable turns a remote check
+on. A copy made by hand, or linked, is never compared with anything.
 
-Wanted: the action that fits how each copy was installed. It is the next
-commit's work.
+Wanted: nothing in the engine while the installer owns replacement.
 
 ### The shipped skills do not yet speak of copies
 
