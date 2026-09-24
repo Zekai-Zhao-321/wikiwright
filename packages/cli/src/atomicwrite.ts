@@ -1,6 +1,6 @@
 // docs/architecture.md §Directories: the one way the shell replaces a file's
-// bytes. A content page (`writer.ts`), a generated artifact, the machine-local
-// bundles registry, a skill's files and its stamp and the freshness report all land
+// bytes. A content page (`writer.ts`), a generated artifact, a rendered export,
+// a skill's files and its stamp and the freshness report all land
 // the same way: staged in an exclusively created temp file beside the target,
 // renamed into place only once every file of the batch is complete. So a write
 // interrupted while staging leaves every old file as it was and no debris, and

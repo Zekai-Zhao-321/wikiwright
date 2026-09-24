@@ -272,7 +272,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
     // the outcome and refuses a bundle whose declared modules did not load, so
     // a verb that never reaches this line cannot be judged under a quieter law.
     // Only for a verb that reads the vault's law: `version` and `schema` answer
-    // about the engine, and `bundles` about this machine's registry.
+    // about the engine, and `bundles` about the skill directories.
     if (spec.needsVaultModules) {
       const declarations = declaredModulesOf(args.root);
       if (declarations.length > 0) await preloadModules(args.root, declarations);

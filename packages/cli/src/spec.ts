@@ -27,9 +27,9 @@ export interface FlagSpec {
  */
 export const GLOBAL_FLAGS: readonly FlagSpec[] = [
   { name: "root", type: "string", summary: "vault root directory (default: current directory)" },
-  // docs/cli.md §bundles: the other way to name the target, by a connection's
-  // name. The shell resolves it before anything runs, so every verb takes it
-  // and none reads it.
+  // docs/cli.md §bundles: the other way to name the target, by the name of a
+  // bundle skill in the skill directories. The shell resolves it before
+  // anything runs, so every verb takes it and none reads it.
   {
     name: "bundle",
     type: "string",
