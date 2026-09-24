@@ -25,12 +25,12 @@ import {
   type ExportPlan,
   exportPlans,
   fsExportSource,
-  MARKER_PATH,
   planExport,
   pluginManifests,
   SKILL_PATH,
 } from "../src/exports.ts";
 import { rootsOf, type VaultOk } from "../src/law.ts";
+import { MARKER_PATH } from "../src/marker.ts";
 import { declaredModulesOf, preloadModules } from "../src/moduleload.ts";
 import { fsState } from "../src/state.ts";
 import { loadVault } from "../src/vaultio.ts";

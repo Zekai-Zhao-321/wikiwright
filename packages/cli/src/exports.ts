@@ -29,6 +29,7 @@ import { contentDigestOf, lawDigest } from "./bundle.ts";
 import { ENGINE_VERSION } from "./envelope.ts";
 import { gitReadBlobBytes, type IndexEntry } from "./git.ts";
 import { generateOptionsFor, rootsOf, type VaultOk } from "./law.ts";
+import { type ExportMarker, MARKER_PATH } from "./marker.ts";
 import { moduleLocation } from "./moduleload.ts";
 import { vaultReadAbsolute } from "./paths.ts";
 import type { CommandSpec } from "./spec.ts";
@@ -129,9 +130,6 @@ export function pluginManifests(vault: VaultOk): PlannedFile[] {
 // ---------------------------------------------------------------------------
 // the plan (docs/constitution.md §exports)
 
-/** docs/constitution.md §exports: the marker a copy carries, `config/export.json`. */
-export const MARKER_PATH = "config/export.json";
-
 /** docs/constitution.md §exports: the generated skill text at a copy's root. */
 export const SKILL_PATH = "SKILL.md";
 
@@ -209,25 +207,6 @@ export function fsExportSource(root: string, pages: readonly PageInput[]): Expor
     isLink,
     list,
   };
-}
-
-/** docs/constitution.md §exports: `config/export.json`, in its fixed key order. */
-export interface ExportMarker {
-  schema: "wikiwright/export";
-  version: 1;
-  name: string;
-  bundle: string;
-  select: ExportSelect;
-  sources: "exclude" | "include";
-  output: "skills" | "external";
-  links: "closed" | "cut";
-  cut: { links: number; citations: number; attachments: number };
-  pages: number;
-  source: { repository: string | null; law: string; content: string };
-  contribution: ExportContribution;
-  guide: string | null;
-  license: string | null;
-  engine: string;
 }
 
 /** One export, planned: every file it holds, or none when a finding refuses it. */

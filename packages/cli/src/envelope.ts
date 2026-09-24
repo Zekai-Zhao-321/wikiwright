@@ -2,7 +2,7 @@
 // never load-bearing) · the closed exit taxonomy, JSON-only v1
 // docs/concepts.md §Findings and routing (the verdict envelope and the cap flags every judging verb
 // prints — docs/architecture.md §Directories keeps the envelope helpers here rather than beside a verb).
-import type { JudgeOptions, Verdict } from "@wikiwright/core";
+import type { ExportSelect, JudgeOptions, Verdict } from "@wikiwright/core";
 import type { CommandArgs } from "./spec.ts";
 
 export const EXIT = {
@@ -41,6 +41,24 @@ export interface BundleIdentity {
   law: string;
   /** sha256 over every page under the content roots, path and bytes. */
   content: string;
+  /** Over a copy, the export it is, read off its marker (docs/constitution.md §exports). */
+  export?: BundleExport;
+}
+
+/**
+ * docs/cli.md §The envelope: the identity a copy's marker gives it — the
+ * export's name, where the bundle it was cut from is installed from, what it
+ * selected, and how many pages it holds and links it cut. `intact: false`
+ * says the copy's law or content no longer digests to what its marker
+ * recorded: it was changed after export. Informational, never a refusal.
+ */
+export interface BundleExport {
+  name: string;
+  source: { repository: string | null };
+  select: ExportSelect;
+  pages: number;
+  cut: { links: number; citations: number; attachments: number };
+  intact?: false;
 }
 
 export interface Metadata {

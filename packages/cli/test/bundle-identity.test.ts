@@ -379,3 +379,109 @@ describe("the law digest names every installed module (docs/cli.md §The envelop
     assert.equal(r.envelope.metadata.bundle?.law, lawFormula(bare, []));
   });
 });
+
+describe("a copy names the export it is (docs/cli.md §The envelope)", () => {
+  let tmp = "";
+  let source = "";
+  let sourceLaw = "";
+  before(() => {
+    tmp = mkdtempSync(join(tmpdir(), "ww-bundle-copy-"));
+    source = layBundle(join(tmp, "source"), "orchard");
+    writeFileSync(
+      join(source, "config", "engine.json"),
+      `${JSON.stringify({
+        content_roots: ["wiki"],
+        exports: [{ select: { kind: "all" }, contribution: { mode: "none" } }],
+      })}\n`,
+    );
+    assert.equal(run(source, ["check", "--write", "--root", "."]).status, 0);
+    git(source, "init", "-q");
+    git(source, "add", "-A");
+    git(source, "commit", "-q", "-m", "baseline");
+    sourceLaw = bundleOf(source, ["type", "list", "--root", "."]).law;
+  });
+  after(() => {
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
+  /** The rendered export, copied by a plain copy under `<parent>/<dir>`, as a host installs a skill. */
+  function installed(parent: string, dir = "orchard"): string {
+    const copy = join(tmp, parent, ".claude", "skills", dir);
+    cpSync(join(source, "skills", "orchard"), copy, { recursive: true });
+    return copy;
+  }
+
+  it("the marker's bundle labels it, head and dirty are null, and its law is its source's", () => {
+    // Inside a repository of its own, under another directory name: neither
+    // is the bundle's.
+    const project = join(tmp, "project");
+    const copy = installed("project", "roses");
+    git(project, "init", "-q");
+    git(project, "add", "-A");
+    git(project, "commit", "-q", "-m", "the skill, installed");
+    const bundle = bundleOf(copy, ["search", "pruning", "--root", "."]);
+    assert.equal(bundle.label, "orchard");
+    assert.equal(bundle.root, realpathSync(copy));
+    assert.equal(bundle.head, null);
+    assert.equal(bundle.dirty, null);
+    assert.equal(bundle.law, sourceLaw);
+    const marker = JSON.parse(readFileSync(join(copy, "config", "export.json"), "utf8")) as {
+      source: { content: string };
+    };
+    assert.equal(bundle.content, marker.source.content);
+    assert.deepEqual((bundle as Bundle & { export?: unknown }).export, {
+      name: "orchard",
+      source: { repository: null },
+      select: { kind: "all" },
+      pages: 1,
+      cut: { links: 0, citations: 0, attachments: 0 },
+    });
+    // The source itself is no copy.
+    assert.equal(
+      (bundleOf(source, ["type", "list", "--root", "."]) as Bundle & { export?: unknown }).export,
+      undefined,
+    );
+  });
+
+  it("a copy changed after export is intact: false, and still answers", () => {
+    const copy = installed("edited");
+    appendFileSync(join(copy, "wiki", "pruning-roses.md"), "\nA line added in the copy.\n");
+    const r = run(copy, ["search", "pruning", "--root", "."]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    const bundle = r.envelope.metadata.bundle as Bundle & { export?: { intact?: boolean } };
+    assert.equal(bundle.export?.intact, false);
+    assert.equal(bundle.law, sourceLaw);
+  });
+
+  it("the brief's header names the export", () => {
+    const copy = installed("brief");
+    const brief = String(run(copy, ["brief", "--root", "."]).envelope.data?.["brief"]);
+    assert.ok(
+      brief.includes("\nExport: `orchard`, a read-only copy of the bundle `orchard`.\n"),
+      brief.slice(0, 400),
+    );
+  });
+
+  it("a marker that is not one is export-marker-invalid, and the copy is not loaded", () => {
+    const cases: [string, (marker: Record<string, unknown>) => string][] = [
+      ["not JSON", () => "{ not json\n"],
+      ["a key missing", ({ version: _, ...rest }) => JSON.stringify(rest)],
+      ["an unknown key", (m) => JSON.stringify({ ...m, extra: true })],
+      ["another version", (m) => JSON.stringify({ ...m, version: 2 })],
+      [
+        "a digest that is not one",
+        (m) => JSON.stringify({ ...m, source: { ...(m["source"] as object), law: "x" } }),
+      ],
+    ];
+    for (const [name, spoil] of cases) {
+      const copy = installed(`spoiled-${name.replaceAll(" ", "-")}`);
+      const path = join(copy, "config", "export.json");
+      writeFileSync(path, spoil(JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>));
+      const r = run(copy, ["search", "pruning", "--root", "."]);
+      assert.equal(r.status, 4, `${name}: ${JSON.stringify(r.envelope)}`);
+      assert.equal(r.envelope.error?.["code"], "export-marker-invalid", name);
+      assert.equal(r.envelope.metadata.bundle, undefined, `${name}: a bundle was named`);
+      assert.equal(r.envelope.data, undefined, `${name}: the copy was read`);
+    }
+  });
+});

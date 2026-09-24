@@ -8,6 +8,7 @@ import { COMMANDS } from "./commands.ts";
 import { MACHINE_LOCAL_WRITERS, readConnections } from "./connections.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
 import { GitInconsistentRead, GitShortRead } from "./git.ts";
+import { MARKER_PATH, markerAt } from "./marker.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import {
   type CommandArgs,
@@ -186,6 +187,25 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
   }
   if (!target.ok) return target.result;
   const { args } = target;
+  // docs/cli.md §The envelope: a root that carries a marker is a copy, and a
+  // copy is read under the identity its marker gives it. A marker that is not
+  // one is refused before any module preloads or the verb reads a page, as a
+  // config the loader cannot read is: the copy is not loaded.
+  if (spec.needsVaultModules) {
+    const marker = markerAt(args.root);
+    if (marker.kind === "invalid") {
+      return fail(
+        spec.name,
+        "conflict",
+        "export-marker-invalid",
+        `${MARKER_PATH} is not an export's marker: ${marker.reason}`,
+        {
+          details: { path: MARKER_PATH, reason: marker.reason },
+          hint: "the file is written by `check --write` or `export`; install the copy again from its source, or remove the file if this root is not a copy",
+        },
+      );
+    }
+  }
   let result: CommandResult;
   try {
     // docs/extending.md §Declaring a module: loading a module is the shell's one

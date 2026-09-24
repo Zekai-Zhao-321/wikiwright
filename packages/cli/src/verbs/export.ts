@@ -12,13 +12,13 @@ import {
   type ExportPlan,
   exportPlans,
   fsExportSource,
-  MARKER_PATH,
   planExport,
   pluginManifests,
   type RepositoryExports,
   SKILLS_DIR,
 } from "../exports.ts";
 import { lawFor, rootsOf } from "../law.ts";
+import { MARKER_PATH } from "../marker.ts";
 import {
   type CommandArgs,
   type CommandSpec,

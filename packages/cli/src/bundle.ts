@@ -9,8 +9,9 @@
 import { existsSync, realpathSync } from "node:fs";
 import { basename, join } from "node:path";
 import { codeUnitCompare, loadEngineConfig, normalizeInput } from "@wikiwright/core";
-import type { BundleIdentity } from "./envelope.ts";
+import type { BundleExport, BundleIdentity } from "./envelope.ts";
 import { gitCheckoutState } from "./git.ts";
+import { markerAt } from "./marker.ts";
 import { declaredModulesInText, type ModuleDeclaration, moduleDigest } from "./moduleload.ts";
 import { sha256Of } from "./sha256.ts";
 import {
@@ -125,10 +126,12 @@ export function contentRootsAt(root: string): readonly string[] | null {
  * docs/cli.md §The envelope: a bundle's label, the basename of its root's real
  * path — a name for a reader, not an identity. The envelope names a bundle by
  * it, and an export that declares no name is named from it
- * (docs/constitution.md §exports).
+ * (docs/constitution.md §exports). A copy is labelled by the bundle its marker
+ * names, wherever it was installed, so a copy derives the names its source did.
  */
 export function bundleLabel(root: string): string {
-  return basename(realpathSync(root));
+  const marker = markerAt(root);
+  return marker.kind === "valid" ? marker.marker.bundle : basename(realpathSync(root));
 }
 
 /**
@@ -136,28 +139,59 @@ export function bundleLabel(root: string): string {
  * holds no constitution. It loads nothing, so it answers the same for a bundle
  * whose modules do not load.
  * A file that resolves outside the vault is thrown, as every read of the vault
- * throws it.
+ * throws it, and so is a marker that is not one: a copy is named by its
+ * marker or not at all.
+ *
+ * Over a copy (a root that carries `config/export.json`) the label is the
+ * marker's bundle, `head` and `dirty` are null — the checkout the copy sits
+ * in, if any, is not the bundle's — and `export` names the export it is. The
+ * digests are recomputed as for any bundle, so a copy whose law or pages
+ * changed after export says so (`export.intact: false`).
  */
 export function bundleIdentity(root: string): BundleIdentity | undefined {
   if (!existsSync(join(root, CONSTITUTION_PATH))) return undefined;
+  const marker = markerAt(root);
+  if (marker.kind === "invalid") throw new Error(`the marker is not one: ${marker.reason}`);
   const real = realpathSync(root);
   const reader = fsReader(root);
   const constitution = reader.read(CONSTITUTION_PATH);
   const engine = reader.exists(ENGINE_PATH) ? reader.read(ENGINE_PATH) : undefined;
+  // The declarations come from the engine.json this read, parsed as the
+  // loader parses it, so a byte order mark cannot hide an installed module.
+  const law = lawDigest(
+    root,
+    constitution,
+    engine,
+    engine === undefined ? [] : declaredModulesInText(engine),
+  );
+  const content = contentDigest(root, contentRootsOf(engine));
+  if (marker.kind === "valid") {
+    const { name, source, select, pages, cut } = marker.marker;
+    const exported: BundleExport = {
+      name,
+      source: { repository: source.repository },
+      select,
+      pages,
+      cut,
+    };
+    if (source.law !== law || source.content !== content) exported.intact = false;
+    return {
+      label: marker.marker.bundle,
+      root: real,
+      head: null,
+      dirty: null,
+      law,
+      content,
+      export: exported,
+    };
+  }
   const checkout = gitCheckoutState(real);
   return {
     label: bundleLabel(root),
     root: real,
     head: checkout?.head ?? null,
     dirty: checkout?.dirty ?? null,
-    // The declarations come from the engine.json this read, parsed as the
-    // loader parses it, so a byte order mark cannot hide an installed module.
-    law: lawDigest(
-      root,
-      constitution,
-      engine,
-      engine === undefined ? [] : declaredModulesInText(engine),
-    ),
-    content: contentDigest(root, contentRootsOf(engine)),
+    law,
+    content,
   };
 }

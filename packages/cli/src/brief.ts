@@ -18,6 +18,7 @@ import {
 } from "@wikiwright/core";
 import { lawDigest } from "./bundle.ts";
 import { lintOptionsFor, type VaultOk } from "./law.ts";
+import { markerAt } from "./marker.ts";
 import { type CommandSpec, flagsOf, ROLE_RANK, type Role } from "./spec.ts";
 
 /** Vault-relative; gitignored, like `freshness.json`. */
@@ -302,6 +303,8 @@ export function renderBrief(input: BriefInput): string {
  * The brief for a loaded law over a given page set. `briefFor` reads both off
  * the disk; `init` hands it the vault as it will stand AFTER the copy, so the
  * plan can say whether the installed brief would change (docs/cli.md §The dry-run law).
+ * Over a copy, the header names the export its marker names, unless the
+ * caller names one (the export renderer, for the copy it is about to write).
  */
 export function briefOf(
   root: string,
@@ -338,6 +341,18 @@ export function briefOf(
       vault.lawText.engine,
       vault.engine.modules ?? [],
     ),
-    ...(exportOf === undefined ? {} : { exportOf }),
+    ...exportHeader(root, exportOf),
   });
+}
+
+/** The export a brief's header names: the caller's, or the marker's at `root`. */
+function exportHeader(
+  root: string,
+  exportOf: { name: string; bundle: string } | undefined,
+): { exportOf?: { name: string; bundle: string } } {
+  if (exportOf !== undefined) return { exportOf };
+  const marker = markerAt(root);
+  return marker.kind === "valid"
+    ? { exportOf: { name: marker.marker.name, bundle: marker.marker.bundle } }
+    : {};
 }

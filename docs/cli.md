@@ -40,10 +40,10 @@ and `bundles` about this machine's registry, so they carry none; a `bundles list
 
 | Key | Meaning |
 |---|---|
-| `label` | the basename of the root's real path: a name for a reader, not an identity; two bundles can share one |
+| `label` | the basename of the root's real path, or over a copy the bundle its marker names: a name for a reader, not an identity; two bundles can share one |
 | `root` | the root's real path |
-| `head` | the commit HEAD names in the repository enclosing the root; `null` when git names none: no repository encloses the root, it has no commit yet, or git cannot answer there |
-| `dirty` | whether `git status` lists any change under the root, untracked files included and ignored ones not; `null` when no repository answers |
+| `head` | the commit HEAD names in the repository enclosing the root; `null` when git names none: no repository encloses the root, it has no commit yet, or git cannot answer there; `null` over a copy |
+| `dirty` | whether `git status` lists any change under the root, untracked files included and ignored ones not; `null` when no repository answers, and over a copy |
 | `law` | the law the bundle declares and has installed: `config/constitution.json`, `config/engine.json` and the digest of each declared module installed under its `node_modules` or at its declared `path`, in declaration order, whether or not it loads |
 | `content` | every page under the content roots, path and bytes, as the working tree holds them: an uncommitted edit moves it, and `head` does not move |
 
@@ -66,7 +66,34 @@ left. It is absent when the root holds no constitution, and when a file the
 identity reads resolves outside the root, which every read of a vault refuses;
 the engine states no partial identity. An envelope answered before the verb
 runs names no bundle either: `--help`, a refusal of the arguments, a
-`role-forbidden`, a refusal of `--bundle`.
+`role-forbidden`, a refusal of `--bundle`, a refused marker.
+
+A root that holds `config/export.json` is a copy (docs/constitution.md
+§exports), and its block says so. `label` is the bundle the marker names,
+wherever the copy was installed; `head` and `dirty` are `null`, since the
+checkout the copy sits in, if any, is not the bundle's; `law` and `content`
+are recomputed as for any bundle, so an intact copy of a whole bundle carries
+its source's `law`. One more key names the export:
+
+```json
+"export": {
+  "name": "orchard-pruning",
+  "source": { "repository": null },
+  "select": { "kind": "tag", "tags": ["pruning"] },
+  "pages": 1,
+  "cut": { "links": 0, "citations": 0, "attachments": 0 }
+}
+```
+
+`source.repository` is where the bundle is installed from, `null` when it
+declares none; `pages` and `cut` are the marker's counts. `intact: false` is
+added when the recomputed `law` or `content` differs from the digests the
+marker recorded: the copy was changed after export. It is information, not a
+refusal. A marker that is not one — not JSON, a key missing, of the wrong type
+or unknown, another schema or version — is refused `export-marker-invalid`
+(exit 4) before any module loads or a page is read, with the first reason in
+`details.reason`: the copy is not loaded. The brief's header over a copy names
+the export and the bundle it was cut from.
 
 `lint`, `check` and `gate` answer with this verdict block, whole:
 
@@ -99,7 +126,7 @@ findings that refused it.
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
 | 3 | `not_found` | the page, type, vocabulary entry, revision or connection asked for does not exist |
-| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a machine-local store this engine cannot read (`bundles-registry-malformed`) |
+| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a machine-local store this engine cannot read (`bundles-registry-malformed`), a copy's marker that is not one (`export-marker-invalid`) |
 | 5 | `findings` | the tool worked and the subject failed: read `data.findings` |
 | 10 | `confirm_required` | an identity or blast-radius gate wants the plan pinned: `identity-candidates`, `open-claim-of-category` |
 
