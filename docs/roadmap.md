@@ -382,31 +382,61 @@ temporary directory out of indexing.
 and never alone: the index named a blob `cat-file --batch` did not return, a
 batch output ended inside an object, a batch check answered 1 of 2 paths.
 The cause was the runtime the suite ran the CLI under. Under CPU load,
-Bun 1.3.11's synchronous spawn returned a child's stdout cut to a prefix,
-with exit status 0 and nothing on stderr. On 2026-09-24 a twelve-minute loop
-of the suite failed 10 of 899 file runs, each on a spawned process's output
-that came back short. A stress run beside it, synchronous spawns of `cat`
-and of git's two batch reads, cut 7 of 900 calls under Bun and none of 3,600
-under Node 22. A cut listing is well formed as far as it goes, so the engine
-read some cut answers as shorter ones: a cut index listing is fewer staged
-pages, and one `fix --staged` answered ok with `changed: []` where it should
-have refused.
+Bun 1.3.11's synchronous spawn returned a child's piped stdout cut to a
+prefix, with exit status 0 and nothing on stderr. On 2026-09-24 a
+twelve-minute loop of the suite failed 10 of 899 file runs, each on a
+spawned process's output that came back short. A stress run beside it,
+synchronous spawns of `cat` and of git's two batch reads, cut 7 of 900 calls
+under Bun and none of 3,600 under Node 22. A cut listing is well formed as
+far as it goes, and a prefix that ends between records is exactly as well
+formed as the whole: no terminator tells them apart. Read that way, a cut
+index listing is fewer staged pages, and `lint --staged` passed an index
+whose failing page the cut had dropped.
 
-Two fixes. The engine holds every git read that has a terminator to it — a
-`-z` listing to its final NUL, a line answer to its final newline, a batch to
-its count — and refuses one that ends short as `git-short-read` (exit 1,
-`internal`), naming the git command, never as a smaller answer
-(`git-short-read.test.ts` cuts each with a `git` on PATH). And the suite runs
-the CLI under Node: `tools/run-suite.ts` sets `WIKIWRIGHT_CLI_RUNTIME` to the
-`node` on PATH, and every test that runs the CLI runs it under that
-(`packages/cli/test/fixtures/runtime.ts`). The shipped engine does not use
-Bun's synchronous spawn: `dist/bin.js` is a Node script, and its git reads
-are Node's.
+The fix changes the transport. Every git read the engine makes — in
+`git.ts`, `state.ts`, `hooks.ts` and the freshness pass that reads through
+them, and the build identity — goes through one helper,
+`packages/cli/src/stdoutfile.ts`, that gives git an open file under
+`os.tmpdir()` for its stdout, created exclusively and removed once read. Git
+writes its answer there itself and closes it before it exits; the runtime
+reads no pipe. What that proves: the file is everything git wrote, so exit 0
+and the file are the whole answer under any runtime, and no runtime can hand
+back a prefix of it. The in-process engine reads a test makes under Bun —
+`judge-property.test.ts` builds states with `indexState` and `revisionState`
+in the test process — go through the same helper. What stays count-checked:
+a batch read's object names go in on stdin, a pipe the runtime writes, and
+each batch read holds its answer to the number of names it sent. The checks
+from before stay as a second line — every answer with a terminator is held to
+it, and one that ends short is `git-short-read` — and two cross-checks catch
+a listing cut at a record boundary wherever it came from: every path the
+staged diff names as added, modified, retyped, renamed or copied must be in
+the index listing, and `lint --since`'s commit walk must list as many
+commits as `rev-list --count` counts in its range. Either failing is
+`git-inconsistent-read` (exit 1, `internal`), naming both commands.
+`git-short-read.test.ts` cuts each answer, at a byte and at a record
+boundary, with a `git` on PATH.
+
+The stress run was repeated on 2026-09-24 against the helper, under Bun
+1.3.11 on twelve cores, with a piped `spawnSync` of the same calls as the
+control: 900 spawns of `cat` and both batch reads per run. Eight CPU burners
+alone, one run: the file lost none of 900 and the pipe none of 900. Eight
+burners with the suite looping, three runs: the file none of 2,700, the pipe
+none of 2,700. Thirty-six burners with the suite looping, load average about
+32, three runs: the file none of 2,700, the pipe 2 of 2,700 (`cat` returned 0
+of 38,500 bytes with exit 0, and a batch read 8,428 of 80,468). The cut is
+rare and depends on the load; the file transport is not a lower rate of it
+but a channel with no prefix to return.
+
+The suite also runs the CLI under Node: `tools/run-suite.ts` sets
+`WIKIWRIGHT_CLI_RUNTIME` to the `node` on PATH, and every test that runs the
+CLI runs it under that (`packages/cli/test/fixtures/runtime.ts`). The
+shipped engine does not use Bun's synchronous spawn: `dist/bin.js` is a Node
+script.
 
 Left: the test files still run under Bun, so the envelope a test reads back
 from the CLI, and the test's own setup `git` calls, still come through Bun's
-synchronous spawn. A cut envelope does not parse and fails its test loudly;
-a cut setup read is not checked. The tests that run Bun on purpose are
+piped spawn. A cut envelope does not parse and fails its test loudly; a cut
+setup read is not checked. The tests that run Bun on purpose are
 `run-suite.test.ts`, which drives the runner, and the one `vocabulary show`
 case that compares Bun's output with Node's.
 

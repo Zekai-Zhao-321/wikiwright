@@ -28,7 +28,7 @@ import {
   type WriteOp,
 } from "@wikiwright/core";
 import { type CommandResult, fail, ok } from "../envelope.ts";
-import { GitShortRead } from "../git.ts";
+import { GitAnswerRefused } from "../git.ts";
 import { lawFor, rootsOf, type VaultOk } from "../law.ts";
 import { contentPathRefusal } from "../paths.ts";
 import {
@@ -244,7 +244,7 @@ function prepare(
     try {
       state = indexState(args.root, roots);
     } catch (error) {
-      if (error instanceof GitShortRead) throw error;
+      if (error instanceof GitAnswerRefused) throw error;
       return {
         ok: false,
         result: fail(

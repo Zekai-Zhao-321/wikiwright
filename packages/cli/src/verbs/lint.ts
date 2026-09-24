@@ -12,7 +12,7 @@ import {
   type VaultState,
 } from "@wikiwright/core";
 import { type CommandResult, capOptions, fail, ok, verdictEnvelope } from "../envelope.ts";
-import { GitShortRead } from "../git.ts";
+import { GitAnswerRefused } from "../git.ts";
 import { lawFor, rootsOf, type VaultOk } from "../law.ts";
 import { sectionLines, templateFindings } from "../pages.ts";
 import { contentPathRefusal } from "../paths.ts";
@@ -183,8 +183,8 @@ async function runSinceLint(args: CommandArgs): Promise<CommandResult> {
   try {
     pairs = commitPairs(args.root, since);
   } catch (e) {
-    // A cut answer is not a revision that does not exist.
-    if (e instanceof GitShortRead) throw e;
+    // A cut or contradicted answer is not a revision that does not exist.
+    if (e instanceof GitAnswerRefused) throw e;
     return fail(
       "lint",
       "not_found",

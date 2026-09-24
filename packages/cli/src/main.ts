@@ -7,7 +7,7 @@ import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
 import { MACHINE_LOCAL_WRITERS, readConnections } from "./connections.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
-import { GitShortRead } from "./git.ts";
+import { GitInconsistentRead, GitShortRead } from "./git.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import {
   type CommandArgs,
@@ -82,15 +82,23 @@ type Target = { ok: true; args: CommandArgs } | { ok: false; result: CommandResu
  * this engine cannot read — the trust store, the bundles registry — is the
  * state refusing the operation, named by the store's own code with the file and
  * the failing record, from whichever verb or preload reached it. A git answer
- * cut short is `git-short-read`. Anything else is the engine breaking.
+ * cut short is `git-short-read`; two git answers that disagree are
+ * `git-inconsistent-read`. Anything else is the engine breaking.
  */
 function thrown(command: string, e: unknown): CommandResult {
-  // A git answer cut short is the plumbing failing, refused by name: never read
-  // as a smaller answer, and never a quieter verdict (docs/roadmap.md).
+  // A git answer cut short, or contradicted by another, is the plumbing
+  // failing, refused by name: never read as a smaller answer, and never a
+  // quieter verdict (docs/roadmap.md).
   if (e instanceof GitShortRead) {
     return fail(command, "internal", "git-short-read", e.message, {
       details: { command: `git ${e.command}` },
       hint: "git's answer ended before its terminator; nothing was judged from it — run the command again",
+    });
+  }
+  if (e instanceof GitInconsistentRead) {
+    return fail(command, "internal", "git-inconsistent-read", e.message, {
+      details: { commands: e.commands.map((c) => `git ${c}`) },
+      hint: "two git answers about one state disagree; nothing was judged from them — run the command again",
     });
   }
   if (e instanceof StoreMalformed) {

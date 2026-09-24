@@ -2,7 +2,6 @@
 // (--staged, --stdin, --since)
 // Each constructor answers one question — "which bytes, against which
 // base?" — and hands the answer to the one `judge` in core.
-import { execFileSync } from "node:child_process";
 import {
   codeUnitCompare,
   isContentPath,
@@ -12,27 +11,23 @@ import {
   type VaultState,
 } from "@wikiwright/core";
 import {
-  GitShortRead,
+  GitAnswerRefused,
+  GitInconsistentRead,
   gitHeadBlobs,
   gitIndexEntries,
   gitReadBlobs,
   gitShowHead,
   gitShowStaged,
   gitStagedChanges,
+  gitText,
   type IndexEntry,
   terminated,
 } from "./git.ts";
 import { readPage, type VaultReader, walkPages } from "./vaultio.ts";
 
-const MAX_BUFFER = 64 * 1024 * 1024;
-
+/** git's whole answer, read from the file git wrote (git.ts, stdoutfile.ts). */
 function git(root: string, argv: string[]): string {
-  return execFileSync("git", argv, {
-    cwd: root,
-    encoding: "utf8",
-    maxBuffer: MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  return gitText(root, argv);
 }
 
 /** `lint`, `check`: the working tree as it stands. No base — no transition arm. */
@@ -63,11 +58,30 @@ export interface IndexSnapshot {
  * snapshot, so neither call is spawned again for the second.
  */
 export function indexSnapshot(root: string): IndexSnapshot {
-  return {
+  const snapshot = {
     changes: gitStagedChanges(root),
     entries: gitIndexEntries(root).map((e) => ({ ...e, path: e.path.normalize("NFC") })),
   };
+  // The two answers describe one index. A path the staged diff says is in it —
+  // added, modified, retyped, or the new name of a rename or copy — that the
+  // listing does not hold means one of them is not whole, and a listing cut
+  // at a record boundary is well formed: judged, it would be fewer pages.
+  const listed = new Set(snapshot.entries.map((e) => e.path));
+  for (const change of snapshot.changes) {
+    if (!IN_INDEX.has(change.status)) continue;
+    const path = change.path.normalize("NFC");
+    if (!listed.has(path)) {
+      throw new GitInconsistentRead(
+        ["diff --cached --name-status -z -M --relative", "ls-files -s -z"],
+        `the staged diff names "${path}" (${change.status}) and the index listing does not hold it`,
+      );
+    }
+  }
+  return snapshot;
 }
+
+/** The staged-diff statuses whose path the index holds. */
+const IN_INDEX: ReadonlySet<string> = new Set(["A", "M", "T", "R", "C"]);
 
 /**
  * `lint --staged`, `gate`: the virtual post-index vault. Pages are the INDEX's
@@ -199,17 +213,28 @@ export function overlayState(
 /** The first-parent commits from `rev` to HEAD, oldest first (replay's walk). */
 export function commitPairs(root: string, since: string): { rev: string; base: string }[] {
   let revs: string[];
+  // Each walk is held to git's own count of its range: a walk cut at a line
+  // boundary is well formed, and judged it would be a shorter history.
   const list = (range: string): string[] => {
     const args = ["rev-list", "--first-parent", "--reverse", range];
-    return terminated(args, git(root, args), "\n")
+    const walked = terminated(args, git(root, args), "\n")
       .split("\n")
       .filter((s) => s !== "");
+    const counting = ["rev-list", "--first-parent", "--count", range];
+    const count = Number.parseInt(terminated(counting, git(root, counting), "\n", true), 10);
+    if (walked.length !== count) {
+      throw new GitInconsistentRead(
+        [args.join(" "), counting.join(" ")],
+        `the walk lists ${walked.length} commits and the count is ${count}`,
+      );
+    }
+    return walked;
   };
   try {
     revs = list(`${since}^..HEAD`);
   } catch (error) {
-    // A cut answer is not a missing parent: it is refused as itself.
-    if (error instanceof GitShortRead) throw error;
+    // A refused answer is not a missing parent: it is refused as itself.
+    if (error instanceof GitAnswerRefused) throw error;
     // `<root>^` does not exist, and a repository's first commit is exactly the
     // pair a replay most wants: its base is the empty tree, so every page in it
     // is `added` rather than a page with no arms.

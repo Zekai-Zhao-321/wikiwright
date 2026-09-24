@@ -21,7 +21,7 @@ import {
   freshnessReportJson,
   pinnedPages,
 } from "../freshness.ts";
-import { GitShortRead } from "../git.ts";
+import { GitAnswerRefused } from "../git.ts";
 import { generateOptionsFor, lawFor, rootsOf, type VaultOk } from "../law.ts";
 import { collectPages, sortFindings, summarize } from "../pages.ts";
 import {
@@ -110,11 +110,11 @@ function planForFreshness(args: CommandArgs): Plan {
 /**
  * A measurement that failed, as the run and its dry run both answer it. Only a
  * genuine plumbing failure reaches here — an origin that did not answer is a
- * finding on the pages that name it, never a refusal. A cut answer is refused
- * as itself.
+ * finding on the pages that name it, never a refusal. A cut or contradicted git
+ * answer is refused as itself.
  */
 function measurementRefused(e: unknown): CommandResult {
-  if (e instanceof GitShortRead) throw e;
+  if (e instanceof GitAnswerRefused) throw e;
   return fail("freshness", "conflict", "git-unavailable", `git plumbing failed: ${String(e)}`);
 }
 

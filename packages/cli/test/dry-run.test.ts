@@ -909,6 +909,8 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
     "the generated artifacts and the writer's brief — one generator, byte-reproducible",
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
   "skills.ts": "the shipped skills' install and its stamp",
+  "stdoutfile.ts":
+    "the file a git child writes its stdout to: created exclusively under os.tmpdir(), removed once read, never a vault path (docs/roadmap.md)",
   "storelock.ts":
     "the lock file beside a machine-local store, created exclusively and removed once the change lands",
   "trust.ts": "the machine-local trust store",

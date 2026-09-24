@@ -4,18 +4,19 @@
 // demoted to `checkout_commit`). The identity of the running code lives here, in
 // one module, because two verbs answer with it: `version` prints it and `skills`
 // stamps it into the install (docs/cli.md §skills).
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { gitRun } from "./git.ts";
 
 const CLI_PACKAGE_DIR = fileURLToPath(new URL("..", import.meta.url));
 
+/** git's answer in the package's own directory, read from the file git wrote; null on any failure. */
 function gitInPackage(args: string[]): string | null {
   try {
-    return execFileSync("git", ["-C", CLI_PACKAGE_DIR, ...args], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
+    const result = gitRun(CLI_PACKAGE_DIR, args);
+    return result.error === undefined && result.status === 0
+      ? result.stdout.toString("utf8")
+      : null;
   } catch {
     return null;
   }

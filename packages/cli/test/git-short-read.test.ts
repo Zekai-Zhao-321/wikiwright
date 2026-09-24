@@ -5,13 +5,14 @@
 // command, and hold every verb that reads it to the refusal.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { GitShortRead, terminated } from "../src/git.ts";
+import { spawnWithStdoutFile } from "../src/stdoutfile.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -60,8 +61,12 @@ function repo(): string {
  * its first line (`line`), with git's own exit status — or, under `fail`, runs
  * nothing and exits 128 as a broken repository does. `exact` cuts the last
  * byte as `byte` does, but only of the command whose whole argv is WW_CUT, so
- * `cat-file --batch` is cut and `cat-file --batch-check` is not. Every other
- * command passes through untouched.
+ * `cat-file --batch` is cut and `cat-file --batch-check` is not. The cuts that
+ * leave a well-formed, shorter answer — the ones no terminator can see — are
+ * `record` (without its last NUL-terminated record), `lastline` (without its
+ * last line) and `empty` (nothing at all). Every other command passes through
+ * untouched. The engine hands git a file for its stdout, so what the shim
+ * prints is exactly what the engine reads.
  */
 function cuttingGit(tmp: string): string {
   const real = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
@@ -84,6 +89,14 @@ function cuttingGit(tmp: string): string {
       "      status=$?",
       '      if [ "$WW_CUT_MODE" = line ]; then',
       `        head -n 1 "${held}"`,
+      '      elif [ "$WW_CUT_MODE" = lastline ]; then',
+      `        sed '$d' "${held}"`,
+      '      elif [ "$WW_CUT_MODE" = empty ]; then',
+      "        :",
+      '      elif [ "$WW_CUT_MODE" = record ]; then',
+      `        size=$(wc -c < "${held}" | tr -d ' ')`,
+      `        last=$(tr '\\000' '\\n' < "${held}" | tail -n 1 | wc -c | tr -d ' ')`,
+      `        head -c $((size - last)) "${held}"`,
       "      else",
       `        size=$(wc -c < "${held}" | tr -d ' ')`,
       `        if [ "$size" -gt 0 ]; then head -c $((size - 1)) "${held}"; fi`,
@@ -258,6 +271,109 @@ describe("a batch stream cut inside an object is a short read by name (docs/road
       run(tmp, PATH, ["lint", "--since", base], "cat-file --batch", "exact"),
       "cat-file --batch",
     );
+  });
+});
+
+/** repo() with one more page staged as added, sorting last in the index: a type no law declares. */
+function addedRepo(): string {
+  const tmp = repo();
+  writeFileSync(
+    join(tmp, "wiki", "Yarrow.md"),
+    "---\ntype: shrub\ntitle: Yarrow\ndescription: Yarrow.\ntags: []\n---\n\n# Yarrow\n",
+  );
+  git(tmp, "add", "-A");
+  return tmp;
+}
+
+describe("two git answers that disagree are git-inconsistent-read (docs/roadmap.md)", () => {
+  let tmp = "";
+  let PATH = "";
+  before(() => {
+    if (POSIX_ONLY) return;
+    tmp = addedRepo();
+    PATH = cuttingGit(tmp);
+  });
+  after(() => {
+    if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
+  });
+
+  function assertInconsistent(r: Run, command: string): void {
+    assert.equal(r.status, 1, said(r));
+    const error = r.envelope["error"] as {
+      type: string;
+      code: string;
+      details: { commands: string[] };
+    };
+    assert.equal(error.type, "internal", said(r));
+    assert.equal(error.code, "git-inconsistent-read", said(r));
+    assert.ok(
+      error.details.commands.some((c) => c.startsWith(`git ${command}`)),
+      said(r),
+    );
+  }
+
+  it("the whole index fails the added page's unknown type", () => {
+    if (POSIX_ONLY) return;
+    const r = run(tmp, PATH, ["lint", "--staged"]);
+    assert.equal(r.status, 5, said(r));
+    const findings = (r.envelope["data"] as { findings: Array<{ ruleId: string; path: string }> })
+      .findings;
+    assert.ok(
+      findings.some((f) => f.path === "wiki/Yarrow.md" && f.ruleId === "unknown-type"),
+      said(r),
+    );
+  });
+
+  it("an index listing cut before its last record, while the diff names that page, is refused", () => {
+    if (POSIX_ONLY) return;
+    // The listing still ends in NUL: well formed, one record short, and judged
+    // it would be a clean index without the failing page.
+    assertInconsistent(
+      run(tmp, PATH, ["lint", "--staged"], "ls-files -s -z", "record"),
+      "ls-files",
+    );
+  });
+
+  it("an empty index listing, while the diff names pages, is refused", () => {
+    if (POSIX_ONLY) return;
+    assertInconsistent(run(tmp, PATH, ["lint", "--staged"], "ls-files -s -z", "empty"), "ls-files");
+  });
+
+  it("a commit walk cut before its last line, or empty, is refused against git's count", () => {
+    if (POSIX_ONLY) return;
+    const head = git(tmp, "rev-parse", "HEAD");
+    for (const mode of ["lastline", "empty"]) {
+      assertInconsistent(
+        run(tmp, PATH, ["lint", "--since", head], "rev-list --first-parent --reverse", mode),
+        "rev-list --first-parent --reverse",
+      );
+    }
+  });
+});
+
+describe("spawnWithStdoutFile: the child writes its answer to its own file", () => {
+  const leftovers = (): string[] =>
+    readdirSync(tmpdir()).filter((n) => n.startsWith(`wikiwright-stdout-${process.pid}-`));
+
+  it("returns every byte the child wrote, its status and its stderr, and removes the file", () => {
+    if (POSIX_ONLY) return;
+    const body = "Tie the canes in autumn.\n".repeat(4000);
+    const r = spawnWithStdoutFile(
+      "sh",
+      ["-c", 'cat; printf "%s" "$BODY"; echo tail; echo warned >&2; exit 3'],
+      { cwd: tmpdir(), input: "from stdin\n", env: { ...process.env, BODY: body } },
+    );
+    assert.equal(r.status, 3);
+    assert.equal(r.stdout.toString("utf8"), `from stdin\n${body}tail\n`);
+    assert.equal(r.stderr, "warned\n");
+    assert.equal(r.error, undefined);
+    assert.deepEqual(leftovers(), []);
+  });
+
+  it("a command that cannot be spawned is an error, and still leaves no file", () => {
+    const r = spawnWithStdoutFile("wikiwright-no-such-command", [], { cwd: tmpdir() });
+    assert.notEqual(r.error, undefined);
+    assert.deepEqual(leftovers(), []);
   });
 });
 

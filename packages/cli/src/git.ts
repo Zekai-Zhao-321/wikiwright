@@ -1,6 +1,5 @@
 // docs/architecture.md (spawned git plumbing; no git library) · docs/cli.md §lint (--staged
 // reads index content, never the working tree).
-import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
@@ -10,25 +9,44 @@ import {
   parseNameStatusZ,
   type StagedChange,
 } from "@wikiwright/core";
+import { type ChildAnswer, type ChildOptions, spawnWithStdoutFile } from "./stdoutfile.ts";
 
-// 64 MiB: the default 1 MiB maxBuffer would crash on large pages — and worse,
-// silently disarm the append-only base lookup via the catch below.
-const MAX_BUFFER = 64 * 1024 * 1024;
+/**
+ * A git answer the engine refuses to judge from. Every catch that turns a
+ * plumbing failure into `git-unavailable` or `revision-not-found` rethrows
+ * one of these as itself, so it reaches the runtime's own refusal
+ * (docs/cli.md §Exit codes).
+ */
+export abstract class GitAnswerRefused extends Error {}
 
 /**
  * docs/cli.md §Exit codes: a git answer that ended before git finished
- * writing it. Under load a runtime's synchronous spawn has handed back a
- * child's stdout cut short with exit 0 and nothing on stderr (docs/roadmap.md),
- * and a listing read that way is a shorter listing: a cut index is "nothing
- * staged". Every read whose output has a terminator is held to it, and one that
- * ends without it is this, refused by name as `git-short-read` and never read
- * as a smaller answer. `command` is the git command, for the refusal.
+ * writing it. Every answer is read from a file git wrote itself
+ * (`stdoutfile.ts`), so no runtime pipe can cut one; the terminator and count
+ * checks stay as a second line. A read whose output has a terminator is held
+ * to it, and one that ends without it is this, refused by name as
+ * `git-short-read`. `command` is the git command, for the refusal.
  */
-export class GitShortRead extends Error {
+export class GitShortRead extends GitAnswerRefused {
   readonly command: string;
   constructor(command: string, detail: string) {
     super(`git ${command} answered short: ${detail}`);
     this.command = command;
+  }
+}
+
+/**
+ * docs/cli.md §Exit codes: two git answers that cannot both be whole — the
+ * staged diff names a page the index listing does not hold, or a commit walk
+ * lists fewer commits than git counts in its range. A listing cut at a record
+ * boundary is well formed, so these cross-checks are what can catch one; it is
+ * refused as `git-inconsistent-read`, never judged as a smaller state.
+ */
+export class GitInconsistentRead extends GitAnswerRefused {
+  readonly commands: string[];
+  constructor(commands: readonly string[], detail: string) {
+    super(`git ${commands.join(" and git ")} disagree: ${detail}`);
+    this.commands = [...commands];
   }
 }
 
@@ -54,17 +72,34 @@ export function terminated(
   return out;
 }
 
+/**
+ * One git child, its stdout read from the file it wrote (`stdoutfile.ts`).
+ * stderr is captured, never inherited: it rides on a thrown error's message
+ * (gitShowHead matches on it) instead of printing `fatal:` beside a green
+ * envelope (docs/cli.md §The envelope).
+ */
+export function gitRun(
+  cwd: string,
+  args: readonly string[],
+  options: Omit<ChildOptions, "cwd"> = {},
+): ChildAnswer {
+  return spawnWithStdoutFile("git", args, { ...options, cwd });
+}
+
+/** git's whole answer as text; a spawn failure or a non-zero exit is thrown with stderr. */
+export function gitText(root: string, args: readonly string[]): string {
+  const result = gitRun(root, args);
+  if (result.error !== undefined) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(
+      `git ${args.join(" ")} exited ${String(result.status)}: ${result.stderr.trim()}`,
+    );
+  }
+  return result.stdout.toString("utf8");
+}
+
 function git(root: string, args: string[]): string {
-  // stderr is captured, never inherited: it rides on the thrown error's message
-  // (gitShowHead matches on it) instead of printing `fatal:` beside a green
-  // envelope — a repository the freshness pass cannot measure is a finding or a
-  // coverage row, never noise on stderr (docs/cli.md §The envelope).
-  return execFileSync("git", args, {
-    cwd: root,
-    encoding: "utf8",
-    maxBuffer: MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  return gitText(root, args);
 }
 
 export function gitStagedChanges(root: string): StagedChange[] {
@@ -140,15 +175,11 @@ export function gitHead(root: string): string {
  * plumbing breaking and is thrown as itself.
  */
 export function gitTopLevel(dir: string): string | undefined {
-  const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
-    cwd: dir,
-    encoding: "utf8",
-    maxBuffer: MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const result = gitRun(dir, ["rev-parse", "--show-toplevel"]);
   if (result.error !== undefined) throw result.error;
   if (result.status === 0) {
-    return terminated(["rev-parse", "--show-toplevel"], result.stdout, "\n", true).trim();
+    const out = result.stdout.toString("utf8");
+    return terminated(["rev-parse", "--show-toplevel"], out, "\n", true).trim();
   }
   if (/not a git repository/iu.test(result.stderr)) return undefined;
   throw new Error(
@@ -165,18 +196,14 @@ export function gitTopLevel(dir: string): string | undefined {
  * it keeps its warning instead of being silently read as "no commits yet".
  */
 export function gitHasHead(root: string): boolean {
-  const result = spawnSync("git", ["rev-parse", "--verify", "--quiet", "HEAD"], {
-    cwd: root,
-    encoding: "utf8",
-    maxBuffer: MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const result = gitRun(root, ["rev-parse", "--verify", "--quiet", "HEAD"]);
   if (result.error !== undefined) throw result.error;
+  const out = result.stdout.toString("utf8");
   if (result.status === 0) {
-    terminated(["rev-parse", "--verify", "--quiet", "HEAD"], result.stdout, "\n", true);
+    terminated(["rev-parse", "--verify", "--quiet", "HEAD"], out, "\n", true);
     return true;
   }
-  if (result.status === 1 && result.stdout.trim() === "") return false;
+  if (result.status === 1 && out.trim() === "") return false;
   throw new Error(
     `git rev-parse --verify HEAD failed (exit ${result.status}): ${result.stderr.trim()}`,
   );
@@ -207,11 +234,7 @@ function originGit(
   cwd: string,
   args: string[],
 ): { status: number | null; stdout: string; stderr: string } {
-  const result = spawnSync("git", args, {
-    cwd,
-    encoding: "utf8",
-    maxBuffer: MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
+  const result = gitRun(cwd, args, {
     timeout: ORIGIN_TIMEOUT_MS,
     env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
   });
@@ -221,7 +244,7 @@ function originGit(
     }
     throw result.error;
   }
-  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+  return { status: result.status, stdout: result.stdout.toString("utf8"), stderr: result.stderr };
 }
 
 /** The origin's HEAD, with no clone: one round trip. */
@@ -273,15 +296,11 @@ export function gitOriginFetch(
 
 /** A ref's commit, or null where the ref does not exist. */
 export function gitRefHead(dir: string, ref: string): string | null {
-  const result = spawnSync("git", ["rev-parse", "--verify", "--quiet", ref], {
-    cwd: dir,
-    encoding: "utf8",
-    maxBuffer: MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const args = ["rev-parse", "--verify", "--quiet", ref];
+  const result = gitRun(dir, args);
   if (result.error !== undefined) throw result.error;
   if (result.status === 0) {
-    return terminated(["rev-parse", "--verify", "--quiet", ref], result.stdout, "\n", true).trim();
+    return terminated(args, result.stdout.toString("utf8"), "\n", true).trim();
   }
   if (result.status === 1) return null;
   throw new Error(
@@ -296,12 +315,7 @@ export function gitCommitKnown(dir: string, sha: string): boolean {
 
 /** Whether `ancestor` is on the history of `descendant`. */
 export function gitIsAncestor(dir: string, ancestor: string, descendant: string): boolean {
-  const result = spawnSync("git", ["merge-base", "--is-ancestor", ancestor, descendant], {
-    cwd: dir,
-    encoding: "utf8",
-    maxBuffer: MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const result = gitRun(dir, ["merge-base", "--is-ancestor", ancestor, descendant]);
   if (result.error !== undefined) throw result.error;
   if (result.status === 0) return true;
   if (result.status === 1) return false;
@@ -329,15 +343,10 @@ export function gitTreeEntries(dir: string, rev: string): string[] {
  * not a failure; a spawn failure is thrown as itself.
  */
 export function gitObjectType(dir: string, spec: string): string | undefined {
-  const result = spawnSync("git", ["cat-file", "-t", spec], {
-    cwd: dir,
-    encoding: "utf8",
-    maxBuffer: MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const result = gitRun(dir, ["cat-file", "-t", spec]);
   if (result.error !== undefined) throw result.error;
   if (result.status !== 0) return undefined;
-  return terminated(["cat-file", "-t", spec], result.stdout, "\n", true).trim();
+  return terminated(["cat-file", "-t", spec], result.stdout.toString("utf8"), "\n", true).trim();
 }
 
 /** The number of lines in a blob: its newlines, plus one for an unterminated last line. */
@@ -384,18 +393,16 @@ function utf8(bytes: Uint8Array): string {
 /** The most content bytes one `cat-file --batch` child returns; a chunk holds at least one blob. */
 const BATCH_BYTES = 32 * 1024 * 1024;
 
-function gitBatch(root: string, args: string[], input: string, maxBuffer: number): Buffer {
-  const result = spawnSync("git", args, {
-    cwd: root,
-    input,
-    maxBuffer,
-    stdio: ["pipe", "pipe", "pipe"],
-  });
+/**
+ * A batch read: the object names go in on stdin, a pipe the runtime writes, and
+ * the answer comes back in the file git wrote. What the stdin pipe could lose
+ * is caught by the count each batch read holds its answer to.
+ */
+function gitBatch(root: string, args: string[], input: string): Buffer {
+  const result = gitRun(root, args, { input });
   if (result.error !== undefined) throw result.error;
   if (result.status !== 0) {
-    throw new Error(
-      `git ${args.join(" ")} exited ${result.status}: ${result.stderr.toString("utf8")}`,
-    );
+    throw new Error(`git ${args.join(" ")} exited ${String(result.status)}: ${result.stderr}`);
   }
   return result.stdout;
 }
@@ -415,12 +422,7 @@ export function gitReadBlobs(root: string, blobs: readonly string[]): Map<string
   const out = new Map<string, string>();
   if (wanted.length === 0) return out;
   const sizes = new Map<string, number>();
-  const checked = gitBatch(
-    root,
-    ["cat-file", "--batch-check"],
-    `${wanted.join("\n")}\n`,
-    MAX_BUFFER,
-  );
+  const checked = gitBatch(root, ["cat-file", "--batch-check"], `${wanted.join("\n")}\n`);
   const records = parseCatFileBatchCheck(
     terminated(["cat-file", "--batch-check"], checked.toString("utf8"), "\n"),
   );
@@ -438,9 +440,7 @@ export function gitReadBlobs(root: string, blobs: readonly string[]): Map<string
   let chunkBytes = 0;
   const flush = (): void => {
     if (chunk.length === 0) return;
-    // The buffer is the chunk's content plus a header and a newline per blob.
-    const maxBuffer = chunkBytes + chunk.length * 128 + 1024;
-    const bytes = gitBatch(root, ["cat-file", "--batch"], `${chunk.join("\n")}\n`, maxBuffer);
+    const bytes = gitBatch(root, ["cat-file", "--batch"], `${chunk.join("\n")}\n`);
     // Every object ends in a newline, so a stream cut between objects is caught
     // by the terminator and the count; one cut inside an object, by the parser,
     // and it is the same short read by name.
@@ -498,12 +498,7 @@ export function gitHeadBlobs(
   const out = new Map<string, string | undefined>();
   if (wanted.length === 0) return out;
   const names = wanted.map((path) => `HEAD:./${path}`);
-  const checked = gitBatch(
-    root,
-    ["cat-file", "--batch-check"],
-    `${names.join("\n")}\n`,
-    MAX_BUFFER,
-  );
+  const checked = gitBatch(root, ["cat-file", "--batch-check"], `${names.join("\n")}\n`);
   const records = parseCatFileBatchCheck(
     terminated(["cat-file", "--batch-check"], checked.toString("utf8"), "\n"),
   );
@@ -537,10 +532,10 @@ const HOOK_VARIABLES = ["GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX
 export function gitWorktreeIdentity(dir: string): { commonDir: string; prefix: string } {
   const env = { ...process.env };
   for (const key of HOOK_VARIABLES) delete env[key];
-  const result = spawnSync(
-    "git",
+  const result = gitRun(
+    dir,
     ["rev-parse", "--is-inside-work-tree", "--git-common-dir", "--show-prefix"],
-    { cwd: dir, env, encoding: "utf8", maxBuffer: MAX_BUFFER, stdio: ["ignore", "pipe", "pipe"] },
+    { env },
   );
   if (result.error !== undefined) throw result.error;
   if (result.status !== 0) {
@@ -556,7 +551,7 @@ export function gitWorktreeIdentity(dir: string): { commonDir: string; prefix: s
   // end in a newline was cut short, and says so.
   const lines = terminated(
     ["rev-parse", "--is-inside-work-tree", "--git-common-dir", "--show-prefix"],
-    result.stdout,
+    result.stdout.toString("utf8"),
     "\n",
     true,
   ).split("\n");
@@ -597,8 +592,8 @@ export interface CheckoutState {
 export function gitCheckoutState(dir: string): CheckoutState | undefined {
   const env = { ...process.env };
   for (const key of HOOK_VARIABLES) delete env[key];
-  const result = spawnSync(
-    "git",
+  const result = gitRun(
+    dir,
     [
       "--no-optional-locks",
       "status",
@@ -608,14 +603,14 @@ export function gitCheckoutState(dir: string): CheckoutState | undefined {
       "--",
       ".",
     ],
-    { cwd: dir, env, encoding: "utf8", maxBuffer: MAX_BUFFER, stdio: ["ignore", "pipe", "pipe"] },
+    { env },
   );
   if (result.error !== undefined || result.status !== 0) return undefined;
   // A cut answer could drop the entries that make the checkout dirty: it is
   // thrown, and the bundle block it would have fed is left off.
   const out = terminated(
     ["status", "--porcelain=v2", "--branch", "--untracked-files=all"],
-    result.stdout,
+    result.stdout.toString("utf8"),
     "\n",
     true,
   );

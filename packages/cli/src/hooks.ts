@@ -2,10 +2,9 @@
 // script, and the commit-msg prefix hook a bundle's own declaration asks for)
 // docs/architecture.md §Directories.
 
-import { execFileSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { terminated } from "./git.ts";
+import { gitRun, terminated } from "./git.ts";
 
 const HOOK_MARKER = "# installed by wikiwright";
 
@@ -71,20 +70,13 @@ export function inspectHook(
 ): HookRefusal | { kind: "installed"; hooksDir: string; names: string[] } {
   // Linked worktrees have a .git FILE; resolve the hooks directory through git
   // plumbing (respects core.hooksPath too) instead of assuming a layout.
-  let answer: string;
   const args = ["rev-parse", "--path-format=absolute", "--git-path", "hooks"];
-  try {
-    answer = execFileSync("git", args, {
-      cwd: root,
-      encoding: "utf8",
-      // Outside a work tree git says `fatal: not a git repository`; that answer
-      // is the "no-git" return below, never a line beside a green envelope
-      // (docs/cli.md §The envelope).
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-  } catch {
-    return { kind: "no-git" };
-  }
+  const result = gitRun(root, args);
+  // Outside a work tree git says `fatal: not a git repository`; that answer is
+  // the "no-git" return below, never a line beside a green envelope
+  // (docs/cli.md §The envelope).
+  if (result.error !== undefined || result.status !== 0) return { kind: "no-git" };
+  const answer = result.stdout.toString("utf8");
   // A cut path would install the hooks somewhere else: refused, never written.
   const hooksDir = terminated(args, answer, "\n", true).trim();
   const chain = options?.chain;
