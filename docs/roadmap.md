@@ -10,7 +10,7 @@ that would close the gap, rather than left for a reader to discover.
 
 wikiwright 0.1.0 is two packages and a kit. `@wikiwright/core` is the
 kernel and the standard library (claims, relations, entries), a pure
-library over bytes. `wikiwright` is the binary: 23 verbs, one module each,
+library over bytes. `wikiwright` is the binary: 24 verbs, one module each,
 one JSON envelope per invocation; `docs/cli.md` lists every verb and flag.
 Every envelope of a verb that reads a vault's law names the bundle it read —
 its label, real root, head, whether it is dirty, and digests of its law and

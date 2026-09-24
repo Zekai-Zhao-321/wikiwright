@@ -340,7 +340,8 @@ host installs as a skill: its pages, its configuration verbatim and what the
 loader needs to judge them. Each entry of `exports` declares one. `check
 --write` renders each `output: skills` export into `skills/<name>/` under the
 bundle root, and `check` and the staged gate hold the rendered copy to a fresh
-render (docs/cli.md §check); no verb writes an `external` export yet.
+render (docs/cli.md §check). `export <name> --to <dir>` writes an `external`
+export into another repository's tree (docs/cli.md §Notes per verb).
 
 ```json
 "exports": [

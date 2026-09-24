@@ -8,6 +8,7 @@ import type { CommandSpec } from "./spec.ts";
 import { briefCommand } from "./verbs/brief.ts";
 import { bundlesCommand } from "./verbs/bundles.ts";
 import { checkCommand } from "./verbs/check.ts";
+import { exportCommand } from "./verbs/export.ts";
 import { fixCommand } from "./verbs/fix.ts";
 import { freshnessCommand } from "./verbs/freshness.ts";
 import { gateCommand } from "./verbs/gate.ts";
@@ -33,6 +34,7 @@ export const COMMANDS: CommandSpec[] = [
   briefCommand,
   bundlesCommand,
   checkCommand,
+  exportCommand,
   freshnessCommand,
   gateCommand,
   graphCommand,

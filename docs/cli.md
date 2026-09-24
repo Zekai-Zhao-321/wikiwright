@@ -225,6 +225,28 @@ What the registry rows below do not say.
   names; the engine never removes it). A root that holds `config/export.json`
   is a copy and renders nothing. `data.generated.exports` lists the export
   directories judged.
+- **`export <name> --to <dir>`** writes one `output: external` export
+  (docs/constitution.md §exports) into the repository rooted at `<dir>`, as
+  `<dir>/skills/<name>/`, and `<dir>/plugin.json` and
+  `<dir>/.claude-plugin/plugin.json` when `plugin` is declared. It owns what
+  it writes as `check --write` owns an in-repository export: every planned file
+  is replaced, every file under `<dir>/skills/<name>/` the plan no longer holds
+  is removed, and nothing else under `<dir>` is touched, `.git` included. It
+  refuses a name the config does not declare (`export-not-declared`, exit 2,
+  the declared names in `details.valid_values`), an `output: skills` export
+  (`export-output-skills`, exit 2: `check --write` renders those), a `<dir>`
+  that is not a directory, is the bundle's root or lies in one of its content
+  roots (`export-destination-invalid`, exit 2), a `<dir>/skills/<name>/` that
+  exists and holds no `config/export.json` (`export-destination-occupied`,
+  exit 4), and a symbolic link at `<dir>/skills` or anywhere under
+  `<dir>/skills/<name>/` (`export-destination-linked`, exit 4). An export a
+  render finding refuses (`export-tag-unknown`, `export-symlink`, …) exits 5
+  with the findings and writes nothing. The envelope carries the absolute
+  `destination`, the marker's identity (`export`: its `name`, `bundle`,
+  `source.repository`, `select`, `pages` and `cut` counts) and the counts
+  `written`, `removed` and `files`. `--dry-run` plans every file written and
+  removed: a path under the bundle's root is named relative to it, any other
+  absolute.
 - **`lint --stdin --path <p>`** judges a draft in place of the page at `<p>`
   with the disk bytes as its base. **`lint --staged`** judges the git index
   against HEAD, exactly as `gate` does. **`lint --since <rev>`** replays every
@@ -621,6 +643,7 @@ Global flags, accepted by every verb:
 | [`brief`](#brief) | consumer | no | Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/. |
 | [`bundles`](#bundles) | consumer | yes | Connect a vault by name in this machine's registry, list the connections with their identity, or remove one. |
 | [`check`](#check) | writer | yes | The aggregate pass: registry + lint + generated-drift comparison. |
+| [`export`](#export) | maintainer | yes | Write one declared external export into another repository, as skills/<name>/. |
 | [`fix`](#fix) | writer | yes | Apply the mechanical ops one rule licenses, all-or-nothing, and prove them gone. |
 | [`freshness`](#freshness) | maintainer | yes | Measure every pin against the origin its page names: is it still the head (default), or how far behind and is the capture stale (--fetch); --fast-forward advances the clean pins. |
 | [`gate`](#gate) | maintainer | no | The hooks' entry point: check the engine pin, then judge the staged vault. |
@@ -704,6 +727,23 @@ Role: `writer`. Writes: yes (accepts `--dry-run`).
 ```text
 wikiwright check --root .
 wikiwright check --write
+```
+
+### export
+
+`wikiwright export <name>`
+
+Write one declared external export into another repository, as skills/<name>/.
+
+Role: `maintainer`. Writes: yes (accepts `--dry-run`).
+
+| Flag | Meaning |
+|---|---|
+| `--to <value>` | the root of the repository the export is written into (required) |
+| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
+
+```text
+wikiwright export roses --to ../roses-skill
 ```
 
 ### fix

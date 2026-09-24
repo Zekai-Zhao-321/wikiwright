@@ -230,10 +230,33 @@ function plannedPaths(ops: readonly PlanOp[]): string[] {
   return [...paths].sort();
 }
 
+/**
+ * The fixture with one `output: external` export declared, and the directory
+ * under its root that `export` writes into: a destination outside the content
+ * roots, so the plan names it relative to the root (docs/cli.md §export).
+ */
+const EXPORT_ENGINE = {
+  ...FOLDER_MODE,
+  exports: [
+    {
+      name: "dry-run-export",
+      select: { kind: "all" },
+      output: "external",
+      repository: "https://example.invalid/dry-run",
+      contribution: { mode: "none" },
+    },
+  ],
+};
+
+function exportDestination(dir: string): void {
+  mkdirSync(join(dir, "out"), { recursive: true });
+}
+
 /** One dry-run invocation per writing verb, each one that succeeds on the fixture. */
 const DRY_RUNS: Record<string, string[]> = {
   bundles: ["bundles", "add", ".", "--name", "dry-run-vault", "--dry-run"],
   check: ["check", "--dry-run"],
+  export: ["export", "dry-run-export", "--to", "out", "--dry-run"],
   fix: [
     "fix",
     "--rule",
@@ -266,6 +289,12 @@ const DRY_RUNS: Record<string, string[]> = {
 
 /** The verbs whose form reads Markdown on stdin (docs/cli.md §write). */
 const DRY_RUN_STDIN: Record<string, (dir: string) => string> = { write: writeDraft };
+
+/** The verbs whose dry run needs more than the fixture: a declaration, a destination. */
+const DRY_RUN_SETUP: Record<
+  string,
+  { engine: Record<string, unknown>; arrange: (dir: string) => void }
+> = { export: { engine: EXPORT_ENGINE, arrange: exportDestination } };
 
 describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   it("every writes: true verb declares a plan, and no reader does", () => {
@@ -323,7 +352,9 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
 
   for (const command of COMMANDS.filter((c) => c.writes && c.name !== "init")) {
     it(`${command.name} --dry-run writes nothing and reports wrote: false`, () => {
-      const tmp = vault();
+      const setup = DRY_RUN_SETUP[command.name];
+      const tmp = vault(setup?.engine);
+      setup?.arrange(tmp);
       // A registry this case owns, absent, so a write to it shows and nothing
       // of the developer's is read.
       const stores = mkdtempSync(join(tmpdir(), "ww-dryrun-case-"));
@@ -520,6 +551,26 @@ const REFUSALS: Refusal[] = [
     name: "freshness --fast-forward without --fetch",
     argv: ["freshness", "--fast-forward"],
   },
+  {
+    name: "export of a name the config does not declare",
+    argv: ["export", "no-such-export", "--to", "out"],
+    engine: EXPORT_ENGINE,
+    arrange: exportDestination,
+  },
+  {
+    name: "export with no --to",
+    argv: ["export", "dry-run-export"],
+    engine: EXPORT_ENGINE,
+  },
+  {
+    name: "export over a directory that holds no marker",
+    argv: ["export", "dry-run-export", "--to", "out"],
+    engine: EXPORT_ENGINE,
+    arrange: (dir) => {
+      mkdirSync(join(dir, "out", "skills", "dry-run-export"), { recursive: true });
+      writeFileSync(join(dir, "out", "skills", "dry-run-export", "notes.md"), "mine\n");
+    },
+  },
 ];
 
 describe("a dry run answers a valid invocation, never a typo (docs/cli.md §The dry-run law)", () => {
@@ -606,6 +657,29 @@ const FIDELITY: Fidelity[] = [
         { cwd: dir },
       );
       execFileSync("git", ["add", "-A"], { cwd: dir });
+    },
+    writes: true,
+  },
+  {
+    name: "export",
+    argv: ["export", "dry-run-export", "--to", "out"],
+    engine: EXPORT_ENGINE,
+    arrange: exportDestination,
+    writes: true,
+  },
+  {
+    // A file the earlier export held and this plan does not is a removal the
+    // plan names.
+    name: "export over an earlier export",
+    argv: ["export", "dry-run-export", "--to", "out"],
+    engine: EXPORT_ENGINE,
+    arrange: (dir) => {
+      exportDestination(dir);
+      run(dir, ["export", "dry-run-export", "--to", "out"]);
+      writeFileSync(
+        join(dir, "out", "skills", "dry-run-export", "wiki", "left-behind.md"),
+        "a page an earlier selection held\n",
+      );
     },
     writes: true,
   },
