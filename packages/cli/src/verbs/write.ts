@@ -345,7 +345,9 @@ function closeLine(original: string, clause: string): string {
 
 function supersedeClause(claim: ClaimItem, date: string): string {
   const from = claim.provenance?.date;
-  const to = dayBefore(date);
+  // A claim replaced on its own date stood for part of that day: the interval
+  // is `valid D→D, superseded D`, zero-length and closed, never `D→D-1`.
+  const to = from === date ? date : dayBefore(date);
   return from === undefined
     ? `valid →${to}, superseded ${date}`
     : `valid ${from}→${to}, superseded ${date}`;
@@ -1109,12 +1111,14 @@ async function sectionForm(input: {
       );
     }
     const from = claim.provenance?.date;
-    if (from !== undefined && date <= from) {
+    // docs/cli.md §write: the same date is a same-day supersession; only a
+    // date before the claim's own would close an interval that runs backwards.
+    if (from !== undefined && date < from) {
       return fail(
         "write",
         "conflict",
-        "date-not-after",
-        `--date ${date} is not after the retired claim's own date ${from}; the interval would render backwards`,
+        "date-before-claim",
+        `--date ${date} is before the retired claim's own date ${from}; the interval would run backwards`,
       );
     }
     const item = stdinText().replace(/\r?\n$/u, "");

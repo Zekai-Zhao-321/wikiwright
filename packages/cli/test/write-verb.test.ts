@@ -344,7 +344,7 @@ describe("docs/cli.md §write — the section forms", () => {
     assert.match(page(dir), /\(valid →2026-09-08, superseded 2026-09-09\)/u);
   });
 
-  it("--date at or before the retired claim's own date is refused", () => {
+  it("--date before the retired claim's own date is refused", () => {
     const handle = handleOf(dir, "identity");
     const r = run(
       dir,
@@ -356,12 +356,12 @@ describe("docs/cli.md §write — the section forms", () => {
         "--replace-core",
         handle,
         "--date",
-        "2026-09-03",
+        "2026-09-02",
       ],
-      "- [identity] full name: x (stated 2026-09-03)\n",
+      "- [identity] full name: x (stated 2026-09-02)\n",
     );
     assert.equal(r.status, 4);
-    assert.equal(r.error["code"], "date-not-after");
+    assert.equal(r.error["code"], "date-before-claim");
   });
 
   it("an accumulate category under --replace-core is exit 4 with the legal[]", () => {

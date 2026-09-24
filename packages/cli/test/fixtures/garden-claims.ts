@@ -29,6 +29,8 @@ A rose trained along a wall or a frame.
 ## Relations
 
 - grows_near [[Apple tree]]
+
+## History
 `,
   "Apple tree.md": `---
 type: plant

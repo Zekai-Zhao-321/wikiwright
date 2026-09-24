@@ -271,7 +271,12 @@ What the registry rows below do not say.
   declared order. A claims form (`--replace-core`, `--retract`, `--correct
   --core`, `--line`, `--coexist`) acts on one claim the page carries and
   renders the History line itself; on a declared, absent section it is
-  `section-absent`. `--coexist <reason>` admits a second open claim of a
+  `section-absent`. `--replace-core` closes the retired claim `valid <its
+  date>→<the day before --date>, superseded <--date>`. On the claim's own
+  date the interval is `valid D→D, superseded D`: the claim stood for part of
+  that one day and was replaced the same day, and the interval is closed and
+  zero-length, never `D→D-1`. A `--date` before the claim's own date is
+  `date-before-claim` (exit 4): that interval would run backwards. `--coexist <reason>` admits a second open claim of a
   supersede category and records a rationale line under it, `coexists:
   <reason> (beside <handle>, <handle> and <n> more)`: the reason first, then
   the two newest open claims of the category and a count of the rest. No arm

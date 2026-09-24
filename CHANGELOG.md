@@ -134,6 +134,12 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- `write --replace-core` supersedes a claim on its own date: the History
+  line closes it `valid D→D, superseded D`, a zero-length interval, where the
+  verb refused because `D→D-1` would run backwards, and an author bent the
+  one-open-truth rule instead. A date before the claim's own is still
+  refused, now as `date-before-claim`; the code was `date-not-after`, which
+  the same date no longer is.
 - `write --section --append --coexist <reason>` renders its rationale line
   reason first, `coexists: <reason> (beside <handle>, <handle> and <n> more)`,
   naming the two newest open claims of the category and counting the rest.
