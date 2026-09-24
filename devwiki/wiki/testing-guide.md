@@ -3,9 +3,9 @@ type: testing-guide
 title: "Testing the engine"
 description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install and grant the code kit in a store the test owns."
 tags: [repo]
-pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
+pin: 0102007b93b93f4e19f03b4ca5976633679cbf7a
 origin: .
-covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts]
+covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts]
 ---
 
 # Testing the engine
@@ -83,7 +83,7 @@ A test that spawns a verb that stamps a date sets `WIKIWRIGHT_TODAY`: spread
 test that connects a bundle points `WIKIWRIGHT_BUNDLES_FILE` at a registry
 under its temporary directory, as it points `WIKIWRIGHT_TRUST_FILE` at its
 own store, so the developer's registry is neither read nor written
-(`packages/cli/test/bundles.test.ts:64-70`).
+(`packages/cli/test/bundles.test.ts:65-71`).
 
 For a bundle over the code kit, `packages/cli/test/fixtures/kit-code.ts`
 carries the helpers: `installKit(root)` rewrites the bundle's `package.json`
@@ -106,10 +106,15 @@ envelope once so no fixture repeats it (`:1-5`, `:26-56`).
 
 A verb that writes is driven twice, dry and real, and the plan's path set is
 asserted equal to the real filesystem delta, and neither the trust store nor
-the bundles registry may move under a dry run
-(`packages/cli/test/dry-run.test.ts:1-13`, `:182-194`); the two verbs an
-installed copy does not refuse, `bundles` and `trust`, are held to plan only
-absolute paths outside the vault (`:950-999`). A property that must hold across
+the bundles registry may move under a dry run; every case owns both, so no
+case reads or writes the developer's
+(`packages/cli/test/dry-run.test.ts:1-13`, `:192-208`). The two verbs an
+installed copy does not refuse, `bundles` and `trust`, are held, with the
+stores placed outside the vault, to plan only absolute store paths; the
+exemption is by verb (`:1003-1054`). The source scans read text: the import
+graph and the vault-loading declaration check share one recognizer of
+runtime import edges (`packages/cli/test/fixtures/imports.ts:1-27`), and
+each scan says where it is defined what it cannot see. A property that must hold across
 runtimes — the same fixture judged through every state constructor — lives in
 a file both `test` and `test:node` glob
 (`packages/cli/test/judge-property.test.ts:9-11`). Biome formats and lints

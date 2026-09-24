@@ -3,7 +3,7 @@ type: subsystem
 title: "Modules, trust and the fixture"
 description: "The registration API every module goes through, the loader's ladder from the bundle's own node_modules to the judge, the machine-local content-hashed grant for one vault or for its path across a clone's linked worktrees, the purity scan and the determinism fixture proved at the grant."
 tags: [kernel, cli]
-pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
+pin: 0102007b93b93f4e19f03b4ca5976633679cbf7a
 origin: .
 covers: [packages/core/src/modules/, packages/core/src/version/, packages/cli/src/main.ts, packages/cli/src/moduleload.ts, packages/cli/src/trust.ts, packages/cli/src/storelock.ts, packages/cli/src/modulefixture.ts, packages/cli/src/verbs/trust.ts, packages/cli/src/verbs/modules.ts]
 ---
@@ -38,43 +38,46 @@ subset (`:55-75`) and `satisfiesEngineRange` (`:77`) answers a bundle's
 declared module range and its engine pin.
 
 `packages/cli/src/moduleload.ts` is the ladder, every step a named refusal
-with no partial load (`:4-8`, `:269-273`): resolve from the bundle's own
-`node_modules` and nowhere else (`:100-110`), read the package's `wikiwright`
-block naming its entry, its fixture and its engine range (`:82-94`,
-`:198-209`), check the installed version against the bundle's declared range
-(`:335-353`) and the engine against the module's (`:354-362`), resolve the
-entry and the fixture lexically inside the package (`:170-196`, `:364-386`),
-digest every file but `node_modules` while scanning the executable ones
-(`:119-155`, `:595-626`), refuse an impure module before the trust gate
-(`:402-415`, `:445-448`), refuse a module no grant scope approves — ungranted,
+with no partial load (`:4-8`, `:270-274`): resolve from the bundle's own
+`node_modules` and nowhere else (`:101-111`), read the package's `wikiwright`
+block naming its entry, its fixture and its engine range (`:83-95`,
+`:199-210`), check the installed version against the bundle's declared range
+(`:336-354`) and the engine against the module's (`:355-363`), resolve the
+entry and the fixture lexically inside the package (`:171-197`, `:365-387`),
+digest every file but `node_modules` while scanning the executable ones,
+once per package per process (`:120-156`, `:607-663`), refuse an impure module before the trust gate
+(`:403-416`, `:446-449`), refuse a module no grant scope approves — ungranted,
 modified, or needing a worktree scope git could not read — with a hint that
-names a maintainer's decision and no command (`:223-267`, `:449-458`),
+names a maintainer's decision and no command (`:224-268`, `:450-459`),
 import the entry and require a manifest whose stated version agrees with the
-package (`:460-490`). The outcome is cached per root by the entry point's one
-asynchronous step (`:510-553`). `packages/cli/src/trust.ts` is the store:
-`~/.config/wikiwright/trust.json` or `WIKIWRIGHT_TRUST_FILE` (`:58-62`),
+package (`:461-491`). The outcome is cached per root by the entry point's one
+asynchronous step (`:511-554`), and the declarations it loads are read from
+`config/engine.json` as the vault loader parses it, so a byte order mark
+declares the same modules to the preload and to the law digest
+(`:556-587`). `packages/cli/src/trust.ts` is the store:
+`~/.config/wikiwright/trust.json` or `WIKIWRIGHT_TRUST_FILE`, made absolute (`:58-68`),
 holding vault grants keyed by the vault's real path and `module:<package>`,
-pinned to a sha256 and dated, one per module (`:14-21`, `:64-67`,
-`:178-185`), and worktree grants keyed by the real path of the git common
+pinned to a sha256 and dated, one per module (`:14-21`, `:70-73`,
+`:184-191`), and worktree grants keyed by the real path of the git common
 directory and the vault's path inside its worktree, several digests each
-(`:23-36`, `:211-228`, `:262-278`). It reads either store version and writes
-version 2 only on a grant or a revoke (`:97-137`), under the lock every
+(`:23-36`, `:217-234`, `:268-284`). It reads either store version and writes
+version 2 only on a grant or a revoke (`:103-143`), under the lock every
 machine-local store is updated under, `packages/cli/src/storelock.ts`, which
 the bundles registry shares; the lock is taken before the read, so two writes
 at once cannot lose one another's record; it names the process and the host
 that hold it and is broken only when that process is gone from this machine,
 never because it is old, and one that does not clear refuses `store-busy`
 (`packages/cli/src/storelock.ts:114-163`, `:178-199`;
-`packages/cli/src/trust.ts:151-169`; `packages/cli/src/verbs/trust.ts:80-89`).
+`packages/cli/src/trust.ts:157-175`; `packages/cli/src/verbs/trust.ts:80-89`).
 A store that is not JSON, not a trust store, of a version it does not read,
-or holding a record of neither shape or of both (`packages/cli/src/trust.ts:73-95`)
+or holding a record of neither shape or of both (`packages/cli/src/trust.ts:79-101`)
 is thrown as `StoreMalformed` under the store's own code and never rewritten
-(`:101-132`; `packages/cli/src/storelock.ts:34-65`); the runtime answers it
+(`:107-138`; `packages/cli/src/storelock.ts:34-65`); the runtime answers it
 as the refusal `trust-store-malformed`, naming the file and the failing
 record, from whichever verb or preload reached it
 (`packages/cli/src/main.ts:79-94`). Its verdict reads the vault grant first
 and asks git, once per process, only when a worktree grant for the module
-exists (`packages/cli/src/trust.ts:280-301`, `:309-357`).
+exists (`packages/cli/src/trust.ts:286-307`, `:315-363`).
 `packages/cli/src/modulefixture.ts`
 runs a module's determinism fixture under the standard library plus that
 module alone (`:51-55`, `:81`), judges the fixture's pages twice in one
@@ -91,12 +94,12 @@ instead of this vault's share of it, every record with its identity, the path
 it is keyed by and whether that path is still here (`:200-228`); `revoke
 --record` removes exactly one record and needs neither a vault nor a
 repository, which is the only way to remove one whose directory is gone
-(`:307-337`; `packages/cli/src/trust.ts:230-246`); the preload before the verb runs asks
+(`:307-337`; `packages/cli/src/trust.ts:236-252`); the preload before the verb runs asks
 nothing either, since `trust` declares that it reads no vault law
-(`packages/cli/src/main.ts:180-183`; `packages/cli/src/verbs/trust.ts:152`),
-and `--bundle` naming an installed copy does not refuse it, since what it
-writes is this machine's store (`packages/cli/src/main.ts:139`;
-`packages/cli/src/connections.ts:104-113`).
+(`packages/cli/src/main.ts:181-184`; `packages/cli/src/verbs/trust.ts:152`),
+and `--bundle` naming an installed copy does not refuse it, an exemption by
+verb, since what it writes is this machine's store
+(`packages/cli/src/main.ts:140`; see [[command-runtime]]).
 `revoke --scope worktrees` removes every digest
 the scope approved and says whether a vault grant still approves
 (`packages/cli/src/verbs/trust.ts:382-438`). The `modules` verb lists what
@@ -112,9 +115,9 @@ another version (`packages/cli/src/verbs/modules.ts:3-7`, `:69-74`, `:128`).
   (`packages/core/src/index.ts:116-141`); `scanPurity`
   (`packages/core/src/modules/purity.ts:106`).
 - `loadDeclaredModules`, `preloadModules`, `preloadedModules`,
-  `declaredModulesOf`, `declaredModulesIn`, `moduleDigest`
+  `declaredModulesOf`, `declaredModulesIn`, `declaredModulesInText`, `moduleDigest`
   (`packages/cli/src/moduleload.ts`); `main.ts` preloads once before dispatch
-  (`packages/cli/src/main.ts:180-183`) and `loadVaultVia` reads the outcome,
+  (`packages/cli/src/main.ts:181-184`) and `loadVaultVia` reads the outcome,
   refusing `module-not-loaded` when it is absent and composing
   `[...STANDARD_LIBRARY, ...loaded]` when it is not
   (`packages/cli/src/vaultio.ts:177-241`).
@@ -135,13 +138,15 @@ another version (`packages/cli/src/verbs/modules.ts:3-7`, `:69-74`, `:128`).
 
 ## State
 
-The machine-local trust store (`packages/cli/src/trust.ts:58-62`) and the
+The machine-local trust store (`packages/cli/src/trust.ts:64-68`) and the
 lock file beside it while a write holds it
 (`packages/cli/src/storelock.ts:127-139`); the per-process worktree-scope
 cache keyed by vault root, which remembers a failure too
-(`packages/cli/src/trust.ts:280-301`); the per-process preload cache keyed by vault root
-(`packages/cli/src/moduleload.ts:522`); the bundle's own `node_modules`,
-which the loader reads and never writes.
+(`packages/cli/src/trust.ts:286-307`); the per-process preload cache keyed by vault root
+(`packages/cli/src/moduleload.ts:523`); the per-process digest of each
+package, keyed by its resolved root and the entry scanned with it, which the
+preload, the brief's law digest and the envelope's share (`:613-621`); the
+bundle's own `node_modules`, which the loader reads and never writes.
 
 ## Invariants
 
@@ -151,11 +156,11 @@ which the loader reads and never writes.
   `packages/cli/src/vaultio.ts:169-176`).
 - The digest covers every file of the package, `package.json` and the fixture
   included, so repointing the entry or editing the expectation moves the
-  digest (`packages/cli/src/moduleload.ts:157-166`); the entry and the
-  fixture must be members of that file set (`:417-435`); the grant's digest
-  and the loader's are one definition (`:388-391`).
+  digest (`packages/cli/src/moduleload.ts:158-167`); the entry and the
+  fixture must be members of that file set (`:418-436`); the grant's digest
+  and the loader's are one definition (`:389-392`).
 - The purity scan runs before the trust gate, and again at the grant, so a
-  grant is never a way to admit impure code (`:445-448`;
+  grant is never a way to admit impure code (`:446-449`;
   `packages/cli/src/verbs/trust.ts:450-464`).
 - The fixture runs once, at the grant that pins the bytes; a load under the
   granted digest is the same proof (`packages/cli/src/verbs/trust.ts:465-467`;
@@ -168,11 +173,11 @@ which the loader reads and never writes.
 - Editing any file of a granted module revokes the grant, and moving the vault
   revokes a vault grant; a worktree grant follows the vault's path into every
   linked worktree and ends when the repository's common directory moves
-  (`packages/cli/src/trust.ts:64`; `packages/cli/src/verbs/trust.ts:517-520`);
+  (`packages/cli/src/trust.ts:70`; `packages/cli/src/verbs/trust.ts:517-520`);
   `git pull` can never write one (`packages/cli/src/trust.ts:1-2`).
 - A matching digest in either scope approves, and nothing else does: a
   worktree scope that was needed and could not be read is a refusal, never a
-  quieter verdict (`packages/cli/src/trust.ts:309-357`).
+  quieter verdict (`packages/cli/src/trust.ts:315-363`).
 - A worktree key is never read from ambiguous output: a newline in the
   vault's path, or in a linked worktree's common directory, leaves no
   worktree identity rather than a shorter path's
@@ -191,7 +196,7 @@ which the loader reads and never writes.
   `module-version-mismatch`, `module-incompatible`, `module-untrusted`,
   `module-modified`, `module-scope-unresolved`, `module-impure`,
   `module-load-failed`, `module-fixture-missing`, `module-fixture-failed`,
-  `module-nondeterministic` (`packages/cli/src/moduleload.ts:42-61`), each
+  `module-nondeterministic` (`packages/cli/src/moduleload.ts:43-62`), each
   naming the package and most a hint; `module-not-loaded` and
   `module-conflict` at the vault load (`packages/cli/src/vaultio.ts:183-238`).
 - `RegistryConflict` kinds from `loadModules`

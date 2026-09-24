@@ -23,7 +23,7 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,505 tests across 102 files, green under Bun and under the
+The suite is 1,517 tests across 102 files, green under Bun and under the
 node runner. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the connection tests read end to end) and proves
@@ -31,9 +31,9 @@ the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured at
-`d74308a`, on a clone with the kit granted in a temporary store because the
+`0102007`, on a clone with the kit granted in a temporary store because the
 kit is ungranted on the development machine, `freshness` reads all 26 pinned
-pages `current` (4) or `unchanged` (22) and none `stale`, with no
+pages `current` (9) or `unchanged` (17) and none `stale`, with no
 `stale-capture`, `stale-source-cited` or `citation-unresolved` finding.
 
 The gate is `bun run check` (biome, the build, the test-project typecheck,
@@ -263,10 +263,13 @@ package spelling needs both forms tested.
 A connection is this machine's: `bundles add` names a root here, and nothing
 in a bundle says which other bundles it depends on, at which law and content
 digest a maintainer reviewed them, or which of its pages rest on which of
-theirs.
+theirs. No record ties a page to a page of another bundle it rests on, with
+the digests both had when a person last reviewed the pair, so a change on
+one side marks nothing on the other for review.
 
 Wanted: a declaration in `config/engine.json` naming another bundle and the
-digests it was reviewed at, which `check` holds against the connected copy.
+digests it was reviewed at, which `check` holds against the connected copy,
+and a review record per dependent pair of pages.
 
 ### The graph knows which pages link, not where
 
@@ -312,6 +315,33 @@ Wanted, each when a bundle asks for it: an adapter that serves findings and
 names over the language-server protocol, a transaction across verbs, and a
 verb that reads a page as it stood at a revision.
 
+### The plugin runs from a built checkout
+
+The package root, `packages/cli`, is the plugin, and each hook runs this
+package's own binary, which imports `@wikiwright/core` as a workspace
+dependency. The supported layout is a checkout with its workspace
+dependencies installed and built (`bun install`, `bun run build`), with the
+plugin loaded from it in place, for example with `--plugin-dir
+packages/cli`. A copy of the plugin directory alone carries no
+`@wikiwright/core`: its binary fails to load, and its hooks print nothing, as
+they do on any failure, so the missing dependency looks like a session with
+nothing to say. Neither layout has been run inside a host here (below).
+
+Wanted: a plugin that carries its dependencies, or a supported install that
+provides them, and a hook smoke test from that layout.
+
+### What the connected bundles have not been evaluated for
+
+The scenario test drives two handbooks end to end, mechanically. No
+evaluation has measured whether an agent that writes a bundle and an agent
+that reads one do better with it than without: whether the right passage is
+found, attributed and kept. No synthetic scenario checks that nothing travels
+where it should not, such as a passage read from one bundle reaching another
+bundle's pages, a proposal or a hook's context unasked.
+
+Wanted: an author-and-reader evaluation over synthetic bundles, and synthetic
+privacy-regression scenarios beside the suite.
+
 ### The hook scripts are tested against a document, not a host
 
 `hooks-scripts.test.ts` drives both scripts with synthetic stdin and holds
@@ -354,7 +384,15 @@ did not return it, once with no message kept. Neither failure reproduced
 alone, in twenty isolated runs, or in 960 runs of `gate` and `lint --staged`
 sixteen at a time under load. `staged-gate.test.ts` and
 `staged-gate-reads.test.ts` now print a failing run's stdout and stderr, so
-the next occurrence names itself.
+the next occurrence names itself. On 2026-09-24 the gate failed three times,
+each time in the run the pre-commit hook makes and never in a direct
+`bun run check` between them, and two of those runs named themselves:
+`lint --staged` answered `unexpected-error` with `cat-file --batch output
+ends inside object <id>` in `staged-gate-reads.test.ts`, and `fix --staged`
+answered `git-unavailable` with `cat-file --batch-check answered 1 of 2
+paths` in `gate-rule.test.ts`. Both are a batch read that ended short of
+what it was asked, which the engine refuses rather than reading a shorter
+page.
 
 Wanted: that envelope, and the fix it points at.
 

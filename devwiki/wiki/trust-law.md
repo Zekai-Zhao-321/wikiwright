@@ -3,9 +3,9 @@ type: code-concept
 title: "The trust law"
 description: "Module code runs inside the judge, so a module is admitted by a machine-local grant pinned to the sha256 over every file of the installed package, for one vault or for its path in every linked worktree of one clone, taken only after a purity scan and a determinism fixture, and revoked by any edit; a stranger's bug is one attributed finding, never a crash."
 tags: [cli, kit]
-pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
+pin: 0102007b93b93f4e19f03b4ca5976633679cbf7a
 origin: .
-covers: [packages/core/src/modules/purity.ts, packages/cli/src/moduleload.ts, packages/cli/src/trust.ts, packages/cli/src/storelock.ts, packages/cli/src/modulefixture.ts, packages/cli/src/verbs/trust.ts, packages/kit-code/, packages/core/src/grammar/index.ts, packages/core/src/lint/index.ts]
+covers: [packages/core/src/modules/purity.ts, packages/cli/src/moduleload.ts, packages/cli/src/trust.ts, packages/cli/src/storelock.ts, packages/cli/src/modulefixture.ts, packages/cli/src/verbs/trust.ts, packages/kit-code/, packages/core/src/grammar/index.ts, packages/core/src/lint/index.ts, packages/cli/test/bundles.test.ts]
 ---
 
 # The trust law
@@ -22,11 +22,11 @@ evaluation, and imports of the filesystem, the network, a child process, the
 process or the OS (`:11-14`, `:30-77`); it narrows and does not sandbox, and
 says so (`:11-14`). The grant is a maintainer's act on one machine: `trust grant
 module:<package>` digests every file of the installed package except its
-`node_modules`, scanning the executable ones (`packages/cli/src/moduleload.ts:119-155`,
-`:595-626`), refuses an impure module before writing anything
+`node_modules`, scanning the executable ones (`packages/cli/src/moduleload.ts:120-156`,
+`:629-663`), refuses an impure module before writing anything
 (`packages/cli/src/verbs/trust.ts:450-464`), loads the module with the trust
 gate skipped through an option named for its one caller
-(`packages/cli/src/moduleload.ts:211-221`;
+(`packages/cli/src/moduleload.ts:212-222`;
 `packages/cli/src/verbs/trust.ts:471`), runs the determinism fixture — the
 same bytes judged twice in one process under the standard library plus that
 module alone, compared with the findings the module ships as its own
@@ -35,16 +35,16 @@ only then records the grant, pinned to the digest, in the scope the
 maintainer chose, under the lock every machine-local store is updated under,
 so a grant made while another lands keeps both
 (`packages/cli/src/verbs/trust.ts:493-507`;
-`packages/cli/src/trust.ts:151-169`; `packages/cli/src/storelock.ts:178-199`): this vault,
+`packages/cli/src/trust.ts:157-175`; `packages/cli/src/storelock.ts:178-199`): this vault,
 keyed by its real path and holding one digest per module, or, with `--scope
 worktrees`, the vault's path in every linked worktree of one clone, keyed by
 the real path of the git common directory and holding every digest approved
-there (`packages/cli/src/trust.ts:14-36`, `:64-67`, `:211-228`). Every later
+there (`packages/cli/src/trust.ts:14-36`, `:70-73`, `:217-234`). Every later
 load asks whether either scope approves the installed digest — the vault
 grant first, with no git, and git only when a worktree grant for the module
-exists (`:309-357`) — and refuses `module-untrusted`, `module-modified` or
+exists (`:315-363`) — and refuses `module-untrusted`, `module-modified` or
 `module-scope-unresolved` with a hint that names a maintainer's decision and
-no command to run (`packages/cli/src/moduleload.ts:223-267`, `:449-458`); the
+no command to run (`packages/cli/src/moduleload.ts:224-268`, `:450-459`); the
 store lives
 outside every repository, so `git pull` can never grant
 (`packages/cli/src/trust.ts:1-2`). A store the engine cannot read — not JSON,
@@ -52,13 +52,13 @@ not a trust store, a version it does not read, a record of neither shape or
 of both — approves nothing and is never rewritten: it is thrown as
 `StoreMalformed` and refused as `trust-store-malformed`, naming the file and
 the record, by the load or the verb that reached it
-(`packages/cli/src/trust.ts:73-132`; `packages/cli/src/storelock.ts:34-65`;
+(`packages/cli/src/trust.ts:79-138`; `packages/cli/src/storelock.ts:34-65`;
 `packages/cli/src/main.ts:79-94`).
 
 The digest is the boundary and the only one: no lockfile is read, because
 the grant already pins every byte, `package.json` included, and repointing
 the entry or editing the fixture moves the digest
-(`packages/cli/src/moduleload.ts:10-13`, `:157-166`). The fixture runs at the
+(`packages/cli/src/moduleload.ts:10-13`, `:158-167`). The fixture runs at the
 grant and not on every vault read; a load under the granted digest is the
 same proof (`packages/cli/src/vaultio.ts:217-220`). And the blast radius of a
 stranger's bug is one arm on one item: a module that throws while parsing or
@@ -98,7 +98,7 @@ developer's
   worktree scope: [[D-006]]; the tests: `module-conformance`,
   `pack-install`, `kit-code` and `trust-scope` under `packages/cli/test/`,
   and `bundles` for a trust store that does not parse
-  (`packages/cli/test/bundles.test.ts:442-478`).
+  (`packages/cli/test/bundles.test.ts:652-688`).
 
 ## Relations
 

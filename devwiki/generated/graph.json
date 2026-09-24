@@ -770,6 +770,11 @@
     },
     {
       "from": "wiki/modules-and-trust.md",
+      "to": "wiki/command-runtime.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/modules-and-trust.md",
       "to": "wiki/judge.md",
       "kind": "wikilink"
     },

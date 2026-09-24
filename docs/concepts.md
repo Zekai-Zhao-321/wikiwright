@@ -23,13 +23,17 @@ and titles must be unique across the vault after Unicode NFC and full case
 folding, so `Li Wei` and `li wei` are one name.
 
 Every page carries four required fields and may carry five optional ones. The
-engine contributes them to every type:
+engine contributes them to every type. `title` and `description` may instead
+be derived: a bundle whose `config/engine.json` declares `field_sources` has
+them from the basename and the first body line where the frontmatter is
+silent, and the derived value is the one identity checks, generation, search
+and `read` use (see [constitution.md](constitution.md)):
 
 | Field | Required | Meaning |
 |---|---|---|
 | `type` | yes | the one registered type this page is written as |
-| `title` | yes | the display title, unique in the vault |
-| `description` | yes | one sentence for retrieval and routing |
+| `title` | yes, unless `field_sources` derives it | the display title, unique in the vault |
+| `description` | yes, unless `field_sources` derives it | one sentence for retrieval and routing |
 | `tags` | yes | a flat list of registered tags |
 | `aliases` | no | other names that resolve to this page |
 | `status` | no | `retired` marks a page kept for its history |
@@ -456,8 +460,12 @@ apart by it, and an uncommitted edit shows in `content` and `dirty` while
 `wikiwright read <page>` is the consumer's read: a page's sections, each the
 page's own lines with its address, beside the page's type, frontmatter and
 **digest** — the sha256 the content digest holds for that page — under a byte
-budget that lists what it leaves out by address. A subagent handed an address
-reads the same bytes under the same digest.
+budget that lists what it leaves out by address. An address names a place in
+the current tree, not a revision: a subagent handed an address reads the
+page as it stands when it reads, and gets the same bytes only while the page
+has not changed. So it compares the digest it reads with the digest it was
+handed, and a mismatch means the page moved; or it is handed the passage
+itself, with its digest, and reads nothing.
 
 ## The four layers
 

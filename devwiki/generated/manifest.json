@@ -2,12 +2,12 @@
   "schema": "wikiwright/manifest",
   "totals": {
     "pages": 33,
-    "edges": 212
+    "edges": 213
   },
   "by_kind": {
     "relation": 69,
     "tagged": 46,
-    "wikilink": 97
+    "wikilink": 98
   },
   "by_label": {
     "relation": {
@@ -244,6 +244,7 @@
         "wikilink": [
           "wiki/envelope-and-exit-codes.md",
           "wiki/environment-variables.md",
+          "wiki/modules-and-trust.md",
           "wiki/one-judge-five-states.md",
           "wiki/skills-and-brief.md"
         ]
@@ -663,6 +664,7 @@
           "meta/D-002.md",
           "meta/D-003.md",
           "meta/D-006.md",
+          "wiki/command-runtime.md",
           "wiki/judge.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",

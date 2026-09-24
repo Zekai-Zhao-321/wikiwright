@@ -3,7 +3,7 @@ type: architecture-overview
 title: wikiwright architecture
 description: The four-layer shape of the engine and how a page's obligations flow through it.
 tags: [kernel, stdlib, cli, kit]
-pin: d74308aa8f4dec7a7d57daaf03984f23a98f2d62
+pin: 0102007b93b93f4e19f03b4ca5976633679cbf7a
 origin: .
 covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/connections.ts, packages/cli/src/law.ts, packages/kit-code/]
 ---
@@ -29,8 +29,8 @@ fix or a queue lane. See [[registry-pipeline]] for the load path and
 The shell reads a vault's files through `vaultfiles.ts`, below the loader in
 `vaultio.ts`, so the bundle identity can read them without loading the law.
 Before a verb runs, `main.ts` resolves `--bundle <name>` through this
-machine's bundles registry (`connections.ts`, a JSON file outside every vault)
-to the root `--root` would have named, and every verb that reads a vault's
+machine's bundles registry (`connections.ts`, a JSON file, by default outside
+every vault) to the root `--root` would have named, and every verb that reads a vault's
 law names the bundle it read on its envelope, with a digest of its law and of
 its pages. Two verbs serve an agent reading a bundle it does not maintain:
 `bundles` keeps the registry of connections, and `read` returns a page's

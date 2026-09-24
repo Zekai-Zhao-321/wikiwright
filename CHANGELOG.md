@@ -121,8 +121,9 @@ version` prints the engine version and the commit a binary was built from.
   saying a thing is absent, keep each answer's `metadata.bundle` beside what
   was taken from it, hand a child verbatim passages with their source, and
   report a knowledge problem as a proposal rather than an edit. The writer's
-  five steps are unchanged, byte for byte, so a writer's generated brief does
-  not move. The maintainer's adds two to them: a queued finding is a judgment
+  five steps are unchanged, byte for byte; the generated brief around them
+  does move, since its header now names the law digest and its verb list
+  holds `bundles` and `read`. The maintainer's adds two to them: a queued finding is a judgment
   to adjudicate or a law to change, never a severity to lower, and
   `generated/` is committed with the pages it describes. Every role had been
   handed the writer's loop, which walks a consumer into `write`. The

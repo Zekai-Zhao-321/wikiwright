@@ -3,9 +3,9 @@ type: subsystem
 title: Registry pipeline
 description: Loads, validates and flattens config/constitution.json and config/engine.json into the effective contracts every pass reads.
 tags: [kernel, cli]
-pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
+pin: 0102007b93b93f4e19f03b4ca5976633679cbf7a
 origin: .
-covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts]
+covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/verbs/read.ts, packages/cli/src/verbs/bundles.ts]
 ---
 
 # Registry pipeline
@@ -50,11 +50,13 @@ declared template or example must exist and, for an example, pass its own
 type (`:264-361`); a loaded vault keeps the two config texts as they were
 read, the inputs of the law digest (`:49-55`, `:369`). Every verb that needs
 types goes through it, `read` among them
-(`packages/cli/src/verbs/read.ts:135`), and a root `--bundle` names is
+(`packages/cli/src/verbs/read.ts:237`), and a root `--bundle` names is
 resolved to a directory before any verb runs, so the loader reads it as it
-reads `--root` (`packages/cli/src/main.ts:96-158`); the `bundles` verb reads
-no law, only whether a root holds a constitution and its bundle identity
-(`packages/cli/src/verbs/bundles.ts:62-66`, `:194-198`).
+reads `--root` (`packages/cli/src/main.ts:96-159`); the `bundles` verb loads
+no law: it reads whether a root holds a constitution, the content roots its
+`config/engine.json` declares, parsed as the loader parses it without
+loading the rest, and its bundle identity
+(`packages/cli/src/verbs/bundles.ts:72-73`, `:96`, `:215-219`, `:251`).
 
 ## State
 
