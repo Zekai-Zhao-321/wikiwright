@@ -75,6 +75,10 @@ version` prints the engine version and the commit a binary was built from.
   an item holding a term only inside a longer word follows unranked, as a line
   search would find it. The coverage block counts the pages and the items
   considered. `--all` lifts the result cap of either form.
+- `write --from`'s real run answers in its dry run's shape: `ops`, the plan
+  read before anything landed, and `wrote: true`, beside the same `pages`.
+  A caller keying on `wrote` read `false` from the dry run and nothing from
+  the real one.
 - `search <query> --files` lists every page with a match, path and reasons
   only, in code-unit order and uncapped: the pages the ranked search finds
   plus every page holding a term inside a longer word, the set a line search
@@ -130,6 +134,10 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- `write --section --append --coexist <reason>` renders its rationale line
+  reason first, `coexists: <reason> (beside <handle>, <handle> and <n> more)`,
+  naming the two newest open claims of the category and counting the rest.
+  It named every open handle before the reason; on one page that was nine.
 - The brief renders one loop per role. The consumer's names no verb: select
   the bundle and pass its root explicitly, search every name form before
   saying a thing is absent, keep each answer's `metadata.bundle` beside what

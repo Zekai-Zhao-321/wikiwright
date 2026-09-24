@@ -280,7 +280,10 @@ describe("docs/cli.md §write — the section forms", () => {
       "- [role] staff designer (stated 2026-09-03)\n",
     );
     assert.equal(r.ok, true, JSON.stringify(r.error));
-    assert.match(page(dir), /^ {2}- coexists with #[0-9a-f]{8}: she holds both roles at once$/mu);
+    assert.match(
+      page(dir),
+      /^ {2}- coexists: she holds both roles at once \(beside #[0-9a-f]{8}\)$/mu,
+    );
   });
 
   it("--replace-core renders the History line and moves no other byte", () => {

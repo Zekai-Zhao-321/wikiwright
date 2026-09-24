@@ -259,7 +259,10 @@ What the registry rows below do not say.
   resolved against `--root` like every path a verb takes, a refusal names the
   absolute directory it looked in (`details.resolved`), and a refused set
   carries the same `pages` rows as an accepted dry run — each draft with its
-  findings and its `preview` — beside `failing`. **`--section
+  findings and its `preview` — beside `failing`. Its real run answers in its
+  dry run's shape: `ops` (the plan, read before anything landed, so a page
+  the batch created is a `create`), `wrote: true`, and each page with its
+  `blob` where the dry run has its `preview`. **`--section
   <heading> --append`** splices the stdin lines at the section's tail: one
   parsed item under a grammar, verbatim under prose. The section must be
   declared by the type (`unknown-section`, with the declared sections in
@@ -268,7 +271,11 @@ What the registry rows below do not say.
   declared order. A claims form (`--replace-core`, `--retract`, `--correct
   --core`, `--line`, `--coexist`) acts on one claim the page carries and
   renders the History line itself; on a declared, absent section it is
-  `section-absent`.
+  `section-absent`. `--coexist <reason>` admits a second open claim of a
+  supersede category and records a rationale line under it, `coexists:
+  <reason> (beside <handle>, <handle> and <n> more)`: the reason first, then
+  the two newest open claims of the category and a count of the rest. No arm
+  reads the line; the reason given is what admits the claim.
 - **`fix --rule <id> --expect <n|any>`** applies the `MachineApplicable` ops
   one rule licenses, refuses when the count is not `--expect`, and proves
   the result with one more judge of the whole vault with every fixed page in

@@ -642,6 +642,18 @@ export async function performWholePageWrite(input: {
 }
 
 /**
+ * The claims a `--coexist` line names: the two newest open claims of the
+ * category, in page order, and a count of the rest. Nine opaque handles on one
+ * line told a reader less than the reason did.
+ */
+function besideOf(handles: readonly string[]): string {
+  if (handles.length === 0) return "";
+  const newest = handles.slice(-2);
+  const rest = handles.length - newest.length;
+  return ` (beside ${newest.join(", ")}${rest > 0 ? ` and ${rest} more` : ""})`;
+}
+
+/**
  * docs/cli.md §write --from: every draft under the directory, judged in one
  * state and landed through the Writer together — or not at all. The envelope
  * reports per page; the plan names every path (docs/cli.md §The dry-run law).
@@ -671,9 +683,12 @@ function performBatchWrite(input: {
     unevaluated: judged.unevaluated,
     resolve_checked: [...input.notAnyOf],
   };
+  // The plan is read before anything lands, so a page the batch creates is a
+  // `create` in the real run's ops as it is in the dry run's.
+  const plan = planForWrite(args);
   if (isDryRun(args)) {
     return ok("write", {
-      ...planOf(planForWrite(args).ops),
+      ...planOf(plan.ops),
       ...payload,
       pages: pages.map((page, i) => ({ ...page, preview: judged.pages[i]?.content ?? "" })),
     });
@@ -682,7 +697,12 @@ function performBatchWrite(input: {
     args.root,
     judged.pages.map((page) => ({ path: page.path, text: page.content })),
   );
+  // docs/cli.md §write --from: the real run's envelope has the dry run's shape,
+  // `wrote: true` and the ops it applied, so a caller keying on `wrote` reads
+  // what happened.
   return ok("write", {
+    ops: plan.ops,
+    wrote: true,
     ...payload,
     pages: pages.map((page, i) => ({ ...page, blob: blobs[i] ?? null })),
   });
@@ -1048,8 +1068,11 @@ async function sectionForm(input: {
       }
       if (typeof coexist === "string" && coexist.length > 0) {
         // Deliberate variance is recorded ON THE PAGE, as rationale: identity-
-        // free, never a finding, and it travels with the item it explains.
-        lines.push(`  - coexists with ${open_.map((c) => c.handle).join(", ")}: ${coexist}`);
+        // free, never a finding, and it travels with the item it explains. No
+        // arm reads it — the gate above reads only that a reason was given —
+        // so the line is for a reader: the author's reason first, then the
+        // two newest open claims it stands beside and how many more there are.
+        lines.push(`  - coexists: ${coexist}${besideOf(open_.map((c) => c.handle))}`);
       }
     }
     if (confirm !== undefined) return confirm;
