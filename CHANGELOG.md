@@ -104,9 +104,11 @@ version` prints the engine version and the commit a binary was built from.
   shell, and each pass the page could not be judged by without a base, which
   the staged gate judges against HEAD. It routes by `bundles list --records`,
   the content roots the engine read inside each bundle, and by the path the
-  edit named, the file's real path held inside the bundle: a page that is a
-  link inside the vault keeps its path, and a config linked out of the vault
-  routes nothing. Both print nothing when there is nothing to say or anything goes wrong,
+  edit named, the file's real path held inside the bundle: the root is the
+  first of the edited path's ancestors whose real path is the bundle's, so an
+  edit through a link to the root reaches it, and a page or a content
+  directory that is a link inside the vault keeps its path; a config linked
+  out of the vault routes nothing. Both print nothing when there is nothing to say or anything goes wrong,
   and exit 0. They are tested against the documented hook input and output;
   host behaviour is not verified here.
 

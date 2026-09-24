@@ -19,6 +19,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -454,6 +455,41 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
       /^wikiwright: wiki\/pruning-roses\.md is a page of the bundle "reached"\.$/mu,
     );
     assert.match(text, /^1 finding\(s\) on the page:$/mu);
+  });
+
+  it("an edit through a root alias into a linked content directory is routed by its wiki path", () => {
+    // wiki/ is a link to archive/ inside the vault, and the edit names the page
+    // through a link to the root: the root is found among the edited path's
+    // ancestors, and the path below it stays the one the engine judges.
+    const root = connectedCopy("composed");
+    renameSync(join(root, "wiki"), join(root, "archive"));
+    symlinkSync("archive", join(root, "wiki"));
+    const page = join(root, "archive", "pruning-roses.md");
+    writeFileSync(page, withDeepNotes(readFileSync(page, "utf8")));
+    const alias = join(tmp, "composed-alias");
+    symlinkSync(root, alias);
+    const text = contextOf(
+      hook(POST_EDIT, edited(join(alias, "wiki", "pruning-roses.md"))).stdout,
+      "PostToolUse",
+    );
+    assert.match(
+      text,
+      /^wikiwright: wiki\/pruning-roses\.md is a page of the bundle "composed"\.$/mu,
+    );
+    assert.match(
+      text,
+      /^- section-depth line 24: .* --path wiki\/pruning-roses\.md --line 24 --expect 1 --bundle composed$/mu,
+    );
+    // The same page through the root's own path, and through the alias under
+    // archive/, which no content root names.
+    assert.match(
+      contextOf(
+        hook(POST_EDIT, edited(join(root, "wiki", "pruning-roses.md"))).stdout,
+        "PostToolUse",
+      ),
+      /^1 finding\(s\) on the page:$/mu,
+    );
+    assert.equal(hook(POST_EDIT, edited(join(alias, "archive", "pruning-roses.md"))).stdout, "");
   });
 
   it("a config linked out of the vault gives no content roots, and the hook says nothing", () => {

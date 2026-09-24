@@ -16,7 +16,7 @@
 // prints nothing and exits 0.
 import { spawnSync } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BIN = fileURLToPath(new URL("../dist/bin.js", import.meta.url));
@@ -43,21 +43,23 @@ function realOf(path) {
 }
 
 /**
- * The page's vault path as the edit named it. The path is taken LEXICALLY, so
- * a page that is itself a link inside the vault keeps the path it was edited
- * at, which is the path the engine judges it at: from the record's root or
- * its real path when the edited path starts there, else from the real path of
- * the file's directory, so a root reached through a link is followed while the
- * page's own link is not.
+ * The page's vault path as the edit named it. The root is the first of the
+ * edited path's own ancestors, walking up from the file, whose real path is
+ * the record's; the path below it is kept LEXICALLY. So a root reached through
+ * a link is found wherever the link sits, and every link below the root — a
+ * content directory that links to another directory of the vault, a page that
+ * is itself a link — keeps the name it was edited at, which is the path the
+ * engine judges it at. Containment is the caller's separate check, on the
+ * file's own real path.
  */
 function vaultPathOf(file, row) {
-  for (const base of [row.root, row.realpath]) {
-    if (typeof base === "string" && file.startsWith(base + sep)) return relative(base, file);
+  let ancestor = dirname(file);
+  for (;;) {
+    if (realOf(ancestor) === row.realpath) return relative(ancestor, file);
+    const parent = dirname(ancestor);
+    if (parent === ancestor) return undefined;
+    ancestor = parent;
   }
-  const directory = realOf(dirname(file));
-  if (directory === undefined) return undefined;
-  const through = join(directory, basename(file));
-  return through.startsWith(row.realpath + sep) ? relative(row.realpath, through) : undefined;
 }
 
 /**

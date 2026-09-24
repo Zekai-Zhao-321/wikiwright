@@ -151,10 +151,11 @@ object, a missing binary or any error, it prints nothing.
   when no bundle is connected.
 - `hooks/post-edit.mjs` takes `tool_input.file_path` (a leading byte order
   mark on stdin ignored, as the engine ignores it) and routes it by `bundles
-  list --records`: the page's vault path is taken from the path as edited,
-  from the connection's root or real path, or else from the real path of the
-  file's directory, so a root reached through a link is followed and a page
-  that is itself a link keeps the path it was edited at; the file's real path
+  list --records`: the root is the first of the edited path's ancestors,
+  walking up from the file, whose real path is the connection's, and the
+  page's vault path is the path below it as edited, so a root reached through
+  a link is followed while a content directory or a page that is itself a
+  link keeps the path it was edited at; the file's real path
   must lie inside the connection's, and the vault path must be a `.md` file
   under one of the `content_roots` the engine read. A file outside every
   connection, or in one whose config cannot be read inside it, gets nothing. For an `installed` connection it says the page is
