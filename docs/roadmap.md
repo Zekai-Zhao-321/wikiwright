@@ -392,18 +392,15 @@ on. A copy made by hand, or linked, is never compared with anything.
 
 Wanted: nothing in the engine while the installer owns replacement.
 
-### The shipped skills do not yet speak of copies
+### A bundle skill locates the runtime skill by name only
 
-A copy's `SKILL.md` names the `wikiwright-consume` skill and says it ships in
-the engine's repository, not where an installed engine keeps it, and no
-command installs the engine or that skill beside a copy. The maintainer's
-skill says nothing about choosing what to export or about what an export
-discloses: every selected page, `config/` verbatim and each declared kit
-travel, so a page a maintainer would not publish must be left out of the
-selection.
+A copy's `SKILL.md` requires the `wikiwright-consume` skill and says it ships
+in the engine's repository under `packages/cli/skills/`; no command installs
+the engine or that skill beside a copy, and the runtime skill's setup names
+the one route that exists, a clone and a build.
 
-Wanted: a runtime skill a copy's `SKILL.md` can locate exactly, and the
-export practices, with that warning, in the maintainer's skill.
+Wanted: a published engine and kit, so the setup step and a bundle skill can
+name an install command.
 
 ### The staged gate reads a `node_modules` kit from the working tree
 

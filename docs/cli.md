@@ -571,7 +571,7 @@ What the registry rows below do not say.
   problem with a copy goes by its contribution mode, and what is left without
   the engine; `wikiwright-write`, for adding to one (what deserves a page, the
   identity guard, the hedge kept verbatim, a citation as a relation);
-  `wikiwright-maintain`, for answering its findings and changing its law, with
+  `wikiwright-maintain`, for answering its findings and changing its law and for deciding what a bundle exports and where (an external export is no redaction boundary), with
   the lint-response playbook the engine generates beside it. `init` installs
   every skill the package ships.
 - **`modules list | plan`** is the module surface; see

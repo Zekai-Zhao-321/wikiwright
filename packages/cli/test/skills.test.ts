@@ -66,7 +66,15 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
         assert.equal(lines < 200, true, `${skill}/SKILL.md is ${lines} lines`);
         return;
       }
-      const body = text.split("---\n").slice(2).join("---\n");
+      // The maintain skill's export practices are a section of their own,
+      // under 60 lines; the judgment around them keeps its 80.
+      const exporting = /^## Exporting[^\n]*\n[\s\S]*?(?=^## )/mu.exec(text)?.[0] ?? "";
+      if (skill === "wikiwright-maintain") {
+        assert.notEqual(exporting, "", "the maintain skill has its export practices");
+        const section = exporting.split("\n").length;
+        assert.equal(section < 60, true, `the export practices are ${section} lines`);
+      }
+      const body = text.replace(exporting, "").split("---\n").slice(2).join("---\n");
       const lines = body.split("\n").filter((l) => l.trim() !== "").length;
       assert.equal(lines <= 80, true, `${skill}/SKILL.md carries ${lines} non-blank lines`);
     });
@@ -136,14 +144,32 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
 
 /**
  * The verbs a hand-written skill may name. The runtime skill names the
- * consumer's commands, since a bundle skill leaves them to it; the others name
- * none, and their verbs live in the generated brief.
+ * consumer's commands, since a bundle skill leaves them to it; the maintain
+ * skill's export practices name `export`; the rest live in the generated brief.
  */
 const NAMED: Readonly<Record<string, readonly string[]>> = {
   "wikiwright-consume": COMMANDS.filter((c) => c.role === "consumer").map((c) => c.name),
-  "wikiwright-maintain": [],
+  // The export practices name the one verb they are about.
+  "wikiwright-maintain": ["export"],
   "wikiwright-write": [],
 };
+
+describe("the maintain skill's export practices (docs/cli.md §skills)", () => {
+  it("say which output fits, that an external export is no redaction boundary, and what to review", () => {
+    const text = readFileSync(join(SKILLS_DIR, "wikiwright-maintain", "SKILL.md"), "utf8");
+    for (const said of [
+      "`output: skills`",
+      "`output: external`",
+      "**An external export is not a redaction boundary.**",
+      "the configuration is copied verbatim",
+      "`wikiwright export <name> --to <dir> --dry-run`",
+      "port it into the source by hand",
+      "a reason to refuse the export, never to rewrite the\nconfiguration",
+    ]) {
+      assert.equal(text.includes(said), true, said);
+    }
+  });
+});
 
 describe("the no-verbs-in-prose grep (docs/architecture.md §The invariants)", () => {
   it("no hand-written skill file names a verb beyond the ones it is for", () => {
