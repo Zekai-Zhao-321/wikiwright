@@ -33,6 +33,7 @@ import { loadModules } from "@wikiwright/core";
 import { lawFor } from "../src/law.ts";
 import { loadVault } from "../src/vaultio.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const CONFORMANCE = join(REPO, "fixtures", "conformance");
@@ -72,7 +73,7 @@ interface Envelope {
 }
 
 function run(root: string, argv: readonly string[]): { status: number; envelope: Envelope } {
-  const result = execFileSync(process.execPath, [CLI, ...argv, "--root", root], {
+  const result = execFileSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
     cwd: REPO,
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK, WIKIWRIGHT_TRUST_FILE: TRUST },

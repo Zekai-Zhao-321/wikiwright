@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { MEMORY_LAW } from "./fixtures/memory-law.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const LAW = join(MEMORY_LAW, "config");
@@ -38,7 +39,7 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 function run(cwd: string, args: string[]): { status: number; envelope: Envelope } {
-  const r = spawnSync(process.execPath, [CLI, ...args], { cwd, encoding: "utf8" });
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], { cwd, encoding: "utf8" });
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Envelope };
 }
 

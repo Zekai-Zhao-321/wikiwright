@@ -16,6 +16,7 @@ import { parseInvocation } from "../src/argv.ts";
 import { WORKFLOW_SLOTS } from "../src/brief.ts";
 import { COMMANDS } from "../src/commands.ts";
 import { ROLE_RANK } from "../src/spec.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const SKILLS_DIR = fileURLToPath(new URL("../skills", import.meta.url));
 const SKILLS = ["wikiwright-consume", "wikiwright-maintain", "wikiwright-write"];
@@ -206,7 +207,7 @@ describe("init installs the skills into the vault (docs/cli.md §brief, docs/cli
   it("copies every shipped skill under .claude/skills/, the three of them", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-skill-"));
     try {
-      const r = spawnSync(process.execPath, [CLI, "init", "--root", tmp], { encoding: "utf8" });
+      const r = spawnSync(CLI_RUNTIME, [CLI, "init", "--root", tmp], { encoding: "utf8" });
       assert.equal(r.status, 0);
       for (const skill of SKILLS) {
         assert.equal(existsSync(join(tmp, `.claude/skills/${skill}/SKILL.md`)), true);

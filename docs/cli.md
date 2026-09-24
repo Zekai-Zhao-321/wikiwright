@@ -86,7 +86,7 @@ verdict block:
 | Exit | `error.type` | Meaning |
 |---|---|---|
 | 0 | | ok |
-| 1 | `internal` | the engine broke; `unexpected-error` carries the message |
+| 1 | `internal` | the engine broke; `unexpected-error` carries the message, and `git-short-read` names a git answer that ended before its terminator, refused rather than read as a shorter one |
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
 | 3 | `not_found` | the page, type, vocabulary entry, revision or grant asked for does not exist |

@@ -27,6 +27,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const PACKAGE = fileURLToPath(new URL("../", import.meta.url));
 const CLI = join(PACKAGE, "dist", "main.js");
@@ -46,7 +47,7 @@ function hook(
   stdin: string,
   extra: NodeJS.ProcessEnv = {},
 ): { status: number; stdout: string } {
-  const r = spawnSync(process.execPath, [script], {
+  const r = spawnSync(CLI_RUNTIME, [script], {
     cwd: tmp,
     encoding: "utf8",
     input: stdin,
@@ -68,7 +69,7 @@ function contextOf(stdout: string, event: string): string {
 
 /** The engine itself, over the hooks' registry and trust store. */
 function cli(argv: readonly string[]): { status: number; stdout: string } {
-  const r = spawnSync(process.execPath, [CLI, ...argv], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
     encoding: "utf8",
     env: { ...process.env, ...env },
   });
@@ -146,7 +147,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
         ALLOTMENT_FEEDBACK,
       ],
     ]) {
-      const r = spawnSync(process.execPath, [CLI, ...argv], {
+      const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
         encoding: "utf8",
         env: { ...process.env, ...env },
       });
@@ -363,7 +364,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     );
     // Replayed through a POSIX shell exactly as printed, the engine in place of
     // the command name: the dry run plans the one fix on the one page.
-    const command = `${suggestion.replace(/^wikiwright /u, `'${process.execPath}' '${CLI}' `)} --dry-run`;
+    const command = `${suggestion.replace(/^wikiwright /u, `'${CLI_RUNTIME}' '${CLI}' `)} --dry-run`;
     const r = spawnSync("sh", ["-c", command], {
       cwd: tmp,
       encoding: "utf8",

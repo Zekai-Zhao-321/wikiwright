@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { parseInvocation } from "../src/argv.ts";
 import { COMMANDS } from "../src/commands.ts";
 import { EXIT, fail, ok } from "../src/envelope.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -25,7 +26,7 @@ interface RunOutcome {
 }
 
 function run(args: string[], cwd?: string): RunOutcome {
-  const r = spawnSync(process.execPath, [CLI, ...args], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], {
     encoding: "utf8",
     ...(cwd !== undefined ? { cwd } : {}),
   });
@@ -131,8 +132,8 @@ describe("lint — the gate", () => {
   });
 
   it("is byte-deterministic across runs", () => {
-    const a = spawnSync(process.execPath, [CLI, "lint", "--root", FIXTURE]);
-    const b = spawnSync(process.execPath, [CLI, "lint", "--root", FIXTURE]);
+    const a = spawnSync(CLI_RUNTIME, [CLI, "lint", "--root", FIXTURE]);
+    const b = spawnSync(CLI_RUNTIME, [CLI, "lint", "--root", FIXTURE]);
     assert.equal(a.stdout.length > 0, true);
     assert.equal(a.stdout.equals(b.stdout), true);
   });

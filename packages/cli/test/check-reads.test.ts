@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
@@ -53,7 +54,7 @@ process.on("exit", () => fs.writeFileSync(${JSON.stringify(log)}, JSON.stringify
       );
       for (const flags of [["--write"], []]) {
         const result = spawnSync(
-          process.execPath,
+          CLI_RUNTIME,
           ["--require", preload, CLI, "check", ...flags, "--root", root, "--all"],
           { encoding: "utf8" },
         );

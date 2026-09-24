@@ -17,6 +17,7 @@ const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
 import { grantedCopy, kitEnv } from "./fixtures/kit-code.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 /** Every corpus this repository ships, judged under its own constitution. */
 const CORPORA = ["fixtures/memory-synth", "devwiki", "fixtures/minimal-vault"];
@@ -37,7 +38,7 @@ interface CoverageRow {
 }
 
 function verdict(corpus: string, verb: string) {
-  const r = spawnSync(process.execPath, [CLI, verb, "--root", ".", "--all"], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, verb, "--root", ".", "--all"], {
     cwd: rootOf(corpus),
     encoding: "utf8",
     env: kitEnv(rootOf(corpus)),

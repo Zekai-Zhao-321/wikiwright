@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { grantedCopy, kitEnv } from "./fixtures/kit-code.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
@@ -46,7 +47,7 @@ describe("the tracked generated/ of every shipped vault is what this build rende
         // that happens to match. One generator: `check --write` lands the
         // artifacts and the brief.
         rmSync(join(tmp, "generated"), { recursive: true, force: true });
-        const r = spawnSync(process.execPath, [CLI, "check", "--write", "--root", tmp], {
+        const r = spawnSync(CLI_RUNTIME, [CLI, "check", "--write", "--root", tmp], {
           encoding: "utf8",
           env: kitEnv(tmp),
         });

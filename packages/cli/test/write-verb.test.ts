@@ -28,6 +28,7 @@ import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK, TODAY } from "./fixtures/clock.ts";
 import { grantKit, installKit, kitEnv } from "./fixtures/kit-code.ts";
 import { layMemoryLaw } from "./fixtures/memory-law.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-write-test-"));
@@ -40,7 +41,7 @@ interface Run {
 }
 
 function run(cwd: string, args: string[], stdin?: string, env?: NodeJS.ProcessEnv): Run {
-  const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env: env ?? { ...process.env, ...PINNED_CLOCK },
@@ -130,7 +131,7 @@ describe("docs/cli.md §write — the whole-page form", () => {
     assert.equal(written.includes(`created: ${TODAY}`), true);
     assert.equal(written.includes(`updated: ${TODAY}`), true);
     // A malformed pin is refused before anything is stamped.
-    const bad = spawnSync(process.execPath, [CLI, "write", "wiki/Ana Ruiz.md", "--root", "."], {
+    const bad = spawnSync(CLI_RUNTIME, [CLI, "write", "wiki/Ana Ruiz.md", "--root", "."], {
       cwd: dir,
       encoding: "utf8",
       env: { ...process.env, WIKIWRIGHT_TODAY: "yesterday" },
@@ -652,7 +653,7 @@ describe("docs/cli.md §brief — the writer bound", () => {
   });
 
   function asRole(role: string, args: string[]): Run {
-    const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
+    const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
       cwd: dir,
       encoding: "utf8",
       env: { ...process.env, ...PINNED_CLOCK, WIKIWRIGHT_ROLE: role },

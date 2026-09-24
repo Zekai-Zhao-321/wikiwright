@@ -21,6 +21,7 @@ import {
   freshnessReportJson,
   pinnedPages,
 } from "../freshness.ts";
+import { GitShortRead } from "../git.ts";
 import { generateOptionsFor, lawFor, rootsOf, type VaultOk } from "../law.ts";
 import { collectPages, sortFindings, summarize } from "../pages.ts";
 import {
@@ -167,7 +168,9 @@ export const freshnessCommand: CommandSpec = {
       result = measure(vault, args.root, fetch, true);
     } catch (e) {
       // Only a genuine plumbing failure reaches here — an origin that did not
-      // answer is a finding on the pages that name it, never a refusal.
+      // answer is a finding on the pages that name it, never a refusal. A cut
+      // answer is refused as itself.
+      if (e instanceof GitShortRead) throw e;
       return fail("freshness", "conflict", "git-unavailable", `git plumbing failed: ${String(e)}`);
     }
     const advanced: Array<{ path: string; field: string; from: string; to: string }> = [];

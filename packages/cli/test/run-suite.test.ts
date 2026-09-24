@@ -27,8 +27,22 @@ const SLOW_HOOK =
 /** POSIX-only, like hook.test.ts: the slow hook is a `sleep` process. */
 const POSIX_ONLY = process.platform === "win32";
 
-function run(files: string[]): { status: number | null; stdout: string } {
-  const r = spawnSync(BUN, [RUNNER, ...files], { encoding: "utf8" });
+// The runtime each file is handed in WIKIWRIGHT_CLI_RUNTIME runs a script
+// with no `process.versions.bun`: the runner found a Node, not itself.
+const RUNTIME_IS_NODE =
+  `${HEADER}import { spawnSync } from "node:child_process";\n` +
+  'it("the CLI runtime is not Bun", () => {\n' +
+  '  const runtime = process.env["WIKIWRIGHT_CLI_RUNTIME"];\n' +
+  '  assert.equal(typeof runtime, "string");\n' +
+  '  const r = spawnSync(runtime, ["-e", "process.exit(process.versions.bun === undefined ? 0 : 7)"]);\n' +
+  "  assert.equal(r.status, 0);\n" +
+  "});\n";
+
+function run(
+  files: string[],
+  env: NodeJS.ProcessEnv = process.env,
+): { status: number | null; stdout: string } {
+  const r = spawnSync(BUN, [RUNNER, ...files], { encoding: "utf8", env });
   return { status: r.status, stdout: r.stdout };
 }
 
@@ -41,6 +55,7 @@ describe("tools/run-suite.ts passes a run only when every file passes", () => {
     writeFileSync(at("failing.test.ts"), FAILING);
     writeFileSync(at("empty.test.ts"), EMPTY);
     writeFileSync(at("slow-hook.test.ts"), SLOW_HOOK);
+    writeFileSync(at("runtime.test.ts"), RUNTIME_IS_NODE);
   });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -71,6 +86,14 @@ describe("tools/run-suite.ts passes a run only when every file passes", () => {
     const r = run([at("slow-hook.test.ts")]);
     assert.equal(r.status, 0, r.stdout);
     assert.match(r.stdout, /^ok\s+1\s.*slow-hook\.test\.ts$/mu);
+  });
+
+  it("hands every file a Node to run the CLI under, and names it (docs/roadmap.md)", () => {
+    const env = { ...process.env };
+    delete env["WIKIWRIGHT_CLI_RUNTIME"];
+    const r = run([at("runtime.test.ts")], env);
+    assert.equal(r.status, 0, r.stdout);
+    assert.match(r.stdout, /^The CLI ran under .*node(\.exe)?\.$/mu);
   });
 
   it("a file that runs no test fails the run rather than passing it", () => {

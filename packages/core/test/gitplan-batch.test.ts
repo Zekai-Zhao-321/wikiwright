@@ -89,3 +89,42 @@ describe("parseCatFileBatchCheck reads sizes and missing objects", () => {
     assert.throws(() => parseCatFileBatchCheck("fatal: not a repository\n"), /unreadable/u);
   });
 });
+
+/**
+ * docs/roadmap.md: a cut answer. A stream cut BETWEEN objects, or a check
+ * answer cut between lines, is well-formed as far as it goes, so the parsers
+ * return a shorter answer and cannot tell; the shell holds every read to its
+ * terminator and its count (packages/cli/src/git.ts `terminated`). A cut
+ * inside an object is the one shape the parser itself refuses.
+ */
+describe("a cut answer: what the parsers alone can and cannot tell", () => {
+  it("a --batch stream cut between objects parses as fewer objects", () => {
+    const whole = concat([record(A, "one\n"), record(B, "two\n")]);
+    const cut = whole.subarray(0, record(A, "one\n").byteLength);
+    assert.deepEqual([...parseCatFileBatch(cut, decode).keys()], [A]);
+  });
+
+  it("a --batch stream cut inside an object is refused by the parser", () => {
+    const whole = concat([record(A, "one\n"), record(B, "two\n")]);
+    assert.throws(
+      () => parseCatFileBatch(whole.subarray(0, whole.byteLength - 3), decode),
+      /ends inside object/u,
+    );
+  });
+
+  it("a --batch-check answer cut between lines parses as fewer records", () => {
+    assert.deepEqual(
+      parseCatFileBatchCheck(`${A} blob 12\n`).map((r) => r.name),
+      [A],
+    );
+  });
+
+  it("a --batch-check answer cut inside its last size parses as a smaller size", () => {
+    // `B blob 345` cut to `B blob 3`: a well-formed line with the wrong number,
+    // which only the missing final newline gives away.
+    assert.deepEqual(parseCatFileBatchCheck(`${A} blob 12\n${B} blob 3`), [
+      { name: A, size: 12 },
+      { name: B, size: 3 },
+    ]);
+  });
+});

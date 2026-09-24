@@ -9,11 +9,12 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
 function run(cwd: string, args: string[], stdin?: string): Record<string, unknown> {
-  const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     input: stdin ?? "",

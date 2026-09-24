@@ -15,6 +15,7 @@ import {
   parsedPages,
 } from "@wikiwright/core";
 import { type CommandResult, capOptions, fail, ok, verdictEnvelope } from "./envelope.ts";
+import { GitShortRead } from "./git.ts";
 import { checkEnginePin, generateOptionsFor, lawFor, rootsOf, type VaultOk } from "./law.ts";
 import { formerFolderTagFindings } from "./pages.ts";
 import type { CommandArgs } from "./spec.ts";
@@ -80,6 +81,8 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
     // snapshot of the index, so its diff and its listing are read once.
     state = indexState(args.root, [], snapshot);
   } catch (e) {
+    // A cut answer is not a missing repository: it is refused as itself.
+    if (e instanceof GitShortRead) throw e;
     return fail(command, "conflict", "git-unavailable", `git plumbing failed: ${String(e)}`, {
       hint: "the staged gate runs inside a git repository",
     });

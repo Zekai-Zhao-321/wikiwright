@@ -376,25 +376,41 @@ slice rather than being caused by it.
 Wanted: nothing in the engine. Run the gate on a quiet machine, or keep the
 temporary directory out of indexing.
 
-### `lint --staged` has thrown under load, cause unknown
+### Under load, the suite's runtime cut a child's output short
 
-Twice, under load, `lint --staged` exited 1 with `unexpected-error`: once
-reporting that the index names a blob for a page and `git cat-file --batch`
-did not return it, once with no message kept. Neither failure reproduced
-alone, in twenty isolated runs, or in 960 runs of `gate` and `lint --staged`
-sixteen at a time under load. `staged-gate.test.ts` and
-`staged-gate-reads.test.ts` now print a failing run's stdout and stderr, so
-the next occurrence names itself. On 2026-09-24 the gate failed three times,
-each time in the run the pre-commit hook makes and never in a direct
-`bun run check` between them, and two of those runs named themselves:
-`lint --staged` answered `unexpected-error` with `cat-file --batch output
-ends inside object <id>` in `staged-gate-reads.test.ts`, and `fix --staged`
-answered `git-unavailable` with `cat-file --batch-check answered 1 of 2
-paths` in `gate-rule.test.ts`. Both are a batch read that ended short of
-what it was asked, which the engine refuses rather than reading a shorter
-page.
+`lint --staged` and `fix --staged` failed under load, in the pre-commit gate
+and never alone: the index named a blob `cat-file --batch` did not return, a
+batch output ended inside an object, a batch check answered 1 of 2 paths.
+The cause was the runtime the suite ran the CLI under. Under CPU load,
+Bun 1.3.11's synchronous spawn returned a child's stdout cut to a prefix,
+with exit status 0 and nothing on stderr. On 2026-09-24 a twelve-minute loop
+of the suite failed 10 of 899 file runs, each on a spawned process's output
+that came back short. A stress run beside it, synchronous spawns of `cat`
+and of git's two batch reads, cut 7 of 900 calls under Bun and none of 3,600
+under Node 22. A cut listing is well formed as far as it goes, so the engine
+read some cut answers as shorter ones: a cut index listing is fewer staged
+pages, and one `fix --staged` answered ok with `changed: []` where it should
+have refused.
 
-Wanted: that envelope, and the fix it points at.
+Two fixes. The engine holds every git read that has a terminator to it — a
+`-z` listing to its final NUL, a line answer to its final newline, a batch to
+its count — and refuses one that ends short as `git-short-read` (exit 1,
+`internal`), naming the git command, never as a smaller answer
+(`git-short-read.test.ts` cuts each with a `git` on PATH). And the suite runs
+the CLI under Node: `tools/run-suite.ts` sets `WIKIWRIGHT_CLI_RUNTIME` to the
+`node` on PATH, and every test that runs the CLI runs it under that
+(`packages/cli/test/fixtures/runtime.ts`). The shipped engine does not use
+Bun's synchronous spawn: `dist/bin.js` is a Node script, and its git reads
+are Node's.
+
+Left: the test files still run under Bun, so the envelope a test reads back
+from the CLI, and the test's own setup `git` calls, still come through Bun's
+synchronous spawn. A cut envelope does not parse and fails its test loudly;
+a cut setup read is not checked. The tests that run Bun on purpose are
+`run-suite.test.ts`, which drives the runner, and the one `vocabulary show`
+case that compares Bun's output with Node's.
+
+Wanted: a Bun whose synchronous spawn returns a child's whole output.
 
 ### `read` resolves a title the way the manifest renders it
 

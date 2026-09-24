@@ -33,6 +33,7 @@ import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const CONFORMANCE = join(REPO, "fixtures", "conformance");
@@ -103,7 +104,7 @@ interface Envelope {
 function run(argv: readonly string[], cwd: string, env: Record<string, string> = {}): Envelope {
   assert.notEqual(CLI, undefined, "the packed CLI was installed");
   try {
-    const out = execFileSync(process.execPath, [CLI ?? "", ...argv], {
+    const out = execFileSync(CLI_RUNTIME, [CLI ?? "", ...argv], {
       cwd,
       encoding: "utf8",
       env: { ...process.env, ...PINNED_CLOCK, ...env },

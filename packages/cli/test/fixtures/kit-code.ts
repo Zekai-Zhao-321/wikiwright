@@ -20,6 +20,7 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./clock.ts";
+import { CLI_RUNTIME } from "./runtime.ts";
 
 export const REPO = fileURLToPath(new URL("../../../../", import.meta.url));
 export const DIST_CLI = join(REPO, "packages", "cli", "dist", "main.js");
@@ -83,7 +84,7 @@ export function runKit(
   root: string,
   argv: readonly string[],
 ): { status: number; envelope: Envelope } {
-  const r = spawnSync(process.execPath, [DIST_CLI, ...argv, "--root", root], {
+  const r = spawnSync(CLI_RUNTIME, [DIST_CLI, ...argv, "--root", root], {
     encoding: "utf8",
     env: kitEnv(root),
   });

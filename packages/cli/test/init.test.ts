@@ -24,6 +24,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { grantKit, installKit, KIT_PACKAGE, runKit } from "./fixtures/kit-code.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
@@ -34,7 +35,7 @@ interface Outcome {
 }
 
 function run(cwd: string, args: string[]): Outcome {
-  const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     // Never consult (or create) the developer's real trust store from a test.

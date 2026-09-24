@@ -34,6 +34,7 @@ import { COMMANDS } from "../src/commands.ts";
 import { MACHINE_LOCAL_WRITERS } from "../src/connections.ts";
 import type { CommandArgs } from "../src/spec.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
@@ -216,7 +217,7 @@ function run(
   const env: Record<string, string | undefined> = { ...process.env, ...PINNED_CLOCK };
   env["WIKIWRIGHT_TRUST_FILE"] = trustStore ?? SCRATCH_TRUST;
   env["WIKIWRIGHT_BUNDLES_FILE"] = registryBeside(trustStore);
-  const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env,

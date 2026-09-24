@@ -310,6 +310,14 @@ version` prints the engine version and the commit a binary was built from.
   machine a 5,000-page index gated in 33 s and now gates in about 4 s, with a
   byte-identical envelope. `docs/roadmap.md` states the measured cost of a
   run and why no parse cache and no daemon are built.
+- A git answer cut short is refused as `git-short-read` (exit 1,
+  `internal`), naming the git command. Every git read with a terminator is
+  held to it: a `-z` listing to its final NUL, a line answer to its final
+  newline, a batch to the count it was asked. Before, a staged-change or
+  index listing that ended early read as a shorter listing, so a cut answer
+  could judge fewer staged pages, or none, and pass; `fix --staged` answered
+  ok with nothing changed. A runtime's synchronous spawn has handed back
+  such answers under load with exit 0 (`docs/roadmap.md`).
 
 - The parser is CommonMark plus YAML frontmatter: the GFM extensions
   (tables, task lists, strikethrough, autolink literals, footnotes) are no
@@ -337,6 +345,13 @@ version` prints the engine version and the commit a binary was built from.
   rather than Bun's 5: the first release of the runner kept 5, and a `before`
   hook that packs three tarballs and runs `bun install` timed out under load
   and failed a gate.
+- The suite runs the engine's CLI under Node. `tools/run-suite.ts` sets
+  `WIKIWRIGHT_CLI_RUNTIME` to the `node` on PATH when it runs under Bun, and
+  every test that spawns the CLI spawns it under that
+  (`packages/cli/test/fixtures/runtime.ts`); the summary names the runtime.
+  Under load, Bun 1.3.11's synchronous spawn cut 7 of 900 child outputs
+  short with exit 0, where Node cut none of 3,600, and that was the gate's
+  intermittent `lint --staged` failure.
 
 ## 0.1.0 — 2026-09-07
 

@@ -7,6 +7,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { flagsOf } from "../src/spec.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -21,7 +22,7 @@ interface Run {
 }
 
 function run(args: string[], env?: Record<string, string>): Run {
-  const r = spawnSync(process.execPath, [CLI, ...args], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], {
     encoding: "utf8",
     env: { ...process.env, ...(env ?? {}) } as Record<string, string>,
   });

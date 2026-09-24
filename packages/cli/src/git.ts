@@ -14,6 +14,45 @@ import {
 // silently disarm the append-only base lookup via the catch below.
 const MAX_BUFFER = 64 * 1024 * 1024;
 
+/**
+ * docs/cli.md §Exit codes: a git answer that ended before git finished
+ * writing it. Under load a runtime's synchronous spawn has handed back a
+ * child's stdout cut short with exit 0 and nothing on stderr (docs/roadmap.md),
+ * and a listing read that way is a shorter listing: a cut index is "nothing
+ * staged". Every read whose output has a terminator is held to it, and one that
+ * ends without it is this, refused by name as `git-short-read` and never read
+ * as a smaller answer. `command` is the git command, for the refusal.
+ */
+export class GitShortRead extends Error {
+  readonly command: string;
+  constructor(command: string, detail: string) {
+    super(`git ${command} answered short: ${detail}`);
+    this.command = command;
+  }
+}
+
+/**
+ * `out` as git's whole answer to `args`: empty, or ending in its terminator — a
+ * NUL for a `-z` listing, a newline for a line protocol. `nonEmpty` is for the
+ * reads that always answer something, where no output at all is a cut too.
+ */
+export function terminated(
+  args: readonly string[],
+  out: string,
+  terminator: "\0" | "\n",
+  nonEmpty = false,
+): string {
+  const named = terminator === "\0" ? "NUL" : "a newline";
+  if (out === "") {
+    if (nonEmpty) throw new GitShortRead(args.join(" "), "it printed nothing");
+    return out;
+  }
+  if (!out.endsWith(terminator)) {
+    throw new GitShortRead(args.join(" "), `its output does not end in ${named}`);
+  }
+  return out;
+}
+
 function git(root: string, args: string[]): string {
   // stderr is captured, never inherited: it rides on the thrown error's message
   // (gitShowHead matches on it) instead of printing `fatal:` beside a green
@@ -30,9 +69,8 @@ function git(root: string, args: string[]): string {
 export function gitStagedChanges(root: string): StagedChange[] {
   // --relative keeps paths vault-root-relative, so a vault living in a
   // subdirectory of a code repo (the code-bundle layout) works unchanged.
-  return parseNameStatusZ(
-    git(root, ["diff", "--cached", "--name-status", "-z", "-M", "--relative"]),
-  );
+  const args = ["diff", "--cached", "--name-status", "-z", "-M", "--relative"];
+  return parseNameStatusZ(terminated(args, git(root, args), "\0"));
 }
 
 /** The staged (index) content of a path (vault-root-relative via ./ pathspec). */
@@ -76,7 +114,8 @@ export interface IndexEntry {
 export function gitIndexEntries(root: string): IndexEntry[] {
   const entries: IndexEntry[] = [];
   // `<mode> <blob> <stage>\t<path>`, NUL-terminated, paths relative to the root.
-  for (const record of git(root, ["ls-files", "-s", "-z"]).split("\0")) {
+  const args = ["ls-files", "-s", "-z"];
+  for (const record of terminated(args, git(root, args), "\0").split("\0")) {
     const tab = record.indexOf("\t");
     if (tab < 0) continue;
     const [, blob, stage] = record.slice(0, tab).split(" ");
@@ -88,7 +127,8 @@ export function gitIndexEntries(root: string): IndexEntry[] {
 
 /** The current head commit. */
 export function gitHead(root: string): string {
-  return git(root, ["rev-parse", "HEAD"]).trim();
+  const args = ["rev-parse", "HEAD"];
+  return terminated(args, git(root, args), "\n", true).trim();
 }
 
 /**
@@ -106,7 +146,9 @@ export function gitTopLevel(dir: string): string | undefined {
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.error !== undefined) throw result.error;
-  if (result.status === 0) return result.stdout.trim();
+  if (result.status === 0) {
+    return terminated(["rev-parse", "--show-toplevel"], result.stdout, "\n", true).trim();
+  }
   if (/not a git repository/iu.test(result.stderr)) return undefined;
   throw new Error(
     `git rev-parse --show-toplevel failed (exit ${String(result.status)}): ${result.stderr.trim()}`,
@@ -129,7 +171,10 @@ export function gitHasHead(root: string): boolean {
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.error !== undefined) throw result.error;
-  if (result.status === 0) return true;
+  if (result.status === 0) {
+    terminated(["rev-parse", "--verify", "--quiet", "HEAD"], result.stdout, "\n", true);
+    return true;
+  }
   if (result.status === 1 && result.stdout.trim() === "") return false;
   throw new Error(
     `git rev-parse --verify HEAD failed (exit ${result.status}): ${result.stderr.trim()}`,
@@ -184,6 +229,7 @@ export function gitLsRemoteHead(cwd: string, origin: string): string {
   if (r.status !== 0) {
     throw new OriginUnreachable(r.stderr.trim() || `git ls-remote exited ${String(r.status)}`);
   }
+  terminated(["ls-remote", "--quiet", origin, "HEAD"], r.stdout, "\n");
   const sha = r.stdout.split(/\s+/u)[0] ?? "";
   if (!/^[0-9a-f]{40,64}$/u.test(sha)) throw new OriginUnreachable("the origin advertised no HEAD");
   return sha;
@@ -220,7 +266,8 @@ export function gitOriginFetch(
   if (r.status !== 0) {
     throw new OriginUnreachable(r.stderr.trim() || `git fetch exited ${String(r.status)}`);
   }
-  return { head: git(cache, ["rev-parse", CACHE_HEAD]).trim(), filter };
+  const head = ["rev-parse", CACHE_HEAD];
+  return { head: terminated(head, git(cache, head), "\n", true).trim(), filter };
 }
 
 /** A ref's commit, or null where the ref does not exist. */
@@ -232,7 +279,9 @@ export function gitRefHead(dir: string, ref: string): string | null {
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.error !== undefined) throw result.error;
-  if (result.status === 0) return result.stdout.trim();
+  if (result.status === 0) {
+    return terminated(["rev-parse", "--verify", "--quiet", ref], result.stdout, "\n", true).trim();
+  }
   if (result.status === 1) return null;
   throw new Error(
     `git rev-parse --verify ${ref} failed (exit ${String(result.status)}): ${result.stderr.trim()}`,
@@ -267,7 +316,8 @@ export function gitIsAncestor(dir: string, ancestor: string, descendant: string)
  * repository path from any other backticked token.
  */
 export function gitTreeEntries(dir: string, rev: string): string[] {
-  return git(dir, ["ls-tree", "--full-tree", "--name-only", "-z", rev])
+  const args = ["ls-tree", "--full-tree", "--name-only", "-z", rev];
+  return terminated(args, git(dir, args), "\0")
     .split("\0")
     .filter((name) => name !== "");
 }
@@ -285,7 +335,8 @@ export function gitObjectType(dir: string, spec: string): string | undefined {
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.error !== undefined) throw result.error;
-  return result.status === 0 ? result.stdout.trim() : undefined;
+  if (result.status !== 0) return undefined;
+  return terminated(["cat-file", "-t", spec], result.stdout, "\n", true).trim();
 }
 
 /** The number of lines in a blob: its newlines, plus one for an unterminated last line. */
@@ -298,7 +349,8 @@ export function gitBlobLineCount(dir: string, spec: string): number {
 
 /** Commits between a pin and a head (pin distance). Throws on an unresolvable pin. */
 export function gitRevListCount(dir: string, from: string, to: string): number {
-  return Number.parseInt(git(dir, ["rev-list", "--count", `${from}..${to}`]).trim(), 10);
+  const args = ["rev-list", "--count", `${from}..${to}`];
+  return Number.parseInt(terminated(args, git(dir, args), "\n", true).trim(), 10);
 }
 
 /**
@@ -318,7 +370,7 @@ export function gitDiffNames(
 ): string[] {
   const args = ["diff", "--name-only", "-z", "--no-renames", from, to];
   if (paths.length > 0) args.push("--", ...paths.map((p) => (top ? `:(top)${p}` : p)));
-  return git(dir, args)
+  return terminated(args, git(dir, args), "\0")
     .split("\0")
     .filter((p) => p !== "");
 }
@@ -368,7 +420,16 @@ export function gitReadBlobs(root: string, blobs: readonly string[]): Map<string
     `${wanted.join("\n")}\n`,
     MAX_BUFFER,
   );
-  for (const record of parseCatFileBatchCheck(checked.toString("utf8"))) {
+  const records = parseCatFileBatchCheck(
+    terminated(["cat-file", "--batch-check"], checked.toString("utf8"), "\n"),
+  );
+  if (records.length !== wanted.length) {
+    throw new GitShortRead(
+      "cat-file --batch-check",
+      `it answered ${records.length} of ${wanted.length} objects`,
+    );
+  }
+  for (const record of records) {
     if (record.size === undefined) throw new Error(`blob ${record.name} is not in the repository`);
     sizes.set(record.name, record.size);
   }
@@ -379,7 +440,20 @@ export function gitReadBlobs(root: string, blobs: readonly string[]): Map<string
     // The buffer is the chunk's content plus a header and a newline per blob.
     const maxBuffer = chunkBytes + chunk.length * 128 + 1024;
     const bytes = gitBatch(root, ["cat-file", "--batch"], `${chunk.join("\n")}\n`, maxBuffer);
-    for (const [blob, text] of parseCatFileBatch(bytes, utf8)) out.set(blob, text);
+    // Every object ends in a newline, so a stream cut between objects is caught
+    // by the terminator and the count; one cut inside an object, by the parser.
+    if (bytes.length > 0 && bytes[bytes.length - 1] !== 0x0a) {
+      throw new GitShortRead("cat-file --batch", "its output does not end in a newline");
+    }
+    const read = parseCatFileBatch(bytes, utf8);
+    const missing = chunk.filter((blob) => !read.has(blob));
+    if (missing.length > 0) {
+      throw new GitShortRead(
+        "cat-file --batch",
+        `it answered ${chunk.length - missing.length} of ${chunk.length} objects`,
+      );
+    }
+    for (const [blob, text] of read) out.set(blob, text);
     chunk = [];
     chunkBytes = 0;
   };
@@ -417,9 +491,14 @@ export function gitHeadBlobs(
     `${names.join("\n")}\n`,
     MAX_BUFFER,
   );
-  const records = parseCatFileBatchCheck(checked.toString("utf8"));
+  const records = parseCatFileBatchCheck(
+    terminated(["cat-file", "--batch-check"], checked.toString("utf8"), "\n"),
+  );
   if (records.length !== wanted.length) {
-    throw new Error(`cat-file --batch-check answered ${records.length} of ${wanted.length} paths`);
+    throw new GitShortRead(
+      "cat-file --batch-check",
+      `it answered ${records.length} of ${wanted.length} paths`,
+    );
   }
   wanted.forEach((path, i) => {
     const record = records[i];
@@ -460,8 +539,14 @@ export function gitWorktreeIdentity(dir: string): { commonDir: string; prefix: s
   // verbatim, so a newline in the vault's path or in a common directory printed
   // whole would split one answer into two and read the vault as a shorter path,
   // another vault's. Exactly three lines is the one unambiguous reading; any
-  // other output is a path with no worktree identity.
-  const lines = result.stdout.split("\n");
+  // other output is a path with no worktree identity. An answer that does not
+  // end in a newline was cut short, and says so.
+  const lines = terminated(
+    ["rev-parse", "--is-inside-work-tree", "--git-common-dir", "--show-prefix"],
+    result.stdout,
+    "\n",
+    true,
+  ).split("\n");
   if (lines.length !== 4 || lines[3] !== "") {
     throw new Error(
       `"${dir}" has no worktree identity: git printed its answers across ${String(lines.length - 1)} lines, so a path holds a newline`,
@@ -513,9 +598,17 @@ export function gitCheckoutState(dir: string): CheckoutState | undefined {
     { cwd: dir, env, encoding: "utf8", maxBuffer: MAX_BUFFER, stdio: ["ignore", "pipe", "pipe"] },
   );
   if (result.error !== undefined || result.status !== 0) return undefined;
+  // A cut answer could drop the entries that make the checkout dirty: it is
+  // thrown, and the bundle block it would have fed is left off.
+  const out = terminated(
+    ["status", "--porcelain=v2", "--branch", "--untracked-files=all"],
+    result.stdout,
+    "\n",
+    true,
+  );
   let head: string | null = null;
   let dirty = false;
-  for (const line of result.stdout.split("\n")) {
+  for (const line of out.split("\n")) {
     if (line === "") continue;
     if (!line.startsWith("# ")) {
       dirty = true;

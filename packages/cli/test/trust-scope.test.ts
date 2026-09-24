@@ -27,6 +27,7 @@ import { fileURLToPath } from "node:url";
 import { moduleDigest } from "../src/moduleload.ts";
 import { scopeKeyFrom } from "../src/trust.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const CONFORMANCE = join(REPO_ROOT, "fixtures", "conformance");
@@ -150,7 +151,7 @@ function cli(
   store: string,
   env: NodeJS.ProcessEnv = {},
 ): { status: number; envelope: Envelope } {
-  const r = spawnSync(process.execPath, [CLI, ...argv, "--root", root], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
     encoding: "utf8",
     env: { ...cleanEnv(), ...PINNED_CLOCK, WIKIWRIGHT_TRUST_FILE: store, ...env },
   });
@@ -845,7 +846,7 @@ describe("a real pre-commit hook in a linked worktree reads the same scope", () 
         ...PINNED_CLOCK,
         WIKIWRIGHT_TRUST_FILE: store,
         WW_MARK: mark,
-        WW_NODE: process.execPath,
+        WW_NODE: CLI_RUNTIME,
         WW_CLI: CLI,
       },
     });

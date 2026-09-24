@@ -12,6 +12,7 @@ import {
   type VaultState,
 } from "@wikiwright/core";
 import {
+  GitShortRead,
   gitHeadBlobs,
   gitIndexEntries,
   gitReadBlobs,
@@ -19,6 +20,7 @@ import {
   gitShowStaged,
   gitStagedChanges,
   type IndexEntry,
+  terminated,
 } from "./git.ts";
 import { readPage, type VaultReader, walkPages } from "./vaultio.ts";
 
@@ -197,18 +199,23 @@ export function overlayState(
 /** The first-parent commits from `rev` to HEAD, oldest first (replay's walk). */
 export function commitPairs(root: string, since: string): { rev: string; base: string }[] {
   let revs: string[];
-  try {
-    revs = git(root, ["rev-list", "--first-parent", "--reverse", `${since}^..HEAD`])
+  const list = (range: string): string[] => {
+    const args = ["rev-list", "--first-parent", "--reverse", range];
+    return terminated(args, git(root, args), "\n")
       .split("\n")
       .filter((s) => s !== "");
-  } catch {
+  };
+  try {
+    revs = list(`${since}^..HEAD`);
+  } catch (error) {
+    // A cut answer is not a missing parent: it is refused as itself.
+    if (error instanceof GitShortRead) throw error;
     // `<root>^` does not exist, and a repository's first commit is exactly the
     // pair a replay most wants: its base is the empty tree, so every page in it
     // is `added` rather than a page with no arms.
-    const all = git(root, ["rev-list", "--first-parent", "--reverse", "HEAD"])
-      .split("\n")
-      .filter((s) => s !== "");
-    const full = git(root, ["rev-parse", since]).trim();
+    const all = list("HEAD");
+    const parse = ["rev-parse", since];
+    const full = terminated(parse, git(root, parse), "\n", true).trim();
     const at = all.indexOf(full);
     if (at < 0) throw new Error(`"${since}" is not an ancestor of HEAD`);
     revs = all.slice(at);
@@ -219,7 +226,8 @@ export function commitPairs(root: string, since: string): { rev: string; base: s
 const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
 function firstParent(root: string, commit: string): string {
-  const parents = git(root, ["rev-list", "--parents", "-n", "1", commit]).trim().split(" ");
+  const args = ["rev-list", "--parents", "-n", "1", commit];
+  const parents = terminated(args, git(root, args), "\n", true).trim().split(" ");
   return parents[1] ?? EMPTY_TREE;
 }
 
@@ -231,7 +239,8 @@ interface TreeEntry {
 
 function lsTree(root: string, commit: string): TreeEntry[] {
   const entries: TreeEntry[] = [];
-  for (const record of git(root, ["ls-tree", "-r", "-z", commit]).split("\0")) {
+  const args = ["ls-tree", "-r", "-z", commit];
+  for (const record of terminated(args, git(root, args), "\0").split("\0")) {
     if (record === "") continue;
     const tab = record.indexOf("\t");
     if (tab < 0) continue;
@@ -296,9 +305,8 @@ export function revisionState(
     if (baseMap.has(entry.path)) continue;
     baseMap.set(entry.path, read(entry));
   }
-  const renames: StateRename[] = parseNameStatusZ(
-    git(root, ["diff", "--name-status", "-z", "-M", `${base}..${rev}`]),
-  )
+  const diff = ["diff", "--name-status", "-z", "-M", `${base}..${rev}`];
+  const renames: StateRename[] = parseNameStatusZ(terminated(diff, git(root, diff), "\0"))
     .filter((ch) => ch.oldPath !== undefined)
     .map((ch) => ({ from: (ch.oldPath ?? "").normalize("NFC"), to: ch.path.normalize("NFC") }))
     .filter((r) => isContentPath(r.to, roots))

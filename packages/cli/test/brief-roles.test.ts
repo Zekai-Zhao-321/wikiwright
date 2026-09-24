@@ -11,6 +11,7 @@ import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { ROLE_RANK } from "../src/spec.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -54,7 +55,7 @@ function brief(
   const env = { ...process.env };
   if (sessionRole === undefined) delete env["WIKIWRIGHT_ROLE"];
   else env["WIKIWRIGHT_ROLE"] = sessionRole;
-  const r = spawnSync(process.execPath, [CLI, "brief", ...argv, "--root", FIXTURE], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, "brief", ...argv, "--root", FIXTURE], {
     encoding: "utf8",
     env,
   });

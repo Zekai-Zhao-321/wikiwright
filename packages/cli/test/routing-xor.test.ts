@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { passRows, standardLibrary } from "@wikiwright/core";
 import { grantedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { MEMORY_LAW } from "./fixtures/memory-law.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
@@ -29,7 +30,7 @@ interface Finding {
 }
 
 function envelopeOf(args: string[], root?: string): { data?: { findings?: Finding[] } } {
-  const r = spawnSync(process.execPath, [CLI, ...args], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], {
     encoding: "utf8",
     // A corpus over a kit is judged under the copy's own trust store; the
     // others declare no module and never consult one.
@@ -185,7 +186,7 @@ describe("every emitted finding routes (docs/concepts.md §Findings and routing)
 });
 
 function run(cwd: string, args: string[]): { status: number; envelope: RunEnvelope } {
-  const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as RunEnvelope };
 }
 

@@ -35,3 +35,15 @@ describe("parseNameStatusZ — `git diff --cached --name-status -z -M` parser", 
     ]);
   });
 });
+
+describe("parseNameStatusZ on a cut answer (docs/roadmap.md)", () => {
+  it("returns a shorter listing and cannot tell: the shell holds the answer to its final NUL", () => {
+    // `M wiki/a.md`, then a record cut inside its path: the parser keeps what it
+    // was given, which is why a cut listing is refused before it is parsed.
+    assert.deepEqual(parseNameStatusZ("M\0wiki/a.md\0M\0wiki/b"), [
+      { status: "M", path: "wiki/a.md" },
+      { status: "M", path: "wiki/b" },
+    ]);
+    assert.deepEqual(parseNameStatusZ("M\0wiki/a.md\0M"), [{ status: "M", path: "wiki/a.md" }]);
+  });
+});

@@ -20,6 +20,7 @@ import { basename, join } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { putGrant, readTrustStore, updateTrustStore, writeTrustStore } from "../src/trust.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const CONFORMANCE = join(REPO_ROOT, "fixtures", "conformance");
@@ -90,7 +91,7 @@ interface Envelope {
 
 /** One verb over a store this test owns; a non-zero exit is a verdict, not a failure. */
 function cli(root: string, argv: readonly string[], store: string): Envelope {
-  const r = spawnSync(process.execPath, [CLI, ...argv, "--root", root], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
     encoding: "utf8",
     env: { ...process.env, WIKIWRIGHT_TRUST_FILE: store, WIKIWRIGHT_TODAY: "2026-09-11" },
   });
@@ -330,7 +331,7 @@ describe("a store update reads what is there, not what was there", () => {
         (root) =>
           new Promise<number>((resolve) => {
             const child = spawn(
-              process.execPath,
+              CLI_RUNTIME,
               [CLI, "trust", "grant", `module:${MODULE}`, "--root", root],
               {
                 env: {

@@ -13,10 +13,15 @@
 // start first, so the long files are not the last to begin. A file passes when
 // its process exits 0 and reports at least one test; the run exits 1 when any
 // file does not, and prints that file's whole output.
+//
+// The tests run the engine's CLI under WIKIWRIGHT_CLI_RUNTIME
+// (packages/cli/test/fixtures/runtime.ts). Under Bun the runner sets it to the
+// `node` on PATH, the runtime the engine ships for, unless it is set already;
+// the summary names the runtime it used.
 import { spawn } from "node:child_process";
-import { readdirSync, statSync } from "node:fs";
+import { accessSync, constants, readdirSync, statSync } from "node:fs";
 import { availableParallelism } from "node:os";
-import { isAbsolute, join } from "node:path";
+import { delimiter, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -70,6 +75,34 @@ const TIMEOUT_MS = 20_000;
 // `bun` on PATH does, so the runner's test can drive it from the node runner.
 const BUN = process.versions["bun"] === undefined ? "bun" : process.execPath;
 
+/** The first `node` executable on PATH, found without spawning anything. */
+function nodeOnPath(): string | undefined {
+  const name = process.platform === "win32" ? "node.exe" : "node";
+  for (const dir of (process.env["PATH"] ?? "").split(delimiter)) {
+    if (dir === "") continue;
+    const candidate = join(dir, name);
+    try {
+      accessSync(candidate, constants.X_OK);
+      if (statSync(candidate).isFile()) return candidate;
+    } catch {
+      // Not here; the next directory.
+    }
+  }
+  return undefined;
+}
+
+/**
+ * docs/roadmap.md: under load, Bun's synchronous spawn has handed back a
+ * child's stdout cut short with exit 0, and the engine's git reads took the
+ * cut answers for shorter listings. The engine ships for Node, so the suite
+ * runs it under Node; a test that means Bun names `bun` itself.
+ */
+const CLI_RUNTIME =
+  process.env["WIKIWRIGHT_CLI_RUNTIME"] ??
+  (process.versions["bun"] === undefined ? undefined : nodeOnPath());
+const CHILD_ENV =
+  CLI_RUNTIME === undefined ? process.env : { ...process.env, WIKIWRIGHT_CLI_RUNTIME: CLI_RUNTIME };
+
 function runFile(file: string): Promise<Outcome> {
   return new Promise((resolve) => {
     const start = performance.now();
@@ -78,7 +111,7 @@ function runFile(file: string): Promise<Outcome> {
     const target = isAbsolute(file) ? file : `./${file}`;
     const child = spawn(BUN, ["test", "--timeout", String(TIMEOUT_MS), target], {
       cwd: ROOT,
-      env: process.env,
+      env: CHILD_ENV,
       stdio: ["ignore", "pipe", "pipe"],
     });
     const chunks: Buffer[] = [];
@@ -136,7 +169,7 @@ async function main(): Promise<number> {
   const tests = outcomes.reduce((n, o) => n + o.tests, 0);
   const across = `${files.length} file${files.length === 1 ? "" : "s"}`;
   process.stdout.write(
-    `\n ${pass} pass\n ${fail} fail\nRan ${tests} test${tests === 1 ? "" : "s"} across ${across}, ${jobs} at a time. [${seconds(performance.now() - started)}]\n`,
+    `\n ${pass} pass\n ${fail} fail\nThe CLI ran under ${CLI_RUNTIME ?? process.execPath}.\nRan ${tests} test${tests === 1 ? "" : "s"} across ${across}, ${jobs} at a time. [${seconds(performance.now() - started)}]\n`,
   );
   if (failed.length > 0) {
     process.stdout.write(

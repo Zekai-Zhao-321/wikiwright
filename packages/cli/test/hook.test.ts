@@ -22,6 +22,7 @@ import { delimiter, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -31,7 +32,7 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 function run(cwd: string, args: string[]): { status: number; envelope: Record<string, unknown> } {
-  const r = spawnSync(process.execPath, [CLI, ...args], { cwd, encoding: "utf8" });
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], { cwd, encoding: "utf8" });
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Record<string, unknown> };
 }
 
@@ -56,7 +57,7 @@ function shimDir(tmp: string): string {
   const bin = join(tmp, ".bin");
   mkdirSync(bin, { recursive: true });
   const launcher = join(bin, "wikiwright");
-  writeFileSync(launcher, `#!/bin/sh\nexec ${process.execPath} ${CLI} "$@"\n`);
+  writeFileSync(launcher, `#!/bin/sh\nexec ${CLI_RUNTIME} ${CLI} "$@"\n`);
   chmodSync(launcher, 0o755);
   return bin;
 }

@@ -26,6 +26,7 @@ import {
   kitEnv,
   REPO,
 } from "./fixtures/kit-code.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const STARTERS = fileURLToPath(new URL("../constitutions/", import.meta.url));
 const CODE_STARTER = join(STARTERS, "code");
@@ -40,7 +41,7 @@ interface Finding {
 }
 
 function lint(root: string): { status: number; findings: Finding[] } {
-  const r = spawnSync(process.execPath, [DIST_CLI, "lint", "--root", root], {
+  const r = spawnSync(CLI_RUNTIME, [DIST_CLI, "lint", "--root", root], {
     encoding: "utf8",
     env: kitEnv(root),
   });
@@ -86,7 +87,7 @@ function devwikiUnderStarter(): string {
 function starterBundle(): string {
   const root = mkdtempSync(join(tmpdir(), "ww-starter-init-"));
   const init = spawnSync(
-    process.execPath,
+    CLI_RUNTIME,
     [DIST_CLI, "init", "--constitution", "code", "--root", root],
     { encoding: "utf8", env: kitEnv(root) },
   );
@@ -242,7 +243,7 @@ describe("the code starter is the reference registered relations vocabulary", ()
     // only from the JSON.
     const root = starterBundle();
     SCRATCH.push(root);
-    const r = spawnSync(process.execPath, [DIST_CLI, "type", "show", "subsystem", "--root", root], {
+    const r = spawnSync(CLI_RUNTIME, [DIST_CLI, "type", "show", "subsystem", "--root", root], {
       encoding: "utf8",
       env: kitEnv(root),
     });

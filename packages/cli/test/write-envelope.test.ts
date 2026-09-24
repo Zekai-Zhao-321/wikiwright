@@ -12,6 +12,7 @@ import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { claimsBundle, PAGES } from "./fixtures/garden-claims.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
@@ -26,7 +27,7 @@ function run(
   argv: readonly string[],
   input = "",
 ): { status: number; envelope: Envelope } {
-  const r = spawnSync(process.execPath, [CLI, ...argv, "--root", root], {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK },
     input,
