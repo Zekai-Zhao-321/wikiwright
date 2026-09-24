@@ -420,12 +420,16 @@ What the registry rows below do not say.
   paths: it refuses `bundle-name-invalid` for a name outside
   `^[a-z0-9][a-z0-9-]{0,63}$`, `invalid-kind`, `vault-not-found` for a root
   with no `config/constitution.json`, `guide-not-found` when `--guide` names
-  no file under the root, `bundle-name-taken` when the name is connected, and
+  no file under the root, `guide-not-a-page` (exit 2, with
+  `details.content_roots`) when it names a file that is not a Markdown page
+  under a content root `config/engine.json` declares, which is all `read`
+  returns, `bundle-name-taken` when the name is connected, and
   `bundle-root-registered` when the root is connected under another name,
   named in `details.name`. `--kind` is `maintained`, the default, for a
   checkout the caller may write to within its role, or `installed`, for a copy
   that is read only; `--feedback` says where a problem with the bundle is
-  reported, and `--guide` which page to read first. `list` prints every
+  reported, and `--guide` which page to read first, a page under a content
+  root. `list` prints every
   connection sorted by name with `root` as registered, `realpath`, `present`
   (the root exists and holds a constitution), `kind`, `feedback`, `guide` and
   `identity`: the envelope's bundle block without `root` (`label`, `head`,
@@ -566,7 +570,7 @@ Role: `consumer`. Writes: yes (accepts `--dry-run`).
 | `--name <value>` | with `add`: the name the bundle is connected as |
 | `--kind <value>` | with `add`: maintained (the default) \| installed, a copy that is read only |
 | `--feedback <value>` | with `add`: where a problem with this bundle is reported |
-| `--guide <value>` | with `add`: the page to read first, relative to the bundle's root |
+| `--guide <value>` | with `add`: the page to read first, a page under a content root, relative to the bundle's root |
 | `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
 
 ```text

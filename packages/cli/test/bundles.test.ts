@@ -256,6 +256,53 @@ describe("bundles connects a vault by name (docs/cli.md §bundles)", () => {
     assert.equal(existsSync(file), false, "a refused add created the registry");
   });
 
+  it("a guide is a page the consumer can read: Markdown under a content root", () => {
+    // A copy of the orchard handbook with a Markdown file outside its content
+    // roots, and a second copy whose engine.json starts with a byte order mark:
+    // the roots are read as the loader reads them.
+    const copy = join(tmp, "guides", "orchard");
+    cpSync(ORCHARD, copy, { recursive: true });
+    mkdirSync(join(copy, "notes"), { recursive: true });
+    cpSync(join(copy, "wiki", "start-here.md"), join(copy, "notes", "start-here.md"));
+    const marked = join(tmp, "guides", "marked");
+    cpSync(ORCHARD, marked, { recursive: true });
+    const engine = join(marked, "config", "engine.json");
+    writeFileSync(engine, `\ufeff${readFileSync(engine, "utf8")}`);
+    mkdirSync(join(marked, "notes"), { recursive: true });
+    cpSync(join(marked, "wiki", "start-here.md"), join(marked, "notes", "start-here.md"));
+
+    const { file, env } = registry("guides");
+    for (const [root, guide] of [
+      [copy, "config/engine.json"],
+      [copy, "notes/start-here.md"],
+      [marked, "notes/start-here.md"],
+    ] as const) {
+      const r = run(tmp, ["bundles", "add", root, "--name", "guided", "--guide", guide], env);
+      assert.equal(r.status, 2, `${guide}: ${JSON.stringify(r.envelope)}`);
+      assert.equal(r.envelope.error?.code, "guide-not-a-page");
+      assert.deepEqual(r.envelope.error?.details, { guide, content_roots: ["wiki"] });
+    }
+    assert.equal(existsSync(file), false, "a refused add created the registry");
+
+    // A page under a content root is accepted, and the consumer reads it.
+    for (const [root, name] of [
+      [copy, "guided"],
+      [marked, "marked"],
+    ] as const) {
+      const added = run(
+        tmp,
+        ["bundles", "add", root, "--name", name, "--guide", "wiki/start-here.md"],
+        env,
+      );
+      assert.equal(added.status, 0, JSON.stringify(added.envelope));
+      const read = run(tmp, ["read", "wiki/start-here.md", "--bundle", name], {
+        ...env,
+        WIKIWRIGHT_ROLE: "consumer",
+      });
+      assert.equal(read.status, 0, JSON.stringify(read.envelope));
+    }
+  });
+
   it("remove removes a connection, and a name that is not one lists the valid names", () => {
     const { env } = registry("remove");
     connectBoth(env);

@@ -90,6 +90,25 @@ function contentRootsOf(engine: string | undefined): readonly string[] {
 }
 
 /**
+ * The content roots of the bundle at `root`, its `config/engine.json` read
+ * through the contained reader and parsed as the loader parses it, without
+ * loading the law. `null` when the file cannot be read inside the vault — it
+ * resolves outside, or the read fails — so a caller never routes by a config
+ * the engine would refuse to read; none when the file is absent or declares
+ * none the loader would accept.
+ */
+export function contentRootsAt(root: string): readonly string[] | null {
+  let engine: string | undefined;
+  try {
+    const reader = fsReader(root);
+    engine = reader.exists(ENGINE_PATH) ? reader.read(ENGINE_PATH) : undefined;
+  } catch {
+    return null;
+  }
+  return contentRootsOf(engine);
+}
+
+/**
  * docs/cli.md §The envelope: the bundle at `root`, or undefined when the root
  * holds no constitution. It loads nothing and asks no trust store, so it
  * answers the same for a bundle whose modules this machine has not approved.

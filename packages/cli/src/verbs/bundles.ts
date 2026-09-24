@@ -8,8 +8,8 @@
 // machine has not approved still lists, with its identity.
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { codeUnitCompare, PATH_REFUSALS, pathRefusal } from "@wikiwright/core";
-import { bundleIdentity } from "../bundle.ts";
+import { codeUnitCompare, isContentPath, PATH_REFUSALS, pathRefusal } from "@wikiwright/core";
+import { bundleIdentity, contentRootsAt } from "../bundle.ts";
 import {
   bundlesFilePath,
   type Connection,
@@ -224,6 +224,25 @@ function connectionOf(
         ),
       };
     }
+    // The guide is what a consumer is told to read first, and `read` returns
+    // a Markdown page under a content root and nothing else; a file that is
+    // not one would be advertised at every session start and never open.
+    const roots = contentRootsAt(root) ?? [];
+    if (!isContentPath(guide, roots)) {
+      return {
+        ok: false,
+        result: fail(
+          "bundles",
+          "usage",
+          "guide-not-a-page",
+          `--guide "${guide}" is not a page: a guide is a .md file under a content root`,
+          {
+            details: { guide, content_roots: [...roots] },
+            hint: "name a page `read` can return: a Markdown file under one of details.content_roots, as config/engine.json declares them",
+          },
+        ),
+      };
+    }
   }
   return {
     ok: true,
@@ -339,7 +358,8 @@ export const bundlesCommand: CommandSpec = {
     {
       name: "guide",
       type: "string",
-      summary: "with `add`: the page to read first, relative to the bundle's root",
+      summary:
+        "with `add`: the page to read first, a page under a content root, relative to the bundle's root",
     },
   ],
   examples: [

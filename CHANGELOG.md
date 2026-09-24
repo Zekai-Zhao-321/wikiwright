@@ -28,7 +28,9 @@ version` prints the engine version and the commit a binary was built from.
   `WIKIWRIGHT_BUNDLES_FILE`), written under the trust store's lock. A
   connection carries its root, a `kind` — `maintained`, a checkout the caller
   may write to within its role, or `installed`, a copy that is read only — the
-  place a problem with it is reported, and a page to read first. `list` shows
+  place a problem with it is reported, and a page to read first, which must
+  be a Markdown page under a content root, the pages `read` returns
+  (`guide-not-a-page` otherwise). `list` shows
   every connection with the identity the envelope's bundle block carries and
   loads no law and no module, so a bundle whose modules are not approved on
   this machine still lists. The verb is a consumer's: the registry is outside
