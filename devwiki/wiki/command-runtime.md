@@ -3,7 +3,7 @@ type: subsystem
 title: "The command runtime"
 description: "One spec-driven registry of 24 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the `--bundle` target and the bundle every vault envelope names, the one clock, and the place a loaded vault becomes the judge's law."
 tags: [cli]
-pin: 6b5175410c22ee543057ec18fdd74154d0dd9025
+pin: d74308aa8f4dec7a7d57daaf03984f23a98f2d62
 origin: .
 covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/bundle.ts, packages/cli/src/connections.ts, packages/cli/src/verbs/]
 ---
@@ -34,9 +34,10 @@ one envelope to stdout, the verb's UX text to stderr and sets the exit code
 anything — label, real root, head and dirty from one `git status`, the law
 digest over the config and each installed module's digest, the content digest
 over every page's bytes (`:38-54`, `:70-76`, `:99-114`) — and
-`packages/cli/src/connections.ts` is the registry `--bundle` reads, beside
-`MACHINE_LOCAL_WRITERS`, the two verbs an installed copy answers (`:72-102`,
-`:104-113`).
+`packages/cli/src/connections.ts` is the registry `--bundle` reads, which
+refuses as malformed a record whose root is not an absolute path rather than
+resolving it against the working directory, beside `MACHINE_LOCAL_WRITERS`,
+the two verbs an installed copy answers (`:50-77`, `:79-107`, `:112-121`).
 
 `packages/cli/src/commands.ts` is the registry, the `COMMANDS` array and
 nothing else, one module per verb under `verbs/` (`:2-6`, `:33-58`).

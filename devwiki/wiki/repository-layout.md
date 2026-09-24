@@ -3,7 +3,7 @@ type: source-map
 title: Repository layout
 description: Directory-to-purpose lookup for the wikiwright repository.
 tags: [repo]
-pin: 6b5175410c22ee543057ec18fdd74154d0dd9025
+pin: d74308aa8f4dec7a7d57daaf03984f23a98f2d62
 origin: .
 covers: [package.json, tsconfig.json, packages/cli/constitutions/, packages/cli/skills/, packages/cli/.claude-plugin/, packages/cli/hooks/, packages/kit-code/, fixtures/, tools/, scripts/, .github/]
 ---
