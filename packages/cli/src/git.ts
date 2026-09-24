@@ -1,7 +1,7 @@
 // docs/architecture.md (spawned git plumbing; no git library) · docs/cli.md §lint (--staged
 // reads index content, never the working tree).
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import {
   BatchStreamTruncated,
   parseCatFileBatch,
@@ -563,54 +563,6 @@ export function gitHeadBlobs(
 /** The variables git exports into a hook, which change what `rev-parse` discovers. */
 const HOOK_VARIABLES = ["GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE"] as const;
 
-/**
- * docs/cli.md §trust: where a vault sits, for a worktree-scope grant — the git
- * common directory its checkout shares with every linked worktree of the same
- * clone, and the vault's path inside its own worktree, as git discovers them
- * from the vault directory. The variables git exports into a hook are removed
- * first: with `GIT_DIR` set and no work tree, `rev-parse` takes the directory it
- * runs in for the top of the work tree, and a vault below the top would read as
- * the top itself. The common directory is resolved against `dir`, since git
- * may print it relative; the caller takes its real path. A directory outside
- * every work tree, and any failure of git, is thrown.
- */
-export function gitWorktreeIdentity(dir: string): { commonDir: string; prefix: string } {
-  const env = { ...process.env };
-  for (const key of HOOK_VARIABLES) delete env[key];
-  const result = gitRun(
-    dir,
-    ["rev-parse", "--is-inside-work-tree", "--git-common-dir", "--show-prefix"],
-    { env },
-  );
-  if (result.error !== undefined) throw result.error;
-  if (result.status !== 0) {
-    throw new Error(
-      `git rev-parse --git-common-dir failed (exit ${String(result.status)}): ${result.stderr.trim()}`,
-    );
-  }
-  // git prints each answer on its own line and a newline inside a path
-  // verbatim, so a newline in the vault's path or in a common directory printed
-  // whole would split one answer into two and read the vault as a shorter path,
-  // another vault's. Exactly three lines is the one unambiguous reading; any
-  // other output is a path with no worktree identity. An answer that does not
-  // end in a newline was cut short, and says so.
-  const lines = terminated(
-    ["rev-parse", "--is-inside-work-tree", "--git-common-dir", "--show-prefix"],
-    result.stdout.toString("utf8"),
-    "\n",
-    true,
-  ).split("\n");
-  if (lines.length !== 4 || lines[3] !== "") {
-    throw new Error(
-      `"${dir}" has no worktree identity: git printed its answers across ${String(lines.length - 1)} lines, so a path holds a newline`,
-    );
-  }
-  const [inside = "", common = "", prefix = ""] = lines;
-  if (inside !== "true") throw new Error(`"${dir}" is not inside a git work tree`);
-  if (common === "") throw new Error("git rev-parse --git-common-dir printed no directory");
-  return { commonDir: resolve(dir, common), prefix };
-}
-
 /** What `bundleIdentity` reports about the checkout a vault sits in. */
 export interface CheckoutState {
   /** The commit HEAD names, or null in a repository with no commit yet. */
@@ -630,8 +582,7 @@ export interface CheckoutState {
  * A reader, never a writer: `--no-optional-locks` keeps `status` from
  * refreshing the index, which it otherwise does whenever it can take the
  * lock, and which a dry run must not move. A hook's exported variables are
- * removed, as for the worktree identity, so the repository is the one git
- * discovers from the directory. Undefined when git gives no answer: no
+ * removed, so the repository is the one git discovers from the directory. Undefined when git gives no answer: no
  * repository encloses the directory, or git cannot run there.
  */
 export function gitCheckoutState(dir: string): CheckoutState | undefined {

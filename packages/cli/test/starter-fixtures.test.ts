@@ -7,8 +7,8 @@
 //
 // The `code` starter and devwiki are bundles over `@wikiwright/kit-code`
 // (docs/extending.md §The code kit): every copy judged here installs the kit
-// from the shipped package and grants it in a store the test owns. The shipped
-// devwiki is never installed into and never granted from a test.
+// from the shipped package. The shipped devwiki is never installed into from a
+// test.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -19,8 +19,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ModuleManifest } from "@wikiwright/core";
 import {
   DIST_CLI,
-  grantedCopy,
-  grantKit,
+  installedCopy,
   installKit,
   KIT_CODE,
   kitEnv,
@@ -43,7 +42,7 @@ interface Finding {
 function lint(root: string): { status: number; findings: Finding[] } {
   const r = spawnSync(CLI_RUNTIME, [DIST_CLI, "lint", "--root", root], {
     encoding: "utf8",
-    env: kitEnv(root),
+    env: kitEnv(),
   });
   const envelope = JSON.parse(r.stdout) as {
     ok: boolean;
@@ -61,14 +60,14 @@ function lint(root: string): { status: number; findings: Finding[] } {
 const key = (f: Finding): string => `${f.ruleId}|${f.path}|${f.line ?? ""}`;
 
 /**
- * devwiki, installed and granted under os.tmpdir(), judged under the code
+ * devwiki, installed under os.tmpdir(), judged under the code
  * starter's TYPES merged with devwiki's own VOCABULARIES. The rule
  * the delta holds: every concrete type name devwiki's pages carry must exist
  * in the starter; the tags and labels a bundle registers are its own, and a
  * bundle may register what the starter does not.
  */
 function devwikiUnderStarter(): string {
-  const root = grantedCopy(DEVWIKI, "starter-code");
+  const root = installedCopy(DEVWIKI, "starter-code");
   const starter = JSON.parse(
     readFileSync(join(CODE_STARTER, "config/constitution.json"), "utf8"),
   ) as Record<string, unknown>;
@@ -83,17 +82,16 @@ function devwikiUnderStarter(): string {
   return root;
 }
 
-/** The code starter as `init` lands it, then installed and granted: what a user's first `check` judges. */
+/** The code starter as `init` lands it, then installed: what a user's first `check` judges. */
 function starterBundle(): string {
   const root = mkdtempSync(join(tmpdir(), "ww-starter-init-"));
   const init = spawnSync(
     CLI_RUNTIME,
     [DIST_CLI, "init", "--constitution", "code", "--root", root],
-    { encoding: "utf8", env: kitEnv(root) },
+    { encoding: "utf8", env: kitEnv() },
   );
   assert.equal(init.status, 0, init.stdout);
   installKit(root);
-  grantKit(root);
   return root;
 }
 
@@ -121,7 +119,7 @@ describe("every shipped starter is a CI fixture", () => {
   it("the code starter's error delta on its bundled corpus, devwiki, is 0", {
     timeout: 60_000,
   }, () => {
-    const own = grantedCopy(DEVWIKI, "starter-own");
+    const own = installedCopy(DEVWIKI, "starter-own");
     const under = devwikiUnderStarter();
     SCRATCH.push(own, under);
     const ownErrors = lint(own)
@@ -245,7 +243,7 @@ describe("the code starter is the reference registered relations vocabulary", ()
     SCRATCH.push(root);
     const r = spawnSync(CLI_RUNTIME, [DIST_CLI, "type", "show", "subsystem", "--root", root], {
       encoding: "utf8",
-      env: kitEnv(root),
+      env: kitEnv(),
     });
     assert.equal(r.status, 0, r.stdout);
     const data = (JSON.parse(r.stdout) as { data: Record<string, unknown> }).data;

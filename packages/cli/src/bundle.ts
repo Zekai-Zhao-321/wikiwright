@@ -12,7 +12,7 @@ import { loadEngineConfig, normalizeInput } from "@wikiwright/core";
 import type { BundleIdentity } from "./envelope.ts";
 import { gitCheckoutState } from "./git.ts";
 import { declaredModulesInText, type ModuleDeclaration, moduleDigest } from "./moduleload.ts";
-import { sha256Of } from "./trust.ts";
+import { sha256Of } from "./sha256.ts";
 import {
   CONSTITUTION_PATH,
   ENGINE_PATH,
@@ -26,15 +26,14 @@ import {
  * constitution's sha256, engine.json's (the empty text's when the file is
  * absent), then one line per declared module installed under the bundle's
  * `node_modules` or at the bundle-relative path it declares, in declaration
- * order, with the digest a trust grant pins. A declared module that is not
- * installed contributes no line.
+ * order, with the digest the loader proves the module under. A declared
+ * module that is not installed contributes no line.
  *
- * Trust does not enter. The law is what the bundle declares and has
- * installed; a grant decides whether this machine will judge under it, and
- * does not change what it is. So the digest is the same on every machine that
- * holds the same bytes, and the same before a grant and after it. The texts
- * are the ones the loader reads, and the envelope and the brief both call
- * this, so the two print one digest.
+ * The law is what the bundle declares and has installed, whether or not its
+ * modules load: a refused module still has bytes, and the refusal names the
+ * law it refused. So the digest is the same on every machine that holds the
+ * same bytes. The texts are the ones the loader reads, and the envelope and
+ * the brief both call this, so the two print one digest.
  */
 export function lawDigest(
   root: string,
@@ -111,8 +110,8 @@ export function contentRootsAt(root: string): readonly string[] | null {
 
 /**
  * docs/cli.md §The envelope: the bundle at `root`, or undefined when the root
- * holds no constitution. It loads nothing and asks no trust store, so it
- * answers the same for a bundle whose modules this machine has not approved.
+ * holds no constitution. It loads nothing, so it answers the same for a bundle
+ * whose modules do not load.
  * A file that resolves outside the vault is thrown, as every read of the vault
  * throws it.
  */

@@ -24,7 +24,6 @@ import { retireCommand } from "./verbs/retire.ts";
 import { schemaCommand } from "./verbs/schema.ts";
 import { searchCommand } from "./verbs/search.ts";
 import { skillsCommand } from "./verbs/skills.ts";
-import { trustCommand } from "./verbs/trust.ts";
 import { typeCommand } from "./verbs/type.ts";
 import { versionCommand } from "./verbs/version.ts";
 import { vocabularyCommand } from "./verbs/vocabulary.ts";
@@ -50,7 +49,6 @@ export const COMMANDS: CommandSpec[] = [
   schemaCommand,
   searchCommand,
   skillsCommand,
-  trustCommand,
   typeCommand,
   versionCommand,
   vocabularyCommand,

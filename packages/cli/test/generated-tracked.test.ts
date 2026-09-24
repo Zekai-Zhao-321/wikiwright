@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { grantedCopy, kitEnv } from "./fixtures/kit-code.ts";
+import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -26,11 +26,11 @@ const TRACKED = [
 
 /**
  * A copy to render into. A vault that ships a package.json is a bundle over
- * a kit (devwiki, over the code kit): its copy installs and grants the kit in
- * a store the test owns, so the shipped tree is never installed into.
+ * a kit (devwiki, over the code kit): its copy installs the kit, so the
+ * shipped tree is never installed into.
  */
 function copyOf(source: string): string {
-  if (existsSync(join(source, "package.json"))) return grantedCopy(source, "tracked");
+  if (existsSync(join(source, "package.json"))) return installedCopy(source, "tracked");
   const tmp = mkdtempSync(join(tmpdir(), "ww-tracked-"));
   cpSync(source, tmp, { recursive: true });
   return tmp;
@@ -49,7 +49,7 @@ describe("the tracked generated/ of every shipped vault is what this build rende
         rmSync(join(tmp, "generated"), { recursive: true, force: true });
         const r = spawnSync(CLI_RUNTIME, [CLI, "check", "--write", "--root", tmp], {
           encoding: "utf8",
-          env: kitEnv(tmp),
+          env: kitEnv(),
         });
         assert.notEqual(r.status, 2, r.stdout);
         const generated = readdirSync(join(source, "generated")).filter(

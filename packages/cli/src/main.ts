@@ -79,9 +79,9 @@ type Target = { ok: true; args: CommandArgs } | { ok: false; result: CommandResu
 
 /**
  * docs/cli.md §Exit codes: what a thrown error becomes. A machine-local store
- * this engine cannot read — the trust store, the bundles registry — is the
- * state refusing the operation, named by the store's own code with the file and
- * the failing record, from whichever verb or preload reached it. A git answer
+ * this engine cannot read — the bundles registry — is the state refusing the
+ * operation, named by the store's own code with the file and the failing
+ * record, from whichever verb reached it. A git answer
  * cut short is `git-short-read`; two git answers that disagree are
  * `git-inconsistent-read`. Anything else is the engine breaking.
  */
@@ -118,9 +118,9 @@ function thrown(command: string, e: unknown): CommandResult {
  * name no connection carries (`bundle-not-found`), and a verb that can write
  * the vault or its repository aimed at an installed copy (`bundle-readonly`,
  * `--dry-run` included, since a dry run of a forbidden write is still a
- * forbidden write). `bundles` and `trust` write only this machine's stores
- * (`MACHINE_LOCAL_WRITERS`), so they are answered: an exemption by verb, since
- * where those stores lie is the environment's to say. The refusal names where
+ * forbidden write). `bundles` writes only this machine's registry
+ * (`MACHINE_LOCAL_WRITERS`), so it is answered: an exemption by verb, since
+ * where that store lies is the environment's to say. The refusal names where
  * a change to that copy goes instead. It is a guardrail on this CLI, not
  * filesystem isolation: `--root` names the same directory and is not refused.
  */
@@ -194,7 +194,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
     // the outcome and refuses a bundle whose declared modules did not load, so
     // a verb that never reaches this line cannot be judged under a quieter law.
     // Only for a verb that reads the vault's law: `version` and `schema` answer
-    // about the engine, and `trust` loads the one module it is about, itself.
+    // about the engine, and `bundles` about this machine's registry.
     if (spec.needsVaultModules) {
       const declarations = declaredModulesOf(args.root);
       if (declarations.length > 0) await preloadModules(args.root, declarations);

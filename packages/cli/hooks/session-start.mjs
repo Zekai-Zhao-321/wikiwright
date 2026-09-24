@@ -4,8 +4,8 @@
 // its kind, its label, its head and whether it is dirty, and the page to read
 // first — then how every command names a bundle. It prints no page content.
 //
-// Plain Node, no dependencies. It inherits the environment, so the registry,
-// the trust store and the session's role are the ones the engine would read.
+// Plain Node, no dependencies. It inherits the environment, so the registry
+// and the session's role are the ones the engine would read.
 // It asks for the full listing, not `--records`: each line names the bundle's
 // label, its head and whether it is dirty, which only the identity carries.
 // Whatever goes wrong — stdin that is not JSON, a binary that is missing, an

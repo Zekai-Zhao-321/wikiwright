@@ -23,8 +23,7 @@ function run(cwd: string, args: string[]): Outcome {
   const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
-    // Never consult (or create) the developer's real trust store from a test.
-    env: { ...process.env, WIKIWRIGHT_TRUST_FILE: join(cwd, ".trust.json") },
+    env: process.env,
   });
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Record<string, unknown> };
 }

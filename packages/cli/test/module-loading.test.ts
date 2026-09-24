@@ -90,13 +90,13 @@ describe("a verb declares whether it reads the vault's law (docs/extending.md)",
 
   it("the verbs that read no vault are named, so adding one is a decision", () => {
     // `bundles` reads a connected bundle's files for its identity and loads no
-    // law and no module: listing is discovery, and a bundle whose modules this
-    // machine has not approved still lists (docs/cli.md §bundles).
+    // law and no module: listing is discovery, and a bundle whose modules do
+    // not load still lists (docs/cli.md §bundles).
     assert.deepEqual(
       COMMANDS.filter((c) => !c.needsVaultModules)
         .map((c) => c.name)
         .sort(),
-      ["bundles", "schema", "trust", "version"],
+      ["bundles", "schema", "version"],
     );
   });
 

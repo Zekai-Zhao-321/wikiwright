@@ -232,22 +232,14 @@ describe("a module installs as a tarball, and governs (docs/extending.md §Decla
       )}\n`,
     );
     sh("bun", ["install"], bundle);
-    const trust = join(workspace, "pack-trust.json");
-    const env = { WIKIWRIGHT_TRUST_FILE: trust };
 
-    const granted = run(
-      ["trust", "grant", "module:@wikiwright-fixture/probe", "--root", bundle],
-      CONSUMER ?? REPO,
-      env,
-    );
-    assert.equal(granted.ok, true, JSON.stringify(granted));
-
-    const listed = run(["modules", "list", "--root", bundle], CONSUMER ?? REPO, env);
+    // Installed is loaded: the module is proved by its load, with no other step.
+    const listed = run(["modules", "list", "--root", bundle], CONSUMER ?? REPO);
     const loaded = (listed.data?.["loaded"] ?? []) as Record<string, unknown>[];
     assert.equal(loaded.length, 1, JSON.stringify(listed));
     assert.equal(loaded[0]?.["version"], "1.0.0");
 
-    const linted = run(["lint", "--all", "--root", bundle], CONSUMER ?? REPO, env);
+    const linted = run(["lint", "--all", "--root", bundle], CONSUMER ?? REPO);
     assert.equal(linted.ok, true, JSON.stringify(linted));
     const found = (linted.data?.["findings"] ?? []) as { ruleId: string }[];
     assert.equal(
@@ -259,8 +251,7 @@ describe("a module installs as a tarball, and governs (docs/extending.md §Decla
 
   it("the generated brief carries the module's own skill fragment", () => {
     const bundle = join(WORKSPACE ?? "", "tarball-bundle");
-    const env = { WIKIWRIGHT_TRUST_FILE: join(WORKSPACE ?? "", "pack-trust.json") };
-    const envelope = run(["brief", "--root", bundle], CONSUMER ?? REPO, env);
+    const envelope = run(["brief", "--root", bundle], CONSUMER ?? REPO);
     assert.equal(envelope.ok, true, JSON.stringify(envelope));
     const text = String(envelope.data?.["brief"] ?? "");
     assert.match(text, /## What the loaded modules add/u);

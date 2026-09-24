@@ -260,11 +260,10 @@ describe("every envelope over a vault names the bundle it read (docs/cli.md §Th
     for (const r of [help, flag, role]) assert.equal(r.envelope.metadata.bundle, undefined);
   });
 
-  it("version, schema and trust answer about the engine and name no bundle, even over a vault", () => {
+  it("version and schema answer about the engine and name no bundle, even over a vault", () => {
     const root = layBundle(join(tmp, "engine"), "orchard");
-    const store = join(tmp, "engine", "trust.json");
-    for (const argv of [["version"], ["schema"], ["trust", "list"]]) {
-      const r = run(root, [...argv, "--root", root], { WIKIWRIGHT_TRUST_FILE: store });
+    for (const argv of [["version"], ["schema"]]) {
+      const r = run(root, [...argv, "--root", root]);
       assert.equal(r.envelope.ok, true, JSON.stringify(r.envelope));
       assert.equal(r.envelope.metadata.bundle, undefined, `${argv[0]} names a bundle`);
       assert.deepEqual(Object.keys(r.envelope.metadata).sort(), ["command", "engine"]);
@@ -294,45 +293,36 @@ describe("every envelope over a vault names the bundle it read (docs/cli.md §Th
 describe("the law digest names every installed module (docs/cli.md §The envelope)", () => {
   let tmp = "";
   let root = "";
-  let env: NodeJS.ProcessEnv = {};
   const installed = (): string => join(root, "node_modules", ...PROBE.split("/"));
   before(() => {
-    // The neutral module fixture, placed in the bundle's own node_modules by
-    // copy; a grant, where a case makes one, goes in a store this test owns.
+    // The neutral module fixture, placed in the bundle's own node_modules by copy.
     tmp = mkdtempSync(join(tmpdir(), "ww-bundle-module-"));
     root = join(tmp, "bundle-a");
     for (const part of ["config", "wiki", "package.json"]) {
       cpSync(join(CONFORMANCE, "bundle-a", part), join(root, part), { recursive: true });
     }
     cpSync(join(CONFORMANCE, "module-fixture"), installed(), { recursive: true });
-    env = { WIKIWRIGHT_TRUST_FILE: join(tmp, "trust.json") };
   });
   after(() => {
     rmSync(tmp, { recursive: true, force: true });
   });
 
-  const grant = (): void => {
-    const r = run(root, ["trust", "grant", `module:${PROBE}`], env);
-    assert.equal(r.envelope.ok, true, JSON.stringify(r.envelope));
-  };
-
   it("an installed module is in the law, as the digest the loader reports", () => {
-    const listedLaw = bundleOf(root, ["type", "list"], env);
+    const listedLaw = bundleOf(root, ["type", "list"]);
     // The module's line is the digest `modules list` reports, as docs/cli.md spells it.
-    const listed = run(root, ["modules", "list"], env);
+    const listed = run(root, ["modules", "list"]);
     const loaded = (listed.envelope.data?.["loaded"] ?? []) as { digest: string }[];
     const digest = loaded[0]?.digest ?? "";
     assert.match(digest, HEX);
     assert.equal(listedLaw.law, lawFormula(root, [`module:${PROBE} ${digest}`]));
-    // A grant does not change what the law is.
-    grant();
-    assert.equal(bundleOf(root, ["type", "list"], env).law, listedLaw.law);
+    // The same bytes, read again, are the same law.
+    assert.equal(bundleOf(root, ["type", "list"]).law, listedLaw.law);
   });
 
   it("a module's bytes move the law", () => {
-    const first = bundleOf(root, ["type", "list"], env);
+    const first = bundleOf(root, ["type", "list"]);
     writeFileSync(join(installed(), "NOTES.txt"), "a file the first digest did not see\n");
-    const moved = bundleOf(root, ["type", "list"], env);
+    const moved = bundleOf(root, ["type", "list"]);
     assert.notEqual(moved.law, first.law, "the module digest is part of the law");
     assert.equal(moved.content, first.content);
   });
@@ -351,10 +341,7 @@ describe("the law digest names every installed module (docs/cli.md §The envelop
     cpSync(join(CONFORMANCE, "module-fixture"), module, { recursive: true });
     const engine = join(marked, "config", "engine.json");
     writeFileSync(engine, `\ufeff${readFileSync(engine, "utf8")}`);
-    const owned = {
-      WIKIWRIGHT_TRUST_FILE: join(tmp, "marked-trust.json"),
-      WIKIWRIGHT_BUNDLES_FILE: join(tmp, "marked-bundles.json"),
-    };
+    const owned = { WIKIWRIGHT_BUNDLES_FILE: join(tmp, "marked-bundles.json") };
     assert.equal(run(tmp, ["bundles", "add", marked, "--name", "marked"], owned).status, 0);
 
     const listed = (): string => {
@@ -387,7 +374,7 @@ describe("the law digest names every installed module (docs/cli.md §The envelop
     for (const part of ["config", "wiki"]) {
       cpSync(join(root, part), join(bare, part), { recursive: true });
     }
-    const r = run(bare, ["type", "list"], env);
+    const r = run(bare, ["type", "list"]);
     assert.equal(r.envelope.error?.["code"], "module-unresolved");
     assert.equal(r.envelope.metadata.bundle?.law, lawFormula(bare, []));
   });

@@ -1,10 +1,9 @@
-// docs/extending.md §The code kit · docs/extending.md §Trust
+// docs/extending.md §The code kit · docs/extending.md §Declaring a module
 //
-// The code kit, installed and granted into a bundle under os.tmpdir(): what
-// every test that judges a bundle over `@wikiwright/kit-code` shares. The
-// shipped tree is never installed into and never granted from a test — a grant
-// is machine-local, and a test that wrote one into the developer's store would
-// leave state the suite did not create.
+// The code kit, installed into a bundle under os.tmpdir(): what every test that
+// judges a bundle over `@wikiwright/kit-code` shares. The shipped tree is never
+// installed into from a test: an install leaves a lockfile and a `node_modules`
+// the suite did not create.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
@@ -27,14 +26,9 @@ export const DIST_CLI = join(REPO, "packages", "cli", "dist", "main.js");
 export const KIT_CODE = join(REPO, "packages", "kit-code");
 export const KIT_PACKAGE = "@wikiwright/kit-code";
 
-/** The trust store a bundle's tests own: beside the bundle, never the developer's. */
-export function trustFileOf(root: string): string {
-  return join(root, ".wikiwright-trust.json");
-}
-
-/** The environment a spawned verb over a kit bundle runs under: the pinned clock and the bundle's own trust store. */
-export function kitEnv(root: string): NodeJS.ProcessEnv {
-  return { ...process.env, ...PINNED_CLOCK, WIKIWRIGHT_TRUST_FILE: trustFileOf(root) };
+/** The environment a spawned verb over a kit bundle runs under: the pinned clock. */
+export function kitEnv(): NodeJS.ProcessEnv {
+  return { ...process.env, ...PINNED_CLOCK };
 }
 
 /** Replace every symlink under `dir` with the bytes it points at, so an edit in the copy never writes through. */
@@ -86,32 +80,24 @@ export function runKit(
 ): { status: number; envelope: Envelope } {
   const r = spawnSync(CLI_RUNTIME, [DIST_CLI, ...argv, "--root", root], {
     encoding: "utf8",
-    env: kitEnv(root),
+    env: kitEnv(),
   });
   assert.equal(typeof r.stdout, "string", `the CLI printed no envelope: ${r.stderr}`);
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Envelope };
 }
 
-/** Grant the installed kit for this bundle in the bundle's own trust store, proving its fixture. */
-export function grantKit(root: string): Envelope {
-  const r = runKit(root, ["trust", "grant", `module:${KIT_PACKAGE}`]);
-  assert.equal(r.envelope.ok, true, JSON.stringify(r.envelope));
-  return r.envelope;
-}
-
 /**
- * A throwaway copy of a bundle under os.tmpdir(), with the kit installed and
- * granted there. `node_modules` is never copied: the copy installs its own, so
- * a workspace link in the source tree is not carried into a directory where
+ * A throwaway copy of a bundle under os.tmpdir(), with the kit installed there
+ * and nothing else. `node_modules` is never copied: the copy installs its own,
+ * so a workspace link in the source tree is not carried into a directory where
  * its relative target does not exist.
  */
-export function grantedCopy(source: string, prefix: string): string {
+export function installedCopy(source: string, prefix: string): string {
   const dir = mkdtempSync(join(tmpdir(), `ww-${prefix}-`));
   cpSync(source, dir, {
     recursive: true,
     filter: (path) => basename(path) !== "node_modules",
   });
   installKit(dir);
-  grantKit(dir);
   return dir;
 }

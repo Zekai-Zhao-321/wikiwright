@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
-import { grantKit, installKit, kitEnv } from "./fixtures/kit-code.ts";
+import { installKit, kitEnv } from "./fixtures/kit-code.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -72,7 +72,7 @@ function raw(cwd: string, args: string[], exe = CLI_RUNTIME): string {
   return spawnSync(exe, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
-    env: kitEnv(cwd),
+    env: kitEnv(),
   }).stdout;
 }
 
@@ -80,7 +80,7 @@ function run(cwd: string, args: string[]): { status: number; envelope: Envelope 
   const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
-    env: kitEnv(cwd),
+    env: kitEnv(),
   });
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Envelope };
 }
@@ -97,17 +97,16 @@ function write(root: string, rel: string, text: string): void {
   writeFileSync(join(root, rel), text);
 }
 
-/** The code starter as `init` lands it, with its kit installed and granted (docs/extending.md §The code kit). */
+/** The code starter as `init` lands it, with its kit installed (docs/extending.md §The code kit). */
 function codeVault(): string {
   const tmp = mkdtempSync(join(tmpdir(), "ww-vocab-code-"));
   const init = spawnSync(CLI_RUNTIME, [CLI, "init", "--constitution", "code", "--root", "."], {
     cwd: tmp,
     encoding: "utf8",
-    env: kitEnv(tmp),
+    env: kitEnv(),
   });
   assert.equal(init.status, 0, init.stdout);
   installKit(tmp);
-  grantKit(tmp);
   return tmp;
 }
 

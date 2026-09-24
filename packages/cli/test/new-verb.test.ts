@@ -21,7 +21,7 @@ import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { grantKit, installKit, runKit } from "./fixtures/kit-code.ts";
+import { installKit, runKit } from "./fixtures/kit-code.ts";
 import { layMemoryLaw } from "./fixtures/memory-law.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
@@ -99,7 +99,7 @@ describe("new — the typed write-path gate (docs/cli.md §new)", () => {
 
 describe("every shipped code type is creatable (docs/cli.md §init)", () => {
   // The starter is a bundle over the code kit (docs/extending.md §The code
-  // kit): one fresh vault, installed and granted once; an anchored type is
+  // kit): one fresh vault, installed once; an anchored type is
   // created with its pin, and a type with an obligation with the relation it
   // requires — the typed write path, not a fallback seed.
   const PIN = "0123456789abcdef0123456789abcdef01234567";
@@ -128,7 +128,6 @@ describe("every shipped code type is creatable (docs/cli.md §init)", () => {
     const init = runKit(tmp, ["init", "--constitution", "code"]);
     assert.equal(init.status, 0, JSON.stringify(init.envelope));
     installKit(tmp);
-    grantKit(tmp);
   });
   after(() => rmSync(tmp, { recursive: true, force: true }));
 

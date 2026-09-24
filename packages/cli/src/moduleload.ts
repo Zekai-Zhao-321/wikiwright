@@ -35,7 +35,7 @@ import {
   type FixtureVerdict,
   runModuleFixture,
 } from "./modulefixture.ts";
-import { sha256Of } from "./trust.ts";
+import { sha256Of } from "./sha256.ts";
 
 /** docs/extending.md §Declaring a module: what `config/engine.json` declares. */
 export interface ModuleDeclaration {
@@ -145,7 +145,7 @@ function resolveModule(vaultRoot: string, declaration: ModuleDeclaration): Resol
         code: "module-unresolved",
         package: name,
         message: `config/engine.json declares module "${name}", which this bundle does not have installed`,
-        hint: "install it into this bundle's own node_modules — package.json names it as a workspace link or a `file:<path>` to the package, and the package manager's install lands it — and then a maintainer reviews it and chooses its approval scope",
+        hint: "install it into this bundle's own node_modules — package.json names it as a workspace link or a `file:<path>` to the package, and the package manager's install lands it; it loads on first use and is proved then",
       },
     };
   }
@@ -211,7 +211,7 @@ function moduleFiles(root: string): string[] {
   const walk = (dir: string): void => {
     for (const entry of readdirSync(dir, { withFileTypes: true, encoding: "utf8" })) {
       // `node_modules` is the package's DEPENDENCY TREE, pinned by its
-      // own lockfile rather than by this grant, and it is the only exclusion.
+      // own lockfile rather than by this digest, and it is the only exclusion.
       // A dot-prefix used to be one too, and it was a hole: a package could name
       // `.hidden.mjs` as its entry, load it, and edit it afterwards without
       // moving the digest a single bit.

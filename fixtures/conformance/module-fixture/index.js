@@ -5,7 +5,7 @@
 // not a product kit. It is the smallest module that touches every extension
 // surface at once, so the conformance suite can prove that an EXTERNAL package —
 // resolved from a bundle's own node_modules, pinned by that bundle's lockfile,
-// granted on this machine and scanned before it runs — reaches every one of
+// scanned and proved by its own fixture before it runs — reaches every one of
 // them through the public API and nothing else.
 //
 // Its semantics are deliberately trivial: an item is `<key>: <value>`, a value

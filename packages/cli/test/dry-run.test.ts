@@ -39,9 +39,6 @@ import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
-const MODULE_FIXTURE = fileURLToPath(
-  new URL("../../../fixtures/conformance/module-fixture", import.meta.url),
-);
 
 /** The `node:fs` write APIs the shell may import. */
 const WRITE_CALLS = [
@@ -111,10 +108,10 @@ function treeHash(root: string): string {
 /**
  * Path → sha256 for every file the fidelity check compares, which is a WIDER
  * set than `treeHash`: `.git/hooks` (where `hook install` lands) and the
- * machine-local trust store (where `trust grant` lands) are exactly the writes
- * a vault-shaped hash cannot see (docs/cli.md §The dry-run law).
+ * machine-local bundles registry (where `bundles add` lands) are exactly the
+ * writes a vault-shaped hash cannot see (docs/cli.md §The dry-run law).
  */
-function snapshot(root: string, trustStore: string): Map<string, string> {
+function snapshot(root: string, registry: string): Map<string, string> {
   const out = new Map<string, string>();
   const walk = (rel: string): void => {
     let entries: string[];
@@ -141,12 +138,9 @@ function snapshot(root: string, trustStore: string): Map<string, string> {
     }
   };
   walk("");
-  // The two machine-local stores, each outside the vault: the trust store, and
-  // the bundles registry every run keeps beside it.
-  for (const store of [trustStore, registryBeside(trustStore)]) {
-    if (existsSync(store)) {
-      out.set(store, createHash("sha256").update(readFileSync(store)).digest("hex"));
-    }
+  // The machine-local store, outside the vault: the bundles registry.
+  if (existsSync(registry)) {
+    out.set(registry, createHash("sha256").update(readFileSync(registry)).digest("hex"));
   }
   return out;
 }
@@ -156,19 +150,6 @@ function delta(before: Map<string, string>, after: Map<string, string>): string[
   for (const [path, sha] of after) if (before.get(path) !== sha) changed.add(path);
   for (const path of before.keys()) if (!after.has(path)) changed.add(path);
   return [...changed].sort();
-}
-
-/** Install the conformance fixture module into a scratch vault, offline. */
-function installFixtureModule(dir: string): void {
-  writeFileSync(
-    join(dir, "package.json"),
-    `${JSON.stringify({
-      name: "ww-dry-run-bundle",
-      private: true,
-      dependencies: { "@wikiwright-fixture/probe": `file:${MODULE_FIXTURE}` },
-    })}\n`,
-  );
-  execFileSync("bun", ["install"], { cwd: dir, stdio: "ignore" });
 }
 
 function gitInit(dir: string): void {
@@ -191,32 +172,26 @@ function vault(engine: Record<string, unknown> = FOLDER_MODE): string {
 }
 
 /**
- * The machine-local stores a run uses: the trust store the case passes, or,
- * for a run that passes none, one under this file's scratch directory, and the
- * bundles registry beside whichever it is. Never the developer's: a test that
- * guards against a write must not be able to make one where a person keeps
- * their grants, and a dry run must not read its answer from a store it does
- * not own.
+ * The machine-local store a run uses: the bundles registry the case passes,
+ * or, for a run that passes none, one under this file's scratch directory.
+ * Never the developer's: a test that guards against a write must not be able
+ * to make one where a person keeps their connections, and a dry run must not
+ * read its answer from a store it does not own.
  */
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-dryrun-stores-"));
-const SCRATCH_TRUST = join(SCRATCH, "trust.json");
+const SCRATCH_REGISTRY = join(SCRATCH, "bundles.json");
 after(() => {
   rmSync(SCRATCH, { recursive: true, force: true });
 });
 
-function registryBeside(trustStore: string | undefined): string {
-  return join(dirname(trustStore ?? SCRATCH_TRUST), "bundles.json");
-}
-
 function run(
   cwd: string,
   args: string[],
-  trustStore?: string,
+  registry?: string,
   stdin?: string,
 ): { status: number; envelope: Record<string, unknown> } {
   const env: Record<string, string | undefined> = { ...process.env, ...PINNED_CLOCK };
-  env["WIKIWRIGHT_TRUST_FILE"] = trustStore ?? SCRATCH_TRUST;
-  env["WIKIWRIGHT_BUNDLES_FILE"] = registryBeside(trustStore);
+  env["WIKIWRIGHT_BUNDLES_FILE"] = registry ?? SCRATCH_REGISTRY;
   const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
@@ -284,7 +259,6 @@ const DRY_RUNS: Record<string, string[]> = {
   new: ["new", "test-case", "Dry Run", "--dest", "wiki/test-execution/dry-run.md", "--dry-run"],
   retire: ["retire", "wiki/test-execution/warm-reset.md", "--dry-run"],
   skills: ["skills", "update", "--dry-run"],
-  trust: ["trust", "list", "--dry-run"],
   // A dry run leaves nothing on disk and still renders its date into the
   // envelope it returns; the fidelity case below runs the same argv for real.
   write: ["write", WRITE_TARGET, "--dry-run", "--date", "2026-09-03"],
@@ -350,25 +324,21 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   for (const command of COMMANDS.filter((c) => c.writes && c.name !== "init")) {
     it(`${command.name} --dry-run writes nothing and reports wrote: false`, () => {
       const tmp = vault();
-      // A store this case owns, holding a grant-free store's bytes, so a write
-      // to it shows and nothing of the developer's is read.
+      // A registry this case owns, absent, so a write to it shows and nothing
+      // of the developer's is read.
       const stores = mkdtempSync(join(tmpdir(), "ww-dryrun-case-"));
-      const store = join(stores, "trust.json");
-      writeFileSync(store, '{"schema":"wikiwright/trust","schema_version":2,"grants":[]}\n');
-      const storeBefore = readFileSync(store, "utf8");
+      const registry = join(stores, "bundles.json");
       try {
         const before = treeHash(tmp);
         const argv = DRY_RUNS[command.name] ?? [];
-        const r = run(tmp, argv, store, DRY_RUN_STDIN[command.name]?.(tmp));
+        const r = run(tmp, argv, registry, DRY_RUN_STDIN[command.name]?.(tmp));
         assert.equal(r.status, 0, `${command.name}: ${JSON.stringify(r.envelope)}`);
         const data = (r.envelope["data"] ?? {}) as Record<string, unknown>;
         assert.equal(data["wrote"], false, `${command.name} does not report wrote: false`);
         assert.equal(Array.isArray(data["ops"]), true, `${command.name} reports no ops array`);
         assert.equal(treeHash(tmp), before, `${command.name} --dry-run changed the vault tree`);
-        const storeAfter = existsSync(store) ? readFileSync(store, "utf8") : null;
-        assert.equal(storeAfter, storeBefore, `${command.name} --dry-run wrote the trust store`);
         assert.equal(
-          existsSync(registryBeside(store)),
+          existsSync(registry),
           false,
           `${command.name} --dry-run wrote the bundles registry`,
         );
@@ -497,14 +467,9 @@ const REFUSALS: Refusal[] = [
     argv: ["hook", "install", "--chain", "no/such.sh"],
   },
   { name: "hook with an unknown subcommand", argv: ["hook", "frobnicate"] },
-  { name: "trust with an unknown action", argv: ["trust", "frobnicate"] },
   {
     name: "bundles add under a name that is not one",
     argv: ["bundles", "add", ".", "--name", "Not A Name"],
-  },
-  {
-    name: "trust grant on a module that is not installed",
-    argv: ["trust", "grant", "module:@nope/kit"],
   },
   {
     name: "move with no --reason",
@@ -560,13 +525,13 @@ const REFUSALS: Refusal[] = [
 describe("a dry run answers a valid invocation, never a typo (docs/cli.md §The dry-run law)", () => {
   for (const refusal of REFUSALS) {
     it(`${refusal.name} is refused with and without --dry-run`, () => {
-      const store = join(mkdtempSync(join(tmpdir(), "ww-trust-")), "trust.json");
+      const registry = join(mkdtempSync(join(tmpdir(), "ww-registry-")), "bundles.json");
       const tmp = refusal.make === undefined ? vault(refusal.engine) : refusal.make();
       try {
         refusal.arrange?.(tmp);
-        const real = run(tmp, refusal.argv, store);
+        const real = run(tmp, refusal.argv, registry);
         assert.notEqual(real.status, 0, `${refusal.name}: the real run does not refuse`);
-        const dry = run(tmp, [...refusal.argv, "--dry-run"], store);
+        const dry = run(tmp, [...refusal.argv, "--dry-run"], registry);
         const realError = (real.envelope["error"] ?? {}) as Record<string, unknown>;
         const dryError = (dry.envelope["error"] ?? {}) as Record<string, unknown>;
         assert.equal(
@@ -579,15 +544,14 @@ describe("a dry run answers a valid invocation, never a typo (docs/cli.md §The 
           realError["code"],
           `${refusal.name}: --dry-run and the run name different errors`,
         );
-        assert.equal(existsSync(store), false, `${refusal.name}: the trust store was written`);
         assert.equal(
-          existsSync(registryBeside(store)),
+          existsSync(registry),
           false,
           `${refusal.name}: the bundles registry was written`,
         );
       } finally {
         rmSync(tmp, { recursive: true, force: true });
-        rmSync(dirname(store), { recursive: true, force: true });
+        rmSync(dirname(registry), { recursive: true, force: true });
       }
     });
   }
@@ -613,8 +577,8 @@ interface Fidelity {
 
 const FIDELITY: Fidelity[] = [
   {
-    // The plan's one path is the machine-local registry, absolute, beside the
-    // case's trust store.
+    // The plan's one path is the machine-local registry, absolute, the one
+    // the case owns.
     name: "bundles add",
     argv: ["bundles", "add", ".", "--name", "fidelity-vault"],
     writes: true,
@@ -690,15 +654,6 @@ const FIDELITY: Fidelity[] = [
     writes: true,
   },
   {
-    // docs/extending.md §Declaring a module: a grant names an installed module package, so
-    // the case installs the conformance fixture module first — offline, it is a
-    // `file:` dependency — and the plan's one path is the machine-local store.
-    name: "trust grant module:<package>",
-    argv: ["trust", "grant", "module:@wikiwright-fixture/probe"],
-    arrange: installFixtureModule,
-    writes: true,
-  },
-  {
     name: "write (the whole-page form)",
     argv: ["write", WRITE_TARGET, "--date", "2026-09-03"],
     stdin: writeDraft,
@@ -743,8 +698,8 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
 
   for (const c of FIDELITY) {
     it(`${c.name}: the plan's paths are the delta's paths`, () => {
-      const trustDir = mkdtempSync(join(tmpdir(), "ww-trust-"));
-      const store = join(trustDir, "trust.json");
+      const storeDir = mkdtempSync(join(tmpdir(), "ww-registry-"));
+      const registry = join(storeDir, "bundles.json");
       const make = (): string => {
         if (c.empty !== true) {
           const dir = vault(c.engine);
@@ -761,7 +716,7 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
       const planned = make();
       const applied = make();
       try {
-        const dry = run(planned, [...c.argv, "--dry-run"], store, c.stdin?.(planned));
+        const dry = run(planned, [...c.argv, "--dry-run"], registry, c.stdin?.(planned));
         assert.equal(dry.status, 0, `${c.name} --dry-run: ${JSON.stringify(dry.envelope)}`);
         const ops = opsOf(dry.envelope);
         assert.equal(
@@ -771,10 +726,10 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
             ? `${c.name}: the plan is empty — a vacuous fidelity case proves nothing`
             : `${c.name}: the invocation as typed writes nothing and the plan names paths`,
         );
-        const before = snapshot(applied, store);
-        const real = run(applied, c.argv, store, c.stdin?.(applied));
+        const before = snapshot(applied, registry);
+        const real = run(applied, c.argv, registry, c.stdin?.(applied));
         assert.notEqual(real.status, 1, `${c.name}: ${JSON.stringify(real.envelope)}`);
-        const actual = delta(before, snapshot(applied, store));
+        const actual = delta(before, snapshot(applied, registry));
         assert.deepEqual(
           actual,
           plannedPaths(ops),
@@ -783,7 +738,7 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
       } finally {
         rmSync(planned, { recursive: true, force: true });
         rmSync(applied, { recursive: true, force: true });
-        rmSync(trustDir, { recursive: true, force: true });
+        rmSync(storeDir, { recursive: true, force: true });
       }
     });
   }
@@ -913,7 +868,6 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
     "the file a git child writes its stdout to: created exclusively under os.tmpdir(), removed once read, never a vault path (docs/roadmap.md)",
   "storelock.ts":
     "the lock file beside a machine-local store, created exclusively and removed once the change lands",
-  "trust.ts": "the machine-local trust store",
   "writer.ts": "THE Writer: every content page, temp-then-rename",
   // `init`'s tree copy is the one declared exception: it lands a starter,
   // it does not edit a page, and a starter is a directory rather than a splice.
@@ -1003,31 +957,21 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
   });
 });
 
-describe("the writers the readonly guard exempts plan only this machine's stores (docs/cli.md §bundles)", () => {
-  // `--bundle` naming an installed copy refuses every writing verb but these:
-  // their one write is a machine-local store. The set is closed here, and with
-  // the stores placed outside the vault, as they are by default, each member's
-  // declared plan names only them. Where the environment puts the stores is
-  // the caller's; the exemption is by verb.
-  it("the set is bundles and trust, and each plans only absolute paths outside the vault", () => {
-    assert.deepEqual([...MACHINE_LOCAL_WRITERS].sort(), ["bundles", "trust"]);
+describe("the writer the readonly guard exempts plans only this machine's store (docs/cli.md §bundles)", () => {
+  // `--bundle` naming an installed copy refuses every writing verb but this
+  // one: its one write is the machine-local registry. The set is closed here,
+  // and with the registry placed outside the vault, as it is by default, the
+  // member's declared plan names only it. Where the environment puts the
+  // registry is the caller's; the exemption is by verb.
+  it("the set is bundles, and it plans only absolute paths outside the vault", () => {
+    assert.deepEqual([...MACHINE_LOCAL_WRITERS].sort(), ["bundles"]);
     const tmp = vault();
     const stores = mkdtempSync(join(tmpdir(), "ww-dryrun-stores-"));
-    const saved = {
-      trust: process.env["WIKIWRIGHT_TRUST_FILE"],
-      bundles: process.env["WIKIWRIGHT_BUNDLES_FILE"],
-    };
-    process.env["WIKIWRIGHT_TRUST_FILE"] = join(stores, "trust.json");
+    const saved = process.env["WIKIWRIGHT_BUNDLES_FILE"];
     process.env["WIKIWRIGHT_BUNDLES_FILE"] = join(stores, "bundles.json");
     try {
       const argsOf: Record<string, CommandArgs> = {
         bundles: { root: tmp, positionals: ["add", tmp], flags: { name: "x" }, commands: COMMANDS },
-        trust: {
-          root: tmp,
-          positionals: ["grant", "module:@wikiwright-fixture/probe"],
-          flags: {},
-          commands: COMMANDS,
-        },
       };
       const inside = realpathSync(tmp);
       for (const name of MACHINE_LOCAL_WRITERS) {
@@ -1043,13 +987,8 @@ describe("the writers the readonly guard exempts plan only this machine's stores
         }
       }
     } finally {
-      for (const [key, value] of [
-        ["WIKIWRIGHT_TRUST_FILE", saved.trust],
-        ["WIKIWRIGHT_BUNDLES_FILE", saved.bundles],
-      ] as const) {
-        if (value === undefined) delete process.env[key];
-        else process.env[key] = value;
-      }
+      if (saved === undefined) delete process.env["WIKIWRIGHT_BUNDLES_FILE"];
+      else process.env["WIKIWRIGHT_BUNDLES_FILE"] = saved;
       rmSync(tmp, { recursive: true, force: true });
       rmSync(stores, { recursive: true, force: true });
     }

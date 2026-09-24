@@ -2,8 +2,8 @@
 //
 // The shipped domain kit, `@wikiwright/kit-code`, as a bundle consumes it: the
 // manifest registers declarations only, composes with the standard library,
-// installs from the bundle's own node_modules, proves its fixture at the grant,
-// and then governs the bundle — its labels range, its `require` rows fire, its
+// installs from the bundle's own node_modules, is proved by its fixture at the
+// load, and then governs the bundle — its labels range, its `require` rows fire, its
 // templates render, and a bundle's subtype tightens what the kit left open.
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -12,7 +12,7 @@ import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
 import { pathToFileURL } from "node:url";
 import { loadModules, type ModuleManifest, STANDARD_LIBRARY } from "@wikiwright/core";
-import { grantKit, installKit, KIT_CODE, KIT_PACKAGE, runKit } from "./fixtures/kit-code.ts";
+import { installKit, KIT_CODE, KIT_PACKAGE, runKit } from "./fixtures/kit-code.ts";
 
 const manifest = (await import(pathToFileURL(join(KIT_CODE, "index.js")).href)) as {
   default: ModuleManifest;
@@ -50,7 +50,7 @@ interface TypeEntry {
 }
 const typeOf = (name: string): TypeEntry => KIT.types?.[name] as TypeEntry;
 
-/** A bundle under os.tmpdir() built from the kit's own fixture, installed and granted. */
+/** A bundle under os.tmpdir() built from the kit's own fixture, with the kit installed. */
 function fixtureBundle(): string {
   const root = mkdtempSync(join(tmpdir(), "ww-kit-code-"));
   mkdirSync(join(root, "config"), { recursive: true });
@@ -178,21 +178,14 @@ describe("the code kit registers declarations only (docs/extending.md §The code
   });
 });
 
-describe("a bundle over the code kit: install, grant, judge (docs/extending.md §Declaring a module)", () => {
-  it("installed, the kit loads with no approval step, its fixture proved by the load", () => {
-    const r = runKit(BUNDLE, ["modules", "list"]);
-    assert.equal(r.status, 0, JSON.stringify(r.envelope));
-    const row = ((r.envelope.data?.["loaded"] ?? []) as Record<string, unknown>[])[0];
-    assert.deepEqual(row?.["fixture"], { package: KIT_PACKAGE, pages: 7, findings: 4 });
-  });
-
-  it("the grant proves the fixture, and the bundle is judged under the kit's law", {
+describe("a bundle over the code kit: install, load, judge (docs/extending.md §Declaring a module)", () => {
+  it("installed, the kit loads with no approval step, proved by its fixture, and judges under its law", {
     timeout: 60_000,
   }, () => {
-    const granted = grantKit(BUNDLE);
-    assert.deepEqual(granted.data?.["fixture"], { package: KIT_PACKAGE, pages: 7, findings: 4 });
     const listed = runKit(BUNDLE, ["modules", "list"]);
+    assert.equal(listed.status, 0, JSON.stringify(listed.envelope));
     const row = ((listed.envelope.data?.["loaded"] ?? []) as Record<string, unknown>[])[0];
+    assert.deepEqual(row?.["fixture"], { package: KIT_PACKAGE, pages: 7, findings: 4 });
     assert.equal(row?.["package"], KIT_PACKAGE);
     const contributes = row?.["contributes"] as Record<string, string[]>;
     assert.deepEqual(contributes["types"], [...TYPES].sort());

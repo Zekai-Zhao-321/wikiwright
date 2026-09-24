@@ -40,9 +40,6 @@ const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const CONFORMANCE = join(REPO, "fixtures", "conformance");
 const CLI = fileURLToPath(new URL("../src/main.ts", import.meta.url));
 
-/** A machine-local trust store this suite owns, so a grant here is not the developer's. */
-const TRUST = join(mkdtempSync(join(tmpdir(), "ww-conformance-trust-")), "trust.json");
-
 /**
  * The shipped fixture's own bytes, taken before any case runs. Several cases
  * mutate an installed COPY of this package; if one of them ever writes through
@@ -55,7 +52,6 @@ const FIXTURE_BEFORE = FIXTURE_FILES.map((f) =>
 );
 
 after(() => {
-  rmSync(TRUST, { recursive: true, force: true });
   rmSync(BUNDLE_A, { recursive: true, force: true });
   rmSync(BUNDLE_B, { recursive: true, force: true });
   FIXTURE_FILES.forEach((file, i) => {
@@ -77,7 +73,7 @@ function run(root: string, argv: readonly string[]): { status: number; envelope:
   const result = execFileSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
     cwd: REPO,
     encoding: "utf8",
-    env: { ...process.env, ...PINNED_CLOCK, WIKIWRIGHT_TRUST_FILE: TRUST },
+    env: { ...process.env, ...PINNED_CLOCK },
     // A non-zero exit is a VERDICT here, not a harness failure.
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -99,13 +95,6 @@ function runAny(root: string, argv: readonly string[]): { status: number; envelo
 function install(root: string): void {
   if (existsSync(join(root, "node_modules", "@wikiwright-fixture", "probe"))) return;
   execFileSync("bun", ["install"], { cwd: root, stdio: "ignore" });
-}
-
-function grant(root: string): Envelope {
-  install(root);
-  const r = runAny(root, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-  assert.equal(r.envelope.ok, true, JSON.stringify(r.envelope));
-  return r.envelope;
 }
 
 /**
@@ -182,7 +171,6 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
   it("the `modules` key in engine.json is what makes a module load at all", () => {
     const bundle = copyOf(BUNDLE_A);
     try {
-      runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
       const config = join(bundle, "config", "engine.json");
       // With the key: the module's census arm fires on the bundle's page.
       writeFileSync(
@@ -215,9 +203,6 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
 
   it("an installed module loads with no approval step: installing is the consent", () => {
     install(BUNDLE_A);
-    // A fresh store: this is what a reviewer's machine looks like the first
-    // time, and the load reads nothing from it.
-    rmSync(TRUST, { force: true });
     const listed = runAny(BUNDLE_A, ["modules", "list"]);
     assert.deepEqual(listed.envelope.data?.["refused"], [], JSON.stringify(listed.envelope));
     const loaded = (listed.envelope.data?.["loaded"] ?? []) as Record<string, unknown>[];
@@ -228,18 +213,10 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
     // …and a verb that judges the vault judges it under the module's law.
     const linted = runAny(BUNDLE_A, ["lint", "--all"]);
     assert.equal(linted.envelope.ok, true, JSON.stringify(linted.envelope));
-    assert.equal(existsSync(TRUST), false, "a load wrote this machine's trust store");
   });
 
-  it("a granted module resolves and reports what it registered", () => {
-    const granted = grant(BUNDLE_A);
-    // docs/extending.md §The determinism fixture: the grant is written only after the module's own fixture
-    // ran, twice, and agreed with itself — and the grant envelope says so.
-    assert.deepEqual(granted.data?.["fixture"], {
-      package: "@wikiwright-fixture/probe",
-      pages: 1,
-      findings: 3,
-    });
+  it("an installed module resolves and reports what it registered", () => {
+    install(BUNDLE_A);
     const listed = run(BUNDLE_A, ["modules", "list"]);
     const loaded = (listed.envelope.data?.["loaded"] ?? []) as Record<string, unknown>[];
     assert.equal(loaded.length, 1, JSON.stringify(listed.envelope));
@@ -248,7 +225,7 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
     assert.equal(row?.["version"], "1.0.0");
     // The whole of what the module contributed, and how the bundle
     // names it — the `file:` spelling from its package.json, the range
-    // engine.json declares, the resolved path, and the grant's standing.
+    // engine.json declares, and the resolved path.
     const contributes = row?.["contributes"] as Record<string, string[]>;
     assert.deepEqual(contributes["grammars"], ["@wikiwright-fixture/probe/measures"]);
     assert.deepEqual(contributes["vocabularies"], ["@wikiwright-fixture/probe/sizes"]);
@@ -308,10 +285,6 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
       manifest.wikiwright.module = "./.hidden.mjs";
       writeFileSync(join(pkg, "package.json"), JSON.stringify(manifest, null, 2));
 
-      const granted = runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-      assert.equal(granted.envelope.ok, true, JSON.stringify(granted.envelope));
-      // Three files, not two: package.json, fixture.json AND the hidden entry.
-      assert.equal(granted.envelope.data?.["files"], 3, JSON.stringify(granted.envelope.data));
       const listed = runAny(bundle, ["modules", "list"]);
       const loaded = (listed.envelope.data?.["loaded"] ?? []) as unknown[];
       assert.equal(loaded.length, 1, JSON.stringify(listed.envelope));
@@ -346,7 +319,6 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
       };
       manifest.wikiwright.module = "../../../outside.mjs";
       writeFileSync(join(pkg, "package.json"), JSON.stringify(manifest, null, 2));
-      runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
       const listed = runAny(bundle, ["modules", "list"]);
       const refused = (listed.envelope.data?.["refused"] ?? []) as {
         code: string;
@@ -373,7 +345,6 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
       };
       manifest.wikiwright.fixture = "../../../outside.json";
       writeFileSync(join(pkg, "package.json"), JSON.stringify(manifest, null, 2));
-      runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
       const listed = runAny(bundle, ["modules", "list"]);
       const refused = (listed.envelope.data?.["refused"] ?? []) as {
         code: string;
@@ -406,11 +377,9 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
         JSON.stringify(listed.envelope),
       );
       assert.match(refused[0]?.message ?? "", /index\.js:\d+ reads the clock/u);
-      // …and `trust grant` refuses it too: a grant on a module the engine would
-      // refuse anyway reads as approval and buys nothing.
-      const granted = runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-      assert.equal(granted.envelope.ok, false);
-      assert.equal(granted.envelope.error?.["code"], "module-impure");
+      // …and a verb that reads the law refuses by the same name.
+      const checked = runAny(bundle, ["check"]);
+      assert.equal(checked.envelope.error?.["code"], "module-impure");
     } finally {
       rmSync(bundle, { recursive: true, force: true });
     }
@@ -480,13 +449,6 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
       const parsed = JSON.parse(readFileSync(file, "utf8")) as { version: string };
       parsed.version = "9.9.9";
       writeFileSync(file, JSON.stringify(parsed, null, 2));
-      // The grant loads the module it approves, so a version the bundle's own
-      // range rejects is refused there — a grant the loader would refuse anyway
-      // reads as approval and buys nothing.
-      const granted = runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-      assert.equal(granted.envelope.ok, false, JSON.stringify(granted.envelope));
-      assert.equal(granted.envelope.error?.["code"], "module-version-mismatch");
-
       const listed = runAny(bundle, ["modules", "list"]);
       const refused = (listed.envelope.data?.["refused"] ?? []) as {
         code: string;
@@ -518,10 +480,17 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
       manifest.wikiwright.module = "./index.cts";
       writeFileSync(join(pkg, "package.json"), JSON.stringify(manifest, null, 2));
 
-      const granted = runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-      assert.equal(granted.envelope.ok, false, JSON.stringify(granted.envelope));
-      assert.equal(granted.envelope.error?.["code"], "module-impure");
-      assert.match(String(granted.envelope.error?.["message"]), /index\.cts:\d+ reads the clock/u);
+      const listed = runAny(bundle, ["modules", "list"]);
+      const refused = (listed.envelope.data?.["refused"] ?? []) as {
+        code: string;
+        message: string;
+      }[];
+      assert.deepEqual(
+        refused.map((r) => r.code),
+        ["module-impure"],
+        JSON.stringify(listed.envelope),
+      );
+      assert.match(refused[0]?.message ?? "", /index\.cts:\d+ reads the clock/u);
     } finally {
       rmSync(bundle, { recursive: true, force: true });
     }
@@ -542,12 +511,6 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
         };
         packageJson.wikiwright.module = `./index.${extension}`;
         writeFileSync(join(pkg, "package.json"), JSON.stringify(packageJson, null, 2));
-        const granted = runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-        assert.equal(
-          granted.envelope.ok,
-          true,
-          `${extension}: ${JSON.stringify(granted.envelope)}`,
-        );
         const listed = runAny(bundle, ["modules", "list"]);
         assert.equal(
           ((listed.envelope.data?.["loaded"] ?? []) as unknown[]).length,
@@ -568,10 +531,7 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
       };
       packageJson.wikiwright.module = "./index.cts";
       writeFileSync(join(pkg, "package.json"), JSON.stringify(packageJson, null, 2));
-      // Refused by shape at the grant, and by the same law at every load after.
-      const granted = runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-      assert.equal(granted.envelope.ok, false, JSON.stringify(granted.envelope));
-      assert.equal(granted.envelope.error?.["code"], "module-malformed");
+      // Refused by shape, at every load.
       const listed = runAny(bundle, ["modules", "list"]);
       const refused = (listed.envelope.data?.["refused"] ?? []) as { code: string }[];
       assert.deepEqual(
@@ -605,10 +565,6 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
         ((listed.envelope.data?.["refused"] ?? []) as { code: string }[]).map((r) => r.code),
         ["module-fixture-failed"],
       );
-      // The grant runs the same load, and refuses by the same name.
-      const regrant = runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-      assert.equal(regrant.envelope.ok, false, JSON.stringify(regrant.envelope));
-      assert.equal(regrant.envelope.error?.["code"], "module-fixture-failed");
     } finally {
       rmSync(bundle, { recursive: true, force: true });
     }
@@ -680,10 +636,9 @@ describe("a bundle loads a module package from its own node_modules (docs/extend
 
 describe("the module governs the vault, end to end (docs/extending.md §A check)", () => {
   it("its grammar parses, its arms fire, and its findings route to its own lane", () => {
-    grant(BUNDLE_B);
+    install(BUNDLE_B);
     const bundle = copyOf(BUNDLE_B);
     try {
-      runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
       writeFileSync(
         join(bundle, "wiki", "Beta.md"),
         [
@@ -755,7 +710,6 @@ describe("the module governs the vault, end to end (docs/extending.md §A check)
       );
       assert.notEqual(source, before, "the mutation landed");
       writeFileSync(entry, source);
-      runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
       const linted = runAny(bundle, ["lint", "--all"]);
       // The verdict EXISTS — the vault was judged — and the failure is one
       // finding naming the module and the arm.
@@ -773,16 +727,13 @@ describe("the module governs the vault, end to end (docs/extending.md §A check)
 
 describe("two bundles consume one module and stay independent (docs/extending.md §The manifest)", () => {
   it("each declares its own vocabulary entries, and the module reads each bundle's", () => {
-    grant(BUNDLE_A);
-    grant(BUNDLE_B);
+    install(BUNDLE_A);
+    install(BUNDLE_B);
     // `medium` is bundle A's entry alone; `large` is bundle B's alone. Same
     // module, same arm, two answers — which is the whole point of a kit.
     const a = copyOf(BUNDLE_A);
     const b = copyOf(BUNDLE_B);
     try {
-      for (const bundle of [a, b]) {
-        runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
-      }
       const page = (type: string, id: string, value: string): string =>
         [
           "---",
@@ -839,10 +790,9 @@ describe("two bundles consume one module and stay independent (docs/extending.md
   });
 
   it("a bundle may tighten the module's shared section and may not weaken it", () => {
-    grant(BUNDLE_B);
+    install(BUNDLE_B);
     const bundle = copyOf(BUNDLE_B);
     try {
-      runAny(bundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
       // Bundle B's `allow: ["small"]` is a tightening of a section the MODULE
       // declared with no allow-list at all, and it bites.
       writeFileSync(
@@ -906,8 +856,8 @@ describe("two bundles consume one module and stay independent (docs/extending.md
   });
 
   it("both bundles are green on their own corpora, and the verdicts are reproducible", () => {
-    grant(BUNDLE_A);
-    grant(BUNDLE_B);
+    install(BUNDLE_A);
+    install(BUNDLE_B);
     for (const root of [BUNDLE_A, BUNDLE_B]) {
       const first = runAny(root, ["lint", "--all"]);
       const second = runAny(root, ["lint", "--all"]);
@@ -925,7 +875,7 @@ describe("two bundles consume one module and stay independent (docs/extending.md
 
 describe("adopting another version reports its whole delta first (docs/extending.md §Adopting a new version)", () => {
   it("`modules plan` names every finding that appears and every one that goes", () => {
-    grant(BUNDLE_A);
+    install(BUNDLE_A);
     // The candidate is a bundle with a DIFFERENT build of the same package
     // installed — nothing here reaches the network.
     const candidateBundle = copyOf(BUNDLE_A);
@@ -947,7 +897,6 @@ describe("adopting another version reports its whole delta first (docs/extending
           '              "a measure was recorded (v2)",',
         ),
       );
-      runAny(candidateBundle, ["trust", "grant", "module:@wikiwright-fixture/probe"]);
       const planned = runAny(BUNDLE_A, [
         "modules",
         "plan",
@@ -974,8 +923,8 @@ describe("adopting another version reports its whole delta first (docs/extending
     }
   });
 
-  it("…and a candidate that changes a verdict reports the finding, not a count", () => {
-    grant(BUNDLE_A);
+  it("…and a candidate that fails its own fixture is refused before any delta", () => {
+    install(BUNDLE_A);
     const candidateBundle = copyOf(BUNDLE_A);
     const candidateEntry = join(
       candidateBundle,
@@ -993,11 +942,6 @@ describe("adopting another version reports its whole delta first (docs/extending
           '            const probe = asProbe(item);\n            if (probe !== undefined) return;\n            ctx.emit(\n              "@wikiwright-fixture/probe/measured",',
         ),
       );
-      const granted = runAny(candidateBundle, [
-        "trust",
-        "grant",
-        "module:@wikiwright-fixture/probe",
-      ]);
       const planned = runAny(BUNDLE_A, [
         "modules",
         "plan",
@@ -1007,24 +951,18 @@ describe("adopting another version reports its whole delta first (docs/extending
         candidateBundle,
       ]);
       // The candidate's own fixture pins the arm's behaviour, so a candidate
-      // that changes it fails its fixture at the grant — which is the stricter,
-      // and correct, answer: it never becomes a candidate at all.
-      if (granted.envelope.ok) {
-        assert.equal(planned.envelope.ok, true, JSON.stringify(planned.envelope));
-        const delta = planned.envelope.data?.["delta"] as { removed: string[] };
-        assert.equal(delta.removed.length > 0, true, JSON.stringify(planned.envelope));
-      } else {
-        assert.equal(
-          granted.envelope.error?.["code"],
-          "module-fixture-failed",
-          JSON.stringify(granted.envelope),
-        );
-        assert.equal(
-          planned.envelope.error?.["code"],
-          "candidate-unresolved",
-          JSON.stringify(planned.envelope),
-        );
-      }
+      // that changes it fails its fixture at its load — the stricter, and
+      // correct, answer: it never becomes a candidate at all.
+      assert.equal(
+        planned.envelope.error?.["code"],
+        "candidate-unresolved",
+        JSON.stringify(planned.envelope),
+      );
+      const issues = (planned.envelope.data?.["issues"] ?? []) as { code: string }[];
+      assert.deepEqual(
+        issues.map((i) => i.code),
+        ["module-fixture-failed"],
+      );
     } finally {
       rmSync(candidateBundle, { recursive: true, force: true });
     }
@@ -1065,7 +1003,7 @@ describe("the shell composes one module registry (docs/extending.md §What a mod
 // this proves is that the verb reads the composed rows, which is the seam.
 describe("fix reads the composed rows the judge routes by (docs/concepts.md §Findings and routing)", () => {
   it("a kit arm's id is a rule of this vault; an id no row carries is refused by name", () => {
-    grant(BUNDLE_A);
+    install(BUNDLE_A);
     const known = runAny(BUNDLE_A, [
       "fix",
       "--rule",

@@ -26,7 +26,7 @@ import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK, TODAY } from "./fixtures/clock.ts";
-import { grantKit, installKit, kitEnv } from "./fixtures/kit-code.ts";
+import { installKit, kitEnv } from "./fixtures/kit-code.ts";
 import { layMemoryLaw } from "./fixtures/memory-law.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
@@ -699,8 +699,8 @@ describe("docs/cli.md §brief — the writer bound", () => {
 });
 
 describe("docs/cli.md §new — the alias for a skeleton write", () => {
-  // The code starter is a bundle over the code kit: installed and granted in
-  // the scratch vault, judged under the vault's own trust store.
+  // The code starter is a bundle over the code kit, installed in the scratch
+  // vault.
   let dir = "";
   before(() => {
     dir = join(SCRATCH, "code");
@@ -709,10 +709,9 @@ describe("docs/cli.md §new — the alias for a skeleton write", () => {
     execFileSync("git", ["init", "-q"], { cwd: dir });
     execFileSync("git", ["config", "user.email", "t@e.com"], { cwd: dir });
     execFileSync("git", ["config", "user.name", "T"], { cwd: dir });
-    const init = run(dir, ["init", "--constitution", "code"], undefined, kitEnv(dir));
+    const init = run(dir, ["init", "--constitution", "code"], undefined, kitEnv());
     assert.equal(init.ok, true, JSON.stringify(init.error));
     installKit(dir);
-    grantKit(dir);
   });
   after(() => {
     rmSync(SCRATCH, { recursive: true, force: true });
@@ -737,12 +736,12 @@ describe("docs/cli.md §new — the alias for a skeleton write", () => {
         "Relations: mapped_in [[layout]]",
       ],
       undefined,
-      kitEnv(dir),
+      kitEnv(),
     );
     assert.equal(r.ok, true, JSON.stringify(r.error));
     const text = readFileSync(join(dir, "wiki/warm-reset.md"), "utf8");
     assert.match(text, /^## /mu);
-    const lint = run(dir, ["lint", "--page", "wiki/warm-reset.md"], undefined, kitEnv(dir));
+    const lint = run(dir, ["lint", "--page", "wiki/warm-reset.md"], undefined, kitEnv());
     assert.equal(lint.status, 0, JSON.stringify(lint.data));
   });
 });

@@ -15,7 +15,7 @@ import { codeUnitCompare, type Finding } from "@wikiwright/core";
 import { replaceFile } from "./atomicwrite.ts";
 import { runningCommit } from "./buildinfo.ts";
 import { ENGINE_VERSION } from "./envelope.ts";
-import { sha256Of } from "./trust.ts";
+import { sha256Of } from "./sha256.ts";
 
 /** The stamp's basename, inside each installed skill directory (docs/cli.md §skills). */
 export const STAMP_BASENAME = ".wikiwright-stamp.json";

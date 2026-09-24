@@ -24,9 +24,8 @@ the verdict in `data` beside `error`.
 
 Every verb that reads a vault's law names the bundle it read in
 `metadata.bundle`, when its root holds `config/constitution.json`, on an ok
-envelope and a refusal alike. `version` and `schema` answer about the engine,
-`trust` about this machine's grants and `bundles` about its registry, so they
-carry none; a `bundles list` row carries each connection's identity instead.
+envelope and a refusal alike. `version` and `schema` answer about the engine
+and `bundles` about this machine's registry, so they carry none; a `bundles list` row carries each connection's identity instead.
 
 ```json
 "bundle": {
@@ -45,18 +44,18 @@ carry none; a `bundles list` row carries each connection's identity instead.
 | `root` | the root's real path |
 | `head` | the commit HEAD names in the repository enclosing the root; `null` when git names none: no repository encloses the root, it has no commit yet, or git cannot answer there |
 | `dirty` | whether `git status` lists any change under the root, untracked files included and ignored ones not; `null` when no repository answers |
-| `law` | the law the bundle declares and has installed: `config/constitution.json`, `config/engine.json` and the digest of each declared module installed under its `node_modules` or at its declared `path`, in declaration order, whether or not this machine trusts it |
+| `law` | the law the bundle declares and has installed: `config/constitution.json`, `config/engine.json` and the digest of each declared module installed under its `node_modules` or at its declared `path`, in declaration order, whether or not it loads |
 | `content` | every page under the content roots, path and bytes, as the working tree holds them: an uncommitted edit moves it, and `head` does not move |
 
 Both digests are sha256 over newline-joined lines, and neither reads git or
 parses a page. `law` is over `config/constitution.json <sha256>`,
 `config/engine.json <sha256>` (of the empty text when the file is absent) and
 `module:<package> <digest>` per declared module installed under the bundle's
-`node_modules` or at its declared `path`, the digest a trust grant pins; a declared module that is not
-installed contributes no line. Trust does not enter: the law is what the
-bundle declares and has installed, and a grant decides whether this machine
-will judge under it without changing what it is, so a `module-untrusted`
-refusal carries the `law` the run after the grant carries. `content` is over
+`node_modules` or at its declared `path`, the digest the loader proves it
+under; a declared module that is not installed contributes no line. The law
+is what the bundle declares and has installed, whether or not its modules
+load, so a refusal of a module that did not load carries the `law` it
+refused. `content` is over
 `<path> <sha256 of the page's bytes>`, one line per page under the content
 roots `config/engine.json` declares, in code-unit path order. Two directories
 holding the same bytes carry the same `law` and `content`, and `root` tells
@@ -99,8 +98,8 @@ findings that refused it.
 | 1 | `internal` | the engine broke; `unexpected-error` carries the message, `git-short-read` names a git answer that ended before its terminator, and `git-inconsistent-read` two git answers about one state that disagree — the staged diff and the index listing, or a commit walk and its count — each refused rather than judged |
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
-| 3 | `not_found` | the page, type, vocabulary entry, revision or grant asked for does not exist |
-| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a machine-local store this engine cannot read (`trust-store-malformed`, `bundles-registry-malformed`) |
+| 3 | `not_found` | the page, type, vocabulary entry, revision or connection asked for does not exist |
+| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a machine-local store this engine cannot read (`bundles-registry-malformed`) |
 | 5 | `findings` | the tool worked and the subject failed: read `data.findings` |
 | 10 | `confirm_required` | an identity or blast-radius gate wants the plan pinned: `identity-candidates`, `open-claim-of-category` |
 
@@ -147,9 +146,8 @@ the report it always writes.
 | Variable | Read by | Effect |
 |---|---|---|
 | `WIKIWRIGHT_ROLE` | the shell, before parsing; `brief`, as its default `--role` | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
-| `WIKIWRIGHT_TODAY` | `write`, `new`, `trust grant`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
+| `WIKIWRIGHT_TODAY` | `write`, `new`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
-| `WIKIWRIGHT_TRUST_FILE` | `trust`, the module loader | the path of the machine-local grant store (default `~/.config/wikiwright/trust.json`); a relative path is resolved against the working directory |
 | `WIKIWRIGHT_BUNDLES_FILE` | `bundles`, `--bundle` | the path of the machine-local bundles registry (default `~/.config/wikiwright/bundles.json`); a relative path is resolved against the working directory |
 
 ## The plugin and its hooks
@@ -159,8 +157,8 @@ The package root, `packages/cli`, is also a Claude Code plugin.
 its skills are the three under `skills/`; `hooks/hooks.json` runs two scripts
 with `node`, `SessionStart` with no matcher and `PostToolUse` on
 `Edit|Write`. Each reads the hook's JSON on stdin, runs this package's own
-binary with the session's environment (so `WIKIWRIGHT_BUNDLES_FILE`,
-`WIKIWRIGHT_TRUST_FILE` and `WIKIWRIGHT_ROLE` apply), prints at most one JSON
+binary with the session's environment (so `WIKIWRIGHT_BUNDLES_FILE` and
+`WIKIWRIGHT_ROLE` apply), prints at most one JSON
 object whose `hookSpecificOutput` carries `hookEventName` and
 `additionalContext`, and exits 0 whatever happens: on stdin that is not a JSON
 object, a missing binary or any error, it prints nothing.
@@ -244,12 +242,11 @@ What the registry rows below do not say.
   overwrites exactly the listed conflicts. Starters: `base` and `code`. A
   starter that declares modules (`code`, a bundle over `@wikiwright/kit-code`)
   lands its files and the hook and renders no artifact and no brief, because
-  the modules live in a `node_modules` the copy does not create and a grant is
-  a maintainer's act: the envelope's `modules` block names the install, the
-  maintainer's approval and `check --write`, and `check` before those refuses
-  by name (`module-unresolved`, `module-untrusted`). Neither the block nor a
-  hint hands out a grant command, because an agent runs a listed command
-  literally and the approval is not an agent's to give.
+  the modules live in a `node_modules` the copy does not create: the
+  envelope's `modules` block names the install, that each module loads on
+  first use and is proved then (its purity scan and its determinism fixture
+  run before it judges anything), and `check --write`, and `check` before the
+  install refuses by name (`module-unresolved`).
 - **`new <type> <title> --dest <p>`** renders the type's skeleton and hands it
   to the whole-page write path. `--set field=value` fills a frontmatter field
   before the draft is judged; a string-valued kind takes the text and a list,
@@ -472,35 +469,18 @@ What the registry rows below do not say.
   `wikiwright-maintain`, for answering its findings and changing its law, with
   the lint-response playbook the engine generates beside it. `init` installs
   every skill the package ships.
-- **`modules list | plan`**, **`trust grant | list | revoke module:<pkg>`**
-  are the module surface; see [extending.md](extending.md). A `modules list`
-  row carries `contributes` (types, fragments, templates, skill fragments,
-  contributed vocabulary entries, vocabularies, grammars, checks, lanes),
-  `resolved` (the bundle's package.json spelling, the declared range, the
-  path), `grant` and `grant_scope`, the scope that approves the installation
-  (`vault` or `worktrees`); a refused module carries its code and grant
-  state. `trust grant`, `list` and `revoke` take `--scope vault`, the default,
-  or `--scope worktrees`, which covers this vault's path in every linked
-  worktree of its repository. Named with `--scope worktrees`, each refuses
-  `scope-unresolved` when git cannot read that scope; `trust list` without
-  `--scope` reports the failure as `worktree_scope.error` beside the vault
-  grants it read. With `--scope vault`, the listing adds no scope lookup, and
-  `trust` reads no vault law, so nothing preloads a bundle's modules to answer
-  it either.
-  A grant or a revoke reads and writes the machine-local store as one
-  operation under a lock beside it, and refuses `store-busy` when another
-  process holds it. A store this engine cannot read — not JSON, not the
-  store's schema, a version it does not read, a record of no known shape — is
-  `trust-store-malformed` (exit 4) with `details.file` and, for a record,
-  `details.record`, from `trust` and from any verb whose module load checks a
-  grant; the file is never rewritten. `trust list --all` is the whole store rather than this
-  vault's share of it: every record with its identity, its scope, the path it
-  is keyed by, its digest, when it was granted, and whether that path is still
-  on this machine. `trust revoke --record <identity>` removes exactly that
-  record and needs neither a vault nor a repository, which is how a record
-  whose directory is gone is removed at all.
-  [extending.md](extending.md#trust) says how a load is
-  approved and what each scope's key can and cannot tell apart.
+- **`modules list | plan`** is the module surface; see
+  [extending.md](extending.md). A `modules list` row carries `contributes`
+  (types, fragments, templates, skill fragments, contributed vocabulary
+  entries, vocabularies, grammars, checks, lanes), `resolved` (the bundle's
+  package.json spelling, the declared range, the path: the declared `path`,
+  or `node_modules/<package>`), `digest` and `fixture`, what the module's
+  determinism fixture judged when the load proved it (its pages and its
+  findings); a refused module carries its refusal (`code`, `package`,
+  `message`, and `hint` and `details` where it has them) and `resolved`.
+  There is no approval step: installing a module is the consent to run it,
+  and every load proves it (a purity scan of its bytes and its determinism
+  fixture, once per digest in each process) before it judges anything.
 - **`bundles add <root> --name <n> | list | remove <name>`** keeps this
   machine's registry of connected bundles, `~/.config/wikiwright/bundles.json`
   unless `WIKIWRIGHT_BUNDLES_FILE` names another file: a JSON document,
@@ -508,9 +488,10 @@ What the registry rows below do not say.
   carry `name`, `root`, `kind`, `feedback` and `guide`. By default it is
   outside every vault and every repository; an override is resolved to an
   absolute path, and where it points is the caller's choice, not something
-  the engine checks. It is written under the same lock as the trust store
-  (`store-busy` when another process holds it), and the verb is a
-  consumer's: connecting a bundle changes no bundle and grants nothing. `add` records the root as given, made absolute, and compares real
+  the engine checks. It is read, changed and written as one operation under a
+  lock beside it (`store-busy` when another process holds it; a lock is
+  broken only when the process it names is gone from this machine), and the
+  verb is a consumer's: connecting a bundle changes no bundle. `add` records the root as given, made absolute, and compares real
   paths: it refuses `bundle-name-invalid` for a name outside
   `^[a-z0-9][a-z0-9-]{0,63}$`, `invalid-kind`, `vault-not-found` for a root
   with no `config/constitution.json`, `guide-not-found` when `--guide` names
@@ -533,8 +514,7 @@ What the registry rows below do not say.
   when the root is not present or its identity cannot be read. `list
   --records` prints the same rows without `identity`, reading no page and
   running no git, for a caller that only routes by them. Listing loads no law
-  and no module, so a bundle whose modules this machine has not approved
-  still lists. `remove` refuses a
+  and no module, so a bundle whose modules do not load still lists. `remove` refuses a
   name that is not connected with `bundle-not-found` and `details.valid_values`.
   A plan's one path is the registry, absolute. A registry this engine cannot
   read is `bundles-registry-malformed` (exit 4), with `details.file` and, for a
@@ -552,11 +532,10 @@ What the registry rows below do not say.
   `bundle-readonly` for a verb that can write the vault or its repository
   aimed at an `installed` connection, `--dry-run` included, with
   `details.kind` and `details.feedback`, where a change to that copy goes
-  instead. `bundles` and `trust` are exempt by verb: their writes are this
-  machine's registry and trust store, which change nothing of the copy while
-  those stores lie outside it, as they do by default. The exemption does not
-  look at where the environment put them: a store path set inside the copy is
-  written there. The refusal is a guardrail on this CLI, not
+  instead. `bundles` is exempt by verb: its write is this machine's
+  registry, which changes nothing of the copy while it lies outside it, as it
+  does by default. The exemption does not look at where the environment put
+  it: a registry path set inside the copy is written there. The refusal is a guardrail on this CLI, not
   filesystem isolation: `--root` names the same directory and is not refused,
   by design, and nothing stops a process that does not go through the CLI.
   `bundles` itself takes `--bundle` and reads nothing of it beyond those
@@ -636,7 +615,6 @@ Global flags, accepted by every verb:
 | [`schema`](#schema) | consumer | no | Print the generated command registry: names, roles, flags, examples. |
 | [`search`](#search) | consumer | no | Deterministic lexical search with match reasons and a coverage block. |
 | [`skills`](#skills) | maintainer | yes | Reinstall the shipped skills into .claude/skills/, or compare installed vs shipped. |
-| [`trust`](#trust) | maintainer | yes | Grant, list, or revoke this machine's content-hashed module grants. |
 | [`type`](#type) | consumer | no | Introspect the type registry: show one effective contract, or list all types. |
 | [`version`](#version) | consumer | no | Report the engine version and the commit this binary was BUILT from (--version / -v alias it). |
 | [`vocabulary`](#vocabulary) | consumer | no | Show one vocabulary: its entries and what they admit, the sections that bind it, and the vault's own census. |
@@ -1029,30 +1007,6 @@ Role: `maintainer`. Writes: yes (accepts `--dry-run`).
 ```text
 wikiwright skills status
 wikiwright skills update
-```
-
-### trust
-
-`wikiwright trust <grant|list|revoke> [module]`
-
-Grant, list, or revoke this machine's content-hashed module grants.
-
-Role: `maintainer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--scope <value>` | vault (the default): this vault alone; worktrees: this vault's path in every linked worktree of its repository |
-| `--all` | list every record in this machine's store, not only the ones that apply to this vault |
-| `--record <value>` | revoke exactly the record of this identity, as `list --all` prints it; it needs neither a vault nor a repository |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright trust grant module:@acme/kit
-wikiwright trust grant module:@acme/kit --scope worktrees
-wikiwright trust list
-wikiwright trust list --all
-wikiwright trust revoke module:@acme/kit
-wikiwright trust revoke --record 4f9c1a2b3d5e
 ```
 
 ### type

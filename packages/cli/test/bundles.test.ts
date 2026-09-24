@@ -30,7 +30,6 @@ import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
-const CONFORMANCE = fileURLToPath(new URL("../../../fixtures/conformance/", import.meta.url));
 const ORCHARD = join(HANDBOOKS, "orchard");
 const ALLOTMENT = join(HANDBOOKS, "allotment");
 const ORCHARD_FEEDBACK = "return the proposal to the caller";
@@ -456,12 +455,12 @@ describe("the readonly guard refuses the verbs that write a vault (docs/cli.md Â
     const copy = join(tmp, "guard", "allotment");
     cpSync(ALLOTMENT, copy, { recursive: true });
     const r = registry("guard");
-    env = { ...r.env, WIKIWRIGHT_TRUST_FILE: join(tmp, "guard", "trust.json") };
+    env = r.env;
     const added = run(tmp, ["bundles", "add", copy, "--name", "copy", "--kind", "installed"], env);
     assert.equal(added.status, 0, JSON.stringify(added.envelope));
   });
 
-  it("every writing verb but this machine's store writers is refused on an installed copy", () => {
+  it("every writing verb but this machine's store writer is refused on an installed copy", () => {
     for (const spec of COMMANDS.filter((c) => c.writes)) {
       const lead = spec.subcommands === undefined ? [] : [spec.subcommands[0] ?? ""];
       const r = run(tmp, [spec.name, ...lead, "--bundle", "copy"], env);
@@ -477,14 +476,9 @@ describe("the readonly guard refuses the verbs that write a vault (docs/cli.md Â
     }
   });
 
-  it("bundles and trust answer over an installed copy: their writes are this machine's", () => {
-    for (const argv of [
-      ["bundles", "list"],
-      ["trust", "list"],
-    ]) {
-      const r = run(tmp, [...argv, "--bundle", "copy"], env);
-      assert.equal(r.status, 0, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
-    }
+  it("bundles answers over an installed copy: its write is this machine's registry", () => {
+    const r = run(tmp, ["bundles", "list", "--bundle", "copy"], env);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
     const refused = run(tmp, ["new", "procedure-page", "Mulching", "--bundle", "copy"], env);
     assert.equal(refused.envelope.error?.code, "bundle-readonly");
   });
@@ -606,10 +600,7 @@ describe("a machine-local store that does not parse is a named refusal (docs/cli
     mkdirSync(cwd, { recursive: true });
     const copy = join(cwd, "orchard");
     cpSync(ORCHARD, copy, { recursive: true });
-    const env = {
-      WIKIWRIGHT_BUNDLES_FILE: join("stores", "bundles.json"),
-      WIKIWRIGHT_TRUST_FILE: join("stores", "trust.json"),
-    };
+    const env = { WIKIWRIGHT_BUNDLES_FILE: join("stores", "bundles.json") };
     const planned = run(cwd, ["bundles", "add", copy, "--name", "orchard", "--dry-run"], env);
     assert.equal(planned.status, 0, JSON.stringify(planned.envelope));
     const ops = (planned.envelope.data?.["ops"] ?? []) as { path: string }[];
@@ -617,74 +608,6 @@ describe("a machine-local store that does not parse is a named refusal (docs/cli
       ops.map((op) => op.path),
       [join(cwd, "stores", "bundles.json")],
     );
-
-    // The trust store too: a record read through the relative override, and
-    // the revocation's plan, both name the absolute file.
-    mkdirSync(join(cwd, "stores"), { recursive: true });
-    writeFileSync(
-      join(cwd, "stores", "trust.json"),
-      `${JSON.stringify({
-        schema: "wikiwright/trust",
-        schema_version: 2,
-        grants: [
-          {
-            vault: realpathSync(copy),
-            path: "module:garden-guidance",
-            sha256: "0".repeat(64),
-            granted: "2026-09-04",
-          },
-        ],
-      })}\n`,
-    );
-    const listed = run(cwd, ["trust", "list", "--all", "--root", copy], env);
-    assert.equal(listed.status, 0, JSON.stringify(listed.envelope));
-    assert.equal(listed.envelope.data?.["store"], join(cwd, "stores", "trust.json"));
-    const records = (listed.envelope.data?.["records"] ?? []) as { record: string }[];
-    const id = records[0]?.record;
-    assert.ok(id !== undefined);
-    const revoke = run(cwd, ["trust", "revoke", "--record", id, "--dry-run"], env);
-    assert.equal(revoke.status, 0, JSON.stringify(revoke.envelope));
-    assert.deepEqual(
-      ((revoke.envelope.data?.["ops"] ?? []) as { path: string }[]).map((op) => op.path),
-      [join(cwd, "stores", "trust.json")],
-    );
-  });
-
-  it("a trust store of junk, or with a record of no shape, is trust-store-malformed", () => {
-    const store = join(tmp, "malformed-trust", "trust.json");
-    mkdirSync(join(tmp, "malformed-trust"), { recursive: true });
-    const env = { WIKIWRIGHT_TRUST_FILE: store };
-    writeFileSync(store, "{ not json\n");
-    const junk = run(tmp, ["trust", "list", "--root", ORCHARD], env);
-    assert.equal(junk.status, 4, JSON.stringify(junk.envelope));
-    assert.equal(junk.envelope.error?.code, "trust-store-malformed");
-    assert.equal(junk.envelope.error?.details?.["file"], store);
-    writeFileSync(
-      store,
-      `${JSON.stringify({
-        schema: "wikiwright/trust",
-        schema_version: 2,
-        grants: [{ path: "module:@example/kit", sha256: "0".repeat(64) }],
-      })}\n`,
-    );
-    const bad = run(tmp, ["trust", "list", "--root", ORCHARD], env);
-    assert.equal(bad.envelope.error?.code, "trust-store-malformed");
-    assert.equal(bad.envelope.error?.details?.["record"], 0);
-
-    // The module loader reads no store: a vault verb over a bundle whose module
-    // is installed loads it and judges, whatever the store holds.
-    const bundle = join(tmp, "malformed-trust", "bundle-a");
-    for (const part of ["config", "wiki"]) {
-      cpSync(join(CONFORMANCE, "bundle-a", part), join(bundle, part), { recursive: true });
-    }
-    cpSync(
-      join(CONFORMANCE, "module-fixture"),
-      join(bundle, "node_modules", "@wikiwright-fixture", "probe"),
-      { recursive: true },
-    );
-    const loaded = run(tmp, ["type", "list", "--root", bundle], env);
-    assert.equal(loaded.status, 0, JSON.stringify(loaded.envelope));
-    assert.equal(loaded.envelope.metadata.bundle?.["label"], "bundle-a");
   });
 });
 

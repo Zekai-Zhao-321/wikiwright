@@ -68,11 +68,11 @@ interface InitFile {
 
 /**
  * A starter that declares modules lands before the modules can load: they
- * live in `node_modules` the copy does not create, and a grant is a
- * machine-local act the user performs after reading them. So the law is not
- * read at init, no artifact and no brief is rendered, and the envelope names
- * the steps that make the first `check` green. The hook is read off the
- * starter's own engine.json, the one file the decision needs.
+ * live in `node_modules` the copy does not create, and the install is the
+ * user's act. So the law is not read at init, no artifact and no brief is
+ * rendered, and the envelope names the steps that make the first `check`
+ * green. The hook is read off the starter's own engine.json, the one file the
+ * decision needs.
  */
 interface DeclaredModules {
   declared: ModuleDeclaration[];
@@ -187,7 +187,7 @@ function inspectInit(args: CommandArgs): Inspection {
   const disk = fsReader(args.root);
 
   // A starter that declares modules: the files land, the hook lands, and the
-  // law waits for the install and the grant (docs/cli.md §init).
+  // law waits for the install (docs/cli.md §init).
   const engineFile = planned.get("config/engine.json");
   if (engineFile !== undefined && "copy" in engineFile.source) {
     let engineJson: unknown;
@@ -376,9 +376,9 @@ export const initCommand: CommandSpec = {
     // from the first scaffold what it wrote and when the install fell behind.
     const stamps = existsSync(shippedDir("skills")) ? stampAll(args.root) : [];
     if (plan.modules !== undefined) {
-      // The starter's modules are not installed and not granted: the artifacts
-      // and the brief wait for the law they are rendered under, and the
-      // envelope says what makes the first `check` green.
+      // The starter's modules are not installed: the artifacts and the brief
+      // wait for the law they are rendered under, and the envelope says what
+      // makes the first `check` green.
       const hookOutcome = installHook(args.root, { commitPrefixes: plan.modules.commitPrefixes });
       const packages = plan.modules.declared.map((m) => m.package);
       const data: Record<string, unknown> = {
@@ -397,12 +397,12 @@ export const initCommand: CommandSpec = {
           note: "this starter declares modules the bundle has not installed; the artifacts and the brief are rendered once they load",
           install:
             "point package.json's dependency at where each module lives — a workspace link, or `file:<path>` to the package — and run the package manager's install",
-          // The approval is a maintainer's decision, named rather than handed
-          // out as a command: an agent runs a listed command literally.
+          // Installing is the consent: what follows the install is the first
+          // load, which proves each module before it judges anything.
           next: [
             ...packages.map(
               (name) =>
-                `a maintainer reviews ${name} and approves it for this vault or its worktrees (see \`wikiwright trust --help\`)`,
+                `${name} loads on first use and is proved then: after the install, the first verb that reads the law runs its purity scan and its determinism fixture before it judges anything`,
             ),
             "wikiwright check --write",
           ],

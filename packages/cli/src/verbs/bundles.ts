@@ -3,9 +3,9 @@
 // §The dry-run law (the plan names the machine-local registry, absolute).
 //
 // A consumer verb that writes: what it writes is this machine's registry, not a
-// bundle, so connecting a bundle changes no bundle and grants nothing. It loads
-// no law and no module — `list` is discovery, and a bundle whose modules this
-// machine has not approved still lists, with its identity.
+// bundle, so connecting a bundle changes no bundle. It loads no law and no
+// module — `list` is discovery, and a bundle whose modules do not load still
+// lists, with its identity.
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { codeUnitCompare, isContentPath, PATH_REFUSALS, pathRefusal } from "@wikiwright/core";

@@ -16,15 +16,15 @@ import { fileURLToPath } from "node:url";
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
-import { grantedCopy, kitEnv } from "./fixtures/kit-code.ts";
+import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 /** Every corpus this repository ships, judged under its own constitution. */
 const CORPORA = ["fixtures/memory-synth", "devwiki", "fixtures/minimal-vault"];
 
-// devwiki is a bundle over the code kit: judged from an installed, granted copy
-// under os.tmpdir(), never from the shipped tree (docs/extending.md §The code kit).
-const DEVWIKI_COPY = grantedCopy(join(REPO, "devwiki"), "coverage-devwiki");
+// devwiki is a bundle over the code kit: judged from an installed copy under
+// os.tmpdir(), never from the shipped tree (docs/extending.md §The code kit).
+const DEVWIKI_COPY = installedCopy(join(REPO, "devwiki"), "coverage-devwiki");
 after(() => rmSync(DEVWIKI_COPY, { recursive: true, force: true }));
 
 const rootOf = (corpus: string): string =>
@@ -41,7 +41,7 @@ function verdict(corpus: string, verb: string) {
   const r = spawnSync(CLI_RUNTIME, [CLI, verb, "--root", ".", "--all"], {
     cwd: rootOf(corpus),
     encoding: "utf8",
-    env: kitEnv(rootOf(corpus)),
+    env: kitEnv(),
   });
   const envelope = JSON.parse(r.stdout) as {
     data?: {

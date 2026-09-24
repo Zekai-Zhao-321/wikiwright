@@ -2,12 +2,12 @@
 // short name for a vault root, its kind and where a problem with it is
 // reported) · docs/architecture.md §Directories.
 //
-// The registry is this machine's, like the trust store: by default under the
-// home directory, outside every vault and every repository, and wherever
-// `WIKIWRIGHT_BUNDLES_FILE` puts it otherwise — the environment is the
-// caller's. It is updated under the trust store's lock. Connecting a bundle
-// grants nothing: a connection names a root, and a verb run against it is
-// judged exactly as `--root` would judge it.
+// The registry is this machine's: by default under the home directory, outside
+// every vault and every repository, and wherever `WIKIWRIGHT_BUNDLES_FILE` puts
+// it otherwise — the environment is the caller's. It is updated under the lock
+// every machine-local store takes (`storelock.ts`). Connecting a bundle changes
+// nothing a verb judges: a connection names a root, and a verb run against it
+// is judged exactly as `--root` would judge it.
 import { existsSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
@@ -152,16 +152,16 @@ export function readConnections(): ConnectionStore {
 const MALFORMED = "bundles-registry-malformed";
 
 /**
- * docs/cli.md §bundles: the verbs whose writes are this machine's stores — the
- * registry, the trust store — and not the vault or its repository.
- * `--bundle` naming an installed copy refuses every other writing verb
- * (`bundle-readonly`); these two are answered. The exemption is BY VERB, not by
- * where the store lies: the stores' paths are the environment's, and one set
- * to a file inside the copy is written there. Closed: the dry-run test holds
- * that each plans only absolute store paths, outside the vault when the stores
- * are, and that every other writing verb is refused.
+ * docs/cli.md §bundles: the verbs whose writes are this machine's store — the
+ * registry — and not the vault or its repository. `--bundle` naming an
+ * installed copy refuses every other writing verb (`bundle-readonly`); this
+ * one is answered. The exemption is BY VERB, not by where the store lies: the
+ * store's path is the environment's, and one set to a file inside the copy is
+ * written there. Closed: the dry-run test holds that it plans only an
+ * absolute store path, outside the vault when the store is, and that every
+ * other writing verb is refused.
  */
-export const MACHINE_LOCAL_WRITERS: ReadonlySet<string> = new Set(["bundles", "trust"]);
+export const MACHINE_LOCAL_WRITERS: ReadonlySet<string> = new Set(["bundles"]);
 
 /** The registry, sorted by name, so the file's bytes are a function of its connections. */
 function writeConnections(store: ConnectionStore): void {
@@ -171,10 +171,17 @@ function writeConnections(store: ConnectionStore): void {
 
 /**
  * Read, change and write the registry as one operation, under the lock every
- * machine-local store is updated under (`storelock.ts`).
+ * machine-local store is updated under (`storelock.ts`). `waitMs` bounds the
+ * wait for a lock another process holds.
  */
 export function updateConnections<T>(
   change: (store: ConnectionStore) => StoreChange<ConnectionStore, T>,
+  options: { waitMs?: number } = {},
 ): T {
-  return updateStore(bundlesFilePath(), { read: readConnections, write: writeConnections }, change);
+  return updateStore(
+    bundlesFilePath(),
+    { read: readConnections, write: writeConnections },
+    change,
+    options,
+  );
 }

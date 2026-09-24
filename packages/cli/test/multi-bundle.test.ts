@@ -22,7 +22,7 @@
 // Overlap with bundles.test.ts and read-verb.test.ts is deliberate: those hold
 // each mechanism; this holds the scenario. Everything runs on temporary
 // copies of the two handbooks, never the shipped fixtures, with the registry
-// and the trust store under the temporary directory.
+// under the temporary directory.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -121,10 +121,7 @@ describe("two handbooks from an unrelated directory, end to end (docs/cli.md §b
     mkdirSync(elsewhere, { recursive: true });
     orchard = checkout("orchard");
     allotment = checkout("allotment");
-    env = {
-      WIKIWRIGHT_BUNDLES_FILE: join(tmp, "bundles.json"),
-      WIKIWRIGHT_TRUST_FILE: join(tmp, "trust.json"),
-    };
+    env = { WIKIWRIGHT_BUNDLES_FILE: join(tmp, "bundles.json") };
   });
   after(() => {
     rmSync(tmp, { recursive: true, force: true });

@@ -1,7 +1,7 @@
 // The kernel's one hash. Core's tsconfig grants no Node typings and a gate test
 // bans `node:` specifiers inside core, so sha256 is vendored rather than
-// imported: the claim handle, the evidence digest and the trust digest all read
-// it from here (integer arithmetic only; identical bytes on every engine).
+// imported: the claim handle and a finding's evidence digest read it from here
+// (integer arithmetic only; identical bytes on every engine).
 //
 // FIPS 180-4 SHA-256 over the UTF-8 bytes of a string. Zero dependencies, no
 // ambient globals (`TextEncoder` is not in the `es2023` lib), no allocation

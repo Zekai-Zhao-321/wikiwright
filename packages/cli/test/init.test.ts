@@ -23,7 +23,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { grantKit, installKit, KIT_PACKAGE, runKit } from "./fixtures/kit-code.ts";
+import { installKit, KIT_PACKAGE, runKit } from "./fixtures/kit-code.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -38,8 +38,7 @@ function run(cwd: string, args: string[]): Outcome {
   const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
-    // Never consult (or create) the developer's real trust store from a test.
-    env: { ...process.env, ...PINNED_CLOCK, WIKIWRIGHT_TRUST_FILE: join(cwd, ".trust.json") },
+    env: { ...process.env, ...PINNED_CLOCK },
   });
   return {
     status: r.status ?? -1,
@@ -85,9 +84,9 @@ function treeHash(root: string): string {
 describe("init lands a starter that declares modules, and names what makes it green (docs/cli.md §init)", () => {
   // docs/extending.md §The code kit: the `code` starter is a bundle over
   // `@wikiwright/kit-code`. The kit lives in node_modules the copy does not
-  // create and a grant is a machine-local act, so init lands the files and
-  // the hook, renders no artifact and no brief, and the envelope names the
-  // install, the grant, `check --write` and `brief --write`.
+  // create, so init lands the files and the hook, renders no artifact and no
+  // brief, and the envelope names the install, the first load that proves the
+  // kit, and `check --write`.
   it("the envelope names the steps; the plan is the files; check refuses by name until they are done", {
     timeout: 60_000,
   }, () => {
@@ -106,11 +105,11 @@ describe("init lands a starter that declares modules, and names what makes it gr
       const modules = data["modules"] as { declared: string[]; loaded: boolean; next: string[] };
       assert.deepEqual(modules.declared, [KIT_PACKAGE]);
       assert.equal(modules.loaded, false);
-      // The approval is a maintainer's decision, never a command the envelope
-      // hands an agent to run; the check that follows it is a command.
+      // Installing is the consent; the first load proves the kit, and the
+      // check that follows is a command.
       assert.equal(modules.next.length, 2, JSON.stringify(modules.next));
-      assert.doesNotMatch(modules.next[0] ?? "", /trust grant/u);
-      assert.match(modules.next[0] ?? "", /maintainer/u);
+      assert.doesNotMatch(modules.next[0] ?? "", /trust/u);
+      assert.match(modules.next[0] ?? "", /loads on first use and is proved then/u);
       assert.match(modules.next[0] ?? "", /@wikiwright\/kit-code/u);
       assert.equal(modules.next[1], "wikiwright check --write");
       assert.equal(existsSync(join(tmp, "package.json")), true, "the starter ships its manifest");
@@ -122,20 +121,19 @@ describe("init lands a starter that declares modules, and names what makes it gr
         .filter((f) => statSync(join(tmp, f)).isFile())
         .sort();
       assert.deepEqual(plannedPaths, landed);
-      // Before the install: refused by name, with the install named and the
-      // approval left to a maintainer.
+      // Before the install: refused by name, with the install named and what
+      // the first load does after it.
       const unresolved = runKit(tmp, ["check"]);
       assert.equal(unresolved.status, 2, JSON.stringify(unresolved.envelope));
       assert.equal(unresolved.envelope.error?.["code"], "module-unresolved");
       assert.match(String(unresolved.envelope.error?.["hint"]), /install/u);
-      assert.doesNotMatch(String(unresolved.envelope.error?.["hint"]), /trust grant/u);
+      assert.doesNotMatch(String(unresolved.envelope.error?.["hint"]), /trust/u);
       const listed = runKit(tmp, ["modules", "list"]);
       const refused = (listed.envelope.data?.["refused"] ?? []) as { code: string; hint: string }[];
       assert.equal(refused[0]?.code, "module-unresolved");
-      assert.match(refused[0]?.hint ?? "", /install .* maintainer/u);
+      assert.match(refused[0]?.hint ?? "", /install .* proved then/u);
       // The named steps, in order, and the first real check is green.
       installKit(tmp);
-      grantKit(tmp);
       assert.equal(
         runKit(tmp, ["check", "--write"]).status,
         0,
@@ -146,7 +144,7 @@ describe("init lands a starter that declares modules, and names what makes it gr
       assert.deepEqual(
         check.envelope.data?.["findings"],
         [],
-        "a code bundle is green once installed and granted",
+        "a code bundle is green once installed",
       );
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -321,7 +319,7 @@ describe("init — scaffold from a starter constitution (docs/architecture.md)",
 describe("init --constitution code — the code bundle (types are the fix for openwiki's measured drift)", () => {
   // The starter is a bundle over the code kit (docs/extending.md §The code
   // kit): its concrete types extend the kit's abstract ones, and a fresh vault
-  // is judged once the kit is installed and granted.
+  // is judged once the kit is installed.
   const CODE_TYPES = [
     "architecture-overview",
     "code-concept",
@@ -334,13 +332,12 @@ describe("init --constitution code — the code bundle (types are the fix for op
     "testing-guide",
   ];
 
-  /** `init --constitution code`, then the two steps its envelope names. */
+  /** `init --constitution code`, then the install its envelope names. */
   function codeBundle(): string {
     const tmp = mkdtempSync(join(tmpdir(), "ww-code-"));
     const init = runKit(tmp, ["init", "--constitution", "code"]);
     assert.equal(init.status, 0, JSON.stringify(init.envelope));
     installKit(tmp);
-    grantKit(tmp);
     return tmp;
   }
 
@@ -397,7 +394,7 @@ describe("init --constitution code — the code bundle (types are the fix for op
     }
   });
 
-  it("a fresh code vault passes check --write once the kit is installed and granted", () => {
+  it("a fresh code vault passes check --write once the kit is installed", () => {
     const tmp = codeBundle();
     try {
       const r = runKit(tmp, ["check", "--write"]);

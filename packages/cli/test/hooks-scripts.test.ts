@@ -68,7 +68,7 @@ function contextOf(stdout: string, event: string): string {
   return String(specific["additionalContext"]);
 }
 
-/** The engine itself, over the hooks' registry and trust store. */
+/** The engine itself, over the hooks' registry. */
 function cli(argv: readonly string[]): { status: number; stdout: string } {
   const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
     encoding: "utf8",
@@ -114,10 +114,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     allotment = join(tmp, "allotment");
     cpSync(join(HANDBOOKS, "orchard"), orchard, { recursive: true });
     cpSync(join(HANDBOOKS, "allotment"), allotment, { recursive: true });
-    env = {
-      WIKIWRIGHT_BUNDLES_FILE: join(tmp, "bundles.json"),
-      WIKIWRIGHT_TRUST_FILE: join(tmp, "trust.json"),
-    };
+    env = { WIKIWRIGHT_BUNDLES_FILE: join(tmp, "bundles.json") };
     // No connection yet: the first case reads an empty registry.
   });
   after(() => {

@@ -1,4 +1,4 @@
-// docs/extending.md §Trust (a store is read, changed and written as one
+// docs/cli.md §bundles (the registry is read, changed and written as one
 // operation under a lock beside it; a lock is broken only when the process it
 // names is gone from this machine) · docs/architecture.md §Directories.
 //
@@ -116,11 +116,10 @@ function holderIsRunning(holder: LockHolder): boolean {
  * exclusively beside it: whoever creates it owns the store until it is removed.
  *
  * A lock is broken only when the process that wrote it is gone from this
- * machine. Age is not evidence: a grant digests a package, scans it and runs
- * its determinism fixture, and a slow disk, a large module or a stopped
- * process can hold the lock past any interval worth waiting. Breaking a live
- * holder's lock is how two writers both write, and how a grant a maintainer
- * revoked comes back. A lock nobody has claimed yet — the instant between
+ * machine. Age is not evidence: a slow disk or a stopped process can hold the
+ * lock past any interval worth waiting. Breaking a live holder's lock is how
+ * two writers both write, and how a record another process removed comes
+ * back. A lock nobody has claimed yet — the instant between
  * creating the file and naming its holder — is given `LOCK_UNCLAIMED_MS` and
  * then treated as abandoned, since nothing else can ever say who holds it.
  */

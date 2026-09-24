@@ -153,17 +153,14 @@ function refusals(): { file: string; type: string; code: string }[] {
 }
 
 describe("the error-code taxonomy: one code, one meaning (docs/cli.md §The envelope)", () => {
-  it("the two store codes the scan cannot read each exit 4 as conflict, and no literal site reuses them", () => {
-    // `trust-store-malformed` and `bundles-registry-malformed` reach `fail`
-    // from a thrown StoreMalformed, so no literal site spells them.
+  it("the store code the scan cannot read exits 4 as conflict, and no literal site reuses it", () => {
+    // `bundles-registry-malformed` reaches `fail` from a thrown StoreMalformed,
+    // so no literal site spells it.
     const tmp = vault(GOOD_TYPES);
     try {
-      const trust = join(tmp, "trust.json");
       const bundles = join(tmp, "bundles.json");
-      writeFileSync(trust, "not a trust store\n");
       writeFileSync(bundles, "not a registry\n");
       for (const [argv, env, code] of [
-        [["trust", "list"], { WIKIWRIGHT_TRUST_FILE: trust }, "trust-store-malformed"],
         [["bundles", "list"], { WIKIWRIGHT_BUNDLES_FILE: bundles }, "bundles-registry-malformed"],
       ] as const) {
         const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", "."], {

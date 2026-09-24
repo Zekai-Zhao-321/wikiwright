@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { passRows, standardLibrary } from "@wikiwright/core";
-import { grantedCopy, kitEnv } from "./fixtures/kit-code.ts";
+import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { MEMORY_LAW } from "./fixtures/memory-law.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
@@ -32,9 +32,8 @@ interface Finding {
 function envelopeOf(args: string[], root?: string): { data?: { findings?: Finding[] } } {
   const r = spawnSync(CLI_RUNTIME, [CLI, ...args], {
     encoding: "utf8",
-    // A corpus over a kit is judged under the copy's own trust store; the
-    // others declare no module and never consult one.
-    ...(root === undefined ? {} : { env: kitEnv(root) }),
+    // A corpus over a kit runs under the pinned clock, as every kit bundle does.
+    ...(root === undefined ? {} : { env: kitEnv() }),
   });
   return JSON.parse(r.stdout) as { data?: { findings?: Finding[] } };
 }
@@ -69,9 +68,9 @@ function assertRouted(findings: readonly Finding[], where: string): number {
   return findings.length;
 }
 
-// devwiki is a bundle over the code kit: judged from an installed, granted copy
-// under os.tmpdir(), never from the shipped tree (docs/extending.md §The code kit).
-const DEVWIKI_COPY = grantedCopy(join(REPO, "devwiki"), "xor-devwiki");
+// devwiki is a bundle over the code kit: judged from an installed copy under
+// os.tmpdir(), never from the shipped tree (docs/extending.md §The code kit).
+const DEVWIKI_COPY = installedCopy(join(REPO, "devwiki"), "xor-devwiki");
 after(() => rmSync(DEVWIKI_COPY, { recursive: true, force: true }));
 
 const CORPORA: Record<string, string> = {

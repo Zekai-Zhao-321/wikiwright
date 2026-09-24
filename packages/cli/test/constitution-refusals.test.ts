@@ -12,7 +12,7 @@ import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { grantedCopy, kitEnv } from "./fixtures/kit-code.ts";
+import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -34,18 +34,18 @@ function run(cwd: string, args: string[]): { status: number; envelope: Envelope 
   const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
-    env: kitEnv(cwd),
+    env: kitEnv(),
   });
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Envelope };
 }
 
 /**
- * The shipped `code` starter, copied with its kit installed and granted so the
+ * The shipped `code` starter, copied with its kit installed so the
  * test can damage its constitution and still reach the constitution's own
  * refusal rather than the loader's (docs/extending.md §The code kit).
  */
 function codeVault(mutate: (doc: Record<string, unknown>) => void): string {
-  const tmp = grantedCopy(CODE_STARTER, "refusal");
+  const tmp = installedCopy(CODE_STARTER, "refusal");
   const path = join(tmp, "config/constitution.json");
   const doc = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
   mutate(doc);
