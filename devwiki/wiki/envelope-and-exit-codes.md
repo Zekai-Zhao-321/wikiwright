@@ -3,7 +3,7 @@ type: ops-reference
 title: "The envelope and exit codes"
 description: "Every verb prints one JSON envelope on stdout, and a vault verb's names the bundle it read; the exit code is one of seven, each mapped to one error type; the judging verbs share one verdict block."
 tags: [cli]
-pin: 0102007b93b93f4e19f03b4ca5976633679cbf7a
+pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
 origin: .
 covers: [packages/cli/src/envelope.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts]
 ---
@@ -19,32 +19,33 @@ message, hint?, details? }, metadata }`
 `0.1.0` (`:24`). `metadata.bundle` — `label`, `root`, `head`, `dirty`, `law`,
 `content` (`:26-44`) — is on the envelope of every verb that reads a vault's
 law whose root holds a constitution, ok or refused, and on no envelope
-answered before the verb runs (`packages/cli/src/main.ts:58-75`, `:189-191`).
+answered before the verb runs (`packages/cli/src/main.ts:59-76`, `:198-200`).
 `error.code` is one kebab-case word per meaning and `details` carries the
 machine recovery data; a refusal that carries a verdict puts it in `data`
 beside `error` (`packages/cli/src/envelope.ts:98-104`). The envelope goes to
 stdout, the verb's stderr text to stderr, and the process exit code is the
-envelope's (`packages/cli/src/main.ts:22-27`).
+envelope's (`packages/cli/src/main.ts:23-28`).
 
 | Exit | `error.type` | Meaning | Where |
 | --- | --- | --- | --- |
 | 0 | — | ok | `envelope.ts:9` |
-| 1 | `internal` | the engine broke; `unexpected-error` carries the thrown message | `envelope.ts:10`; `main.ts:79-94` |
-| 2 | `usage` | a verb, flag, positional, subcommand or environment variable the caller got wrong; `--bundle` beside `--root`; a writing verb aimed at an installed copy | `envelope.ts:11`; `argv.ts:92-151`; `main.ts:110-159`, `:245-268` |
+| 1 | `internal` | the engine broke; `unexpected-error` carries the thrown message, and `git-short-read` a git answer that ended before its terminator | `envelope.ts:10`; `main.ts:80-103` |
+| 2 | `usage` | a verb, flag, positional, subcommand or environment variable the caller got wrong; `--bundle` beside `--root`; a writing verb aimed at an installed copy | `envelope.ts:11`; `argv.ts:92-151`; `main.ts:119-168`, `:254-277` |
 | 2 | `constitution` | the law did not load, a declared module did not load, or the engine pin refused; nothing was judged | `envelope.ts:12-15` |
 | 3 | `not_found` | the page, section, type, vocabulary entry, revision, directory, grant or connected bundle asked for does not exist | `envelope.ts:16` |
-| 4 | `conflict` | the state refuses the operation: a stale base, a foreign hook, an `--expect` mismatch, unmerged paths, a splice the Writer cannot prove, a machine-local store that does not parse | `envelope.ts:17`; `main.ts:79-94` |
+| 4 | `conflict` | the state refuses the operation: a stale base, a foreign hook, an `--expect` mismatch, unmerged paths, a splice the Writer cannot prove, a machine-local store that does not parse | `envelope.ts:17`; `main.ts:80-103` |
 | 5 | `findings` | the tool worked and the subject failed; read `data.findings` | `envelope.ts:18` |
 | 10 | `confirm_required` | an identity or blast-radius gate wants the plan pinned | `envelope.ts:19` |
 
 The runtime's own codes: `unknown-command` with `valid_commands`
-(`packages/cli/src/main.ts:245-251`), `role-unknown` with `valid_values`
-(`:253-259`), `role-forbidden` with the caller's role and the verbs it may run
-(`:214-237`); for `--bundle`, `one-target` beside `--root`,
+(`packages/cli/src/main.ts:254-260`), `role-unknown` with `valid_values`
+(`:262-268`), `role-forbidden` with the caller's role and the verbs it may run
+(`:223-246`); for `--bundle`, `one-target` beside `--root`,
 `bundle-not-found` with `valid_values` and `bundle-readonly` with `kind` and
-`feedback`, each before the verb runs (`:110-159`); `trust-store-malformed`
-and `bundles-registry-malformed` with `file` and, for a record, `record`
-(`:79-94`); `unknown-flag` with `valid_flags`
+`feedback`, each before the verb runs (`:119-168`); `git-short-read` with the
+git command as `command`, from any verb whose git answer was cut short
+(`:87-95`, [[git]]); `trust-store-malformed` and `bundles-registry-malformed`
+with `file` and, for a record, `record` (`:80-103`); `unknown-flag` with `valid_flags`
 (`packages/cli/src/argv.ts:95-104`), `invalid-arguments` (`:105-110`),
 `unexpected-argument` with `expected_positionals` (`:112-129`),
 `missing-argument` and `unknown-subcommand` with `valid_values`
@@ -67,7 +68,7 @@ summary }], wrote: false }` with `kind` one of `create`, `write`, `append`,
 `copy`, `rename`, `delete` (`packages/cli/src/spec.ts:75-107`). `--help` on
 any verb returns the spec's row — name, role, summary, positionals,
 subcommands, flags, examples, global flags — as an `ok` envelope
-(`packages/cli/src/main.ts:29-45`).
+(`packages/cli/src/main.ts:30-46`).
 
 ## Relations
 

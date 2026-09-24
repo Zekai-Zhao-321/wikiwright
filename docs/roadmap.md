@@ -23,7 +23,7 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,517 tests across 102 files, green under Bun and under the
+The suite is 1,571 tests across 108 files, green under Bun and under the
 node runner. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the connection tests read end to end) and proves
@@ -31,9 +31,9 @@ the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured at
-`0102007`, on a clone with the kit granted in a temporary store because the
+`1d76c5a`, on a clone with the kit granted in a temporary store because the
 kit is ungranted on the development machine, `freshness` reads all 26 pinned
-pages `current` (9) or `unchanged` (17) and none `stale`, with no
+pages `current` (18) or `unchanged` (8) and none `stale`, with no
 `stale-capture`, `stale-source-cited` or `citation-unresolved` finding.
 
 The gate is `bun run check` (biome, the build, the test-project typecheck,
@@ -406,7 +406,10 @@ are Node's.
 Left: the test files still run under Bun, so the envelope a test reads back
 from the CLI, and the test's own setup `git` calls, still come through Bun's
 synchronous spawn. A cut envelope does not parse and fails its test loudly;
-a cut setup read is not checked. The tests that run Bun on purpose are
+a cut setup read is not checked. One engine path still swallows a cut
+answer: `freshness --fast-forward --dry-run` catches any failure of the
+measurement it plans from and returns the plan without the pin advances,
+where the real run refuses. The tests that run Bun on purpose are
 `run-suite.test.ts`, which drives the runner, and the one `vocabulary show`
 case that compares Bun's output with Node's.
 

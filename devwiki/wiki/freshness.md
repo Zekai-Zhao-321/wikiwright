@@ -3,7 +3,7 @@ type: subsystem
 title: "Freshness and pins"
 description: "Every pin is measured against the origin its page names — the enclosing repository for origin dot, ls-remote or a blobless cache for a URL — into one of six states, with a covering diff deciding stale from unchanged, every repository path the page cites held to the pin, and a fast-forward that advances only clean pins through the Writer."
 tags: [cli]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
 origin: .
 covers: [packages/cli/src/freshness.ts, packages/cli/src/verbs/freshness.ts]
 ---
@@ -59,7 +59,7 @@ one token and neither shifts the pairing of the spans after it (`:237-243`,
 distinct path once and the line count of each cited blob once, and names a
 path the tree does not hold, a line cited on a tree, or a line past the blob's
 end (`:352-369`); the plumbing is `gitTreeEntries`, `gitObjectType` and
-`gitBlobLineCount` (`packages/cli/src/git.ts:263-297`). Each miss is one
+`gitBlobLineCount` (`packages/cli/src/git.ts:312-348`). Each miss is one
 `citation-unresolved` warning carrying the reason a writer acts on — `missing`,
 `past-end`, `unattached`, `ambiguous` or `malformed` — and the words for it
 (`packages/cli/src/freshness.ts:378-392`, `:601-613`); the entry carries
@@ -67,16 +67,16 @@ end (`:352-369`); the plumbing is `gitTreeEntries`, `gitObjectType` and
 read (`:131-144`, `:162`, `:540`, `:600`).
 
 The verb (`packages/cli/src/verbs/freshness.ts`) plans the report, the cache
-and the pins it would advance (`:59-110`), refuses `--fast-forward` without
-`--fetch` (`:143-151`), makes the cache directory ignore itself (`:157-164`),
-measures (`:165-172`), advances each eligible pin by one `frontmatter-set`
-op through the Writer with the proof every write gets (`:173-210`), writes
-`generated/freshness.json` (`:38`, `:210-211`) and routes the findings
-through the same xor as every verb (`:213-215`).
+and the pins it would advance (`:60-111`), refuses `--fast-forward` without
+`--fetch` (`:144-152`), makes the cache directory ignore itself (`:158-165`),
+measures (`:166-175`), advances each eligible pin by one `frontmatter-set`
+op through the Writer with the proof every write gets (`:176-213`), writes
+`generated/freshness.json` (`:39`, `:213-214`) and routes the findings
+through the same xor as every verb (`:216-218`).
 
 ## Entry points
 
-- `freshnessCommand` (`packages/cli/src/verbs/freshness.ts:112`);
+- `freshnessCommand` (`packages/cli/src/verbs/freshness.ts:113`);
   `computeFreshness`, `pinnedPages`, `citationsIn`, `freshnessReportJson`,
   `cacheDirOf`, `CACHE_ROOT` (`packages/cli/src/freshness.ts`).
 - The git plumbing it reads — `gitTopLevel`, `gitHasHead`, `gitHead`,
@@ -90,11 +90,11 @@ through the same xor as every verb (`:213-215`).
 ## State
 
 `generated/freshness.json`, written by every run and never committed
-(`packages/cli/src/verbs/freshness.ts:38`;
+(`packages/cli/src/verbs/freshness.ts:39`;
 `packages/cli/src/freshness.ts:673`); the blobless caches under
 `.wikiwright/origins/`, each keeping the origin's head under
 `refs/wikiwright/head`, machine-local and deletable by hand (`:38-45`;
-`packages/cli/src/verbs/freshness.ts:157-164`).
+`packages/cli/src/verbs/freshness.ts:158-165`).
 
 ## Invariants
 
@@ -108,7 +108,7 @@ through the same xor as every verb (`:213-215`).
   stay as data beside the word, and `pins` counts all six even at zero
   (`packages/cli/src/freshness.ts:107-128`, `:491-496`).
 - A page with no `covers` is stale on any diff: the covering diff is
-  restricted only when paths are named (`packages/cli/src/git.ts:319-320`).
+  restricted only when paths are named (`packages/cli/src/git.ts:371-372`).
 - A citation is checked wherever the objects are — origin `.`, or a URL
   under `--fetch` — and is a run-external measurement that lives beside
   `stale-capture`, never in the judge (`packages/cli/src/freshness.ts:212-213`,
@@ -120,11 +120,14 @@ through the same xor as every verb (`:213-215`).
   empty is eligible (`packages/cli/src/freshness.ts:627-629`;
   `packages/core/src/passes/index.ts:282-286`) — and a pin advance is a page
   write, so it goes through the Writer and is proved
-  (`packages/cli/src/verbs/freshness.ts:176-198`).
+  (`packages/cli/src/verbs/freshness.ts:179-201`).
 - The report derives from origin state and carries no clock
   (`packages/cli/src/freshness.ts:673`); a dry run measures against the cache
   as it stands and touches nothing, so the plan is exact for the machine
-  state it was read from (`packages/cli/src/verbs/freshness.ts:59-67`, `:95`).
+  state it was read from (`packages/cli/src/verbs/freshness.ts:60-68`, `:96`)
+  — except that a measurement that fails while planning, a git answer cut
+  short included, leaves the pin advances out of the plan rather than
+  refusing it (`:94-99`).
 - Snapshot-external findings are warnings (`packages/cli/src/freshness.ts:394-404`;
   `packages/core/src/passes/index.ts:287-328`), and the judging verbs never
   contact an origin — only this verb does
@@ -144,16 +147,18 @@ through the same xor as every verb (`:213-215`).
   the pin and correct the citation or the pin, or to spell the path the line
   belongs to. A build product the repository never holds is named by this:
   write what it is, not a path.
-- `fast-forward-needs-fetch` (`packages/cli/src/verbs/freshness.ts:143-151`).
+- `fast-forward-needs-fetch` (`packages/cli/src/verbs/freshness.ts:144-152`).
 - `git-unavailable` for a plumbing failure — including a `.git` that git
   does not recognise, thrown deliberately rather than read as "no repository"
   (`packages/cli/src/freshness.ts:427-432`;
-  `packages/cli/src/verbs/freshness.ts:168-172`).
+  `packages/cli/src/verbs/freshness.ts:169-175`) — and `git-short-read` for
+  a git answer cut short, which that catch rethrows as itself (`:173`;
+  [[git]]).
 - An origin that did not answer is a finding on the pages naming it, never a
   refusal; with a cache it is measured against the cache's head and the
   message says so (`packages/cli/src/freshness.ts:552-563`).
 - A candidate whose splice or proof fails lands in `refused` with its reason
-  and the run continues (`packages/cli/src/verbs/freshness.ts:187-197`).
+  and the run continues (`packages/cli/src/verbs/freshness.ts:190-200`).
 - A repository with no commit has nothing to be fresh against and reports
   `unmeasured` with `head: null` (`packages/cli/src/freshness.ts:438`,
   `:542-550`).

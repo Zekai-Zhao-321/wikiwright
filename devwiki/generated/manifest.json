@@ -2,12 +2,12 @@
   "schema": "wikiwright/manifest",
   "totals": {
     "pages": 33,
-    "edges": 213
+    "edges": 219
   },
   "by_kind": {
     "relation": 69,
     "tagged": 46,
-    "wikilink": 98
+    "wikilink": 104
   },
   "by_label": {
     "relation": {
@@ -228,6 +228,7 @@
           ]
         },
         "wikilink": [
+          "wiki/git.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
@@ -310,6 +311,7 @@
         },
         "wikilink": [
           "wiki/command-runtime.md",
+          "wiki/git.md",
           "wiki/repository-layout.md"
         ]
       },
@@ -347,7 +349,8 @@
           "wiki/command-runtime.md",
           "wiki/git.md",
           "wiki/repository-layout.md",
-          "wiki/repository-scripts.md"
+          "wiki/repository-scripts.md",
+          "wiki/testing-guide.md"
         ]
       }
     },
@@ -440,6 +443,7 @@
           ]
         },
         "wikilink": [
+          "wiki/git.md",
           "wiki/judge.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md"
@@ -551,7 +555,7 @@
         "concept"
       ],
       "title": "Git",
-      "description": "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt.",
+      "description": "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt, and every answer with a terminator held to it.",
       "tags": [
         "cli"
       ],
@@ -573,8 +577,13 @@
       },
       "inbound": {
         "wikilink": [
+          "wiki/command-runtime.md",
+          "wiki/envelope-and-exit-codes.md",
           "wiki/environment-variables.md",
+          "wiki/fixers.md",
           "wiki/freshness.md",
+          "wiki/one-judge-five-states.md",
+          "wiki/testing-guide.md",
           "wiki/writer-and-staged-gate.md"
         ]
       }
@@ -703,6 +712,7 @@
         "wikilink": [
           "wiki/command-runtime.md",
           "wiki/envelope-and-exit-codes.md",
+          "wiki/git.md",
           "wiki/judge.md",
           "wiki/wikiwright-architecture.md",
           "wiki/writer-and-staged-gate.md"
@@ -895,7 +905,7 @@
         "concept"
       ],
       "title": "Search",
-      "description": "Deterministic lexical retrieval: an identity ladder fused with BM25 by reciprocal rank fusion, a CJK-capable tokenizer over explicit code-point ranges, a per-invocation index, and a coverage block on every answer.",
+      "description": "Deterministic lexical retrieval: an identity ladder fused with BM25 by reciprocal rank fusion, a CJK-capable tokenizer over explicit code-point ranges, a per-invocation index, item search, an unranked file listing, and a coverage block on every answer.",
       "tags": [
         "kernel",
         "cli"
@@ -1053,6 +1063,7 @@
           ]
         },
         "wikilink": [
+          "wiki/git.md",
           "wiki/wikiwright-architecture.md"
         ]
       },
@@ -1077,6 +1088,7 @@
         },
         "wikilink": [
           "wiki/command-runtime.md",
+          "wiki/environment-variables.md",
           "wiki/fields-and-shapes.md",
           "wiki/fixers.md",
           "wiki/freshness.md",

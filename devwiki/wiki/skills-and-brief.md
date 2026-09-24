@@ -3,7 +3,7 @@ type: subsystem
 title: "Skills and the brief"
 description: "The three shipped skills copied into a vault under a stamp the engine can audit, the per-role brief rendered from the verb registry and the loaded constitution under its law digest, and the machine-local findings that say when either is behind the binary."
 tags: [cli]
-pin: 6b5175410c22ee543057ec18fdd74154d0dd9025
+pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
 origin: .
 covers: [packages/cli/src/skills.ts, packages/cli/src/brief.ts, packages/cli/src/shipped.ts, packages/cli/src/verbs/skills.ts, packages/cli/src/verbs/brief.ts, packages/cli/src/artifacts.ts, packages/cli/skills/]
 ---
@@ -29,21 +29,27 @@ stamped files the engine no longer ships (`:128-148`); `skillFindings`
 moved (`:361-379`), and a warning `skills-stale` when files are behind or
 edited locally (`:380-403`). `planSkillsUpdate` and `updateSkills` (`:248`,
 `:281`) are the refresh the `skills` verb runs, refusing a file the engine
-cannot prove it wrote unless `--force` (`:1-2`).
+cannot prove it wrote unless `--force` (`:1-2`). Each of the three opens on
+the same principle the brief's loops do — use the engine to decide, to write
+and to attribute; use your own tools to look
+(`packages/cli/skills/wikiwright-consume/SKILL.md:15`,
+`packages/cli/skills/wikiwright-write/SKILL.md:15`,
+`packages/cli/skills/wikiwright-maintain/SKILL.md:13`).
 
 The brief is one generated file, `generated/BRIEF.md`
-(`packages/cli/src/brief.ts:24`), rendered by `renderBrief` (`:208`) under a
-header naming the law digest (`:232`), with the role's own loop and findings
-paragraph — the consumer's names no verb and runs nothing, the maintainer's is
-the writer's five steps and two more (`:103-155`) — then the verb registry
-filtered to the role's rank (`:210-213`), each verb under its workflow slot
-(`:26-50`), the bundle's concrete types (`:214-216`, `:250-254`), every
-declared vocabulary with its entries' properties (`:256-258`), the census of
-what the vault authored (`:259-263`), the skill fragments the loaded modules
-contributed in load order (`:186-201`), and the reserved basenames (`:217`,
-`:265-271`). `briefOf` (`:276-316`) is the one renderer `init`, `skills
+(`packages/cli/src/brief.ts:24`), rendered by `renderBrief` (`:221`) under a
+header naming the law digest (`:245`), with the role's own loop and findings
+paragraph — every loop opens on that principle (`:116-123`), the consumer's
+names no verb and runs nothing, the maintainer's is the writer's five steps
+and two more (`:104-168`) — then the verb registry
+filtered to the role's rank (`:223-226`), each verb under its workflow slot
+(`:26-51`), the bundle's concrete types (`:227-229`, `:263-267`), every
+declared vocabulary with its entries' properties (`:269-271`), the census of
+what the vault authored (`:272-276`), the skill fragments the loaded modules
+contributed in load order (`:199-214`), and the reserved basenames (`:230`,
+`:278-284`). `briefOf` (`:289-329`) is the one renderer `init`, `skills
 update` and `check` share, and its law digest is the one every vault
-envelope's `metadata.bundle.law` carries (`:306-314`). `brief` is a consumer's
+envelope's `metadata.bundle.law` carries (`:319-327`). `brief` is a consumer's
 verb: without `--role` it prints the session's `WIKIWRIGHT_ROLE`, the writer's
 when none is set (`packages/cli/src/verbs/brief.ts:85-86`); `briefFor` reads
 the vault and its pages for the renderer (`:18-30`); `briefFindings` (`:41`)
@@ -54,7 +60,7 @@ that carries the verbs (`packages/cli/src/verbs/skills.ts:49-51`).
 ## Entry points
 
 - `briefCommand` and `briefFor`, `briefOf`, `briefFindings`
-  (`packages/cli/src/verbs/brief.ts:18`, `:41`; `packages/cli/src/brief.ts:281`);
+  (`packages/cli/src/verbs/brief.ts:18`, `:41`; `packages/cli/src/brief.ts:294`);
   `briefPlan` and
   `writeBrief`, through the artifact write loop
   (`packages/cli/src/artifacts.ts:26`, `:36`); `renderBrief`,
@@ -86,11 +92,11 @@ first `check --write` to render.
   orphaned stamped files are never rewritten and never deleted (`:52-53`).
 - The brief is byte-reproducible: no clock, no absolute path, no count that
   changes on a content commit except the census block, which is why live
-  counts live in `type show --brief` (`packages/cli/src/brief.ts:203-207`).
+  counts live in `type show --brief` (`packages/cli/src/brief.ts:216-220`).
 - Every role verb has a workflow slot and every slot names a verb; a role
   verb with no slot fails the skills test (`:26-30`).
 - The registry is passed into the brief, not imported, to avoid a module
-  cycle whose top-level constants read `undefined` under ESM (`:159-165`).
+  cycle whose top-level constants read `undefined` under ESM (`:172-178`).
 
 ## Failure modes
 

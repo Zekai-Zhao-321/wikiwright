@@ -3,7 +3,7 @@ type: subsystem
 title: "Fixers and routing"
 description: "The closed registry of fixers a finding's fix argv can name, the pure derivations from a finding's details to write ops, and the fix verb that applies, proves and lands them."
 tags: [kernel, cli]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
 origin: .
 covers: [packages/core/src/fixers/, packages/cli/src/verbs/fix.ts]
 ---
@@ -34,10 +34,10 @@ and writes only when the rule is gone and no new error appeared (`:1-11`).
 
 ## Entry points
 
-- `fixCommand` (`packages/cli/src/verbs/fix.ts:318`); `fixerFor` (`:66`)
+- `fixCommand` (`packages/cli/src/verbs/fix.ts:320`); `fixerFor` (`:67`)
   reads the composed pass rows and, where a row names no fixer, the registry's
   own rule lists — the opt-in path that exists for `canonical-form` alone
-  (`:57-70`).
+  (`:58-71`).
 - `buildFix`, `fixerExecutes`, `fixerRegistered`, `FIXER_REGISTRY`,
   `REGISTERED_FIXERS` (`packages/core/src/fixers/index.ts`); `fixOpsFor`,
   `PURE_FIXERS` (`packages/core/src/fixers/ops.ts`).
@@ -85,9 +85,12 @@ and the page's current bytes and nothing else
 ## Failure modes
 
 - `fixer-refused` when a derivation returns its reason
-  (`packages/cli/src/verbs/fix.ts:462`); `expect-mismatch` when the count is
-  not `--expect` (`:440`); `working-tree-drift` under `--staged` when the
-  working tree differs from the index on a page the fix would write (`:282`).
+  (`packages/cli/src/verbs/fix.ts:464`); `expect-mismatch` when the count is
+  not `--expect` (`:442`); `working-tree-drift` under `--staged` when the
+  working tree differs from the index on a page the fix would write (`:284`);
+  `git-unavailable` under `--staged` outside a repository, and
+  `git-short-read` when the index's answer was cut short, never a fix of
+  fewer pages (`:243-259`; [[git]]).
 - The Writer's proof refuses with `not-proved` when the rule still fires on a
   fixed page, or `new-errors` when any page gained an error
   (`packages/cli/src/writer.ts:38-40`, `:73-96`).

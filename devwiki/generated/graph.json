@@ -272,6 +272,11 @@
     },
     {
       "from": "wiki/command-runtime.md",
+      "to": "wiki/git.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/command-runtime.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
       "label": "mapped_in"
@@ -378,6 +383,11 @@
     },
     {
       "from": "wiki/envelope-and-exit-codes.md",
+      "to": "wiki/git.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/envelope-and-exit-codes.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
       "label": "mapped_in"
@@ -422,6 +432,11 @@
     {
       "from": "wiki/environment-variables.md",
       "to": "wiki/repository-scripts.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/environment-variables.md",
+      "to": "wiki/testing-guide.md",
       "kind": "wikilink"
     },
     {
@@ -502,6 +517,11 @@
       "from": "wiki/fixers.md",
       "to": "tag:kernel",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/fixers.md",
+      "to": "wiki/git.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/fixers.md",
@@ -829,6 +849,11 @@
     {
       "from": "wiki/one-judge-five-states.md",
       "to": "wiki/envelope-and-exit-codes.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/one-judge-five-states.md",
+      "to": "wiki/git.md",
       "kind": "wikilink"
     },
     {
@@ -1134,6 +1159,11 @@
       "from": "wiki/testing-guide.md",
       "to": "tag:repo",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/testing-guide.md",
+      "to": "wiki/git.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/testing-guide.md",

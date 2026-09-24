@@ -3,7 +3,7 @@ type: code-concept
 title: "Findings and total routing"
 description: "Every error or warning finding carries exactly one of a runnable fix and a queue lane; an info finding is a census row; the property is held statically over the pass table and at runtime over every emit path."
 tags: [kernel]
-pin: 49fe223cbfb5c2475718874289bb9adb9cd7e4bc
+pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
 origin: .
 covers: [packages/core/src/passes/index.ts, packages/core/src/modules/index.ts, packages/core/src/judge/index.ts, packages/core/src/fixers/index.ts, packages/cli/src/envelope.ts, packages/cli/src/brief.ts, tools/render-playbook.ts]
 ---
@@ -60,15 +60,16 @@ did not print (`:168-181`).
 - The envelope every judging verb prints: `verdictEnvelope`
   (`packages/cli/src/envelope.ts:107-119`), under the `metadata.bundle` every
   vault verb's envelope carries, the bundle the verdict was reached over
-  (`packages/cli/src/main.ts:58-75`, `:188-190`). A refusal the runtime makes
+  (`packages/cli/src/main.ts:59-76`, `:198-200`). A refusal the runtime makes
   before a verb runs — `one-target`, `bundle-not-found`, `bundle-readonly` —
   or when a machine-local store does not parse — `trust-store-malformed`,
-  `bundles-registry-malformed` — is an envelope error, not a finding, and
-  carries no route (`:79-158`; [[envelope-and-exit-codes]]).
+  `bundles-registry-malformed` — or when a git answer was cut short —
+  `git-short-read` — is an envelope error, not a finding, and carries no
+  route (`:80-168`; [[envelope-and-exit-codes]]).
 - The brief's "Findings" paragraph is the role's: the writer's and the
   maintainer's run a finding's `fix` argv and leave a `queue`, the consumer's
-  runs nothing (`packages/cli/src/brief.ts:136-155`), and every role's counts
-  the fix-routed rows (`:220-221`, `:242`); the maintainer skill's playbook is
+  runs nothing (`packages/cli/src/brief.ts:149-168`), and every role's counts
+  the fix-routed rows (`:233-234`, `:255`); the maintainer skill's playbook is
   rendered from the same table (`tools/render-playbook.ts:1-7`).
 - The tests: `packages/cli/test/routing-xor.test.ts` (every finding on every
   corpus) and `packages/cli/test/pass-table.test.ts` (the table's static

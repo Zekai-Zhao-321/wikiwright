@@ -3,7 +3,7 @@ type: ops-reference
 title: "Repository scripts"
 description: "The package.json scripts, the development gate, the release matrix run by hand, the tools that generate what nothing hand-edits, and the CLI reference renderer."
 tags: [repo]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
+pin: 1d76c5a43adb92e0aff1e5a40941f7c0469ef062
 origin: .
 covers: [package.json, scripts/, tools/, docs/render-cli.ts, tsconfig.test.json, biome.json, .github/]
 ---
@@ -33,9 +33,9 @@ Engines: Node `>=22.12.0`, Bun `>=1.3.11` (`package.json:15-18`); workspaces
 | `tools/render-playbook.ts` | renders `packages/cli/skills/wikiwright-maintain/lint-response.md` from the composed pass table and the fixer registry; `--check` compares (`:1-7`) |
 | `tools/generate-casefold.ts` | regenerates `packages/core/src/identity/casefold-data.ts` from the vendored Unicode `CaseFolding.txt`, statuses C and F (`:1-3`) |
 | `tools/uncovered.ts` | lists, per source root (default every package's `src`), the top-level directories no page's `covers` reaches; `--vault` and a repeatable `--root` (`:8-13`); a report, never a gate |
-| `tools/run-suite.ts` | the suite as one `bun test` process per file, as many at once as the machine has cores, the largest file first (`:1-15`); each file has a 20-second budget per test and per hook, four times Bun's default, because a file under that load takes about 2.4 times as long as alone (`:60-67`); each argument is passed as `./<file>`, since a bare path is a substring filter to `bun test` (`:76-77`); a file passes only when its process exits 0 and reports a test, and the run exits 1 when any file does not, printing that file's output (`:92`) |
+| `tools/run-suite.ts` | the suite as one `bun test` process per file, as many at once as the machine has cores, the largest file first (`:1-15`); each file has a 20-second budget per test and per hook, four times Bun's default, because a file under that load takes about 2.4 times as long as alone (`:65-72`); each argument is passed as `./<file>`, since a bare path is a substring filter to `bun test` (`:109-111`); a file passes only when its process exits 0 and reports a test, and the run exits 1 when any file does not, printing that file's output (`:125`); under Bun it hands every file `WIKIWRIGHT_CLI_RUNTIME`, the `node` on PATH unless the variable is set already, so the tests run the CLI under Node, and the summary names that runtime (`:17-20`, `:94-104`, `:171-173`) |
 | `tools/benchmark-check.ts` | times `check`, `check --write` and `lint --staged` in fresh processes over synthetic vaults of 1,000, 5,000 and 10,000 pages, optionally against a baseline build, and fails unless every envelope and generated file is identical (`:1-2`, `:11-21`) |
-| `docs/render-cli.ts` | renders the verb reference in `docs/cli.md` from `wikiwright schema`; `--write` replaces the block between the markers, `--check` exits 1 when the document is behind the binary (`:1-7`) |
+| `docs/render-cli.ts` | renders the verb reference in `docs/cli.md` from `wikiwright schema`; `--write` replaces the block between the markers, `--check` exits 1 when the document is behind the binary (`docs/render-cli.ts:1-7`) |
 | `.github/workflows/check.yml` | on every push and pull request, on `ubuntu-latest` and `macos-latest`: `bun install --frozen-lockfile`, `bun run check`, `bun run test:node` (`:1-25`) |
 
 Generated files and their one generator, none hand-edited:
