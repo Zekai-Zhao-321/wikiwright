@@ -3,7 +3,7 @@ type: testing-guide
 title: "Testing the engine"
 description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install the code kit into a copy."
 tags: [repo]
-pin: 842c67fcc34e5fd972af04521a999be7f6dab783
+pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
 origin: .
 covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/discovery.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts, tools/run-suite.ts]
 ---
@@ -13,7 +13,8 @@ covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test
 ## Running tests
 
 The gate is `bun run check` (`package.json:26`): biome,
-`bun run build` — `tsc -b` and the build-info stamp (`:20`) — the test-project
+`bun run build` — each package's `dist/` removed, then `tsc -b` and the
+build-info stamp (`:20`) — the test-project
 typecheck under `tsconfig.test.json`, which includes `packages/*/test/**` and
 `tools/**` (`tsconfig.test.json:9`), and the whole suite under Bun, which
 `tools/run-suite.ts` runs as one `bun test` process per file, as many at once
@@ -26,7 +27,7 @@ against its own directory, unless the variable is set already; with no
 under Bun; and its summary names the runtime (`tools/run-suite.ts:17-21`,
 `:79-117`, `:155-163`, `:193`). Every test that spawns the CLI spawns it
 under `CLI_RUNTIME`, that variable or the test's own runtime
-(`packages/cli/test/fixtures/runtime.ts:1-11`). The engine ships for Node,
+(`packages/cli/test/fixtures/runtime.ts:4-14`). The engine ships for Node,
 and under load Bun 1.3.11's synchronous spawn handed back a child's piped
 stdout cut short with exit 0 — 7 of 900 calls in a stress run, none of
 3,600 under Node — which was the gate's intermittent `lint --staged`

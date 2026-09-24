@@ -3,7 +3,7 @@ type: subsystem
 title: "Skills and the brief"
 description: "The three shipped skills copied into a vault under a stamp the engine can audit, the per-role brief rendered from the verb registry and the loaded constitution under its law digest, and the machine-local findings that say when either is behind the binary."
 tags: [cli]
-pin: 842c67fcc34e5fd972af04521a999be7f6dab783
+pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
 origin: .
 covers: [packages/cli/src/skills.ts, packages/cli/src/brief.ts, packages/cli/src/shipped.ts, packages/cli/src/verbs/skills.ts, packages/cli/src/verbs/brief.ts, packages/cli/src/artifacts.ts, packages/cli/skills/]
 ---
@@ -13,8 +13,12 @@ covers: [packages/cli/src/skills.ts, packages/cli/src/brief.ts, packages/cli/src
 ## Responsibilities
 
 The binary ships three skills beside itself — `wikiwright-consume` for using
-what a bundle knows, `wikiwright-write` for writing into one and
-`wikiwright-maintain` for maintaining one — resolved at a fixed depth by
+what a bundle knows, which is also the runtime skill every bundle skill
+requires and so names the consumer's commands and the one setup route
+(`packages/cli/skills/wikiwright-consume/SKILL.md:19`), `wikiwright-write` for
+writing into one, and `wikiwright-maintain` for maintaining one, its export
+practices included (`packages/cli/skills/wikiwright-maintain/SKILL.md:93`) —
+resolved at a fixed depth by
 `shippedDir` (`packages/cli/src/shipped.ts:1-12`;
 `packages/cli/src/skills.ts:56-67`). `init` copies every skill the package
 ships into a vault under `.claude/skills/`, and nothing refreshed

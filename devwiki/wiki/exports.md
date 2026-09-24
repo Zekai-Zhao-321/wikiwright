@@ -3,7 +3,7 @@ type: subsystem
 title: "Exports"
 description: "A bundle's declared exports: read-only copies of the bundle, or of part of it, that a host installs as skills, planned by one function, rendered into the bundle's own skills/ by check --write or into another repository by export, held to a fresh render by check and the staged gate, and read as a vault under the identity their marker gives."
 tags: [cli]
-pin: 842c67fcc34e5fd972af04521a999be7f6dab783
+pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
 origin: .
 covers: [packages/cli/src/exports.ts, packages/cli/src/marker.ts, packages/cli/src/verbs/export.ts]
 ---

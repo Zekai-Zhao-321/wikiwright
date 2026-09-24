@@ -569,7 +569,9 @@ What the registry rows below do not say.
   must parse, with their discipline (which bundle answered, the section rather
   than the sentence, a child handed the words with their source), where a
   problem with a copy goes by its contribution mode, and what is left without
-  the engine; `wikiwright-write`, for adding to one (what deserves a page, the
+  the engine — a bundle skill, an export's generated `SKILL.md`, requires it
+  by name and names the engine version it needs, and carries no command
+  reference of its own; `wikiwright-write`, for adding to one (what deserves a page, the
   identity guard, the hedge kept verbatim, a citation as a relation);
   `wikiwright-maintain`, for answering its findings and changing its law and for deciding what a bundle exports and where (an external export is no redaction boundary), with
   the lint-response playbook the engine generates beside it. `init` installs

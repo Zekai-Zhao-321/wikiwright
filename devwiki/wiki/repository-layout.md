@@ -3,7 +3,7 @@ type: source-map
 title: Repository layout
 description: Directory-to-purpose lookup for the wikiwright repository.
 tags: [repo]
-pin: 842c67fcc34e5fd972af04521a999be7f6dab783
+pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
 origin: .
 covers: [package.json, tsconfig.json, packages/cli/constitutions/, packages/cli/skills/, packages/cli/.claude-plugin/, packages/cli/hooks/, packages/kit-code/, fixtures/, tools/, scripts/, .github/]
 ---
@@ -18,7 +18,7 @@ covers: [package.json, tsconfig.json, packages/cli/constitutions/, packages/cli/
 | `packages/core/` | `@wikiwright/core`: the kernel and the standard library (see [[registry-pipeline]]) |
 | `packages/cli/` | The `wikiwright` binary: one module per verb, envelopes, the shell half of the Writer |
 | `packages/cli/constitutions/` | The starters `init` scaffolds: `base`, and `code`, a bundle over the code kit |
-| `packages/cli/skills/` | The three shipped skills — for using, writing and maintaining a bundle — and the generated lint-response playbook |
+| `packages/cli/skills/` | The three shipped skills — for using a bundle, the runtime skill every bundle skill requires; for writing one; for maintaining one, its export practices included — and the generated lint-response playbook |
 | `packages/cli/.claude-plugin/` | The plugin manifest: the package root is also a Claude Code plugin |
 | `packages/cli/hooks/` | `hooks.json` and its two scripts, run at session start and after an edit |
 | `packages/kit-code/` | `@wikiwright/kit-code`: the shipped domain kit — the types, relation labels, templates and discipline of a code wiki, consumed by the `code` starter and by this bundle |

@@ -28,7 +28,7 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,635 tests across 115 files. At `29dbfb9`, when it held 1,590,
+The suite is 1,640 tests across 115 files. At `29dbfb9`, when it held 1,590,
 the full gate, `bun run check`, passed them all with the test files under
 Bun and the CLI under Node (`tools/run-suite.ts`), and the full node runner,
 `bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
@@ -41,9 +41,9 @@ this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured on
 2026-09-25 on the development machine, where `check --root devwiki` needs
 the install and nothing else, `freshness` reads all 27 pinned pages
-`current` (14) or `unchanged` (13) and none `stale`, with no
+`current` (12) or `unchanged` (15) and none `stale`, with no
 `stale-capture`, `stale-source-cited` or `citation-unresolved` finding,
-before the commit that carries those pins; once it lands, the 14 are
+before the commit that carries those pins; once it lands, the 12 are
 `unchanged`. A later change to code a page covers makes that page `stale`
 until it is re-read and re-pinned, and `freshness` names it.
 A citation into a file its page does not cover is held to the pin but not
@@ -416,20 +416,28 @@ its kit exactly declares it by `path`.
 
 No thin pointer: an export always copies, and none names the bundle's
 repository in place of its pages. No `propose`: a reader of a copy reports a
-problem where its `SKILL.md` says, by hand; no verb files it.
+problem where its `SKILL.md` says, by hand; no verb files it. Both are
+deferred, not refused.
 
 ### What a host does with a copy is unverified
 
-No host has installed a rendered export here. Unverified: how a skill
+No host has installed a rendered export here. Unverified: whether a host
+follows a bundle skill's line that requires `wikiwright-consume` and loads
+the runtime skill — a required skill is prose, not loading, and this stays
+unverified until it is run live on Claude Code and on Codex; how a skill
 installer that fetches from a repository handles symbolic links, size limits,
-pinning to a branch and updating a pinned copy; where each host caches a
-plugin; whether every host sets the skill-directory variable a `SKILL.md`
-names; how a skill store lists a generated plugin; whether a host follows
-a skill directory that is a symbolic link; and which keys an installer
-writes into a copy's `SKILL.md`, which `bundles list` reports verbatim and
-the session-start hook reads by the shape of each value. That the loader
-accepts a copy whose declared source roots are absent is verified
-(`export-copy`).
+pinning to a branch and updating a pinned copy, and `gh skill`, the one
+named here, needs gh 2.90.0 or later; where each host caches a plugin;
+whether every host sets the skill-directory variable a `SKILL.md` names; how
+the two hosts' skill stores list a generated plugin; whether a host follows a
+skill directory that is a symbolic link; and which keys an installer writes
+into a copy's `SKILL.md`, which `bundles list` reports verbatim and the
+session-start hook reads by the shape of each value. That the loader accepts
+a copy whose declared source roots are absent is verified (`export-copy`).
+
+Wanted: each of these run once on a host and recorded beside the suite, the
+"requires" line first, since the runtime skill's discipline reaches a
+session only when the host loads it.
 
 ### Plugin caches are not scanned
 

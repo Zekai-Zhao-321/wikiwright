@@ -504,6 +504,20 @@ left out is refused when the export is declared `links: closed` and counted
 when it is `links: cut`, and the marker carries the count, so a reader can
 tell how much of the bundle the copy does not reach.
 
+**Two skills, layered.** A copy's `SKILL.md` is a package's skill, and the
+engine's `wikiwright-consume` is the runtime's. The analogy is a runtime and
+a package: the runtime's skill tells an agent how to get the runtime and how
+to use it, and a package's skill says to install the package and assumes the
+runtime is there. So a bundle skill carries only what is its own — what the
+copy holds, the page to read first, whether it is partial and where the whole
+one is, where a problem with it goes, and the maintainer's own words — and
+requires `wikiwright-consume` by name, with the engine version it needs.
+Everything that is the same for every bundle lives once, in the runtime
+skill: how to run the engine, how to find a copy, the consumer's commands
+and their discipline, where a proposal goes by contribution mode, and what is
+left without the engine. A required skill is prose, not loading: whether a
+host follows it is unverified (`docs/roadmap.md`).
+
 **Finding a copy.** Nothing registers a copy: a host installs it by copying
 its directory into a skill directory, and the engine finds it there by name.
 `--bundle <name>` probes the project's skill directories from the working

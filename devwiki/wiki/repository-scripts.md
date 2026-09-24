@@ -3,7 +3,7 @@ type: ops-reference
 title: "Repository scripts"
 description: "The package.json scripts, the development gate, the release matrix run by hand, the tools that generate what nothing hand-edits, and the CLI reference renderer."
 tags: [repo]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
 origin: .
 covers: [package.json, scripts/, tools/, docs/render-cli.ts, tsconfig.test.json, biome.json, .github/]
 ---
@@ -14,7 +14,7 @@ covers: [package.json, scripts/, tools/, docs/render-cli.ts, tsconfig.test.json,
 
 | Script | Runs | Notes |
 | --- | --- | --- |
-| `bun run build` | `tsc -b && bun tools/write-build-info.ts` | the compiler owns `dist/`; the stamp lands after it (`package.json:20`; `tools/write-build-info.ts:6-9`) |
+| `bun run build` | `rm -rf packages/*/dist && tsc -b && bun tools/write-build-info.ts` | each package's `dist/` goes first, so no output outlives its source; the compiler owns `dist/`; the stamp lands after it (`package.json:20`; `tools/write-build-info.ts:6-9`) |
 | `bun run clean` | `tsc -b --clean` | `package.json:21` |
 | `bun run test` | `bun run build && bun tools/run-suite.ts` | the suite, one `bun test` process per file (`package.json:22`) |
 | `bun run test:node` | the build, then `node --test` over `packages/core/test/*.test.ts` and `packages/cli/test/*.test.ts` | the cross-runtime half of the gate (`package.json:23`) |

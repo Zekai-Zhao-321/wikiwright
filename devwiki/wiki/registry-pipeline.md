@@ -3,7 +3,7 @@ type: subsystem
 title: Registry pipeline
 description: Loads, validates and flattens config/constitution.json and config/engine.json into the effective contracts every pass reads.
 tags: [kernel, cli]
-pin: 842c67fcc34e5fd972af04521a999be7f6dab783
+pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
 origin: .
 covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/verbs/read.ts, packages/cli/src/verbs/bundles.ts]
 ---
@@ -52,14 +52,16 @@ the reader, the page walk and the page reads live below the loader, in
 `packages/cli/src/vaultfiles.ts` (`:1-5`, `:11-36`). The constitution must
 exist (`packages/cli/src/vaultio.ts:107-118`), `engine.json` loads first
 because the modules it declares compose the registry the constitution is
-validated under (`:135-169`), and a name an export derives from the
+validated under (`:137-172`) — a config that resolves outside the vault is
+rethrown to be refused as `linked-outside-vault`, never read as unparseable
+(`:126`, `:148`) — and a name an export derives from the
 bundle's label is held to the name law there, where the root is known
-(`:170-187`), the module set is the preloaded one or a
-refusal, each module proved by the load that preloaded it (`:197-261`; see
-[[modules]]), `content_roots` is required (`:263-277`), and every
+(`:173-190`), the module set is the preloaded one or a
+refusal, each module proved by the load that preloaded it (`:200-264`; see
+[[modules]]), `content_roots` is required (`:266-280`), and every
 declared template or example must exist and, for an example, pass its own
-type (`:284-381`); a loaded vault keeps the two config texts as they were
-read, the inputs of the law digest (`:51-57`, `:389`). Every verb that needs
+type (`:287-384`); a loaded vault keeps the two config texts as they were
+read, the inputs of the law digest (`:51-57`, `:392`). Every verb that needs
 types goes through it, `read` among them
 (`packages/cli/src/verbs/read.ts:237`), and a root `--bundle` names is
 resolved to a directory before any verb runs, so the loader reads it as it
@@ -104,9 +106,9 @@ path below it (`packages/core/src/registry/model.ts:12-27`): `schema-invalid`
 `packages/core/src/registry/validate.ts:264`), `vocabulary-unknown`
 (`packages/core/src/registry/vocabularies.ts:81`). The CLI reports a
 constitution that does not load as `constitution-invalid` at exit 2 with the
-issues in `data.issues` (`packages/cli/src/vaultio.ts:393-401`), and judges no
+issues in `data.issues` (`packages/cli/src/vaultio.ts:396-404`), and judges no
 page under it; a declared module that did not load is refused by its own code
-before the constitution is read (`:219-236`).
+before the constitution is read (`:222-239`).
 
 ## Relations
 

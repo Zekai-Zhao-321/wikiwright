@@ -96,6 +96,22 @@ version` prints the engine version and the commit a binary was built from.
   into its `SKILL.md` frontmatter, and the root that shadows it — and one row
   per directory whose marker it cannot take. It reads markers only: no law, no
   kit, no page.
+- The consume skill is the runtime skill every bundle skill requires: how to
+  run the engine (the one route today, since no published package exists
+  yet: clone the repository, `bun install`, `bun run build`, and run
+  `node packages/cli/dist/main.js`), what a bundle skill is and how to find
+  one, the consumer's commands with their discipline, where a proposal goes
+  by a copy's contribution mode, and what is left without the engine. It is
+  the one hand-written skill that names verbs, and each of its invocations is
+  held to the parser. The maintain skill gains the export practices: which
+  output fits, the distribution repository as the copy's identity, a pull
+  request against a generated tree ported by hand, and that an external
+  export is not a redaction boundary.
+- `WIKIWRIGHT_SYSTEM_SKILL_DIR` names the machine's skill directory the scan
+  reads after the user's; `/etc/codex/skills` when unset, none when empty.
+- A vault path that resolves outside the vault — a config linked out of it,
+  say — is refused `linked-outside-vault` (exit 4) from any verb, where it
+  was `unexpected-error` or, from the loader, a parse failure.
 - A root that holds a marker is read only however it is named: a verb that
   can write is refused `bundle-readonly`, `--dry-run` included, with a hint in
   the words of the copy's contribution mode, and a marker that is not one is
@@ -195,6 +211,8 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- `bun run build` removes each package's `dist/` before it compiles, so the
+  output of a deleted source can no longer be packed.
 - Every load proves a module: after the purity scan and the entry and
   fixture checks, and after the entry is imported, the loader runs the
   module's determinism fixture, and a failure refuses the module with the

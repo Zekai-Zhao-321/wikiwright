@@ -3,7 +3,7 @@ type: quickstart
 title: wikiwright quickstart
 description: Install, build, and verify the engine from a fresh clone in minutes.
 tags: [repo]
-pin: 57fba48133394eca1793e1374b4054d6b2b8eb1c
+pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
 origin: .
 covers: [package.json, devwiki/package.json, scripts/hooks/]
 ---

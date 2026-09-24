@@ -379,7 +379,7 @@
         "reference"
       ],
       "title": "Environment variables",
-      "description": "The four WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes.",
+      "description": "The five WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes.",
       "tags": [
         "cli"
       ],
