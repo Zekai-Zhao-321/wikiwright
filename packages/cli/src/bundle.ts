@@ -8,7 +8,7 @@
 // bytes.
 import { existsSync, realpathSync } from "node:fs";
 import { basename, join } from "node:path";
-import { loadEngineConfig, normalizeInput } from "@wikiwright/core";
+import { codeUnitCompare, loadEngineConfig, normalizeInput } from "@wikiwright/core";
 import type { BundleIdentity } from "./envelope.ts";
 import { gitCheckoutState } from "./git.ts";
 import { declaredModulesInText, type ModuleDeclaration, moduleDigest } from "./moduleload.ts";
@@ -68,9 +68,22 @@ export function pageDigest(bytes: Buffer): string {
  * moves it.
  */
 export function contentDigest(root: string, contentRoots: readonly string[]): string {
-  const lines = walkPages(root, contentRoots).map(
-    (path) => `${path} ${pageDigest(readPageBytes(root, path))}`,
+  return contentDigestOf(
+    walkPages(root, contentRoots).map((path) => ({ path, bytes: readPageBytes(root, path) })),
   );
+}
+
+/**
+ * The content digest over a given page set, each page's path and bytes, in
+ * code-unit order of path: what `contentDigest` computes over the pages under
+ * the content roots, and what an export's marker records over the pages it
+ * selected (docs/constitution.md §exports), so a copy that carries exactly
+ * those pages recomputes the digest its marker names.
+ */
+export function contentDigestOf(pages: readonly { path: string; bytes: Buffer }[]): string {
+  const lines = [...pages]
+    .sort((a, b) => codeUnitCompare(a.path, b.path))
+    .map((page) => `${page.path} ${pageDigest(page.bytes)}`);
   return sha256Of(lines.join("\n"));
 }
 

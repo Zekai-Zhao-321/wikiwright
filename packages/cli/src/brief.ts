@@ -194,6 +194,12 @@ export interface BriefInput {
    * cut from.
    */
   lawDigest: string;
+  /**
+   * docs/constitution.md §exports: the export this brief is rendered for, when
+   * it is one — its name and the bundle it was cut from — so a brief read in a
+   * copy says which copy it is.
+   */
+  exportOf?: { name: string; bundle: string };
 }
 
 /**
@@ -244,6 +250,12 @@ export function renderBrief(input: BriefInput): string {
     "",
     `Law digest: \`${input.lawDigest}\``,
     "",
+    ...(input.exportOf === undefined
+      ? []
+      : [
+          `Export: \`${input.exportOf.name}\`, a read-only copy of the bundle \`${input.exportOf.bundle}\`.`,
+          "",
+        ]),
     "## The loop",
     "",
     ...LOOPS[role],
@@ -297,6 +309,7 @@ export function briefOf(
   pages: PageInput[],
   role: Role,
   commands: readonly CommandSpec[],
+  exportOf?: { name: string; bundle: string },
 ): string {
   const options = lintOptionsFor(vault, buildNameIndex(pages));
   // docs/constitution.md §Vocabularies: every vocabulary the loaded modules register,
@@ -325,5 +338,6 @@ export function briefOf(
       vault.lawText.engine,
       vault.engine.modules ?? [],
     ),
+    ...(exportOf === undefined ? {} : { exportOf }),
   });
 }
