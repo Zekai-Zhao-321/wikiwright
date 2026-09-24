@@ -6,9 +6,17 @@
 // reaches the envelope carrying neither `fix` nor `queue` is a class-B hole.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { passRows, standardLibrary } from "@wikiwright/core";
@@ -305,6 +313,134 @@ describe("the shipped starter has no unfixable blocking row (docs/concepts.md §
       );
     } finally {
       rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
+// docs/constitution.md §exports: the exports' findings reach the envelope from
+// the shell, beside the judge. Every one of them, as `check` and `export` print
+// it, carries exactly one route.
+describe("every export finding routes (docs/constitution.md §exports)", () => {
+  const note = (title: string, tags: string[], body: string): string =>
+    `---\ntype: note\ntitle: ${title}\ndescription: ${title}, briefly.\ntags: [${tags.join(", ")}]\n---\n\n# ${title}\n\n${body}\n`;
+
+  function garden(engine: Record<string, unknown>): string {
+    const root = join(mkdtempSync(join(tmpdir(), "ww-xor-export-")), "garden");
+    const files: Record<string, string> = {
+      "config/constitution.json": `${JSON.stringify({
+        schema: "wikiwright/constitution",
+        schema_version: 3,
+        vocabularies: {
+          tags: {
+            mode: "registered",
+            entries: {
+              beds: { description: "The beds and what grows in them." },
+              compost: { description: "Making and using compost." },
+            },
+          },
+        },
+        types: { note: { extends: "concept", description: "A gardening note." } },
+      })}\n`,
+      "config/engine.json": `${JSON.stringify(engine)}\n`,
+      "wiki/turning-compost.md": note(
+        "Turning compost",
+        ["compost"],
+        "Spread it on the [[raised-beds]].",
+      ),
+      "wiki/raised-beds.md": note("Raised beds", ["beds"], "Beds edged in timber."),
+    };
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), text);
+    }
+    return root;
+  }
+
+  const none = { mode: "none" };
+
+  it("check routes each one: unknown tag, guide outside, fragment, closed, orphan, stale, destination, link", () => {
+    const seen = new Set<string>();
+    const roots: string[] = [];
+    try {
+      const shapes = garden({
+        content_roots: ["wiki"],
+        exports: [
+          { name: "a", select: { kind: "tag", tags: ["mulch"] }, contribution: none },
+          {
+            name: "b",
+            select: { kind: "tag", tags: ["compost"] },
+            guide: "wiki/raised-beds.md",
+            contribution: none,
+          },
+          { name: "c", select: { kind: "all" }, skill: "wiki/raised-beds.md", contribution: none },
+          { name: "d", select: { kind: "tag", tags: ["compost"] }, contribution: none },
+          { name: "e", select: { kind: "all" }, contribution: none },
+        ],
+      });
+      roots.push(shapes);
+      run(shapes, ["check", "--write"]);
+      cpSync(join(shapes, "skills", "e"), join(shapes, "skills", "old-e"), { recursive: true });
+      writeFileSync(join(shapes, "wiki", "raised-beds.md"), note("Raised beds", ["beds"], "Oak."));
+      const invalid = garden({
+        content_roots: ["wiki", "skills"],
+        exports: [{ name: "f", select: { kind: "all" }, contribution: none }],
+      });
+      const linked = garden({
+        content_roots: ["wiki"],
+        exports: [{ name: "g", select: { kind: "all" }, contribution: none }],
+      });
+      symlinkSync(join(linked, "wiki", "raised-beds.md"), join(linked, "wiki", "beds-again.md"));
+      roots.push(invalid, linked);
+      for (const root of roots) {
+        const found = findingsIn(run(root, ["check"]).envelope);
+        assertRouted(found, `check ${root}`);
+        for (const f of found) seen.add(f.ruleId);
+      }
+      for (const rule of [
+        "export-tag-unknown",
+        "export-guide-outside",
+        "export-skill-invalid",
+        "export-not-closed",
+        "export-orphan",
+        "export-stale",
+        "export-destination-invalid",
+        "export-symlink",
+      ]) {
+        assert.equal(seen.has(rule), true, `${rule} did not fire: ${[...seen].join(", ")}`);
+      }
+    } finally {
+      for (const root of roots) rmSync(dirname(root), { recursive: true, force: true });
+    }
+  });
+
+  it("export routes the findings it refuses with", () => {
+    const root = garden({
+      content_roots: ["wiki"],
+      exports: [
+        {
+          name: "a",
+          select: { kind: "tag", tags: ["mulch"] },
+          output: "external",
+          repository: "https://example.invalid/garden",
+          contribution: none,
+        },
+      ],
+    });
+    const to = join(dirname(root), "elsewhere");
+    mkdirSync(to);
+    try {
+      const r = spawnSync(CLI_RUNTIME, [CLI, "export", "a", "--to", to, "--root", root], {
+        encoding: "utf8",
+      });
+      assert.equal(r.status, 5, r.stdout);
+      const found = findingsIn(JSON.parse(r.stdout) as RunEnvelope);
+      assert.deepEqual(
+        found.map((f) => f.ruleId),
+        ["export-tag-unknown"],
+      );
+      assertRouted(found, "export");
+    } finally {
+      rmSync(dirname(root), { recursive: true, force: true });
     }
   });
 });

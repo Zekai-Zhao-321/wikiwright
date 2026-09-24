@@ -8,7 +8,15 @@
 // is outside it; the two store codes are held by an explicit case below.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
@@ -197,6 +205,48 @@ describe("the error-code taxonomy: one code, one meaning (docs/cli.md §The enve
         1,
         `code "${code}" is failed under ${[...types].join(" and ")} — one code, one meaning`,
       );
+    }
+  });
+});
+
+// docs/cli.md §Notes per verb (`export`) · §The envelope (a copy's marker): the
+// codes the exports added, each at the exit its type names.
+describe("the export codes exit as their types (docs/cli.md §Exit codes)", () => {
+  const EXTERNAL = {
+    name: "garden-notes",
+    select: { kind: "all" },
+    output: "external",
+    repository: "https://example.invalid/garden",
+    contribution: { mode: "none" },
+  };
+  const SKILLS = { name: "garden", select: { kind: "all" }, contribution: { mode: "none" } };
+
+  it("export refuses by name, and a marker that is not one is a conflict", () => {
+    const tmp = vault(GOOD_TYPES, { exports: [EXTERNAL, SKILLS] });
+    try {
+      mkdirSync(join(tmp, "out", "skills", "garden-notes"), { recursive: true });
+      mkdirSync(join(tmp, "linked", "skills"), { recursive: true });
+      symlinkSync(join(tmp, "out"), join(tmp, "linked", "skills", "garden-notes"));
+      const cases: [string[], number, string, string][] = [
+        [["export", "no-such-export", "--to", "out"], 2, "usage", "export-not-declared"],
+        [["export", "garden", "--to", "out"], 2, "usage", "export-output-skills"],
+        [["export", "garden-notes", "--to", "wiki"], 2, "usage", "export-destination-invalid"],
+        [["export", "garden-notes", "--to", "out"], 4, "conflict", "export-destination-occupied"],
+        [["export", "garden-notes", "--to", "linked"], 4, "conflict", "export-destination-linked"],
+      ];
+      for (const [argv, exit, type, code] of cases) {
+        const r = run(tmp, argv);
+        assert.equal(r.status, exit, `${code}: ${JSON.stringify(r.envelope)}`);
+        assert.equal(r.envelope.error?.type, type, code);
+        assert.equal(r.envelope.error?.code, code);
+      }
+      writeFileSync(join(tmp, "config", "export.json"), "{}\n");
+      const marked = run(tmp, ["search", "clean"]);
+      assert.equal(marked.status, 4, JSON.stringify(marked.envelope));
+      assert.equal(marked.envelope.error?.type, "conflict");
+      assert.equal(marked.envelope.error?.code, "export-marker-invalid");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
     }
   });
 });

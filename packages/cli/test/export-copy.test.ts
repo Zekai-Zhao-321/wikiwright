@@ -1,0 +1,425 @@
+// docs/constitution.md §exports · docs/cli.md §The envelope, §check, §export
+//
+// An installed copy, end to end. A bundle renders its exports; a host installs
+// one by a plain copy of its directory, with no install step; the copy is a
+// vault that answers every reader under the identity its marker gives it, with
+// its kit, its templates and its attachments beside it. A subset is a partial
+// reader: a page it left out is not there to read.
+//
+// Every bundle is a gardening bundle under os.tmpdir(), and the CLI runs under
+// CLI_RUNTIME.
+import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { after, describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
+import { PINNED_CLOCK } from "./fixtures/clock.ts";
+import { installedCopy } from "./fixtures/kit-code.ts";
+import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+
+const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
+const REPO = fileURLToPath(new URL("../../../", import.meta.url));
+const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
+const CODE_STARTER = join(REPO, "packages", "cli", "constitutions", "code");
+const KIT_GARDEN = fileURLToPath(new URL("./fixtures/kit-garden", import.meta.url));
+const SCRATCH = mkdtempSync(join(tmpdir(), "ww-export-copy-"));
+after(() => rmSync(SCRATCH, { recursive: true, force: true }));
+
+interface Finding {
+  ruleId: string;
+  severity: string;
+  path: string;
+  message: string;
+  queue?: string;
+}
+
+interface Exported {
+  name: string;
+  source: { repository: string | null };
+  select: Record<string, unknown>;
+  pages: number;
+  cut: { links: number; citations: number; attachments: number };
+  intact?: boolean;
+}
+
+interface Envelope {
+  ok: boolean;
+  data?: Record<string, unknown>;
+  error?: { code?: string };
+  metadata: {
+    bundle?: {
+      label: string;
+      head: string | null;
+      dirty: boolean | null;
+      law: string;
+      content: string;
+      export?: Exported;
+    };
+  };
+}
+
+function run(root: string, argv: readonly string[]): { status: number; envelope: Envelope } {
+  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
+    encoding: "utf8",
+    env: { ...process.env, ...PINNED_CLOCK },
+  });
+  assert.equal(typeof r.stdout, "string", `the CLI printed no envelope: ${r.stderr}`);
+  return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Envelope };
+}
+
+function findings(envelope: Envelope): Finding[] {
+  return (envelope.data?.["findings"] ?? []) as Finding[];
+}
+
+function git(cwd: string, ...args: string[]): string {
+  return execFileSync(
+    "git",
+    ["-c", "user.name=T", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false", ...args],
+    { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+}
+
+function write(root: string, files: Record<string, string | Buffer>): void {
+  for (const [path, bytes] of Object.entries(files)) {
+    mkdirSync(dirname(join(root, path)), { recursive: true });
+    writeFileSync(join(root, path), bytes);
+  }
+}
+
+let serial = 0;
+
+/** A fresh directory for one case. */
+function scratch(): string {
+  const dir = join(SCRATCH, `case-${++serial}`);
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+/** A copy of the orchard handbook under its own name, its exports rendered. */
+function orchard(): string {
+  const root = join(scratch(), "orchard");
+  cpSync(ORCHARD, root, { recursive: true });
+  rmSync(join(root, "skills"), { recursive: true, force: true });
+  const r = run(root, ["check", "--write"]);
+  assert.equal(r.status, 0, JSON.stringify(r.envelope));
+  return root;
+}
+
+/** Install `skills/<name>` of `root` into a project's `.claude/skills/`, by a plain copy. */
+function install(root: string, name: string): string {
+  const copy = join(scratch(), "project", ".claude", "skills", name);
+  cpSync(join(root, "skills", name), copy, { recursive: true });
+  return copy;
+}
+
+/** The law digest the source's own envelope names. */
+function lawOf(root: string): string {
+  const law = run(root, ["type", "list"]).envelope.metadata.bundle?.law;
+  assert.ok(law !== undefined);
+  return law;
+}
+
+const note = (title: string, tags: string[], body: string): string =>
+  `---\ntype: note\ntitle: ${title}\ndescription: ${title}, briefly.\ntags: [${tags.join(", ")}]\n---\n\n# ${title}\n\n${body}\n`;
+
+const CONSTITUTION = `${JSON.stringify({
+  schema: "wikiwright/constitution",
+  schema_version: 3,
+  vocabularies: {
+    tags: {
+      mode: "registered",
+      entries: {
+        beds: { description: "The beds and what grows in them." },
+        compost: { description: "Making and using compost." },
+      },
+    },
+  },
+  types: { note: { extends: "concept", description: "A gardening note." } },
+})}\n`;
+
+/** The eight bytes every PNG opens with, and a few more: a synthetic image. */
+const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d, 1, 2, 3]);
+
+describe("an installed copy answers every reader (docs/constitution.md §exports)", () => {
+  it("orchard, copied into .claude/skills/: the readers answer under the marker's identity", () => {
+    const root = orchard();
+    const law = lawOf(root);
+    const copy = install(root, "orchard");
+    for (const argv of [
+      ["search", "pruning"],
+      ["read", "wiki/start-here.md"],
+      ["type", "show", "procedure-page", "--brief"],
+      ["vocabulary", "show", "tags"],
+      ["brief"],
+    ]) {
+      const r = run(copy, argv);
+      assert.equal(r.status, 0, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
+      const bundle = r.envelope.metadata.bundle;
+      assert.equal(bundle?.label, "orchard", argv.join(" "));
+      assert.equal(bundle?.head, null, argv.join(" "));
+      assert.equal(bundle?.dirty, null, argv.join(" "));
+      assert.equal(bundle?.law, law, `${argv.join(" ")}: the copy's law is not its source's`);
+      assert.equal(bundle?.export?.name, "orchard", argv.join(" "));
+      assert.equal(bundle?.export?.intact, undefined, argv.join(" "));
+    }
+    // The brief the copy carries is the consumer's brief the copy prints.
+    const printed = run(copy, ["brief", "--role", "consumer"]).envelope.data?.["brief"];
+    assert.equal(readFileSync(join(copy, "generated", "BRIEF.md"), "utf8"), printed);
+  });
+
+  it("a subset is a partial reader: the page it left out is not there", () => {
+    const root = orchard();
+    const copy = install(root, "orchard-pruning");
+    const r = run(copy, ["read", "wiki/pruning-roses.md"]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    assert.deepEqual(r.envelope.metadata.bundle?.export?.select, {
+      kind: "tag",
+      tags: ["pruning"],
+    });
+    assert.equal(r.envelope.metadata.bundle?.export?.pages, 1);
+    const missing = run(copy, ["read", "wiki/start-here.md"]);
+    assert.equal(missing.status, 3, JSON.stringify(missing.envelope));
+    assert.equal(missing.envelope.error?.code, "page-not-found");
+  });
+
+  it("a kit declared by path travels at its path, and the copy loads it under its source's law", () => {
+    const root = join(scratch(), "garden");
+    cpSync(KIT_GARDEN, join(root, "kit", "garden"), { recursive: true });
+    write(root, {
+      "config/constitution.json": `${JSON.stringify({
+        schema: "wikiwright/constitution",
+        schema_version: 3,
+        vocabularies: { tags: { mode: "registered", entries: {} } },
+        types: {
+          planting: {
+            extends: "garden/planting",
+            description: "One planting in one bed.",
+            checks: [{ use: "garden/known-bed", config: { beds: ["north", "south"] } }],
+          },
+        },
+      })}\n`,
+      "config/engine.json": `${JSON.stringify({
+        content_roots: ["wiki"],
+        modules: [{ package: "kit-garden", version: "^1.0.0", path: "kit/garden" }],
+        exports: [{ select: { kind: "all" }, contribution: { mode: "none" } }],
+      })}\n`,
+      "wiki/garlic.md":
+        "---\ntype: planting\ntitle: Garlic\ndescription: Garlic cloves set in the north bed.\ntags: []\nbed: north\nsown: 2026-10-12\n---\n\n# Garlic\n\nGarlic cloves set in the north bed.\n\n## Care\n\nWeed by hand; stop watering once the leaves yellow.\n",
+    });
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    const copy = install(root, "garden");
+    assert.equal(existsSync(join(copy, "kit", "garden", "index.js")), true);
+    const r = run(copy, ["type", "show", "planting", "--brief"]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    assert.equal(r.envelope.metadata.bundle?.law, lawOf(root));
+  });
+
+  it("a kit under node_modules travels there, and the copy loads it under its source's law", () => {
+    const root = installedCopy(CODE_STARTER, "export-copy-kit");
+    try {
+      const engine = JSON.parse(
+        readFileSync(join(root, "config", "engine.json"), "utf8"),
+      ) as Record<string, unknown>;
+      write(root, {
+        "config/engine.json": `${JSON.stringify({
+          ...engine,
+          exports: [
+            { name: "code-notes", select: { kind: "all" }, contribution: { mode: "none" } },
+          ],
+        })}\n`,
+      });
+      const rendered = run(root, ["check", "--write"]);
+      assert.equal(existsSync(join(root, "skills", "code-notes")), true, JSON.stringify(rendered));
+      const copy = install(root, "code-notes");
+      assert.equal(
+        existsSync(join(copy, "node_modules", "@wikiwright", "kit-code", "package.json")),
+        true,
+      );
+      const r = run(copy, ["type", "list"]);
+      assert.equal(r.status, 0, JSON.stringify(r.envelope));
+      assert.equal(r.envelope.metadata.bundle?.law, lawOf(root));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("a source root the copy does not carry is not missed: the copy loads and no finding names it", () => {
+    const root = join(scratch(), "garden");
+    write(root, {
+      "config/constitution.json": CONSTITUTION,
+      "config/engine.json": `${JSON.stringify({
+        content_roots: ["wiki"],
+        source_roots: ["raw"],
+        exports: [{ select: { kind: "all" }, contribution: { mode: "none" } }],
+      })}\n`,
+      "wiki/turning-compost.md": note("Turning compost", ["compost"], "Turn it weekly."),
+      "raw/compost-log.txt": "Turned the heap on a dry morning.\n",
+    });
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    const copy = install(root, "garden");
+    assert.equal(existsSync(join(copy, "raw")), false);
+    const r = run(copy, ["lint", "--all"]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    const naming = findings(r.envelope).filter(
+      (f) => f.path.startsWith("raw") || f.message.includes("raw/"),
+    );
+    assert.deepEqual(naming, []);
+  });
+
+  it("an embedded image travels with its page; one outside the content roots is counted", () => {
+    const root = join(scratch(), "garden");
+    write(root, {
+      "config/constitution.json": CONSTITUTION,
+      "config/engine.json": `${JSON.stringify({
+        content_roots: ["wiki"],
+        exports: [{ select: { kind: "all" }, contribution: { mode: "none" } }],
+      })}\n`,
+      "wiki/raised-beds.md": note(
+        "Raised beds",
+        ["beds"],
+        "Beds edged in timber.\n\n![[bed.png]]\n\n![[shed.png]]",
+      ),
+      "wiki/bed.png": PNG,
+      "assets/shed.png": PNG,
+    });
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    const copy = install(root, "garden");
+    assert.deepEqual(readFileSync(join(copy, "wiki", "bed.png")), PNG);
+    assert.equal(existsSync(join(copy, "assets")), false);
+    const r = run(copy, ["read", "wiki/raised-beds.md"]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    assert.deepEqual(r.envelope.metadata.bundle?.export?.cut, {
+      links: 0,
+      citations: 0,
+      attachments: 1,
+    });
+  });
+
+  it("orchard-pruning under links: cut carries its counts; under closed it is export-not-closed", () => {
+    const root = orchard();
+    const page = join(root, "wiki", "pruning-roses.md");
+    writeFileSync(
+      page,
+      `${readFileSync(page, "utf8")}\nThin the apples after the roses: [[thinning-apples]].\n`,
+    );
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    const copy = install(root, "orchard-pruning");
+    const cut = run(copy, ["search", "pruning"]).envelope.metadata.bundle?.export?.cut;
+    assert.deepEqual(cut, { links: 1, citations: 0, attachments: 0 });
+
+    const engine = join(root, "config", "engine.json");
+    writeFileSync(
+      engine,
+      readFileSync(engine, "utf8").replace('"links": "cut",', '"links": "closed",'),
+    );
+    const r = run(root, ["check"]);
+    const [closed] = findings(r.envelope).filter((f) => f.ruleId === "export-not-closed");
+    assert.equal(closed?.severity, "warning", JSON.stringify(r.envelope));
+    assert.equal(closed?.queue, "export-review");
+  });
+});
+
+describe("a render is reproducible (docs/cli.md §check)", () => {
+  it("two renders give identical bytes, and a committed render stays clean", () => {
+    const bytes = (root: string): Record<string, string> => {
+      const out: Record<string, string> = {};
+      for (const entry of readdirSync(join(root, "skills"), {
+        recursive: true,
+        withFileTypes: true,
+        encoding: "utf8",
+      })) {
+        if (!entry.isFile()) continue;
+        const abs = join(entry.parentPath, entry.name);
+        out[abs.slice(root.length + 1)] = readFileSync(abs).toString("base64");
+      }
+      return out;
+    };
+    // Two renders in two directories, each from nothing.
+    const root = orchard();
+    assert.deepEqual(bytes(orchard()), bytes(root));
+
+    git(root, "init", "-q");
+    git(root, "add", "-A");
+    git(root, "commit", "-q", "-m", "the handbook and its exports");
+    assert.equal(run(root, ["check"]).status, 0);
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    assert.equal(git(root, "status", "--porcelain"), "");
+  });
+});
+
+describe("export --to over an earlier export (docs/cli.md §export)", () => {
+  it("a shrunk selection removes the obsolete owned file, and leaves a foreign file and .git alone", () => {
+    const base = scratch();
+    const root = join(base, "garden");
+    const to = join(base, "elsewhere");
+    const declareSelection = (select: Record<string, unknown>): void =>
+      write(root, {
+        "config/engine.json": `${JSON.stringify({
+          content_roots: ["wiki"],
+          exports: [
+            {
+              name: "garden-notes",
+              select,
+              output: "external",
+              repository: "https://example.invalid/garden",
+              links: "cut",
+              contribution: { mode: "none" },
+            },
+          ],
+        })}\n`,
+      });
+    write(root, {
+      "config/constitution.json": CONSTITUTION,
+      "wiki/turning-compost.md": note("Turning compost", ["compost"], "Turn it weekly."),
+      "wiki/raised-beds.md": note("Raised beds", ["beds"], "Beds edged in timber."),
+    });
+    declareSelection({ kind: "all" });
+    write(to, {
+      "README.md": "A repository of skills.\n",
+      "skills/other/notes.md": "someone else's skill\n",
+    });
+    git(to, "init", "-q");
+    git(to, "add", "-A");
+    git(to, "commit", "-q", "-m", "the repository before any export");
+    const head = readFileSync(join(to, ".git", "HEAD"), "utf8");
+    const first = run(root, ["export", "garden-notes", "--to", to]);
+    assert.equal(first.status, 0, JSON.stringify(first.envelope));
+    assert.equal(existsSync(join(to, "skills", "garden-notes", "wiki", "raised-beds.md")), true);
+
+    declareSelection({ kind: "tag", tags: ["compost"] });
+    const planned = run(root, ["export", "garden-notes", "--to", to, "--dry-run"]);
+    const ops = (planned.envelope.data?.["ops"] ?? []) as { kind: string; path: string }[];
+    assert.deepEqual(
+      ops.filter((op) => op.kind === "delete").map((op) => op.path),
+      [join(to, "skills", "garden-notes", "wiki", "raised-beds.md")],
+    );
+    assert.equal(existsSync(join(to, "skills", "garden-notes", "wiki", "raised-beds.md")), true);
+
+    const r = run(root, ["export", "garden-notes", "--to", to]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    assert.equal(r.envelope.data?.["removed"], 1);
+    assert.equal(existsSync(join(to, "skills", "garden-notes", "wiki", "raised-beds.md")), false);
+    assert.equal(
+      existsSync(join(to, "skills", "garden-notes", "wiki", "turning-compost.md")),
+      true,
+    );
+    assert.equal(readFileSync(join(to, "README.md"), "utf8"), "A repository of skills.\n");
+    assert.equal(
+      readFileSync(join(to, "skills", "other", "notes.md"), "utf8"),
+      "someone else's skill\n",
+    );
+    assert.equal(readFileSync(join(to, ".git", "HEAD"), "utf8"), head);
+    assert.equal(git(to, "status", "--porcelain", "--", "README.md", "skills/other"), "");
+  });
+});
