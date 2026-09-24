@@ -12,7 +12,7 @@ import {
   type WritePlan,
 } from "@wikiwright/core";
 import { replaceFile } from "../atomicwrite.ts";
-import { fail, ok } from "../envelope.ts";
+import { type CommandResult, fail, ok } from "../envelope.ts";
 import {
   CACHE_ROOT,
   cacheDirOf,
@@ -65,7 +65,9 @@ function measure(vault: VaultOk, root: string, fetch: boolean, network: boolean)
  * diff is empty — measured against the cache AS IT STANDS, because a plan
  * touches nothing and a fetch is a write. The run fetches first, so a pin the
  * cache is behind on may advance where the plan did not name it; the plan is
- * exact for the machine state it was read from.
+ * exact for the machine state it was read from. A measurement that fails is
+ * thrown, and the dry run answers it with the refusal the run gives: a plan
+ * that left the advances out would read as a vault with none to make.
  */
 function planForFreshness(args: CommandArgs): Plan {
   const ops: PlanOp[] = [{ kind: "write", path: REPORT, summary: "the freshness report" }];
@@ -91,12 +93,7 @@ function planForFreshness(args: CommandArgs): Plan {
     });
   }
   if (!fastForward) return planOf(ops);
-  let result: FreshnessResult;
-  try {
-    result = measure(vault, args.root, true, false);
-  } catch {
-    return planOf(ops);
-  }
+  const result = measure(vault, args.root, true, false);
   // docs/architecture.md §How a verdict is produced: a pin advance is a page write, so it goes through the Writer.
   for (const candidate of result.eligible) {
     ops.push(
@@ -108,6 +105,17 @@ function planForFreshness(args: CommandArgs): Plan {
     );
   }
   return planOf(ops);
+}
+
+/**
+ * A measurement that failed, as the run and its dry run both answer it. Only a
+ * genuine plumbing failure reaches here — an origin that did not answer is a
+ * finding on the pages that name it, never a refusal. A cut answer is refused
+ * as itself.
+ */
+function measurementRefused(e: unknown): CommandResult {
+  if (e instanceof GitShortRead) throw e;
+  return fail("freshness", "conflict", "git-unavailable", `git plumbing failed: ${String(e)}`);
 }
 
 export const freshnessCommand: CommandSpec = {
@@ -154,7 +162,13 @@ export const freshnessCommand: CommandSpec = {
     if (!vault.ok) return vault.result;
     // After the load and the usage refusal, and before the first write — the
     // cache, the advanced pins, then the report.
-    if (isDryRun(args)) return ok("freshness", planForFreshness(args));
+    if (isDryRun(args)) {
+      try {
+        return ok("freshness", planForFreshness(args));
+      } catch (e) {
+        return measurementRefused(e);
+      }
+    }
     if (fetch && externalOrigins(vault, args.root).length > 0) {
       // The cache lives in a directory that ignores itself: machine-local,
       // never committed, deletable by hand — the same standing as `.git`.
@@ -167,11 +181,7 @@ export const freshnessCommand: CommandSpec = {
     try {
       result = measure(vault, args.root, fetch, true);
     } catch (e) {
-      // Only a genuine plumbing failure reaches here — an origin that did not
-      // answer is a finding on the pages that name it, never a refusal. A cut
-      // answer is refused as itself.
-      if (e instanceof GitShortRead) throw e;
-      return fail("freshness", "conflict", "git-unavailable", `git plumbing failed: ${String(e)}`);
+      return measurementRefused(e);
     }
     const advanced: Array<{ path: string; field: string; from: string; to: string }> = [];
     const refused: Array<{ path: string; reason: string }> = [];

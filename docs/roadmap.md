@@ -406,10 +406,7 @@ are Node's.
 Left: the test files still run under Bun, so the envelope a test reads back
 from the CLI, and the test's own setup `git` calls, still come through Bun's
 synchronous spawn. A cut envelope does not parse and fails its test loudly;
-a cut setup read is not checked. One engine path still swallows a cut
-answer: `freshness --fast-forward --dry-run` catches any failure of the
-measurement it plans from and returns the plan without the pin advances,
-where the real run refuses. The tests that run Bun on purpose are
+a cut setup read is not checked. The tests that run Bun on purpose are
 `run-suite.test.ts`, which drives the runner, and the one `vocabulary show`
 case that compares Bun's output with Node's.
 

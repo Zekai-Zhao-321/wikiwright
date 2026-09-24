@@ -57,7 +57,8 @@ function repo(): string {
 /**
  * A `git` on PATH that runs the real one and, for the one command whose argv
  * holds WW_CUT, prints its answer cut: without its last byte (`byte`), or only
- * its first line (`line`), with git's own exit status. Every other command
+ * its first line (`line`), with git's own exit status — or, under `fail`, runs
+ * nothing and exits 128 as a broken repository does. Every other command
  * passes through untouched.
  */
 function cuttingGit(tmp: string): string {
@@ -72,6 +73,10 @@ function cuttingGit(tmp: string): string {
       'if [ -n "$WW_CUT" ]; then',
       '  case "$*" in',
       `    *"$WW_CUT"*)`,
+      '      if [ "$WW_CUT_MODE" = fail ]; then',
+      "        echo 'fatal: this test refuses the command' >&2",
+      "        exit 128",
+      "      fi",
       `      "${real}" "$@" > "${held}"`,
       "      status=$?",
       '      if [ "$WW_CUT_MODE" = line ]; then',
@@ -233,5 +238,99 @@ describe("terminated: a git answer held to its terminator", () => {
       () => terminated(["rev-parse", "HEAD"], "", "\n", true),
       (e: unknown) => e instanceof GitShortRead && /printed nothing/u.test(e.message),
     );
+  });
+});
+
+/**
+ * A repository whose vault pins itself: one source page with origin `.`,
+ * pinned to the commit before HEAD and covering a path HEAD did not touch, so
+ * `freshness --fetch --fast-forward` has one pin to advance.
+ */
+function pinnedRepo(): string {
+  const tmp = mkdtempSync(join(tmpdir(), "ww-short-read-pin-"));
+  mkdirSync(join(tmp, "config"));
+  mkdirSync(join(tmp, "raw"));
+  mkdirSync(join(tmp, "src"));
+  writeFileSync(
+    join(tmp, "config", "constitution.json"),
+    JSON.stringify(
+      documentOf({
+        types: {
+          source: {
+            extends: "reference",
+            description: "A captured source.",
+            fields: {
+              locator: { kind: "string", required: true },
+              commit: { kind: "pin", origin: "locator", covers: "covers", required: true },
+              covers: { kind: "list", item: { kind: "string" } },
+            },
+          },
+        },
+      }),
+    ),
+  );
+  writeFileSync(
+    join(tmp, "config", "engine.json"),
+    JSON.stringify({ content_roots: ["raw"], source_roots: ["raw"] }),
+  );
+  writeFileSync(join(tmp, "src", "trellis.txt"), "Tie the canes in autumn.\n");
+  git(tmp, "init", "-q", "-b", "main");
+  git(tmp, "config", "user.email", "test@example.com");
+  git(tmp, "config", "user.name", "Test");
+  git(tmp, "add", "-A");
+  git(tmp, "commit", "-q", "-m", "trellis");
+  const pin = git(tmp, "rev-parse", "HEAD");
+  writeFileSync(
+    join(tmp, "raw", "Trellis.md"),
+    `---\ntype: source\ntitle: Trellis\ndescription: A capture.\ntags: []\nlocator: "."\ncommit: ${pin}\ncovers: ["src/"]\n---\n\n# Trellis\n\nCaptured.\n`,
+  );
+  git(tmp, "add", "-A");
+  git(tmp, "commit", "-q", "-m", "capture");
+  return tmp;
+}
+
+/** The refusal code and exit of a run, for comparing a dry run with the run. */
+function refusalOf(r: Run): { status: number; code: unknown } {
+  return { status: r.status, code: (r.envelope["error"] as { code?: unknown } | undefined)?.code };
+}
+
+describe("freshness --fast-forward --dry-run refuses what the run refuses (docs/cli.md §The dry-run law)", () => {
+  let tmp = "";
+  let PATH = "";
+  const argv = ["freshness", "--fetch", "--fast-forward"];
+  before(() => {
+    if (POSIX_ONLY) return;
+    tmp = pinnedRepo();
+    PATH = cuttingGit(tmp);
+  });
+  after(() => {
+    if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("plans the one pin advance when git answers whole", () => {
+    if (POSIX_ONLY) return;
+    const r = run(tmp, PATH, [...argv, "--dry-run"]);
+    assert.equal(r.status, 0, said(r));
+    const ops = (r.envelope["data"] as { ops: Array<{ path: string }> }).ops;
+    assert.ok(
+      ops.some((op) => op.path === "raw/Trellis.md"),
+      said(r),
+    );
+  });
+
+  it("a cut rev-parse is git-short-read under the dry run, as under the run", () => {
+    if (POSIX_ONLY) return;
+    const dry = run(tmp, PATH, [...argv, "--dry-run"], "rev-parse HEAD");
+    assertShortRead(dry, "rev-parse HEAD");
+    const real = run(tmp, PATH, argv, "rev-parse HEAD");
+    assertShortRead(real, "rev-parse HEAD");
+  });
+
+  it("a git that fails is git-unavailable under the dry run, as under the run", () => {
+    if (POSIX_ONLY) return;
+    const dry = run(tmp, PATH, [...argv, "--dry-run"], "rev-list --count", "fail");
+    const real = run(tmp, PATH, argv, "rev-list --count", "fail");
+    assert.deepEqual(refusalOf(dry), { status: 4, code: "git-unavailable" }, said(dry));
+    assert.deepEqual(refusalOf(dry), refusalOf(real), said(real));
   });
 });

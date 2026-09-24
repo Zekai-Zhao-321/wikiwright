@@ -318,6 +318,11 @@ version` prints the engine version and the commit a binary was built from.
   could judge fewer staged pages, or none, and pass; `fix --staged` answered
   ok with nothing changed. A runtime's synchronous spawn has handed back
   such answers under load with exit 0 (`docs/roadmap.md`).
+- `freshness --fetch --fast-forward --dry-run` answers a measurement that
+  fails with the refusal the run gives — `git-unavailable`, or
+  `git-short-read` for a cut answer — as the dry-run law says. It caught
+  every failure and returned the plan without the pin advances, which read
+  as a vault with no pin to advance.
 
 - The parser is CommonMark plus YAML frontmatter: the GFM extensions
   (tables, task lists, strikethrough, autolink literals, footnotes) are no
