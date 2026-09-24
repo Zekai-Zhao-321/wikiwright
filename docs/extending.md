@@ -385,6 +385,16 @@ without `node:`, is one of these; the specifier follows the reason:
 
 A line is reported once per rule it matches.
 
+The rules read lines, not JavaScript, and that has a cost the scan accepts
+rather than parse the language. The declaration and re-export rules match a
+line that opens with `import`, or with `export … from`, or does so after a
+`;`, whatever surrounds it: a line inside a template string or a block
+comment that opens with `import`, and a string holding `; import`, are
+refused as imports though nothing is imported. The `import(` and `require(`
+rules match those words anywhere, in a comment or a string too. A module
+that says either in its text rewords it; the refusal names the file and the
+line, so the false positive is found where it stands.
+
 The scan's result is kept for the process by the digest of the package's
 bytes and the scan's version, a number in `packages/core/src/modules/purity.ts`
 raised whenever a rule changes, so two bundles that install the same bytes
