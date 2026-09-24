@@ -58,8 +58,10 @@ function repo(): string {
  * A `git` on PATH that runs the real one and, for the one command whose argv
  * holds WW_CUT, prints its answer cut: without its last byte (`byte`), or only
  * its first line (`line`), with git's own exit status — or, under `fail`, runs
- * nothing and exits 128 as a broken repository does. Every other command
- * passes through untouched.
+ * nothing and exits 128 as a broken repository does. `exact` cuts the last
+ * byte as `byte` does, but only of the command whose whole argv is WW_CUT, so
+ * `cat-file --batch` is cut and `cat-file --batch-check` is not. Every other
+ * command passes through untouched.
  */
 function cuttingGit(tmp: string): string {
   const real = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
@@ -73,6 +75,7 @@ function cuttingGit(tmp: string): string {
       'if [ -n "$WW_CUT" ]; then',
       '  case "$*" in',
       `    *"$WW_CUT"*)`,
+      `      if [ "$WW_CUT_MODE" = exact ] && [ "$*" != "$WW_CUT" ]; then exec "${real}" "$@"; fi`,
       '      if [ "$WW_CUT_MODE" = fail ]; then',
       "        echo 'fatal: this test refuses the command' >&2",
       "        exit 128",
@@ -209,6 +212,52 @@ describe("a cut git answer is refused as git-short-read (docs/roadmap.md)", () =
     const cut = run(tmp, PATH, ["lint"], "status --porcelain=v2");
     assert.equal(cut.status, 0, said(cut));
     assert.equal((cut.envelope["metadata"] as { bundle?: unknown }).bundle, undefined, said(cut));
+  });
+});
+
+describe("a batch stream cut inside an object is a short read by name (docs/roadmap.md)", () => {
+  let tmp = "";
+  let PATH = "";
+  before(() => {
+    if (POSIX_ONLY) return;
+    tmp = repo();
+    PATH = cuttingGit(tmp);
+  });
+  after(() => {
+    if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
+  });
+
+  // Every page ends in a newline, so the batch stream without its last byte
+  // still ends in one: the terminator check passes it, and only the last
+  // object's size says the stream stopped inside it.
+  it("lint --staged refuses it as git-short-read, not as an engine error", () => {
+    if (POSIX_ONLY) return;
+    const r = run(tmp, PATH, ["lint", "--staged"], "cat-file --batch", "exact");
+    assertShortRead(r, "cat-file --batch");
+    assert.match(String((r.envelope["error"] as { message: string }).message), /inside object/u);
+  });
+
+  it("fix --staged refuses it as git-short-read, not git-unavailable", () => {
+    if (POSIX_ONLY) return;
+    assertShortRead(
+      run(
+        tmp,
+        PATH,
+        ["fix", "--rule", "folder-tags-present", "--staged", "--dry-run", "--expect", "any"],
+        "cat-file --batch",
+        "exact",
+      ),
+      "cat-file --batch",
+    );
+  });
+
+  it("lint --since refuses it as git-short-read, not as an engine error", () => {
+    if (POSIX_ONLY) return;
+    const base = git(tmp, "rev-list", "--max-parents=0", "HEAD");
+    assertShortRead(
+      run(tmp, PATH, ["lint", "--since", base], "cat-file --batch", "exact"),
+      "cat-file --batch",
+    );
   });
 });
 

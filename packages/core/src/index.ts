@@ -24,7 +24,12 @@ export type {
 } from "./generate/index.ts";
 export { generateArtifacts, graphOf, serializeArtifact } from "./generate/index.ts";
 export type { BatchCheckRecord, Decode, StagedChange, StagedStatus } from "./gitplan/index.ts";
-export { parseCatFileBatch, parseCatFileBatchCheck, parseNameStatusZ } from "./gitplan/index.ts";
+export {
+  BatchStreamTruncated,
+  parseCatFileBatch,
+  parseCatFileBatchCheck,
+  parseNameStatusZ,
+} from "./gitplan/index.ts";
 export type {
   Dispositions,
   GrammarCheckOptions,

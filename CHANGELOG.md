@@ -313,7 +313,9 @@ version` prints the engine version and the commit a binary was built from.
 - A git answer cut short is refused as `git-short-read` (exit 1,
   `internal`), naming the git command. Every git read with a terminator is
   held to it: a `-z` listing to its final NUL, a line answer to its final
-  newline, a batch to the count it was asked. Before, a staged-change or
+  newline, a batch to the count it was asked, and a batch stream that ends
+  inside an object, which the core parser now throws as
+  `BatchStreamTruncated`, is the same refusal. Before, a staged-change or
   index listing that ended early read as a shorter listing, so a cut answer
   could judge fewer staged pages, or none, and pass; `fix --staged` answered
   ok with nothing changed. A runtime's synchronous spawn has handed back

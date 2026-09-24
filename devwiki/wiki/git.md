@@ -121,15 +121,15 @@ spawn has handed back exactly that with exit 0 (`docs/roadmap.md`).
   a header per blob (`:440-441`).
 - A blob the index or a tree names that `cat-file` reports `missing` is
   thrown as a broken repository rather than read as a shorter page
-  (`git.ts:433`). A `--batch-check` that answers fewer lines than it was
-  asked, and a batch stream that stops between objects, are `git-short-read`
-  (`:426-431`, `:445-455`). A batch stream cut inside an object is refused
-  by the core parser (`packages/core/src/gitplan/index.ts:52-69`,
-  `:102-127`), which cannot tell a cut from a broken repository, so it
-  surfaces as the plumbing failure of the verb that read it — `git-unavailable`
-  at the gate — rather than as `git-short-read`; only a cut that happens to
-  end on a newline inside the object reaches the parser, since any other
-  fails the newline check first.
+  (`git.ts:434`), and so is a batch object that runs on past the size its
+  header gave (`packages/core/src/gitplan/index.ts:142-144`). A
+  `--batch-check` that answers fewer lines than it was asked, a batch stream
+  that stops between objects, and one cut inside an object are all
+  `git-short-read` (`packages/cli/src/git.ts:427-432`, `:444-468`). Git
+  writes every byte a header announces, so the core parser throws a stream
+  that ends inside a header or an object as `BatchStreamTruncated`
+  (`packages/core/src/gitplan/index.ts:93-110`, `:128`, `:141`), and the
+  shell refuses it by that name (`packages/cli/src/git.ts:450-461`).
 - A read that returns a file's bytes has no terminator to hold it to: `show`
   for a config file through the staged reader and for a newline-named rename
   source, `cat-file blob` for a revision's constitution, and `cat-file -p` for

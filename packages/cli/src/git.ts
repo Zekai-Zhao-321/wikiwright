@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
+  BatchStreamTruncated,
   parseCatFileBatch,
   parseCatFileBatchCheck,
   parseNameStatusZ,
@@ -441,11 +442,23 @@ export function gitReadBlobs(root: string, blobs: readonly string[]): Map<string
     const maxBuffer = chunkBytes + chunk.length * 128 + 1024;
     const bytes = gitBatch(root, ["cat-file", "--batch"], `${chunk.join("\n")}\n`, maxBuffer);
     // Every object ends in a newline, so a stream cut between objects is caught
-    // by the terminator and the count; one cut inside an object, by the parser.
+    // by the terminator and the count; one cut inside an object, by the parser,
+    // and it is the same short read by name.
     if (bytes.length > 0 && bytes[bytes.length - 1] !== 0x0a) {
       throw new GitShortRead("cat-file --batch", "its output does not end in a newline");
     }
-    const read = parseCatFileBatch(bytes, utf8);
+    let read: Map<string, string>;
+    try {
+      read = parseCatFileBatch(bytes, utf8);
+    } catch (error) {
+      if (!(error instanceof BatchStreamTruncated)) throw error;
+      throw new GitShortRead(
+        "cat-file --batch",
+        error.object === undefined
+          ? "its output ends inside a header"
+          : `its output ends inside object ${error.object}`,
+      );
+    }
     const missing = chunk.filter((blob) => !read.has(blob));
     if (missing.length > 0) {
       throw new GitShortRead(
