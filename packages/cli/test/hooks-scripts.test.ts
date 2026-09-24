@@ -86,12 +86,10 @@ function git(cwd: string, ...args: string[]): string {
   );
 }
 
-/** A copy of the orchard handbook under the test's directory, connected as `name`. */
-function connectedCopy(name: string): string {
+/** A copy of the orchard handbook under the test's directory, as `name`: nothing registers it. */
+function handbookCopy(name: string): string {
   const root = join(tmp, name);
   cpSync(join(HANDBOOKS, "orchard"), root, { recursive: true });
-  const r = cli(["bundles", "add", root, "--name", name]);
-  assert.equal(r.status, 0, r.stdout);
   return root;
 }
 
@@ -210,7 +208,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     }
   });
 
-  it("an edit outside every connection prints nothing", () => {
+  it("an edit outside every bundle prints nothing", () => {
     const outside = join(tmp, "notes.md");
     appendFileSync(outside, "# notes\n");
     const r = hook(POST_EDIT, edited(outside));
@@ -221,17 +219,18 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     assert.equal(config.stdout, "");
   });
 
-  it("an edit to an installed copy's page says it is read only and where a change goes", () => {
+  it("an edit in an installed copy says so, that the next update overwrites it, and where a change goes; it lints nothing", () => {
+    // The handbook's rendered export is a copy: its nearest constitution is the
+    // copy's own, beside its marker.
     const text = contextOf(
-      hook(POST_EDIT, edited(join(allotment, "wiki", "pruning-roses.md"))).stdout,
+      hook(POST_EDIT, edited(join(orchard, "skills", "orchard", "wiki", "pruning-roses.md")))
+        .stdout,
       "PostToolUse",
     );
-    assert.match(
+    assert.equal(
       text,
-      /^wikiwright: wiki\/pruning-roses\.md is a page of the bundle "allotment"\./u,
+      "wikiwright: this is an installed copy of orchard; edits here are overwritten by the next update; this copy takes no reports.",
     );
-    assert.match(text, /installed copy, which is read only/u);
-    assert.match(text, new RegExp(ALLOTMENT_FEEDBACK.replace(/'/gu, "."), "u"));
   });
 
   it("a consumer session is told its role may not write the bundle", () => {
@@ -318,7 +317,6 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     git(root, "init", "-q");
     git(root, "add", "-A");
     git(root, "commit", "-q", "-m", "baseline");
-    assert.equal(cli(["bundles", "add", root, "--name", "ledger"]).status, 0);
 
     const page = join(root, "wiki", "pruning-roses.md");
     writeFileSync(
@@ -360,7 +358,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
   });
 
   it("a fix on a page whose path has a space is one argument, and replays as printed", () => {
-    const root = connectedCopy("spaced");
+    const root = handbookCopy("spaced");
     const page = join(root, "wiki", "pruning roses.md");
     writeFileSync(
       page,
@@ -390,7 +388,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
   });
 
   it("an engine.json that starts with a byte order mark still routes the page", () => {
-    const root = connectedCopy("marked");
+    const root = handbookCopy("marked");
     const engine = join(root, "config", "engine.json");
     writeFileSync(engine, `\ufeff${readFileSync(engine, "utf8")}`);
     const page = join(root, "wiki", "pruning-roses.md");
@@ -411,7 +409,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
   it("a page that is a link inside the vault is routed by the path it was edited at", () => {
     // wiki/pruning-roses.md links to archive/, outside the content roots but
     // inside the vault: the engine judges it at the wiki path, and so does the hook.
-    const root = connectedCopy("linked");
+    const root = handbookCopy("linked");
     mkdirSync(join(root, "archive"), { recursive: true });
     const target = join(root, "archive", "pruning-roses.md");
     writeFileSync(
@@ -437,7 +435,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
   });
 
   it("a page linked out of the vault gets nothing", () => {
-    const root = connectedCopy("escaping");
+    const root = handbookCopy("escaping");
     const outside = join(tmp, "outside-page.md");
     writeFileSync(
       outside,
@@ -450,7 +448,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
   });
 
   it("an edit through a linked bundle root is routed to that bundle", () => {
-    const root = connectedCopy("reached");
+    const root = handbookCopy("reached");
     const page = join(root, "wiki", "pruning-roses.md");
     writeFileSync(page, withDeepNotes(readFileSync(page, "utf8")));
     const link = join(tmp, "reached-link");
@@ -470,7 +468,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     // wiki/ is a link to archive/ inside the vault, and the edit names the page
     // through a link to the root: the root is found among the edited path's
     // ancestors, and the path below it stays the one the engine judges.
-    const root = connectedCopy("composed");
+    const root = handbookCopy("composed");
     renameSync(join(root, "wiki"), join(root, "archive"));
     symlinkSync("archive", join(root, "wiki"));
     const page = join(root, "archive", "pruning-roses.md");
@@ -501,30 +499,23 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     assert.equal(hook(POST_EDIT, edited(join(alias, "archive", "pruning-roses.md"))).stdout, "");
   });
 
-  it("a config linked out of the vault gives no content roots, and the hook says nothing", () => {
+  it("a config linked out of the vault is refused by the engine, and the hook says the page could not be judged", () => {
     // The engine refuses to read a config/engine.json that resolves outside
-    // the vault; the hook routes by the engine's reading, so it reads none.
-    const root = connectedCopy("unconfined");
+    // the vault; the hook finds the bundle by its constitution and passes the
+    // engine's refusal on by its code.
+    const root = handbookCopy("unconfined");
     const config = join(root, "config", "engine.json");
     const outside = join(tmp, "outside-engine.json");
     cpSync(config, outside);
     rmSync(config);
     symlinkSync(outside, config);
     const page = join(root, "wiki", "pruning-roses.md");
-    writeFileSync(page, withDeepNotes(readFileSync(page, "utf8")));
-    for (const argv of [
-      ["bundles", "list"],
-      ["bundles", "list", "--records"],
-    ]) {
-      const listed = JSON.parse(cli(argv).stdout) as {
-        data: { bundles: { name: string; present: boolean; content_roots: unknown }[] };
-      };
-      const row = listed.data.bundles.find((b) => b.name === "unconfined");
-      assert.equal(row?.present, true, argv.join(" "));
-      assert.equal(row?.content_roots, null, argv.join(" "));
-    }
-    const r = hook(POST_EDIT, edited(page));
-    assert.equal(r.status, 0);
-    assert.equal(r.stdout, "");
+    const engine = JSON.parse(
+      cli(["lint", "--page", "wiki/pruning-roses.md", "--root", root]).stdout,
+    ) as {
+      error: { code: string };
+    };
+    const text = contextOf(hook(POST_EDIT, edited(page)).stdout, "PostToolUse");
+    assert.equal(text.split("\n")[1], `The page could not be judged: ${engine.error.code}.`);
   });
 });

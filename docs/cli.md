@@ -201,25 +201,29 @@ object, a missing binary or any error, it prints nothing.
   re-established from current state. It prints no page content, and nothing
   when no bundle is connected.
 - `hooks/post-edit.mjs` takes `tool_input.file_path` (a leading byte order
-  mark on stdin ignored, as the engine ignores it) and routes it by `bundles
-  list --records`: the root is the first of the edited path's ancestors,
-  walking up from the file, whose real path is the connection's, and the
-  page's vault path is the path below it as edited, so a root reached through
-  a link is followed while a content directory or a page that is itself a
-  link keeps the path it was edited at; the file's real path
-  must lie inside the connection's, and the vault path must be a `.md` file
-  under one of the `content_roots` the engine read. A file outside every
-  connection, or in one whose config cannot be read inside it, gets nothing. For an `installed` connection it says the page is
-  in a read-only copy and where a change goes. Otherwise it runs
-  `lint --page` on the page: under a role that may not lint, it says the
-  session may not write the bundle; else it names the finding count and each
-  finding's rule, line, message and route, a fix's argv quoted for a POSIX
-  shell so a path with a space stays one argument; then, one line each, the
-  passes the lint's `unevaluated` names — `not evaluated here: <pass> (<count>
-  declaration(s), <reason>)` — which the staged gate judges against HEAD, so
-  an edit to an append-only body can pass here and be refused at commit; and
-  says that this judged the working-tree page against the current law and is
-  not the staged gate's verdict.
+  mark on stdin ignored, as the engine ignores it) and finds the bundle by
+  ancestry: the nearest directory above the file's real path that holds
+  `config/constitution.json`. None: it prints nothing. A root that holds
+  `config/export.json` is an installed copy, and it prints one line — "this is
+  an installed copy of <bundle>; edits here are overwritten by the next
+  update;" and the contribution hint `bundle-readonly` gives — and lints
+  nothing. Otherwise the page's vault path is the path below the root as
+  edited — the root is the first of the edited path's ancestors whose real
+  path is the root, so a root reached through a link is followed while a
+  content directory or a page that is itself a link keeps the path it was
+  edited at — and a `.md` path is linted with `lint --page <path> --root
+  <root>`. A path the engine does not take for a page (`invalid-path`: outside
+  every content root, or linked out of the vault) gets nothing. Under a role
+  that may not lint, it says the session may not write the bundle; a lint the
+  engine refuses otherwise is named by its code; else it names the finding
+  count and each finding's rule, line, message and route, a fix's argv quoted
+  for a POSIX shell so a path with a space stays one argument and naming the
+  root with `--root`; then, one line each, the passes the lint's
+  `unevaluated` names — `not evaluated here: <pass> (<count> declaration(s),
+  <reason>)` — which the staged gate judges against HEAD, so an edit to an
+  append-only body can pass here and be refused at commit; and says that this
+  judged the working-tree page against the current law and is not the staged
+  gate's verdict.
 
 `hooks-scripts.test.ts` holds the scripts to the input and output shapes the
 Claude Code hooks reference documents. Host behaviour — whether and how a host

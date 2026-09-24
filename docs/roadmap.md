@@ -331,13 +331,13 @@ Wanted: a declaration naming which fields state applicability, and a flag on
 
 ### A problem is reported to a destination the engine only names
 
-A connection records where a problem with its bundle is reported;
-`bundles list`, a `bundle-readonly` refusal and the post-edit hook show it,
-and the consume skill says a proposal goes there. The engine sends nothing,
-and no bundle declares the shape a proposal must take.
+An export declares where a problem with a copy is reported (its
+`contribution`); a `bundle-readonly` refusal and the post-edit hook say it,
+and a connection in this machine's registry records a destination too. The
+engine sends nothing, and no bundle declares the shape a proposal must take.
 
 Wanted: a report type a bundle declares in its constitution, and a verb that
-writes a proposal in it to the connection's feedback destination.
+writes a proposal in it where the export's contribution says.
 
 ### No editor protocol, no transaction across writes, no model of time
 
@@ -390,10 +390,10 @@ Wanted: a recorded run inside a host, kept beside the test.
 
 `--bundle` finds a copy by its name in the skill directories, but
 `bundles list` still lists the registry's connections, not what those
-directories hold, and the two hooks still read the registry.
+directories hold, and the session-start hook still reads the registry.
 
-Wanted: `bundles list` over the scan, and the session-start and post-edit
-hooks rebased on it. It is the next slice of work.
+Wanted: `bundles list` over the scan, and the session-start hook rebased on
+it. It is the next slice of work.
 
 ### The shipped skills do not yet speak of copies
 
