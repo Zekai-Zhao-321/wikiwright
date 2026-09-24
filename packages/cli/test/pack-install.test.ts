@@ -145,6 +145,23 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
     assert.equal(existsSync(join(installed, "src")), false, "no source in the artifact");
   });
 
+  it("the tarball holds no output of a deleted source: the build removes dist/ first", () => {
+    const dist = join(CONSUMER ?? "", "node_modules", "wikiwright", "dist");
+    for (const gone of ["trust.js", "connections.js", "storelock.js", "verbs/trust.js"]) {
+      assert.equal(existsSync(join(dist, gone)), false, `dist/${gone} was packed`);
+    }
+    // Every emitted module has its source: nothing in the artifact outlived it.
+    const src = join(REPO, "packages", "cli", "src");
+    for (const entry of readdirSync(dist, { recursive: true, encoding: "utf8" })) {
+      if (!entry.endsWith(".js")) continue;
+      assert.equal(
+        existsSync(join(src, entry.replace(/\.js$/u, ".ts"))),
+        true,
+        `dist/${entry} has no source`,
+      );
+    }
+  });
+
   it("the installed `wikiwright` is bin.js: it answers as main.js does and switches on the compile cache", () => {
     // POSIX-only: the .bin entry is a link here and a shim on Windows.
     if (process.platform === "win32") return;

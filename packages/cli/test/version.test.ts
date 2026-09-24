@@ -21,8 +21,12 @@ function envelopeOf(args: string[]): { data?: Record<string, unknown> } {
 }
 
 describe("the build stamps the artifact it produced (docs/cli.md §version)", () => {
-  it("`bun run build` writes dist/build-info.json, and the bytes are reproducible", () => {
-    const build = spawnSync("bun", ["run", "build"], { cwd: REPO, encoding: "utf8" });
+  // The writer alone, not the whole build: `bun run build` removes every
+  // dist/ before it compiles, and a rebuild inside the suite would take the
+  // binary away from the tests running beside this one. That the build runs
+  // the writer is the next case.
+  it("the build-info writer writes dist/build-info.json, and the bytes are reproducible", () => {
+    const build = spawnSync("bun", ["tools/write-build-info.ts"], { cwd: REPO, encoding: "utf8" });
     assert.equal(build.status, 0, build.stderr);
     assert.equal(existsSync(BUILD_INFO), true, "the build wrote dist/build-info.json");
     const first = readFileSync(BUILD_INFO, "utf8");
@@ -33,7 +37,7 @@ describe("the build stamps the artifact it produced (docs/cli.md §version)", ()
     // A build artifact that changes when nothing changed is not
     // reproducible, so nothing in it may come from the clock.
     assert.equal(/\d{4}-\d{2}-\d{2}T/.test(first), false, "no timestamp");
-    const again = spawnSync("bun", ["run", "build"], { cwd: REPO, encoding: "utf8" });
+    const again = spawnSync("bun", ["tools/write-build-info.ts"], { cwd: REPO, encoding: "utf8" });
     assert.equal(again.status, 0, again.stderr);
     assert.equal(readFileSync(BUILD_INFO, "utf8"), first, "byte-identical across builds");
   });

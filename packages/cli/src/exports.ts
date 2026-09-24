@@ -39,7 +39,7 @@ import { gitReadBlobBytes, type IndexEntry } from "./git.ts";
 import { generateOptionsFor, rootsOf, type VaultOk } from "./law.ts";
 import { type ExportMarker, MARKER_PATH } from "./marker.ts";
 import { moduleLocation } from "./moduleload.ts";
-import { vaultReadAbsolute } from "./paths.ts";
+import { LinkedOutsideVault, vaultReadAbsolute } from "./paths.ts";
 import type { CommandSpec } from "./spec.ts";
 import { CONSTITUTION_PATH, ENGINE_PATH } from "./vaultfiles.ts";
 
@@ -504,7 +504,7 @@ export function planExport(input: ExportInput): ExportPlan {
     try {
       files.set(path, kit ? from.readKit(path) : from.read(path));
     } catch (error) {
-      if (!(error instanceof Error) || !error.message.includes("resolves outside")) throw error;
+      if (!(error instanceof LinkedOutsideVault)) throw error;
       leaving.push(path);
       files.set(path, undefined);
     }

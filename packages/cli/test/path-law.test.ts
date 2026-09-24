@@ -388,7 +388,9 @@ describe("docs/architecture.md §Directories — containment is resolved, not sp
     try {
       const r = run(dir, ["lint"]);
       assert.equal(r.ok, false, "a lint over a linked-out page passed");
-      assert.equal(r.error["code"], "unexpected-error", JSON.stringify(r.error));
+      // Refused by its own name, at exit 4, not as the engine breaking.
+      assert.equal(r.error["code"], "linked-outside-vault", JSON.stringify(r.error));
+      assert.equal(r.error["exit_code"], 4);
       assert.match(String(r.error["message"]), /resolves outside the vault/u);
     } finally {
       rmSync(linked, { force: true });

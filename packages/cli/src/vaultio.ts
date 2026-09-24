@@ -24,7 +24,7 @@ import {
 import { bundleLabel } from "./bundle.ts";
 import { type CommandResult, fail } from "./envelope.ts";
 import { type LoadedModule, preloadedModules } from "./moduleload.ts";
-import { vaultReadAbsolute } from "./paths.ts";
+import { LinkedOutsideVault, vaultReadAbsolute } from "./paths.ts";
 import { CONSTITUTION_PATH, ENGINE_PATH, fsReader, type VaultReader } from "./vaultfiles.ts";
 
 // The vault's file reads live below the loader, in `vaultfiles.ts`; every
@@ -122,6 +122,8 @@ export function loadVaultVia(
     constitutionText = reader.read(CONSTITUTION_PATH);
     constitutionJson = JSON.parse(normalizeInput(constitutionText).text);
   } catch (e) {
+    // A config linked out of the vault is refused by that name, not read as unparseable.
+    if (e instanceof LinkedOutsideVault) throw e;
     return {
       ok: false,
       result: fail(
@@ -143,6 +145,7 @@ export function loadVaultVia(
       engineText = reader.read(ENGINE_PATH);
       engineJson = JSON.parse(normalizeInput(engineText).text);
     } catch (e) {
+      if (e instanceof LinkedOutsideVault) throw e;
       return {
         ok: false,
         result: fail(

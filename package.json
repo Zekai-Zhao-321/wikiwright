@@ -17,7 +17,7 @@
     "bun": ">=1.3.11"
   },
   "scripts": {
-    "build": "tsc -b && bun tools/write-build-info.ts",
+    "build": "rm -rf packages/*/dist && tsc -b && bun tools/write-build-info.ts",
     "clean": "tsc -b --clean",
     "test": "bun run build && bun tools/run-suite.ts",
     "test:node": "bun run build && node --test \"packages/core/test/*.test.ts\" \"packages/cli/test/*.test.ts\"",

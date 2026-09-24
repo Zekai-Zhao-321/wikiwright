@@ -198,6 +198,28 @@ describe("--bundle resolves by scanning the skill directories (docs/cli.md §bun
     assert.equal(r.envelope.metadata.bundle?.["shadowed"], undefined);
   });
 
+  it("the system skill directory is WIKIWRIGHT_SYSTEM_SKILL_DIR's, after the user's; empty leaves it out", () => {
+    const { home, cwd } = world();
+    const system = join(tmp, `system-${serial}`);
+    const copy = install(rendered(REPOSITORY), join(system, "garden"));
+    const found = run(cwd, ["search", "compost", "--bundle", "garden"], {
+      HOME: home,
+      WIKIWRIGHT_SYSTEM_SKILL_DIR: system,
+    });
+    assert.equal(found.status, 0, JSON.stringify(found.envelope));
+    assert.equal(found.envelope.metadata.bundle?.["root"], realpathSync(copy));
+    const off = run(cwd, ["search", "compost", "--bundle", "garden"], {
+      HOME: home,
+      WIKIWRIGHT_SYSTEM_SKILL_DIR: "",
+    });
+    assert.equal(off.envelope.error?.code, "bundle-not-found");
+    const searched = off.envelope.error?.details?.["searched"] as string[];
+    assert.deepEqual(searched.slice(-2), [
+      join(home, ".claude", "skills"),
+      join(home, ".agents", "skills"),
+    ]);
+  });
+
   it("a name outside the skill grammar is refused before anything is read", () => {
     const { home, cwd } = world();
     const r = run(cwd, ["search", "compost", "--bundle", "Garden_Notes"], { HOME: home });

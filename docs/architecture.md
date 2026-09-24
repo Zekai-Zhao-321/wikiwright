@@ -146,8 +146,9 @@ and proves the result with a second `judge` over the spliced bytes before
 
 ## The gate
 
-The gate is `bun run check`: biome, `bun run build` (which is `tsc -b` plus
-the build-info stamp), the test-project typecheck and the whole suite.
+The gate is `bun run check`: biome, `bun run build` (which removes each
+package's `dist/`, then runs `tsc -b` and the build-info stamp, so no output
+outlives its source), the test-project typecheck and the whole suite.
 `tools/run-suite.ts` runs the suite as one `bun test` process per file, as
 many at once as the machine has cores, because `bun test` runs its files one
 after another and most of the suite's time is spent waiting on the CLI

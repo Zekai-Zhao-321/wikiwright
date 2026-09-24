@@ -178,6 +178,30 @@ describe("the error-code taxonomy: one code, one meaning (docs/cli.md §The enve
   });
 });
 
+// docs/cli.md §Exit codes: a vault path that resolves outside the vault is
+// refused by its own name, wherever a read reaches it.
+describe("a config linked out of the vault is linked-outside-vault (docs/cli.md §Exit codes)", () => {
+  it("exits 4 as conflict from every verb that reads the law, never as a parse failure", () => {
+    const tmp = vault(GOOD_TYPES);
+    const outside = mkdtempSync(join(tmpdir(), "ww-exit-outside-"));
+    try {
+      const engine = join(tmp, "config", "engine.json");
+      writeFileSync(join(outside, "engine.json"), readFileSync(engine, "utf8"));
+      rmSync(engine);
+      symlinkSync(join(outside, "engine.json"), engine);
+      for (const argv of [["type", "list"], ["check"], ["search", "clean"], ["lint"]]) {
+        const r = run(tmp, argv);
+        assert.equal(r.status, 4, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
+        assert.equal(r.envelope.error?.type, "conflict");
+        assert.equal(r.envelope.error?.code, "linked-outside-vault");
+      }
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+});
+
 // docs/cli.md §Notes per verb (`export`) · §The envelope (a copy's marker): the
 // codes the exports added, each at the exit its type names.
 describe("the export codes exit as their types (docs/cli.md §Exit codes)", () => {

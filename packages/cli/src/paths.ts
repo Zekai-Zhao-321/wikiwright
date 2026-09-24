@@ -37,6 +37,23 @@ function assertShape(path: string, operation: "read" | "write"): void {
 }
 
 /**
+ * docs/cli.md §Exit codes: a vault path that resolves outside the vault,
+ * refused by name — `linked-outside-vault` — wherever it reaches the entry
+ * point. The message names the path asked about and never where it resolved:
+ * that would be a directory-structure oracle.
+ */
+export class LinkedOutsideVault extends Error {
+  readonly path: string;
+  readonly operation: "read" | "write";
+  constructor(path: string, operation: "read" | "write") {
+    super(`refusing to ${operation} "${path}": it resolves outside the vault`);
+    this.name = "LinkedOutsideVault";
+    this.path = path;
+    this.operation = operation;
+  }
+}
+
+/**
  * Resolve an existing vault path through every link. Filesystem readers use
  * this boundary so a lexically-valid path cannot read through a junction or
  * symlink outside the vault.
@@ -46,7 +63,7 @@ export function vaultReadAbsolute(root: string, path: string): string {
   const realRoot = realRootOf(root);
   const realPath = realpathSync(resolve(realRoot, path));
   if (!isInside(realRoot, realPath)) {
-    throw new Error(`refusing to read "${path}": it resolves outside the vault`);
+    throw new LinkedOutsideVault(path, "read");
   }
   return realPath;
 }
@@ -77,7 +94,7 @@ export function vaultAbsolute(root: string, path: string): string {
   }
   const realExisting = realpathSync(existing);
   if (!isInside(realRoot, realExisting)) {
-    throw new Error(`refusing to write "${path}": it resolves outside the vault`);
+    throw new LinkedOutsideVault(path, "write");
   }
   return join(realExisting, relative(existing, abs));
 }

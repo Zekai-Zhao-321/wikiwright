@@ -87,10 +87,12 @@ held at runtime.
   reader answers over a plain copy of it with nothing installed; its marker
   names the export, and the envelope over it names the bundle it was cut
   from (`packages/cli/test/export-copy.test.ts`; see [[command-runtime]]).
-- A copy holds bytes, never a link: the working tree is read through its
-  links, so a kit installed as links travels as files under its source's law
-  digest; a link that leaves the bundle, or one the index tracks, refuses the
-  export (`packages/cli/src/exports.ts:489-515`, `:594-619`); a link found in
+- A copy holds bytes, never a link: a vault file reached through a link that
+  leaves the bundle refuses the export as `export-symlink`, so a link in
+  `wiki/` never publishes foreign bytes, while a declared kit's files are read
+  through their links unchecked, since the law digest already covers them and
+  the declaration makes them the bundle's; a link the index tracks refuses it
+  too (`packages/cli/src/exports.ts:489-515`, `:594-619`); a link found in
   a rendered copy is replaced by bytes, never written through
   (`packages/cli/src/artifacts.ts`); and `export` refuses one where it would
   write (`packages/cli/src/verbs/export.ts:45-59`).

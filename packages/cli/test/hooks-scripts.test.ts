@@ -529,6 +529,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
       error: { code: string };
     };
     const text = contextOf(hook(POST_EDIT, edited(page)).stdout, "PostToolUse");
-    assert.equal(text.split("\n")[1], `The page could not be judged: ${engine.error.code}.`);
+    assert.equal(engine.error.code, "linked-outside-vault");
+    assert.equal(text.split("\n")[1], "The page could not be judged: linked-outside-vault.");
   });
 });

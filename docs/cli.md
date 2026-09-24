@@ -130,7 +130,7 @@ findings that refused it.
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
 | 3 | `not_found` | the page, type, vocabulary entry, revision, directory or bundle skill asked for does not exist |
-| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a copy's marker that is not one (`export-marker-invalid`) |
+| 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a vault path that resolves outside the vault, such as a config linked out of it (`linked-outside-vault`, from any verb, never read as a parse failure), a copy's marker that is not one (`export-marker-invalid`) |
 | 5 | `findings` | the tool worked and the subject failed: read `data.findings` |
 | 10 | `confirm_required` | an identity or blast-radius gate wants the plan pinned: `identity-candidates`, `open-claim-of-category` |
 
@@ -179,7 +179,8 @@ the report it always writes.
 | `WIKIWRIGHT_ROLE` | the shell, before parsing; `brief`, as its default `--role` | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
 | `WIKIWRIGHT_TODAY` | `write`, `new`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
-| `WIKIWRIGHT_SKILL_DIRS` | `--bundle`, `bundles list` | more skill directories to probe after the project's and the user's, colon-separated, in order |
+| `WIKIWRIGHT_SYSTEM_SKILL_DIR` | `--bundle`, `bundles list` | the machine's skill directory, probed after the user's two; `/etc/codex/skills` when unset, and none when empty. The suite sets it to a directory under the temporary directory, so no test probes a real machine's |
+| `WIKIWRIGHT_SKILL_DIRS` | `--bundle`, `bundles list` | more skill directories to probe after the project's, the user's and the system's, colon-separated, in order |
 
 ## The plugin and its hooks
 
@@ -188,7 +189,7 @@ The package root, `packages/cli`, is also a Claude Code plugin.
 its skills are the three under `skills/`; `hooks/hooks.json` runs two scripts
 with `node`, `SessionStart` with no matcher and `PostToolUse` on
 `Edit|Write`. Each reads the hook's JSON on stdin, runs this package's own
-binary with the session's environment (so `HOME`, `WIKIWRIGHT_SKILL_DIRS` and
+binary with the session's environment (so `HOME`, the two skill-directory variables and
 `WIKIWRIGHT_ROLE` apply), prints at most one JSON
 object whose `hookSpecificOutput` carries `hookEventName` and
 `additionalContext`, and exits 0 whatever happens: on stdin that is not a JSON
@@ -287,7 +288,12 @@ What the registry rows below do not say.
   exit 4), and a symbolic link at `<dir>/skills` or anywhere under
   `<dir>/skills/<name>/` (`export-destination-linked`, exit 4). An export a
   render finding refuses (`export-tag-unknown`, `export-symlink`, …) exits 5
-  with the findings and writes nothing. The envelope carries the absolute
+  with the findings and writes nothing. A copy carries bytes, never a link:
+  a vault file reached through a link that leaves the bundle is refused as
+  `export-symlink`, so a link in `wiki/` never publishes bytes from outside
+  it, while a declared kit's files are read through their links unchecked,
+  since the law digest already covers them and the declaration makes them the
+  bundle's. The envelope carries the absolute
   `destination`, the marker's identity (`export`: its `name`, `bundle`,
   `source.repository`, `select`, `pages` and `cut` counts) and the counts
   `written`, `removed` and `files`. `--dry-run` plans every file written and
@@ -599,8 +605,10 @@ What the registry rows below do not say.
   `<dir>/<name>/config/export.json` in order: the project's `.claude/skills`
   and `.agents/skills` at the working directory and at each parent up to the
   top of its git repository (to the filesystem root outside one); then
-  `~/.claude/skills`, `~/.agents/skills` and `/etc/codex/skills`; then each
-  directory of `WIKIWRIGHT_SKILL_DIRS`, colon-separated, in order. Plugin
+  `~/.claude/skills`, `~/.agents/skills` and the system's directory,
+  `WIKIWRIGHT_SYSTEM_SKILL_DIR` or `/etc/codex/skills` when it is unset (an
+  empty value leaves it out); then each directory of `WIKIWRIGHT_SKILL_DIRS`,
+  colon-separated, in order. Plugin
   caches are not scanned; a host names one through that variable. A
   candidate is a directory whose marker parses and names that same name; one
   that does not is skipped, with its reason. Every candidate is inspected:

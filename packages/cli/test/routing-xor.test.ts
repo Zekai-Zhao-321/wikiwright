@@ -450,3 +450,27 @@ describe("every export finding routes (docs/constitution.md §exports)", () => {
     }
   });
 });
+
+// docs/cli.md §Exit codes: a refusal the runtime makes is an envelope error,
+// not a finding, so it carries no route; a config linked out of the vault is
+// one, `linked-outside-vault`, and reaches no judge.
+describe("a vault read refused by the path law routes no finding (docs/cli.md §Exit codes)", () => {
+  it("check over a config linked out of the vault answers linked-outside-vault and no findings", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "ww-xor-linked-"));
+    try {
+      const root = join(tmp, "vault");
+      cpSync(join(REPO, "fixtures", "minimal-vault"), root, { recursive: true });
+      const engine = join(root, "config", "engine.json");
+      cpSync(engine, join(tmp, "engine.json"));
+      rmSync(engine);
+      symlinkSync(join(tmp, "engine.json"), engine);
+      const r = spawnSync(CLI_RUNTIME, [CLI, "check", "--root", root], { encoding: "utf8" });
+      assert.equal(r.status, 4, r.stdout);
+      const envelope = JSON.parse(r.stdout) as RunEnvelope;
+      assert.equal(envelope.error?.["code"], "linked-outside-vault");
+      assert.deepEqual(findingsIn(envelope), []);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});

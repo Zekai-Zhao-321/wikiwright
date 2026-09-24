@@ -42,6 +42,9 @@ export interface Skipped {
   reason: string;
 }
 
+/** The machine's own skill directory, read after the user's unless the environment names another. */
+const SYSTEM_SKILL_DIR = "/etc/codex/skills";
+
 /** The project's skill directories nearest first: `.claude/skills` then `.agents/skills` at each level. */
 function projectDirectories(cwd: string): SkillDirectory[] {
   let top: string | undefined;
@@ -77,8 +80,10 @@ function sameDirectory(a: string, b: string): boolean {
 /**
  * docs/cli.md §bundles: every directory the scan reads, in the order a name is
  * resolved in — the project's from the working directory up to the top of its
- * repository (to the filesystem root outside one), then the user's, then each
- * of `WIKIWRIGHT_SKILL_DIRS`, colon-separated, in order.
+ * repository (to the filesystem root outside one), then the user's and the
+ * system's (`WIKIWRIGHT_SYSTEM_SKILL_DIR`, `/etc/codex/skills` unless set; an
+ * empty value leaves it out), then each of `WIKIWRIGHT_SKILL_DIRS`,
+ * colon-separated, in order.
  */
 export function skillDirectories(cwd: string = process.cwd()): SkillDirectory[] {
   const home = homedir();
@@ -86,11 +91,12 @@ export function skillDirectories(cwd: string = process.cwd()): SkillDirectory[] 
     .split(":")
     .filter((dir) => dir !== "")
     .map((dir) => ({ dir: resolve(dir), tier: "extra" as const }));
+  const system = process.env["WIKIWRIGHT_SYSTEM_SKILL_DIR"] ?? SYSTEM_SKILL_DIR;
   return [
     ...projectDirectories(cwd),
     { dir: join(home, ".claude", "skills"), tier: "user" },
     { dir: join(home, ".agents", "skills"), tier: "user" },
-    { dir: "/etc/codex/skills", tier: "user" },
+    ...(system === "" ? [] : [{ dir: resolve(system), tier: "user" as const }]),
     ...extra,
   ];
 }

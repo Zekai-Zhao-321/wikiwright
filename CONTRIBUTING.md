@@ -40,8 +40,8 @@ package; the shipped tree is never installed into from a test.
 
 ## The gate
 
-`bun run check` is the gate: biome, `bun run build` (`tsc -b` plus the
-build-info stamp), the test-project typecheck and the whole suite, which
+`bun run check` is the gate: biome, `bun run build` (each package's `dist/`
+removed, then `tsc -b` and the build-info stamp), the test-project typecheck and the whole suite, which
 `tools/run-suite.ts` runs as one `bun test` process per file, as many at
 once as the machine has cores. Under it a test or a hook has 20 seconds
 rather than Bun's 5, because the files contend for the machine; a file run

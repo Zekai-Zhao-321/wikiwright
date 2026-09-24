@@ -11,6 +11,7 @@ import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts
 import { GitInconsistentRead, GitShortRead } from "./git.ts";
 import { type ExportMarker, MARKER_PATH, markerAt } from "./marker.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
+import { LinkedOutsideVault } from "./paths.ts";
 import {
   type CommandArgs,
   type CommandSpec,
@@ -87,9 +88,11 @@ type Target =
   | { ok: false; result: CommandResult };
 
 /**
- * docs/cli.md §Exit codes: what a thrown error becomes. A git answer cut
- * short is `git-short-read`; two git answers that disagree are
- * `git-inconsistent-read`. Anything else is the engine breaking.
+ * docs/cli.md §Exit codes: what a thrown error becomes. A vault path that
+ * resolves outside the vault — a config linked out of it, say — is
+ * `linked-outside-vault`. A git answer cut short is `git-short-read`; two git
+ * answers that disagree are `git-inconsistent-read`. Anything else is the
+ * engine breaking.
  */
 function thrown(command: string, e: unknown): CommandResult {
   // A git answer cut short, or contradicted by another, is the plumbing
@@ -99,6 +102,12 @@ function thrown(command: string, e: unknown): CommandResult {
     return fail(command, "internal", "git-short-read", e.message, {
       details: { command: `git ${e.command}` },
       hint: "git's answer ended before its terminator; nothing was judged from it — run the command again",
+    });
+  }
+  if (e instanceof LinkedOutsideVault) {
+    return fail(command, "conflict", "linked-outside-vault", e.message, {
+      details: { path: e.path },
+      hint: "a vault reads and writes only inside itself; replace the link with the file it names, inside the vault",
     });
   }
   if (e instanceof GitInconsistentRead) {
