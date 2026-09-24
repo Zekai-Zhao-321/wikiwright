@@ -73,8 +73,9 @@ version` prints the engine version and the commit a binary was built from.
   and the grammar's own fields verbatim — for a claim its handle, category,
   core and provenance. BM25 ranks over the item's line and its rationale;
   an item holding a term only inside a longer word follows unranked, as a line
-  search would find it. The coverage block counts the pages and the items
-  considered. `--all` lifts the result cap of either form.
+  search would find it. An item on a retired page has its score halved and
+  says so, as the page does. The coverage block counts the pages and the
+  items considered. `--all` lifts the result cap of either form.
 - `write --from`'s real run answers in its dry run's shape: `ops`, the plan
   read before anything landed, and `wrote: true`, beside the same `pages`.
   A caller keying on `wrote` read `false` from the dry run and nothing from
@@ -83,7 +84,8 @@ version` prints the engine version and the commit a binary was built from.
   only, in code-unit order and uncapped: the pages the ranked search finds
   plus every page holding a term inside a longer word, the set a line search
   lists. `search --band identity|relevance` keeps one band of the ranked
-  results.
+  results, and of `--files`, where it is applied after every match is
+  classified, so no identity match is listed as a substring match.
 - A third shipped skill, `wikiwright-consume`: the judgment for using what a
   bundle knows rather than writing it. Choose the bundle and say which one
   every answer came from; read the coherent section, qualifications with

@@ -431,29 +431,40 @@ export function searchFiles(
   filters: SearchFilters,
   options?: SearchOptions,
 ): { files: FileHit[]; coverage: FilesCoverage } {
-  const ranked = searchPages(pages, query, filters, Number.MAX_SAFE_INTEGER, options);
+  // Every ranked match is classified first, whatever band was asked for: a
+  // page the ranked search found is never offered to the substring scan, so
+  // the band applied afterwards cannot see an identity match come back as
+  // `text:contains`.
+  const ranked = searchPages(pages, query, filters, Number.MAX_SAFE_INTEGER, {
+    ...options,
+    band: undefined,
+  });
   // The fusion's list positions are a ranking's; an unranked list keeps the
   // tiers that matched and drops where each list put the page.
-  const files: FileHit[] = ranked.results.map((r) => ({
+  const classified: (FileHit & { band: SearchBand })[] = ranked.results.map((r) => ({
     path: r.path,
+    band: r.band,
     match_reasons: r.match_reasons.filter((reason) => !reason.startsWith("rrf:")),
   }));
   const tiers = [...ranked.coverage.tiers_executed];
   if (query !== undefined) {
     const terms = [...new Set(tokenize(query))];
-    const found = new Set(files.map((f) => f.path));
+    const found = new Set(classified.map((f) => f.path));
     const keeps = pageFilter(filters, options);
-    // A page only a substring found is relevance-band by construction.
-    const containsKept = options?.band === undefined || options.band === "relevance";
     for (const page of pages) {
-      if (!containsKept || found.has(page.path) || !keeps(page)) continue;
+      if (found.has(page.path) || !keeps(page)) continue;
       const source = normalizeIdentity(page.doc.source);
       if (terms.some((t) => source.includes(t))) {
-        files.push({ path: page.path, match_reasons: [CONTAINS_TIER] });
+        // A page only a substring found is relevance-band by construction.
+        classified.push({ path: page.path, band: "relevance", match_reasons: [CONTAINS_TIER] });
       }
     }
     tiers.push(CONTAINS_TIER);
   }
+  const band = options?.band;
+  const files: FileHit[] = classified
+    .filter((f) => band === undefined || f.band === band)
+    .map((f) => ({ path: f.path, match_reasons: f.match_reasons }));
   files.sort((a, b) => codeUnitCompare(a.path, b.path));
   const { caps: _caps, ...coverage } = ranked.coverage;
   return {

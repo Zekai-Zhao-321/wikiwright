@@ -140,6 +140,30 @@ describe("search --band keeps one band (docs/cli.md §search)", () => {
     assert.equal(identity.coverage.caps.found, 1);
   });
 
+  it("--files applies the band after every match is classified: no identity match returns as a substring", () => {
+    const every = data<FilesData>(ORCHARD, ["pruning-roses", "--files"]);
+    const identity = data<FilesData>(ORCHARD, ["pruning-roses", "--files", "--band", "identity"]);
+    const relevance = data<FilesData>(ORCHARD, ["pruning-roses", "--files", "--band", "relevance"]);
+    const paths = (d: FilesData): string[] => d.files.map((f) => f.path);
+    assert.deepEqual(paths(identity), ["wiki/pruning-roses.md"]);
+    assert.equal(
+      paths(relevance).includes("wiki/pruning-roses.md"),
+      false,
+      JSON.stringify(relevance),
+    );
+    // The two bands split the unbanded list, and each page keeps its own reasons.
+    assert.deepEqual([...paths(identity), ...paths(relevance)].sort(), paths(every));
+    for (const file of [...identity.files, ...relevance.files]) {
+      assert.deepEqual(
+        file,
+        every.files.find((f) => f.path === file.path),
+      );
+    }
+    // The ranked relevance band is a subset of the relevance files.
+    const ranked = data<PagesData>(ORCHARD, ["pruning-roses", "--band", "relevance", "--all"]);
+    for (const r of ranked.results) assert.ok(paths(relevance).includes(r.path), r.path);
+  });
+
   it("an unknown band is refused with the bands there are", () => {
     const r = run(ORCHARD, ["roses", "--band", "exact"]);
     assert.equal(r.status, 2, JSON.stringify(r.envelope));

@@ -5,7 +5,7 @@
 // gardening claims.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -210,4 +210,30 @@ describe("--items finds every item line a line search finds (the recall comparis
       }
     });
   }
+});
+
+describe("search --items demotes a retired page's items (docs/cli.md §search)", () => {
+  it("halves the item's score and names the demotion, as a retired page's own", () => {
+    const parent = join(tmp, "retired");
+    mkdirSync(parent);
+    const retired = claimsBundle(parent);
+    const bed = join(retired, "wiki", "South bed.md");
+    writeFileSync(
+      bed,
+      readFileSync(bed, "utf8").replace("tags: []\n", "tags: []\nstatus: retired\n"),
+    );
+    const scoreOf = (data: ItemData): Item | undefined =>
+      data.results.find((r) => r.path === "wiki/South bed.md");
+    const active = scoreOf(items(garden, ["aphids"]));
+    const demoted = scoreOf(items(retired, ["aphids"]));
+    assert.ok(active !== undefined && demoted !== undefined);
+    // The pages' items are the same, so the statistics are too: only the
+    // demotion moves the score.
+    assert.ok(
+      Math.abs(demoted.score - active.score / 2) <= 1e-6,
+      `${demoted.score} ${active.score}`,
+    );
+    assert.deepEqual(active.match_reasons, ["lexical:bm25"]);
+    assert.deepEqual(demoted.match_reasons, ["lexical:bm25", "status:retired"]);
+  });
 });

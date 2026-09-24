@@ -333,7 +333,9 @@ What the registry rows below do not say.
   `match_reasons`. The ranking is BM25 over the item's line and its rationale
   lines (`lexical:bm25`), with statistics from every walked page's items; an
   item whose text holds a query term only inside a longer word follows,
-  unranked, as a line search would find it (`text:contains`). The identity
+  unranked, as a line search would find it (`text:contains`). An item on a
+  retired page keeps its place in the list with its score halved and
+  `status:retired` among its reasons, as a retired page does. The identity
   ladder does not apply, a query is required, and `--near` is refused beside
   it. The coverage block counts `pages_considered` and `items_considered`.
   A multi-word query matches a page or an item that holds any one of its
@@ -347,7 +349,9 @@ What the registry rows below do not say.
   the name without a trailing `(…)` qualifier, or its whole title
   (`name:exact`, `alias:exact`, `name:stem`, `title:exact`) — and `relevance`
   for every other match; the cap then counts the kept band, and an unknown
-  band is `invalid-value` with `details.valid_values`. `--items` stands alone:
+  band is `invalid-value` with `details.valid_values`. Under `--files` the
+  band is applied after every match is classified, a page only a substring
+  found being `relevance`, so the two bands split the unbanded list. `--items` stands alone:
   `--files` and `--band` beside it are `invalid-arguments`, as is `--near`
   beside `--files`.
 - **`read <page> [--section <heading>] [--budget <bytes>]`** returns one page's
