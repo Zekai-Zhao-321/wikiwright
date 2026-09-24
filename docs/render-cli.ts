@@ -3,8 +3,8 @@
 // binary's, byte for byte.
 //
 //   bun docs/render-cli.ts            print the generated block
-//   bun docs/render-cli.ts --write    replace the block between the markers in 
-//   bun docs/render-cli.ts --check    exit 1 when 's block is not what the binary renders
+//   bun docs/render-cli.ts --write    replace the block between the markers in docs/cli.md
+//   bun docs/render-cli.ts --check    exit 1 when docs/cli.md's block is not what the binary renders
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
