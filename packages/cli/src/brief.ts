@@ -31,14 +31,14 @@ export const BRIEF_PATH = "generated/BRIEF.md";
 export const WORKFLOW_SLOTS: Readonly<Record<string, string>> = {
   brief: "once per session: read this file",
   bundles: "which bundles are connected, and which one an answer came from",
-  read: "the sections a task needs, with the page's digest, under a budget",
+  read: "a page by path, name, alias or title — the sections a task needs, with its digest, under a budget; never `find` or `rg` for a path",
   search:
-    "before creating anything: search both scripts; `--items` for the claims and relations themselves, to decide add, update or supersede",
+    "before creating anything: search both scripts; `--type <t>` alone lists a type's pages; results carry `band` and `match_reasons`; `--items` for the claims and relations themselves; `--files` for every page that mentions a term",
   type: "before writing: read the contract you are about to satisfy",
   vocabulary: "when a category or label is in doubt: read what the vocabulary admits",
   graph: "coverage, derived: the edges a label carries, and the pages on one side that carry none",
   write:
-    "the write itself: Markdown in, one page out — or a directory of drafts landed together — judged before a byte lands",
+    "the write itself: Markdown in, one page out — or a directory of drafts landed together — judged before a byte lands; the page arrives on stdin",
   new: "a page that does not exist yet: the skeleton write",
   lint: "a draft, before it lands",
   check: "the whole vault, and the generated artifacts",
@@ -114,20 +114,32 @@ const WRITER_LOOP: readonly string[] = [
 ];
 
 /**
- * docs/cli.md §brief: "The loop", one per role. The consumer's names no verb:
- * its `## Verbs` section renders the only ones it may run, and a loop that
- * named another would hand a reader a step the binary refuses.
+ * docs/cli.md §brief: the line every role's loop opens with. A session reaches
+ * for its own tools to look — reading lines with context, listing, counting,
+ * querying the generated artifacts — and should; what the engine holds and the
+ * files do not is the law, identity, a judged write and a version to cite.
+ */
+const PRINCIPLE =
+  "Use the engine to decide, to write and to attribute; use your own tools to look.";
+
+/**
+ * docs/cli.md §brief: "The loop", one per role, each opening on the principle.
+ * The consumer's names no verb: its `## Verbs` section renders the only ones it
+ * may run, and a loop that named another would hand a reader a step the binary
+ * refuses.
  */
 const LOOPS: Readonly<Record<Role, readonly string[]>> = {
   consumer: [
+    PRINCIPLE,
     "1. Select the bundle first, and pass its root explicitly with `--root` on every command.",
     "2. Search every name form, in both scripts, before you say a thing is absent; read the coverage block.",
     "3. Read the sections the task needs. Keep each answer's `metadata.bundle`, and a page's digest where the answer carries one, beside what you took from it; keep a qualification with the claim it qualifies.",
     "4. Hand a child the passages it needs verbatim, with their bundle, path and digest, and addresses for the rest; never an alias.",
     "5. Report a knowledge problem as a proposal to the bundle's feedback destination or to your caller, never by editing a copy you were given to read.",
   ],
-  writer: WRITER_LOOP,
+  writer: [PRINCIPLE, ...WRITER_LOOP],
   maintainer: [
+    PRINCIPLE,
     ...WRITER_LOOP,
     "6. A finding with `queue` is a judgment: adjudicate it or change the law, and never lower a severity to quiet it.",
     "7. Commit `generated/` with the pages it describes.",

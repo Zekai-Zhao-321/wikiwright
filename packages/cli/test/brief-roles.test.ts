@@ -1,10 +1,10 @@
 // docs/cli.md §brief: `brief` is a consumer verb, so every role may print its own
 // brief, and without `--role` it prints the session's. "The loop" and
 // "Findings" are the role's: the consumer's loop names no verb, its verb list
-// holds no verb that writes a bundle and its Findings runs nothing; the
-// writer's loop is the five steps it has always been, and the maintainer's is
-// the writer's five and two more; the writer and the maintainer read one
-// Findings paragraph.
+// holds no verb that writes a bundle and its Findings runs nothing; every
+// role's loop opens on one principle line, after which the writer's is the five
+// steps it has always been and the maintainer's is the writer's five and two
+// more; the writer and the maintainer read one Findings paragraph.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { before, describe, it } from "node:test";
@@ -15,7 +15,11 @@ import { ROLE_RANK } from "../src/spec.ts";
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
 
-/** The writer's loop as the brief printed it before the loop depended on the role. */
+/** The line every role's loop opens with: the engine to decide, write and attribute; your own tools to look. */
+const PRINCIPLE =
+  "Use the engine to decide, to write and to attribute; use your own tools to look.";
+
+/** The writer's five steps as the brief printed them before the loop depended on the role. */
 const WRITER_LOOP = [
   "1. `search` every name form, in both scripts, before you create anything.",
   "2. `type show <type> --brief` — the contract, with live counts.",
@@ -117,7 +121,8 @@ describe("every role prints its own brief (docs/cli.md §brief)", () => {
 
   it("the consumer's loop names no verb above the consumer's rank as a command", () => {
     const loop = section(consumer.text, "The loop");
-    assert.equal(loop.length, 5, loop.join("\n"));
+    assert.equal(loop.length, 6, loop.join("\n"));
+    assert.equal(loop[0], PRINCIPLE);
     const above = COMMANDS.filter((c) => ROLE_RANK[c.role] > ROLE_RANK.consumer).map((c) => c.name);
     for (const name of ["write", "new", "fix", "check"]) assert.ok(above.includes(name), name);
     for (const name of above) {
@@ -126,16 +131,20 @@ describe("every role prints its own brief (docs/cli.md §brief)", () => {
     }
   });
 
-  it("the writer's loop is the five steps, verbatim", () => {
+  it("the writer's loop is the principle, then the five steps, verbatim", () => {
     const writer = briefOf("writer");
     assert.equal(writer.status, 0, writer.text);
-    assert.deepEqual(section(writer.text, "The loop"), WRITER_LOOP);
+    assert.deepEqual(section(writer.text, "The loop"), [PRINCIPLE, ...WRITER_LOOP]);
   });
 
-  it("the maintainer's loop is the writer's five, then two more", () => {
+  it("the maintainer's loop is the principle, the writer's five, then two more", () => {
     const maintainer = briefOf("maintainer");
     assert.equal(maintainer.status, 0, maintainer.text);
-    assert.deepEqual(section(maintainer.text, "The loop"), [...WRITER_LOOP, ...MAINTAINER_EXTRA]);
+    assert.deepEqual(section(maintainer.text, "The loop"), [
+      PRINCIPLE,
+      ...WRITER_LOOP,
+      ...MAINTAINER_EXTRA,
+    ]);
   });
 
   it("the consumer's Findings tells it to run nothing, and keeps the pass count and caps.hit", () => {

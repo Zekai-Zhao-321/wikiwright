@@ -12,6 +12,10 @@ engine prints the same brief for any connected bundle, from any directory.**
 When the bundle is not the repository you are in, ask the engine for the brief
 rather than looking for the file. This file is the part the engine cannot check.
 
+Use the engine to decide, to write and to attribute; use your own tools to look. Reading lines with their
+context, listing and counting are yours; which page a name means, what a bundle
+holds and which version said it are the engine's.
+
 ## Choose the bundle, then say which one answered
 
 Name the bundle before the first question, and on every command after it: a

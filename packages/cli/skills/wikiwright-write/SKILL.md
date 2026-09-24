@@ -1,6 +1,6 @@
 ---
 name: wikiwright-write
-description: Judgment for writing into a wikiwright vault — what deserves a page, what a fact means, what to preserve verbatim, and when to skip. Use whenever adding knowledge to a repo carrying config/constitution.json. The verbs, their flags and this bundle's own vocabularies are in generated/BRIEF.md, which the engine regenerates per install; this file is the part no engine can check.
+description: Judgment for writing into a wikiwright vault — what deserves a page, what a fact means, what to preserve verbatim, and when to skip. Use whenever adding knowledge to a repo carrying config/constitution.json, or in a session that has begun writing pages part-way through another task. The verbs, their flags and this bundle's own vocabularies are in generated/BRIEF.md, which the engine regenerates per install; this file is the part no engine can check.
 ---
 
 # Writing: the judgment half
@@ -11,6 +11,10 @@ commands, their flags, this bundle's types, its categories and its relation
 labels are in `generated/BRIEF.md`.** Read that first, every session. This file
 is the part the engine cannot check, and it is the part that decides whether the
 vault is worth keeping.
+
+Use the engine to decide, to write and to attribute; use your own tools to look. A line search
+over the pages is looking; whether a page exists, what a claim's handle is,
+and every byte that lands are the engine's.
 
 ## What deserves a page
 

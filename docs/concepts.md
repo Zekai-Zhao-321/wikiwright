@@ -419,8 +419,12 @@ security boundary.
 
 Each role has its **brief**, which `wikiwright brief` prints for the session's
 role (the writer's when none is declared, any role's with `--role`), under a
-header naming the bundle's law digest. The consumer's lists only the verbs a
-consumer may run; its loop names none — choose the bundle and pass its root,
+header naming the bundle's law digest. Every role's loop opens on one line:
+use the engine to decide, to write and to attribute; use your own tools to
+look. Reading lines with their context, listing, counting and querying the
+generated artifacts are a session's own tools' work; the law, which page a
+name means, a judged write and a version to cite are the engine's. The
+consumer's lists only the verbs a consumer may run; its loop names none — choose the bundle and pass its root,
 search every name form before saying a thing is absent, read the sections a
 task needs and keep each answer's bundle beside what was taken, hand a
 subagent the words with their source, report a problem as a proposal — and

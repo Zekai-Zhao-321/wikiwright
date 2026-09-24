@@ -7,6 +7,7 @@ Law digest: `030034260740042a7df922ee8d5696fab0c96f05c97b0b3b0ccc8edd1cb6e0ca`
 
 ## The loop
 
+Use the engine to decide, to write and to attribute; use your own tools to look.
 1. `search` every name form, in both scripts, before you create anything.
 2. `type show <type> --brief` — the contract, with live counts.
 3. Draft the Markdown, then `write <path> --dry-run` and read the findings.
@@ -90,7 +91,7 @@ wikiwright new architecture-overview "Architecture" --dest wiki/architecture.md
 wikiwright okf check
 ```
 
-### `read` — the sections a task needs, with the page's digest, under a budget
+### `read` — a page by path, name, alias or title — the sections a task needs, with its digest, under a budget; never `find` or `rg` for a path
 
 `wikiwright read <page>` — flags: --section <v> --budget <v>
 
@@ -106,7 +107,7 @@ wikiwright read wiki/pruning-roses.md
 wikiwright schema
 ```
 
-### `search` — before creating anything: search both scripts; `--items` for the claims and relations themselves, to decide add, update or supersede
+### `search` — before creating anything: search both scripts; `--type <t>` alone lists a type's pages; results carry `band` and `match_reasons`; `--items` for the claims and relations themselves; `--files` for every page that mentions a term
 
 `wikiwright search [query]` — flags: --type <v> --tag <v> --title-contains <v> --limit <v> --all --near --items --files --band <v>
 
@@ -138,7 +139,7 @@ wikiwright version
 wikiwright vocabulary show relations
 ```
 
-### `write` — the write itself: Markdown in, one page out — or a directory of drafts landed together — judged before a byte lands
+### `write` — the write itself: Markdown in, one page out — or a directory of drafts landed together — judged before a byte lands; the page arrives on stdin
 
 `wikiwright write [path]` — flags: --from <v> --section <v> --append --date <v> --replace-core <v> --retract <v> --correct <v> --core <v> --line <v> --coexist <v> --base <v> --not-any-of <v> --dry-run
 

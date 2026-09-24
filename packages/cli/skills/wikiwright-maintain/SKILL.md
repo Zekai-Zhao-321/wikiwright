@@ -10,6 +10,10 @@ The engine owns every mechanical contract. **The commands and their flags are in
 [lint-response.md](lint-response.md), which the engine generates from its own
 table.** This file is what neither of those can say.
 
+Use the engine to decide, to write and to attribute; use your own tools to look. Counting findings or
+reading a generated artifact is looking; a verdict, a fix and a change to the
+law are the engine's.
+
 ## A finding is a question about the law as often as about the page
 
 Every finding routes one of two ways, and the route is the instruction. A finding

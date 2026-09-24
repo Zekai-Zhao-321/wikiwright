@@ -78,6 +78,26 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
     assert.deepEqual(openings, ["using", "maintaining", "writing"]);
   });
 
+  it("each skill states the principle once: the engine to decide, write and attribute; your own tools to look", () => {
+    for (const skill of SKILLS) {
+      const text = readFileSync(join(SKILLS_DIR, skill, "SKILL.md"), "utf8");
+      const count =
+        text.split(
+          "Use the engine to decide, to write and to attribute; use your own tools to look.",
+        ).length - 1;
+      assert.equal(count, 1, skill);
+    }
+  });
+
+  it("the write skill is called for a session that began writing part-way through another task", () => {
+    const text = readFileSync(join(SKILLS_DIR, "wikiwright-write", "SKILL.md"), "utf8");
+    const description = /^description: (.*)$/mu.exec(text)?.[1] ?? "";
+    assert.match(
+      description,
+      /a session that has begun writing pages part-way through another task/u,
+    );
+  });
+
   it("the consume skill says the brief is the engine's to print, for any connected bundle", () => {
     const text = readFileSync(join(SKILLS_DIR, "wikiwright-consume", "SKILL.md"), "utf8");
     assert.match(text, /generated\/BRIEF\.md/u);

@@ -134,10 +134,16 @@ version` prints the engine version and the commit a binary was built from.
   the bundle and pass its root explicitly, search every name form before
   saying a thing is absent, keep each answer's `metadata.bundle` beside what
   was taken from it, hand a child verbatim passages with their source, and
-  report a knowledge problem as a proposal rather than an edit. The writer's
-  five steps are unchanged, byte for byte; the generated brief around them
-  does move, since its header now names the law digest and its verb list
-  holds `bundles` and `read`. The maintainer's adds two to them: a queued finding is a judgment
+  report a knowledge problem as a proposal rather than an edit. Every role's
+  loop opens on one line, "Use the engine to decide, to write and to
+  attribute; use your own tools to look."; after it the writer's five steps
+  are unchanged, byte for byte, and the generated brief around them moves,
+  since its header now names the law digest, its verb list holds `bundles`
+  and `read`, and its `read`, `search` and `write` slots say how a page is
+  named, what `search` returns, and that a page arrives on stdin. The three
+  skills state the same line once each, and the write skill is called for a
+  session that began writing pages part-way through another task. The
+  maintainer's adds two to them: a queued finding is a judgment
   to adjudicate or a law to change, never a severity to lower, and
   `generated/` is committed with the pages it describes. Every role had been
   handed the writer's loop, which walks a consumer into `write`. The

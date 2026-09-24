@@ -385,8 +385,10 @@ What the registry rows below do not say.
   its vocabularies' census, the loaded modules' skill fragments and the naming
   rules. The verb is a consumer verb, so every role may print its own brief;
   `--role` takes any of the three and defaults to the session's
-  `WIKIWRIGHT_ROLE`, or to `writer` when the session declares none. The
-  consumer's loop names no verb: select the bundle and pass its root
+  `WIKIWRIGHT_ROLE`, or to `writer` when the session declares none. Every
+  role's loop opens on one line, "Use the engine to decide, to write and to
+  attribute; use your own tools to look.", which each shipped skill states
+  once too. The consumer's loop names no verb: select the bundle and pass its root
   explicitly, search every name form before saying a thing is absent, keep
   each answer's `metadata.bundle` beside what was taken from it, hand a child
   verbatim passages with their source, and report a knowledge problem as a
