@@ -77,7 +77,9 @@ version` prints the engine version and the commit a binary was built from.
   says so, as the page does. The coverage block counts the pages and the
   items considered. `--all` lifts the result cap of either form.
 - `write --from`'s real run answers in its dry run's shape: `ops`, the plan
-  read before anything landed, and `wrote: true`, beside the same `pages`.
+  for the drafts the run read and judged, built before anything landed, and
+  `wrote: true`, beside the same `pages`. The directory is read once, so a
+  draft added while the run works is neither landed nor reported.
   A caller keying on `wrote` read `false` from the dry run and nothing from
   the real one.
 - `search <query> --files` lists every page with a match, path and reasons

@@ -265,9 +265,11 @@ What the registry rows below do not say.
   absolute directory it looked in (`details.resolved`), and a refused set
   carries the same `pages` rows as an accepted dry run — each draft with its
   findings and its `preview` — beside `failing`. Its real run answers in its
-  dry run's shape: `ops` (the plan, read before anything landed, so a page
-  the batch created is a `create`), `wrote: true`, and each page with its
-  `blob` where the dry run has its `preview`. **`--section
+  dry run's shape: `ops` (the plan for the drafts it read and judged, built
+  before anything landed, so a page the batch created is a `create`),
+  `wrote: true`, and each page with its `blob` where the dry run has its
+  `preview`. The directory is read once: a draft added while the run works
+  is neither landed nor reported. **`--section
   <heading> --append`** splices the stdin lines at the section's tail: one
   parsed item under a grammar, verbatim under prose. The section must be
   declared by the type (`unknown-section`, with the declared sections in

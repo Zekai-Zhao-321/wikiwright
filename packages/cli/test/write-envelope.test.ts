@@ -5,7 +5,7 @@
 // claims bundle.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -91,6 +91,69 @@ describe("write --from answers in one shape, dry or real (docs/cli.md §write)",
     const pages = real.envelope.data["pages"] as Record<string, unknown>[];
     assert.ok(pages.every((p) => typeof p["blob"] === "string" && !("preview" in p)));
     assert.match(readFileSync(join(root, "wiki", "Pear tree.md"), "utf8"), /# Pear tree/u);
+  });
+});
+
+describe("write --from reports the drafts it judged (docs/cli.md §write)", () => {
+  it("reads the directory once, and a draft added after that is neither landed nor reported", () => {
+    const root = claimsBundle(join(tmp, "once"));
+    const drafts = join(root, "drafts");
+    mkdirSync(join(drafts, "wiki"), { recursive: true });
+    writeFileSync(
+      join(drafts, "wiki", "Pear tree.md"),
+      "---\ntype: plant\ntitle: Pear tree\ndescription: A pear grown against the east wall.\ntags: [fruit]\n---\n\n# Pear tree\n\nA pear grown against the east wall.\n\n## Facts\n\n- [bloom] Blossom opens a week before the apple's (stated 2026-04-08)\n",
+    );
+    // After the run's first listing of the directory, a second draft appears:
+    // a report built from a second listing would name it as landed.
+    const log = join(tmp, "once-reads.json");
+    const preload = join(tmp, "once-preload.cjs");
+    const late = join(drafts, "wiki", "Quince.md");
+    writeFileSync(
+      preload,
+      `const fs = require("node:fs");
+const { syncBuiltinESMExports } = require("node:module");
+const original = fs.readdirSync;
+let listings = 0;
+fs.readdirSync = function (path, ...args) {
+  const out = Reflect.apply(original, this, [path, ...args]);
+  if (String(path) === ${JSON.stringify(drafts)}) {
+    listings += 1;
+    if (listings === 1) fs.writeFileSync(${JSON.stringify(late)}, "---\\ntype: plant\\n---\\n");
+  }
+  return out;
+};
+syncBuiltinESMExports();
+process.on("exit", () => fs.writeFileSync(${JSON.stringify(log)}, JSON.stringify({ listings })));
+`,
+    );
+    const r = spawnSync(
+      CLI_RUNTIME,
+      [
+        "--require",
+        preload,
+        CLI,
+        "write",
+        "--from",
+        "drafts",
+        "--date",
+        "2026-09-04",
+        "--root",
+        root,
+      ],
+      { encoding: "utf8", env: { ...process.env, ...PINNED_CLOCK } },
+    );
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const data = (JSON.parse(r.stdout) as Envelope).data;
+    assert.deepEqual(
+      (data["ops"] as { kind: string; path: string }[]).map((op) => [op.kind, op.path]),
+      [["create", "wiki/Pear tree.md"]],
+    );
+    assert.deepEqual(
+      (data["pages"] as { path: string }[]).map((p) => p.path),
+      ["wiki/Pear tree.md"],
+    );
+    assert.equal(existsSync(join(root, "wiki", "Quince.md")), false, "the late draft did not land");
+    assert.deepEqual(JSON.parse(readFileSync(log, "utf8")), { listings: 1 });
   });
 });
 

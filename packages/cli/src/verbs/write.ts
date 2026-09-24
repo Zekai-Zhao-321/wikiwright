@@ -366,8 +366,9 @@ function stdinText(): string {
 
 /**
  * docs/cli.md §write: the drafts under `--from <dir>` — every `.md` beneath it,
- * each a draft at the same vault-relative path. Read once here, by the plan
- * and the run alike, so the plan names exactly the files the run would land.
+ * each a draft at the same vault-relative path. A run reads them once, here,
+ * and judges, lands and reports exactly those; the verb's plan, asked on its
+ * own, reads them the same way.
  */
 function draftsUnder(dir: string): { path: string; text: string }[] {
   return readdirSync(dir, { recursive: true, encoding: "utf8" })
@@ -685,9 +686,11 @@ function performBatchWrite(input: {
     unevaluated: judged.unevaluated,
     resolve_checked: [...input.notAnyOf],
   };
-  // The plan is read before anything lands, so a page the batch creates is a
-  // `create` in the real run's ops as it is in the dry run's.
-  const plan = planForWrite(args);
+  // The plan is built from the drafts this run read and judged, never from a
+  // second reading of the directory, so a draft added or changed since cannot
+  // be reported as landed. It is built before anything lands, so a page the
+  // batch creates is a `create` in the real run's ops as in the dry run's.
+  const plan = planOf(input.drafts.flatMap((draft) => pageOp(args.root, draft.path)));
   if (isDryRun(args)) {
     return ok("write", {
       ...planOf(plan.ops),
