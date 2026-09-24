@@ -30,10 +30,11 @@ version` prints the engine version and the commit a binary was built from.
   may write to within its role, or `installed`, a copy that is read only — the
   place a problem with it is reported, and a page to read first, which must
   be a Markdown page under a content root, the pages `read` returns
-  (`guide-not-a-page` otherwise). `list` shows
-  every connection with the identity the envelope's bundle block carries and
-  loads no law and no module, so a bundle whose modules are not approved on
-  this machine still lists. The verb is a consumer's: the registry is outside
+  (`guide-not-a-page` otherwise). `list` shows every connection with its
+  content roots and the identity the envelope's bundle block carries, and
+  `list --records` the rows without the identity, for a caller that only
+  routes; it loads no law and no module, so a bundle whose modules are not
+  approved on this machine still lists. The verb is a consumer's: the registry is outside
   every vault, and connecting a bundle grants nothing. A record whose root is
   not an absolute path, as a registry edited by hand may hold, is refused as
   `bundles-registry-malformed`, never resolved against the working directory.
@@ -76,9 +77,11 @@ version` prints the engine version and the commit a binary was built from.
   destination; a session whose role may not write is told so; otherwise the
   page's findings, each with its route, a fix's argv quoted for a POSIX
   shell, and each pass the page could not be judged by without a base, which
-  the staged gate judges against HEAD. The content roots are read from
-  `engine.json` with a leading byte order mark ignored, as the engine ignores
-  it. Both print nothing when there is nothing to say or anything goes wrong,
+  the staged gate judges against HEAD. It routes by `bundles list --records`,
+  the content roots the engine read inside each bundle, and by the path the
+  edit named, the file's real path held inside the bundle: a page that is a
+  link inside the vault keeps its path, and a config linked out of the vault
+  routes nothing. Both print nothing when there is nothing to say or anything goes wrong,
   and exit 0. They are tested against the documented hook input and output;
   host behaviour is not verified here.
 

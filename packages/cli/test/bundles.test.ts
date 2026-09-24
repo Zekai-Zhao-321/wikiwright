@@ -50,7 +50,8 @@ interface Row {
   kind: string;
   feedback: string | null;
   guide: string | null;
-  identity: Record<string, unknown> | null;
+  content_roots: string[] | null;
+  identity?: Record<string, unknown> | null;
 }
 
 let tmp = "";
@@ -161,6 +162,7 @@ describe("bundles connects a vault by name (docs/cli.md §bundles)", () => {
       "kind",
       "feedback",
       "guide",
+      "content_roots",
       "identity",
     ]);
     // Given as a relative path, stored absolute; the real path beside it.
@@ -172,6 +174,7 @@ describe("bundles connects a vault by name (docs/cli.md §bundles)", () => {
     assert.equal(orchard.guide, "wiki/start-here.md");
     assert.equal(allotment.kind, "installed");
     assert.equal(allotment.guide, null);
+    assert.deepEqual(orchard.content_roots, ["wiki"]);
     assert.deepEqual(Object.keys(orchard.identity ?? {}), [
       "label",
       "head",
@@ -185,6 +188,14 @@ describe("bundles connects a vault by name (docs/cli.md §bundles)", () => {
     const read = run(tmp, ["type", "list", "--root", ORCHARD], env).envelope.metadata.bundle;
     assert.equal(orchard.identity?.["law"], read?.["law"]);
     assert.equal(orchard.identity?.["content"], read?.["content"]);
+
+    // `--records` is the same rows without the identity, for a caller that
+    // only routes: nothing of a bundle's pages is read for it.
+    const records = rowsOf(run(tmp, ["bundles", "list", "--records"], env).envelope);
+    assert.deepEqual(
+      records,
+      rows.map(({ identity: _identity, ...record }) => record),
+    );
 
     const stored = JSON.parse(readFileSync(file, "utf8")) as {
       schema: string;

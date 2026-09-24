@@ -36,7 +36,7 @@ wikiwright brief --role writer
 
 ### `bundles` — which bundles are connected, and which one an answer came from
 
-`wikiwright bundles <subcommand> [target]` — subcommands: add, list, remove — flags: --name <v> --kind <v> --feedback <v> --guide <v> --dry-run
+`wikiwright bundles <subcommand> [target]` — subcommands: add, list, remove — flags: --name <v> --kind <v> --feedback <v> --guide <v> --records --dry-run
 
 ```text
 wikiwright bundles list

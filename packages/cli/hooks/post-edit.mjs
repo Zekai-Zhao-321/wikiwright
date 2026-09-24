@@ -9,12 +9,14 @@
 // could not judge without a base is named too. A file outside every
 // connection gets nothing.
 //
-// Plain Node, no dependencies, and no law loaded here: the content roots are
-// read from engine.json directly, and the judging is the engine's. It inherits
-// the environment. Whatever goes wrong it prints nothing and exits 0.
+// Plain Node, no dependencies, and no law loaded or config read here: the
+// connections and their content roots are the engine's answer to `bundles
+// list --records`, read inside each bundle as every verb reads it, and the
+// judging is the engine's. It inherits the environment. Whatever goes wrong it
+// prints nothing and exits 0.
 import { spawnSync } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BIN = fileURLToPath(new URL("../dist/bin.js", import.meta.url));
@@ -31,32 +33,52 @@ function parseJson(text) {
   return JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
 }
 
-/** The content roots a bundle's engine.json declares, read without loading its law. */
-function contentRootsOf(root) {
-  const engine = parseJson(readFileSync(join(root, "config", "engine.json"), "utf8"));
-  const roots = engine?.content_roots;
-  return Array.isArray(roots) ? roots.filter((r) => typeof r === "string") : [];
+/** The real path of a file, or undefined when it cannot be resolved. */
+function realOf(path) {
+  try {
+    return realpathSync(path);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The page's vault path as the edit named it. The path is taken LEXICALLY, so
+ * a page that is itself a link inside the vault keeps the path it was edited
+ * at, which is the path the engine judges it at: from the record's root or
+ * its real path when the edited path starts there, else from the real path of
+ * the file's directory, so a root reached through a link is followed while the
+ * page's own link is not.
+ */
+function vaultPathOf(file, row) {
+  for (const base of [row.root, row.realpath]) {
+    if (typeof base === "string" && file.startsWith(base + sep)) return relative(base, file);
+  }
+  const directory = realOf(dirname(file));
+  if (directory === undefined) return undefined;
+  const through = join(directory, basename(file));
+  return through.startsWith(row.realpath + sep) ? relative(row.realpath, through) : undefined;
 }
 
 /**
  * The connection whose root holds the file and whose content roots hold its
- * path, with the page's vault path; the deepest root when roots nest.
+ * path, with the page's vault path; the deepest root when roots nest. The
+ * path decides membership and the file's real path decides containment, as
+ * the engine's path law does: a page linked out of the vault is no page of it.
  */
 function pageOf(file, rows) {
+  const real = realOf(file);
+  if (real === undefined) return undefined;
   let best;
   for (const row of rows) {
-    const root = row.realpath;
-    if (typeof root !== "string" || !file.startsWith(root + sep)) continue;
-    const rel = relative(root, file).split(sep).join("/");
+    if (typeof row.realpath !== "string" || !Array.isArray(row.content_roots)) continue;
+    if (!real.startsWith(row.realpath + sep)) continue;
+    const found = vaultPathOf(file, row);
+    if (found === undefined) continue;
+    const rel = found.split(sep).join("/");
     if (!rel.endsWith(".md")) continue;
-    let roots;
-    try {
-      roots = contentRootsOf(root);
-    } catch {
-      continue;
-    }
-    if (!roots.some((contentRoot) => rel.startsWith(`${contentRoot}/`))) continue;
-    if (best === undefined || root.length > best.row.realpath.length) best = { row, rel };
+    if (!row.content_roots.some((contentRoot) => rel.startsWith(`${contentRoot}/`))) continue;
+    if (best === undefined || row.realpath.length > best.row.realpath.length) best = { row, rel };
   }
   return best;
 }
@@ -84,8 +106,12 @@ function main() {
   const input = parseJson(readFileSync(0, "utf8"));
   const path = input?.tool_input?.file_path;
   if (typeof path !== "string") return;
-  const file = realpathSync(path);
-  const listed = wikiwright(["bundles", "list"]);
+  // Absolute and normalized, as the edit named it: no link is followed yet.
+  const file = resolve(path);
+  // Routing needs the records and their content roots, not each bundle's
+  // identity: no page of any bundle is read or hashed to decide where an edit
+  // belongs.
+  const listed = wikiwright(["bundles", "list", "--records"]);
   if (listed?.ok !== true) return;
   const found = pageOf(
     file,

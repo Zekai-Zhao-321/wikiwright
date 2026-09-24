@@ -26,8 +26,11 @@ import { type CommandArgs, type CommandSpec, isDryRun, type Plan, planOf } from 
 import { StoreBusy } from "../storelock.ts";
 import { CONSTITUTION_PATH } from "../vaultfiles.ts";
 
-/** A connection as `list` prints it: the record, where it resolves, and what is there. */
-interface Row {
+/**
+ * A connection as `list --records` prints it: the record, where it resolves,
+ * whether a bundle is there, and the content roots its config declares.
+ */
+interface RecordRow {
   name: string;
   root: string;
   realpath: string | null;
@@ -35,6 +38,17 @@ interface Row {
   kind: Kind;
   feedback: string | null;
   guide: string | null;
+  /**
+   * `config/engine.json`'s content roots, read through the contained reader;
+   * null when the bundle is not present or its config cannot be read inside
+   * it, so a caller that routes by them never routes by a file the engine
+   * would refuse to read.
+   */
+  content_roots: string[] | null;
+}
+
+/** A connection as `list` prints it: the record row and the bundle's identity. */
+interface Row extends RecordRow {
   identity: {
     label: string;
     head: string | null;
@@ -52,16 +66,32 @@ function realpathOf(root: string): string | null {
   }
 }
 
+/** docs/cli.md §bundles: one connection as a caller routes by it, reading no identity. */
+function recordOf(connection: Connection): RecordRow {
+  const realpath = realpathOf(connection.root);
+  const present = realpath !== null && existsSync(join(connection.root, CONSTITUTION_PATH));
+  const roots = present ? contentRootsAt(connection.root) : null;
+  return {
+    name: connection.name,
+    root: connection.root,
+    realpath,
+    present,
+    kind: connection.kind,
+    feedback: connection.feedback,
+    guide: connection.guide,
+    content_roots: roots === null ? null : [...roots],
+  };
+}
+
 /**
  * docs/cli.md §bundles: one connection with the identity the envelope's bundle
  * block carries, read without loading the law. `identity` is null when the root
  * is not present, or when its identity cannot be read inside it.
  */
 function rowOf(connection: Connection): Row {
-  const realpath = realpathOf(connection.root);
-  const present = realpath !== null && existsSync(join(connection.root, CONSTITUTION_PATH));
+  const record = recordOf(connection);
   let identity: Row["identity"] = null;
-  if (present) {
+  if (record.present) {
     try {
       const bundle = bundleIdentity(connection.root);
       if (bundle !== undefined) {
@@ -72,16 +102,7 @@ function rowOf(connection: Connection): Row {
       identity = null;
     }
   }
-  return {
-    name: connection.name,
-    root: connection.root,
-    realpath,
-    present,
-    kind: connection.kind,
-    feedback: connection.feedback,
-    guide: connection.guide,
-    identity,
-  };
+  return { ...record, identity };
 }
 
 function names(store: ConnectionStore): string[] {
@@ -361,6 +382,12 @@ export const bundlesCommand: CommandSpec = {
       summary:
         "with `add`: the page to read first, a page under a content root, relative to the bundle's root",
     },
+    {
+      name: "records",
+      type: "boolean",
+      summary:
+        "with `list`: each connection's record and content roots, reading no bundle's identity",
+    },
   ],
   examples: [
     "wikiwright bundles list",
@@ -378,9 +405,13 @@ export const bundlesCommand: CommandSpec = {
     // `list` writes nothing, and the flag is registry-rendered for the whole
     // verb — so it is ANSWERED with an empty plan rather than ignored.
     if (isDryRun(args)) return ok("bundles", planOf([]));
-    const rows = [...readConnections().bundles]
-      .sort((a, b) => codeUnitCompare(a.name, b.name))
-      .map((connection) => rowOf(connection));
+    const sorted = [...readConnections().bundles].sort((a, b) => codeUnitCompare(a.name, b.name));
+    // A caller that only routes — the post-edit hook — asks for the records:
+    // no page is read or hashed and no git runs for a bundle it may not need.
+    const rows =
+      args.flags["records"] === true
+        ? sorted.map((connection) => recordOf(connection))
+        : sorted.map((connection) => rowOf(connection));
     return ok("bundles", { registry: bundlesFilePath(), bundles: rows });
   },
 };

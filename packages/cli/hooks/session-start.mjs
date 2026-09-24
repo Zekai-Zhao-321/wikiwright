@@ -6,6 +6,8 @@
 //
 // Plain Node, no dependencies. It inherits the environment, so the registry,
 // the trust store and the session's role are the ones the engine would read.
+// It asks for the full listing, not `--records`: each line names the bundle's
+// label, its head and whether it is dirty, which only the identity carries.
 // Whatever goes wrong — stdin that is not JSON, a binary that is missing, an
 // envelope that is not one — it prints nothing and exits 0: a hook that fails
 // must not stand between a session and its start.

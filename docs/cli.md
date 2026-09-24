@@ -149,11 +149,15 @@ object, a missing binary or any error, it prints nothing.
   `compact` or `resume`, the first line says the connections are being
   re-established from current state. It prints no page content, and nothing
   when no bundle is connected.
-- `hooks/post-edit.mjs` takes `tool_input.file_path` and finds the connection
-  whose root holds the file and whose content roots, read from
-  `config/engine.json` (a leading byte order mark ignored, as the engine
-  ignores it, here and on stdin), hold its path; a file outside every
-  connection gets nothing. For an `installed` connection it says the page is
+- `hooks/post-edit.mjs` takes `tool_input.file_path` (a leading byte order
+  mark on stdin ignored, as the engine ignores it) and routes it by `bundles
+  list --records`: the page's vault path is taken from the path as edited,
+  from the connection's root or real path, or else from the real path of the
+  file's directory, so a root reached through a link is followed and a page
+  that is itself a link keeps the path it was edited at; the file's real path
+  must lie inside the connection's, and the vault path must be a `.md` file
+  under one of the `content_roots` the engine read. A file outside every
+  connection, or in one whose config cannot be read inside it, gets nothing. For an `installed` connection it says the page is
   in a read-only copy and where a change goes. Otherwise it runs
   `lint --page` on the page: under a role that may not lint, it says the
   session may not write the bundle; else it names the finding count and each
@@ -431,11 +435,16 @@ What the registry rows below do not say.
   reported, and `--guide` which page to read first, a page under a content
   root. `list` prints every
   connection sorted by name with `root` as registered, `realpath`, `present`
-  (the root exists and holds a constitution), `kind`, `feedback`, `guide` and
-  `identity`: the envelope's bundle block without `root` (`label`, `head`,
-  `dirty`, `law`, `content`), or `null` when the root is not present or its
-  identity cannot be read. Listing loads no law and no module, so a bundle
-  whose modules this machine has not approved still lists. `remove` refuses a
+  (the root exists and holds a constitution), `kind`, `feedback`, `guide`,
+  `content_roots` (as `config/engine.json` declares them, read inside the
+  vault as every verb reads it, or `null` when the bundle is not present or
+  that file cannot be read inside it) and `identity`: the envelope's bundle
+  block without `root` (`label`, `head`, `dirty`, `law`, `content`), or `null`
+  when the root is not present or its identity cannot be read. `list
+  --records` prints the same rows without `identity`, reading no page and
+  running no git, for a caller that only routes by them. Listing loads no law
+  and no module, so a bundle whose modules this machine has not approved
+  still lists. `remove` refuses a
   name that is not connected with `bundle-not-found` and `details.valid_values`.
   A plan's one path is the registry, absolute. A registry this engine cannot
   read is `bundles-registry-malformed` (exit 4), with `details.file` and, for a
@@ -571,6 +580,7 @@ Role: `consumer`. Writes: yes (accepts `--dry-run`).
 | `--kind <value>` | with `add`: maintained (the default) \| installed, a copy that is read only |
 | `--feedback <value>` | with `add`: where a problem with this bundle is reported |
 | `--guide <value>` | with `add`: the page to read first, a page under a content root, relative to the bundle's root |
+| `--records` | with `list`: each connection's record and content roots, reading no bundle's identity |
 | `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
 
 ```text

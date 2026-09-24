@@ -20,6 +20,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -394,5 +395,90 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
       text,
       /^- section-depth line 24: .* — fix: wikiwright fix --rule section-depth /mu,
     );
+  });
+
+  it("a page that is a link inside the vault is routed by the path it was edited at", () => {
+    // wiki/pruning-roses.md links to archive/, outside the content roots but
+    // inside the vault: the engine judges it at the wiki path, and so does the hook.
+    const root = connectedCopy("linked");
+    mkdirSync(join(root, "archive"), { recursive: true });
+    const target = join(root, "archive", "pruning-roses.md");
+    writeFileSync(
+      target,
+      withDeepNotes(readFileSync(join(root, "wiki", "pruning-roses.md"), "utf8")),
+    );
+    rmSync(join(root, "wiki", "pruning-roses.md"));
+    symlinkSync(join("..", "archive", "pruning-roses.md"), join(root, "wiki", "pruning-roses.md"));
+    const text = contextOf(
+      hook(POST_EDIT, edited(join(root, "wiki", "pruning-roses.md"))).stdout,
+      "PostToolUse",
+    );
+    assert.match(
+      text,
+      /^wikiwright: wiki\/pruning-roses\.md is a page of the bundle "linked"\.$/mu,
+    );
+    assert.match(
+      text,
+      /^- section-depth line 24: .* --path wiki\/pruning-roses\.md --line 24 --expect 1 --bundle linked$/mu,
+    );
+    // The archive file itself is under no content root: nothing to say.
+    assert.equal(hook(POST_EDIT, edited(target)).stdout, "");
+  });
+
+  it("a page linked out of the vault gets nothing", () => {
+    const root = connectedCopy("escaping");
+    const outside = join(tmp, "outside-page.md");
+    writeFileSync(
+      outside,
+      withDeepNotes(readFileSync(join(root, "wiki", "pruning-roses.md"), "utf8")),
+    );
+    symlinkSync(outside, join(root, "wiki", "elsewhere.md"));
+    const r = hook(POST_EDIT, edited(join(root, "wiki", "elsewhere.md")));
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, "");
+  });
+
+  it("an edit through a linked bundle root is routed to that bundle", () => {
+    const root = connectedCopy("reached");
+    const page = join(root, "wiki", "pruning-roses.md");
+    writeFileSync(page, withDeepNotes(readFileSync(page, "utf8")));
+    const link = join(tmp, "reached-link");
+    symlinkSync(root, link);
+    const text = contextOf(
+      hook(POST_EDIT, edited(join(link, "wiki", "pruning-roses.md"))).stdout,
+      "PostToolUse",
+    );
+    assert.match(
+      text,
+      /^wikiwright: wiki\/pruning-roses\.md is a page of the bundle "reached"\.$/mu,
+    );
+    assert.match(text, /^1 finding\(s\) on the page:$/mu);
+  });
+
+  it("a config linked out of the vault gives no content roots, and the hook says nothing", () => {
+    // The engine refuses to read a config/engine.json that resolves outside
+    // the vault; the hook routes by the engine's reading, so it reads none.
+    const root = connectedCopy("unconfined");
+    const config = join(root, "config", "engine.json");
+    const outside = join(tmp, "outside-engine.json");
+    cpSync(config, outside);
+    rmSync(config);
+    symlinkSync(outside, config);
+    const page = join(root, "wiki", "pruning-roses.md");
+    writeFileSync(page, withDeepNotes(readFileSync(page, "utf8")));
+    for (const argv of [
+      ["bundles", "list"],
+      ["bundles", "list", "--records"],
+    ]) {
+      const listed = JSON.parse(cli(argv).stdout) as {
+        data: { bundles: { name: string; present: boolean; content_roots: unknown }[] };
+      };
+      const row = listed.data.bundles.find((b) => b.name === "unconfined");
+      assert.equal(row?.present, true, argv.join(" "));
+      assert.equal(row?.content_roots, null, argv.join(" "));
+    }
+    const r = hook(POST_EDIT, edited(page));
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, "");
   });
 });
