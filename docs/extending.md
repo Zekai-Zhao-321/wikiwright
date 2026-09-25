@@ -414,7 +414,10 @@ What the scan does not do is stated here rather than implied. It narrows; it
 is not a sandbox. It reads bytes, so a name bound or built at runtime is
 outside it: `const D = Date; D.now()`, a banned method taken by reference
 and called later, a constructor reached through a prototype chain, and the
-members of `process` other than `env` all pass it. A module that means to
+members of `process` other than `env` all pass it. A `/` after `)` is read
+as division, so a regular expression there that holds `//` or `/*` — `if
+(x) /[/*]/.test(s)` — makes the rest of its line, or everything up to the
+next `*/`, read as a comment and pass unscanned. A module that means to
 reach the clock can. Neither the scan nor the determinism fixture is the
 argument for running a module's code with the engine's permissions:
 installing the module is, the decision every package manager asks of its

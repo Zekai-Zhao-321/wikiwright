@@ -162,7 +162,7 @@ const REGEX_KEYWORDS = new Set([
  * holding `/*` opens no comment, and a `${ … }` inside a template literal is
  * code again.
  */
-export function stripComments(source: string): string {
+function stripComments(source: string): string {
   const out = source.split("");
   const blank = (from: number, to: number): void => {
     for (let k = from; k < to; k += 1) if (out[k] !== "\n") out[k] = " ";

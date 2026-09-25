@@ -28,10 +28,10 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,658 tests across 115 files. At `29dbfb9`, when it held 1,590,
-the full gate, `bun run check`, passed them all with the test files under
-Bun and the CLI under Node (`tools/run-suite.ts`), and the full node runner,
-`bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
+The suite is 1,658 tests across 115 files. At `f725d75` the full gate,
+`bun run check`, passed 1,658 of 1,658 with the test files under Bun and the
+CLI under Node (`tools/run-suite.ts`), and the full node runner,
+`bun run test:node`, passed 1,658 of 1,658 with every file under Node. It
 judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
@@ -43,7 +43,10 @@ this repository: `check --root devwiki` reports zero findings and
 the install and nothing else, `freshness` reads all 27 pinned pages
 `current` (12) or `unchanged` (15) and none `stale`, with no
 `stale-capture`, `stale-source-cited` or `citation-unresolved` finding,
-before the commit that carries those pins; once it lands, the 12 are
+before the commit that carries those pins, `f725d75`; once it lands, the 12
+are `unchanged`. The commit after it makes a helper in
+`packages/core/src/modules/purity.ts` private, so the four pages that cover
+that file read `stale` until they are re-read and re-pinned, and the other 23
 `unchanged`. A later change to code a page covers makes that page `stale`
 until it is re-read and re-pinned, and `freshness` names it.
 A citation into a file its page does not cover is held to the pin but not
@@ -138,8 +141,10 @@ dynamic evaluation, computed access to those globals, and an import of any
 form — and refuses by file and line (`docs/extending.md` §The purity scan).
 It reads the source with its comments read through, so a comment between a
 banned word and its token hides nothing and a comment that mentions one is
-not refused. A byte scan cannot see a name bound or built at runtime: `const D = Date;
-D.now()` passes it. It narrows what a module can reach; it is not a sandbox,
+not refused. A `/` after `)` is read as division, so a regular expression
+there that holds `//` or `/*` makes the rest of its line, or everything up to
+the next `*/`, read as a comment and pass unscanned. A byte scan cannot see
+a name bound or built at runtime: `const D = Date; D.now()` passes it. It narrows what a module can reach; it is not a sandbox,
 and it is not the argument for running the module, which is the install.
 
 ### A module's proofs are taken once per process
