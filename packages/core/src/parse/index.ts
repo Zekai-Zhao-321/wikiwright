@@ -171,7 +171,17 @@ function parseFrontmatterNode(node: MdNode | undefined): Frontmatter {
       for (const ch of source.slice(0, offset)) if (ch === "\n") breaks += 1;
       keys.push({ key: keyText, line: fenceLine + 1 + breaks });
     }
-    const js: unknown = doc.toJS();
+    // An alias bomb makes toJS throw its resource bound: malformed, not a crash.
+    let js: unknown;
+    try {
+      js = doc.toJS();
+    } catch (error) {
+      issues.push({
+        code: "malformed-frontmatter",
+        message: `${(error as Error).message} (line ${fenceLine + 1})`,
+        line: fenceLine + 1,
+      });
+    }
     if (typeof js === "object" && js !== null && !Array.isArray(js)) {
       value = js as Record<string, unknown>; // invariant: guarded plain-object narrowing
     }

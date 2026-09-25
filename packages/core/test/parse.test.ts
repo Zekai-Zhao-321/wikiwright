@@ -105,6 +105,21 @@ describe("parseDoc — frontmatter", () => {
     assert.deepEqual(doc.frontmatter.issues, []);
   });
 
+  it("reports an alias bomb as malformed-frontmatter rather than throwing", () => {
+    const bomb = [
+      "a: &a [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+      "b: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a, *a]",
+      "c: &c [*b, *b, *b, *b, *b, *b, *b, *b, *b, *b]",
+      "d: [*c, *c, *c, *c, *c, *c, *c, *c, *c, *c]",
+    ].join("\n");
+    const doc = parseDoc(`---\n${bomb}\n---\n\nBody.\n`);
+    assert.deepEqual(
+      doc.frontmatter.issues.map((i) => [i.code, i.line]),
+      [["malformed-frontmatter", 2]],
+    );
+    assert.deepEqual(doc.frontmatter.value, {});
+  });
+
   it("flags non-mapping frontmatter", () => {
     const doc = parseDoc("---\n- a\n- b\n---\n\nBody.\n");
     assert.equal(

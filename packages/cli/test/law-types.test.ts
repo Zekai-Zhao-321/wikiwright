@@ -269,6 +269,18 @@ describe("load-time codes of the type documents", () => {
       "type-invalid",
     ],
     [
+      "a document whose aliases expand past the YAML reader's bound",
+      {
+        "constitution/types/guide.yaml": `type: guide\nrole: hub\ndescription: x\nx-${[
+          "a: &a [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+          "b: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a, *a]",
+          "c: &c [*b, *b, *b, *b, *b, *b, *b, *b, *b, *b]",
+          "d: [*c, *c, *c, *c, *c, *c, *c, *c, *c, *c]",
+        ].join("\nx-")}\n`,
+      },
+      "type-invalid",
+    ],
+    [
       "configure on a rule the type does not inherit",
       edit(PLANTING, "configure:", "configure:\n  frost-dates: { months: [5] }"),
       "type-invalid",

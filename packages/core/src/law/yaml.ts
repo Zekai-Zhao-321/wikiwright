@@ -53,7 +53,15 @@ export function readYaml(text: string): YamlResult {
       line: text.slice(0, proto).split("\n").length,
     };
   }
-  return { ok: true, value: int64(doc.toJS({ maxAliasCount: 100 })) };
+  // An alias bomb makes toJS throw (the `yaml` library's resource bound); it
+  // is a document that does not read, not an internal error.
+  let value: unknown;
+  try {
+    value = doc.toJS({ maxAliasCount: 100 });
+  } catch (error) {
+    return { ok: false, message: (error as Error).message };
+  }
+  return { ok: true, value: int64(value) };
 }
 
 /**

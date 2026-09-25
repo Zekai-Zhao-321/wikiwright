@@ -94,6 +94,15 @@ Some prose between the items, ignored.
 - companion-of [[Tomato|tomatoes]]
 `;
 
+/** Four levels of ten aliases: past the YAML reader's alias bound. */
+const ALIAS_BOMB = [
+  "a: &a [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+  "b: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a, *a]",
+  "c: &c [*b, *b, *b, *b, *b, *b, *b, *b, *b, *b]",
+  "d: [*c, *c, *c, *c, *c, *c, *c, *c, *c, *c]",
+  "",
+].join("\n");
+
 function read(path: string, text: string): ParsedPage {
   const result = parsePage(path, enc(text), law, resolve);
   if (!result.ok) throw new Error(result.message);
@@ -208,6 +217,12 @@ describe("a parsed page", () => {
     expect(validate?.(page.frontmatter)).toBe(false);
     const digests = new Set([digest(plain), digest(hidden("A")), digest(hidden("B"))]);
     expect(digests.size).toBe(3);
+  });
+
+  it("records an alias bomb in the frontmatter as a frontmatter error, not a throw", () => {
+    const page = read("wiki/bomb.md", `---\ntype: bed-note\n${ALIAS_BOMB}---\n`);
+    expect(page.frontmatterError).toContain("Excessive alias count");
+    expect(page.frontmatter).toEqual({});
   });
 
   it("refuses a page over 1 MiB as page-too-large", () => {
