@@ -10,3 +10,15 @@ import { fileURLToPath } from "node:url";
 export function shippedDir(name: string): string {
   return fileURLToPath(new URL(`../${name}/`, import.meta.url));
 }
+
+/**
+ * Whether this process runs from a binary `bun build --compile` made. Its
+ * modules live in Bun's embedded file system (`/$bunfs/`, `B:/~BUN/` on
+ * Windows), so `import.meta.url` names no directory on disk and a shipped
+ * directory resolved from it does not exist, on the machine that built the
+ * binary too. docs/roadmap.md §The compiled binary.
+ */
+export function insideCompiledBinary(): boolean {
+  const here = import.meta.url;
+  return here.includes("/$bunfs/") || here.includes("/~BUN/");
+}

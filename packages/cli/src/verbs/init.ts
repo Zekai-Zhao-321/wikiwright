@@ -328,6 +328,7 @@ export const initCommand: CommandSpec = {
   ],
   writes: true,
   needsVaultModules: true,
+  readsShippedFiles: true,
   plan: planForInit,
   run: async (args) => {
     const inspection = await inspectInit(args);

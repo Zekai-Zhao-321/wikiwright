@@ -127,7 +127,7 @@ findings that refused it.
 |---|---|---|
 | 0 | | ok |
 | 1 | `internal` | the engine broke; `unexpected-error` carries the message, `git-short-read` names a git answer that ended before its terminator, `git-inconsistent-read` two git answers about one state that disagree — the staged diff and the index listing, or a commit walk and its count — and `git-timeout` a git child killed for running past `WIKIWRIGHT_GIT_TIMEOUT_MS`, each refused rather than judged |
-| 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
+| 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong, or ran `init` or `skills` from the compiled binary (`shipped-files-absent`) |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
 | 3 | `not_found` | the page, type, vocabulary entry, revision, directory or bundle skill asked for does not exist |
 | 4 | `conflict` | the state refuses the operation: a stale `--base`, a foreign hook, an `--expect` mismatch, a splice the Writer cannot prove, a vault path that resolves outside the vault, such as a config linked out of it (`linked-outside-vault`, from any verb, never read as a parse failure), a copy's marker that is not one (`export-marker-invalid`) |
@@ -718,7 +718,13 @@ What the registry rows below do not say.
   in `fixtures/okf-upstream/reference.json`: the frontmatter parses and every
   page carries a non-empty `type`.
 - **`version`** prints the engine version and the commit the binary was built
-  from; `--version` and `-v` alias it.
+  from; `--version` and `-v` alias it. `checkout_commit` and `checkout_dirty`
+  name the checkout the running code sits in, and are null from the compiled
+  binary, whose code sits in none.
+
+From the compiled binary (`bun run binary`), `init` and `skills` refuse as
+`shipped-files-absent` (exit 2): they read files the package ships, and the
+binary carries none of them (`docs/roadmap.md` §The compiled binary).
 
 ## Verbs
 

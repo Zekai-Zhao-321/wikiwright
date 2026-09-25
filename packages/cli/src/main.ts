@@ -12,6 +12,7 @@ import { GitInconsistentRead, GitShortRead, GitTimedOut, gitTimeoutSetting } fro
 import { type ExportMarker, MARKER_PATH, markerAt } from "./marker.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import { LinkedOutsideVault } from "./paths.ts";
+import { insideCompiledBinary } from "./shipped.ts";
 import {
   type CommandArgs,
   type CommandSpec,
@@ -280,6 +281,17 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
   const { args, shadowed } = target;
   const refused = markedRootRefusal(spec, args.root);
   if (refused !== undefined) return refused;
+  if (spec.readsShippedFiles === true && insideCompiledBinary()) {
+    return fail(
+      spec.name,
+      "usage",
+      "shipped-files-absent",
+      `"${spec.name}" reads the files the package ships, and the compiled binary carries none of them`,
+      {
+        hint: `run it from the package instead: bun packages/cli/dist/main.js ${spec.name}`,
+      },
+    );
+  }
   let result: CommandResult;
   try {
     // docs/extending.md §Declaring a module: the declared modules load HERE —

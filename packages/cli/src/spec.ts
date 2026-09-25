@@ -160,6 +160,14 @@ interface CommandBase {
    * declaration against what the verb's own imports reach.
    */
   needsVaultModules: boolean;
+  /**
+   * docs/roadmap.md §The compiled binary: does this verb read a file the
+   * package ships beside its code (the starters, the skills)? The compiled
+   * binary carries none of them, so the entry point refuses such a verb there
+   * by name (`shipped-files-absent`) rather than failing on a missing
+   * directory or answering from an empty one.
+   */
+  readsShippedFiles?: true;
   run: (args: CommandArgs) => CommandResult | Promise<CommandResult>;
 }
 

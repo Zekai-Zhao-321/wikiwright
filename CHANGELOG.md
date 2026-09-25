@@ -13,7 +13,10 @@ version` prints the engine version and the commit a binary was built from.
   (`bun build --compile --bytecode --format=esm
   --no-compile-autoload-dotenv --no-compile-autoload-bunfig`, the build
   stamp compiled in through `--define`), which answers `--help` and `check`
-  byte for byte as `bun packages/cli/dist/main.js` does.
+  byte for byte as `bun packages/cli/dist/main.js` does. It carries none of
+  the files the package ships: `init` and `skills` refuse there as
+  `shipped-files-absent` (exit 2), `check` compares no installed skill, and
+  `version` reports no checkout (`docs/roadmap.md` §The compiled binary).
 - The pipe probes (`test/pipe-boundary.test.ts`): the built CLI's envelope,
   read through a pipe on purpose by a reader that starts late, arrives
   whole — a default envelope, a 70,000-byte one and an error envelope, and

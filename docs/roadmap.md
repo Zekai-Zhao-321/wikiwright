@@ -663,18 +663,32 @@ quick, but it is a read: the engine cannot see that the bytes match, so
 there is no verb that re-pins blindly and there will not be one. The
 alternative is to carry the history with the tree.
 
-### The binary reads shipped files from the checkout it was built in
+### The compiled binary
 
 `bun run binary` compiles the CLI into `dist/wikiwright`, with the build
-stamp compiled in, and `binary.test.ts` holds its `--help` and a `check`
-envelope byte for byte to `bun dist/main.js`. A verb that reads a file the
-package ships at run time — `init`'s starters, `skills`' shipped skills —
-resolves it from the paths the binary was compiled from, so a binary moved
-off that machine is not claimed to answer those verbs. The binary is not
-published, and the pipe probes run through it only when one is present.
+stamp compiled in, and `binary.test.ts` holds its `--help`, a verb's
+`--help`, a `check` envelope and `version`'s build to `bun dist/main.js`,
+byte for byte. Nothing else the package ships is compiled in: inside the
+binary, `import.meta.url` names Bun's embedded file system (`/$bunfs/`), so
+no shipped file resolves, on the machine that built the binary or any other.
+What follows, each held by `binary.test.ts`:
 
-Wanted: the shipped files embedded in the binary, when a binary is
-distributed.
+- `init` (the starters) and `skills` (the shipped skills) refuse as
+  `shipped-files-absent` (exit 2) and write nothing. Before, `init` failed
+  with `unexpected-error` on the missing directory and `skills status`
+  answered ok with no skills. Both verbs leave in the v2 delivery's
+  deletions, so the shipped files are not embedded for them.
+- `check` compares no installed skill: with no shipped skill to compare
+  against, a bundle's `.claude/skills/` drift raises no `skills-stale` or
+  `skills-missing` from the binary, where the script raises them.
+- `version`'s `checkout_commit` and `checkout_dirty` are null: the
+  binary's code sits in no checkout. `commit` and `dirty` name the build.
+
+The binary is not published, and the pipe probes run through it only when
+one is present.
+
+Wanted: the shipped files the surviving verbs need, embedded in the binary,
+when a binary is distributed.
 
 ### No envelope-size bound yet
 

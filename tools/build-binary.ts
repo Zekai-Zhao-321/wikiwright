@@ -12,10 +12,12 @@
 // answers depends on its argv and the bundle, not on files beside the caller.
 // `--define WIKIWRIGHT_BUILD_INFO=<the stamp's JSON, as a string literal>`
 // carries the stamp `tools/write-build-info.ts` wrote (buildinfo.ts reads it).
-// The engine's other files are read at run time from the checkout's paths as
-// `import.meta.url` resolves them inside the binary, so a verb that reads a
-// shipped file (the starters, the shipped skills) is not claimed to work from
-// a binary moved off this machine.
+// Nothing else the package ships is compiled in: inside the binary
+// `import.meta.url` names Bun's embedded file system (`/$bunfs/`), not this
+// checkout, so no shipped file resolves, on this machine or any other. The
+// verbs that read one, `init` (the starters) and `skills`, refuse there as
+// `shipped-files-absent`; `check` compares no installed skill; `version`
+// reports no checkout (docs/roadmap.md §The compiled binary).
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

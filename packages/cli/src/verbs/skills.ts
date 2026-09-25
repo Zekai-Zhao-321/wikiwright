@@ -94,6 +94,7 @@ export const skillsCommand: CommandSpec = {
   examples: ["wikiwright skills status", "wikiwright skills update"],
   writes: true,
   needsVaultModules: true,
+  readsShippedFiles: true,
   plan: planForSkills,
   run: async (args) => {
     const [sub] = args.positionals;
