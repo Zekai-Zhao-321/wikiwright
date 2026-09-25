@@ -720,9 +720,12 @@ synthetic gardening bundle and library under the temporary directory. What
 that leaves, until the judge (step 3) and the verbs (step 4) are rewritten
 over it:
 
-- Five v4 keys are validated and carried with no consumer: `label`,
-  `engine`, `commit_prefixes`, `folder_tags` and `folder_tag_aliases`
-  (`ENGINE_V4_CONSUMERS` names each as `null`). Their readers are verbs.
+- Six v4 keys are validated and carried with no consumer: `label`,
+  `engine`, `commit_prefixes`, `folder_tags` and `folder_tag_aliases`,
+  whose readers are verbs, and `content_roots`, whose reader is page
+  discovery, which comes with the judge (`ENGINE_V4_CONSUMERS` names each
+  as `null`; every other key names the exported function that reads it,
+  and a test holds the function to exist and to read the key).
 - The grammar parameters (`provenance`, `categories`, `require`,
   `history`, `lifecycle`), `instances`, `abstract`, `examples` and the
   rule tests are declared, loaded and digested, and nothing enforces or

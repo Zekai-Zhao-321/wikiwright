@@ -77,23 +77,25 @@ export const ENGINE_V4_SCHEMA = {
 } as const;
 
 /**
- * Every v4 key and what reads it in this tree. `null` is a key the loader
- * validates and carries whose consumer is a verb not yet rewritten over the
- * v2 law (contracts §12 step 4); docs/roadmap.md names each.
+ * Every v4 key and the exported function of @wikiwright/core that reads it.
+ * `null` is a key the loader validates and carries with no reader yet: a verb
+ * not yet rewritten over the v2 law (contracts §12 step 4), or, for
+ * `content_roots`, page discovery, which the judge brings (step 3).
+ * docs/roadmap.md names each.
  */
 export const ENGINE_V4_CONSUMERS: Readonly<Record<string, string | null>> = {
   schema: "loadEngineV4",
   schema_version: "loadEngineV4",
   label: null,
   engine: null,
-  content_roots: "buildPageInterface",
-  source_roots: "parseRecords",
+  content_roots: null,
+  source_roots: "parsePage",
   libraries: "resolveLibraries",
   commit_prefixes: null,
-  field_sources: "reservedShape",
+  field_sources: "compileShapes",
   folder_tags: null,
   folder_tag_aliases: null,
-  extensions: "effectiveShape",
+  extensions: "compileShapes",
 };
 
 let compiled: ReturnType<ReturnType<typeof strictAjv>["compile"]> | undefined;

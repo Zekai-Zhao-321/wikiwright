@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import * as core from "@wikiwright/core";
 import {
   ENGINE_V4_CONSUMERS,
   ENGINE_V4_SCHEMA,
@@ -118,11 +119,34 @@ describe("engine.json v4", () => {
   });
 
   it("names what reads every key of the schema, and no other key", () => {
-    // A null consumer is a key whose verb is not yet rewritten over the v2 law
-    // (contracts §12 step 4); docs/roadmap.md names each one.
+    // A null consumer is a key with no reader yet (contracts §12 steps 3 and
+    // 4); docs/roadmap.md names each one.
     expect(Object.keys(ENGINE_V4_CONSUMERS).sort()).toEqual(
       Object.keys(ENGINE_V4_SCHEMA.properties).sort(),
     );
+  });
+
+  it("names, for every key it says is read, an exported function of core that reads it", () => {
+    const exported = core as Record<string, unknown>;
+    for (const [key, reader] of Object.entries(ENGINE_V4_CONSUMERS)) {
+      if (reader === null) continue;
+      const fn = exported[reader];
+      expect([key, typeof fn]).toEqual([key, "function"]);
+      expect([key, String(fn).includes(key)]).toEqual([key, true]);
+    }
+    expect(
+      Object.entries(ENGINE_V4_CONSUMERS)
+        .filter(([, reader]) => reader === null)
+        .map(([key]) => key)
+        .sort(),
+    ).toEqual([
+      "commit_prefixes",
+      "content_roots",
+      "engine",
+      "folder_tag_aliases",
+      "folder_tags",
+      "label",
+    ]);
   });
 
   it("refuses an absent file and a file that is not JSON", () => {
