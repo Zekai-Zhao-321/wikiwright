@@ -252,6 +252,7 @@ async function verdicts(
   if (declared === undefined || compiled === undefined)
     throw new Error(`${ruleId} is not on ${type.name}`);
   const bindings = {
+    base: false,
     page: buildPageInterface(read.page, type),
     config: declared.config,
     facts: buildFacts(loaded, read.page, resolve),

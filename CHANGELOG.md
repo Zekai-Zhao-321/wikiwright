@@ -78,8 +78,10 @@ version` prints the engine version and the commit a binary was built from.
     `configure` writes, over 1,000 members). The law's own ranges are held
     at load: a vocabulary over 10,000 entries is `vocabulary-invalid`, a
     declared `default` list over 1,000 is `type-invalid`, and over 10,000
-    types or vocabularies is `law-too-large`. A result that is not a bool is `rule-error`; a transition
-    rule without a base is `unevaluated` (`no-base`).
+    types or vocabularies is `law-too-large`. A result that is not a bool
+    is `rule-error`; a transition rule under a state with no base is
+    `unevaluated` (`no-base`), and a page new to a state with a base is
+    evaluated with `before.present` false.
   - The digests: `bytes`, `content`, `page.digest` (canonical frontmatter,
     `meta` keys removed) and `law` (every loader-read file, the interface
     and profile identities, eight dependency versions, the engine version),

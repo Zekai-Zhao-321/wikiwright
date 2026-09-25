@@ -29,6 +29,7 @@ function run(expr: string, bindings: Record<string, unknown> = {}) {
   const admission = admitRule(expr);
   if (!admission.ok) throw new Error(admission.message);
   return compileRule(admission).evaluate({
+    base: false,
     page: {},
     config: {},
     facts: {},
@@ -179,9 +180,27 @@ describe("evaluation", () => {
       reason: "no-base",
     });
     expect(
-      run(expr, { page: { sections: [] }, before: { present: true, sections: [{}] } }),
+      run(expr, {
+        base: true,
+        page: { sections: [] },
+        before: { present: true, sections: [{}] },
+      }),
     ).toEqual({
       verdict: "fail",
+    });
+  });
+
+  it("evaluates a transition rule on a page new to a state with a base: before.present is false", () => {
+    const expr = "before.present || has(page.fields.created)";
+    // The working tree: no base at all, so nothing to compare against.
+    expect(run(expr, { page: { fields: {} } })).toEqual({
+      verdict: "unevaluated",
+      reason: "no-base",
+    });
+    // The overlay or the index: a new page has no base version, and is judged.
+    expect(run(expr, { base: true, page: { fields: {} } })).toEqual({ verdict: "fail" });
+    expect(run(expr, { base: true, page: { fields: { created: "2026-04-12" } } })).toEqual({
+      verdict: "pass",
     });
   });
 
@@ -265,6 +284,7 @@ describe("Intl is unreachable", () => {
       cost: 0,
     });
     const verdict = unadmitted.evaluate({
+      base: false,
       page: {},
       config: {},
       facts: {},
