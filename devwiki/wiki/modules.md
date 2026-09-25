@@ -3,7 +3,7 @@ type: subsystem
 title: "Modules, the loader and the fixture"
 description: "The registration API every module goes through, the loader's ladder from the bundle's own node_modules or a declared bundle-relative path to the judge, the purity scan and the determinism fixture run at every load and kept once per digest in a process, and the modules verb."
 tags: [kernel, cli]
-pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
+pin: de86822dad88d5cb8c5b51a1210245588ef19cc6
 origin: .
 covers: [packages/core/src/modules/, packages/core/src/version/, packages/cli/src/main.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/cli/src/sha256.ts, packages/cli/src/verbs/modules.ts]
 aliases: ["modules-and-trust"]

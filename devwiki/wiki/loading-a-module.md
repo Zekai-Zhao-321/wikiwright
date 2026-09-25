@@ -3,7 +3,7 @@ type: code-concept
 title: "Loading a module"
 description: "Module code runs inside the judge, and installing a module is the consent to run it; what the engine adds is proof over the installed bytes at every load — the digest the law names, a purity scan that refuses by file and line, and the module's own determinism fixture — once per digest in a process; a stranger's bug is one attributed finding, never a crash."
 tags: [cli, kit]
-pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
+pin: de86822dad88d5cb8c5b51a1210245588ef19cc6
 origin: .
 covers: [packages/core/src/modules/purity.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/kit-code/, packages/core/src/grammar/index.ts, packages/core/src/lint/index.ts]
 aliases: ["trust-law"]

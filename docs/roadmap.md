@@ -41,12 +41,9 @@ this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured on
 2026-09-25 on the development machine, where `check --root devwiki` needs
 the install and nothing else, `freshness` reads all 27 pinned pages
-`current` (12) or `unchanged` (15) and none `stale`, with no
+`current` (4) or `unchanged` (23) and none `stale`, with no
 `stale-capture`, `stale-source-cited` or `citation-unresolved` finding,
-before the commit that carries those pins, `f725d75`; once it lands, the 12
-are `unchanged`. The commit after it makes a helper in
-`packages/core/src/modules/purity.ts` private, so the four pages that cover
-that file read `stale` until they are re-read and re-pinned, and the other 23
+before the commit that carries those pins; once it lands, the 4 are
 `unchanged`. A later change to code a page covers makes that page `stale`
 until it is re-read and re-pinned, and `freshness` names it.
 A citation into a file its page does not cover is held to the pin but not
