@@ -63,6 +63,8 @@ export interface ShapePart {
   origin: string;
   where: string;
   schema: Record<string, unknown>;
+  /** The schema as YAML read it, integers as `bigint`. */
+  raw: Record<string, unknown>;
 }
 
 export interface LawType {
@@ -393,6 +395,7 @@ export function compose(
           origin: layer.origin,
           where: layer.doc.where,
           schema: layer.doc.fields as Record<string, unknown>,
+          raw: layer.doc.rawFields as Record<string, unknown>,
         })),
       properties,
       sections,

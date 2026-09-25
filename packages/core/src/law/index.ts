@@ -1,6 +1,33 @@
 // v2 contracts §2, §3: the type-document loader's surface. Beside the old
 // loader (registry/), which still loads every corpus in the repository.
 
+export { canonicalJson, pageDigest } from "../digest/index.ts";
+export type { Occurrence, PageRead, ParsedPage, UnparsedItem } from "../interface/index.ts";
+export {
+  buildBefore,
+  buildFacts,
+  buildPageInterface,
+  celOccurrence,
+  PAGE_BYTES_MAX,
+  PAGE_INTERFACE,
+  parsePage,
+} from "../interface/index.ts";
+export type {
+  ClaimRecord,
+  EntryRecord,
+  GrammarRecord,
+  Location,
+  RelationRecord,
+  RelationTarget,
+  ResolveTarget,
+} from "../records/index.ts";
+export {
+  claimHandle,
+  parseClaimLine,
+  parseEntryLine,
+  parseRelationLine,
+} from "../records/index.ts";
+export { RECORD_SCHEMAS, recordValidators } from "../records/schemas.ts";
 export { ENGINE_KEYWORDS, errorLine, strictAjv } from "../schema/ajv.ts";
 export { isDate, isDateTime, isUri, parseUrl } from "../schema/formats.ts";
 export { RESERVED_KEYS, reservedShape } from "../schema/reserved.ts";

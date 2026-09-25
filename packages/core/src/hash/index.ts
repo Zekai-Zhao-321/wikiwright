@@ -43,7 +43,14 @@ function utf8Bytes(text: string): number[] {
 const rotr = (x: number, n: number): number => ((x >>> n) | (x << (32 - n))) >>> 0;
 
 export function sha256Hex(text: string): string {
-  const bytes = utf8Bytes(text);
+  return sha256HexOfBytes(utf8Bytes(text));
+}
+
+/**
+ * The same hash over bytes as they are (v2 contracts §7: a page file's bytes,
+ * a law file's bytes), with no decoding between the file and the digest.
+ */
+export function sha256HexOfBytes(bytes: ArrayLike<number>): string {
   const bitLength = bytes.length * 8;
   const blocks = Math.ceil((bytes.length + 9) / 64);
   const padded: number[] = new Array<number>(blocks * 64).fill(0);

@@ -74,6 +74,8 @@ interface Common {
   description?: string;
   /** The document's JSON Schema, numbers as JSON numbers. */
   fields?: Record<string, unknown>;
+  /** The same schema as YAML read it, integers as `bigint`: a default a rule sees is an `int`. */
+  rawFields?: Record<string, unknown>;
   sections?: SectionsDeclaration;
   rules: RuleDeclaration[];
   meta: string[];
@@ -415,6 +417,7 @@ export function readDocument(
   if (value["fields"] !== undefined) {
     if (isMapping(value["fields"])) {
       common.fields = jsonNumbers(value["fields"]) as Record<string, unknown>;
+      common.rawFields = value["fields"];
     } else r.invalid("/fields", "a JSON Schema object schema, written as a mapping");
   }
   if (value["sections"] !== undefined) {
