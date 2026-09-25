@@ -315,7 +315,9 @@ export async function gitRevListCount(dir: string, from: string, to: string): Pr
  * diff). `--no-renames`: a covered file that moved away is listed under the
  * path it left, the path a page covers. With `top`, `:(top)` pathspec magic keeps `covers`
  * repo-root-relative when the vault is embedded in a subdirectory of the
- * repository it documents.
+ * repository it documents. `--no-relative`: a caller's `diff.relative=true`
+ * would restrict the diff to the vault's directory and answer nothing for a
+ * covered path outside it, and a stale pin would read unchanged.
  */
 export async function gitDiffNames(
   dir: string,
@@ -324,7 +326,7 @@ export async function gitDiffNames(
   paths: readonly string[],
   top: boolean,
 ): Promise<string[]> {
-  const args = ["diff", "--name-only", "-z", "--no-renames", from, to];
+  const args = ["diff", "--name-only", "-z", "--no-renames", "--no-relative", from, to];
   if (paths.length > 0) args.push("--", ...paths.map((p) => (top ? `:(top)${p}` : p)));
   return terminated(args, await git(dir, args), "\0")
     .split("\0")

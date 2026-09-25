@@ -343,7 +343,10 @@ export async function revisionState(
     if (baseMap.has(entry.path)) continue;
     baseMap.set(entry.path, read(entry));
   }
-  const diff = ["diff", "--name-status", "-z", "-M", `${base}..${rev}`];
+  // `--relative`, as `ls-tree` lists from the root: the renames name paths
+  // from the vault root, for a vault in a directory of its repository too,
+  // whatever the caller's `diff.relative` says.
+  const diff = ["diff", "--name-status", "-z", "-M", "--relative", `${base}..${rev}`];
   const renames: StateRename[] = parseNameStatusZ(terminated(diff, await git(root, diff), "\0"))
     .filter((ch) => ch.oldPath !== undefined)
     .map((ch) => ({ from: (ch.oldPath ?? "").normalize("NFC"), to: ch.path.normalize("NFC") }))

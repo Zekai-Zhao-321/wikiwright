@@ -381,6 +381,14 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
+- The covering diff `freshness` reads no longer depends on the caller's git
+  configuration: under `diff.relative=true` a vault in a directory of its
+  repository got an empty diff for a covered path outside that directory,
+  so a stale pin read `unchanged` and `--fast-forward` would advance it
+  without a re-read. It passes `--no-relative`. `lint --since` reads a
+  revision's renames with `--relative`, as it lists the revision's tree, so
+  a vault in a directory of its repository now sees its renames, which it
+  saw only under `diff.relative=true` before.
 - Reads the engine asks git for together (the staged diff beside the index
   listing, a commit walk beside its count, two trees, a walk's parents)
   report a failure in argument order. Under `Promise.all` whichever child
