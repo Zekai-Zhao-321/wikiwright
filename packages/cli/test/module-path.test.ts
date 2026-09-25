@@ -232,3 +232,35 @@ describe("a kit declared by a bundle-relative path (docs/extending.md §Declarin
     assert.match(issue?.message ?? "", /"kit\/garden", which resolves outside the bundle/u);
   });
 });
+
+describe("a kit reaches no helper outside itself behind a comment (docs/extending.md §The purity scan)", () => {
+  it("a steered comment hides no import: the kit is refused, whatever the helper holds", () => {
+    const root = gardenBundle();
+    // A helper outside the kit, which no digest covers, and a kit whose check
+    // reads it through an import the comment reader would blank: `/*` in the
+    // regular expression opens a comment there, and `// */` closes it.
+    const entry = join(root, "kit", "garden", "index.js");
+    const text = readFileSync(entry, "utf8").replace(
+      "ctx.config.beds.includes(bed)",
+      "(ctx.config.beds.includes(bed) || beds.includes(bed))",
+    );
+    writeFileSync(
+      entry,
+      `if (false) /[/*]/.test("garden");\nimport { beds } from "../../garden-beds.mjs";\n// */\n${text}`,
+    );
+    const outcomes: Envelope[] = [];
+    for (const beds of [["orchard"], []]) {
+      writeFileSync(
+        join(root, "garden-beds.mjs"),
+        `export const beds = ${JSON.stringify(beds)};\n`,
+      );
+      const checked = run(root, ["check"]);
+      assert.equal(checked.envelope.error?.["code"], "module-impure", JSON.stringify(checked));
+      const [issue] = (checked.envelope.data?.["issues"] ?? []) as { message: string }[];
+      assert.match(issue?.message ?? "", /index\.js:2 imports a module \(an import declaration\)/u);
+      outcomes.push(checked.envelope);
+    }
+    // The helper changed and nothing judged: no verdict depends on it.
+    assert.deepEqual(outcomes[1], outcomes[0]);
+  });
+});

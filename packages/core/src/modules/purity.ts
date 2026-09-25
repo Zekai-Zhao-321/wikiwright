@@ -25,7 +25,7 @@
  * passed are scanned again under the newer ones rather than served a verdict
  * the rules that gave it no longer give.
  */
-export const PURITY_SCAN_VERSION = 3;
+export const PURITY_SCAN_VERSION = 4;
 
 export interface PurityViolation {
   /** The construct that was found, as this scan names it. */
@@ -153,14 +153,18 @@ const REGEX_KEYWORDS = new Set([
 ]);
 
 /**
- * docs/extending.md §The purity scan: the source with every comment read
- * through — each `/* … *\/` and `// …` outside a string, a template literal
- * or a regular expression replaced by spaces, its newlines kept, so every
- * offset and line number still holds. A comment can no longer stand between a
- * banned word and the token that makes it a construct (`import/* c *\/ {`),
- * and a comment that merely mentions one is not a construct at all. A string
+ * docs/extending.md §The purity scan: the source with every comment blanked —
+ * each `/* … *\/` and `// …` outside a string, a template literal or a
+ * regular expression replaced by spaces, its newlines kept, so every offset
+ * and line number still holds. A comment can no longer stand between a banned
+ * word and the token that makes it a construct (`import/* c *\/ {`). A string
  * holding `/*` opens no comment, and a `${ … }` inside a template literal is
  * code again.
+ *
+ * Whether a `/` opens a regular expression is decided from the token before
+ * it, without parsing, and a crafted source can steer that decision so that
+ * code reads as a comment. That is why this reading is never the only one:
+ * `scanPurity` also reads the source as written.
  */
 function stripComments(source: string): string {
   const out = source.split("");
@@ -280,27 +284,43 @@ function locate(source: string, at: number): { line: number; evidence: string } 
  * reports.
  */
 export function scanPurity(source: string): PurityViolation[] {
-  const found: PurityViolation[] = [];
-  // The patterns read the code with its comments read through; the evidence
-  // is the original line, at the same offset.
-  const code = stripComments(source);
-  for (const { reason, pattern } of BANNED) {
-    pattern.lastIndex = 0;
-    for (const match of code.matchAll(pattern)) {
-      const at = match.index ?? 0;
-      found.push({ reason, ...locate(source, at) });
+  // Two readings, and a construct found in either refuses. The source with
+  // its comments blanked finds a construct a comment splits; the source as
+  // written keeps every refusal a scan that reads no comments makes, so a
+  // comment reader steered into blanking code hides nothing. The union fails
+  // closed: a comment that holds a construct is refused too. Blanking keeps
+  // every offset, so one construct seen by both readings is one violation,
+  // and the evidence is always the line as written.
+  const found = new Map<string, { at: number; violation: PurityViolation }>();
+  const add = (reason: string, at: number): void => {
+    const key = `${reason}\u0000${String(at)}`;
+    if (!found.has(key)) found.set(key, { at, violation: { reason, ...locate(source, at) } });
+  };
+  for (const code of [source, stripComments(source)]) {
+    for (const { reason, pattern } of BANNED) {
+      pattern.lastIndex = 0;
+      for (const match of code.matchAll(pattern)) add(reason, match.index ?? 0);
     }
-  }
-  for (const re of IMPORT_SPECIFIERS) {
-    re.lastIndex = 0;
-    for (const match of code.matchAll(re)) {
-      const specifier = match[1];
-      if (specifier === undefined) continue;
-      for (const { reason, test } of BANNED_IMPORTS) {
-        if (!test(specifier)) continue;
-        found.push({ reason: `${reason} ("${specifier}")`, ...locate(source, match.index ?? 0) });
+    for (const re of IMPORT_SPECIFIERS) {
+      re.lastIndex = 0;
+      for (const match of code.matchAll(re)) {
+        const specifier = match[1];
+        if (specifier === undefined) continue;
+        for (const { reason, test } of BANNED_IMPORTS) {
+          if (test(specifier)) add(`${reason} ("${specifier}")`, match.index ?? 0);
+        }
       }
     }
   }
-  return found.sort((a, b) => a.line - b.line || (a.reason < b.reason ? -1 : 1));
+  return [...found.values()]
+    .sort(
+      (a, b) =>
+        a.violation.line - b.violation.line ||
+        (a.violation.reason < b.violation.reason
+          ? -1
+          : a.violation.reason > b.violation.reason
+            ? 1
+            : a.at - b.at),
+    )
+    .map((entry) => entry.violation);
 }

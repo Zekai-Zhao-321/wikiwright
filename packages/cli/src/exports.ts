@@ -951,7 +951,7 @@ export function repositoryExports(input: {
         severity: "error",
         path: link,
         message: `"${link}" is a symbolic link on the path to "${rel}", and a render writes bytes only inside the bundle, never through a link`,
-        remediation: `replace "${link}" with a directory of the bundle's own; nothing was written`,
+        remediation: `replace "${link}" with a directory of the bundle's own; nothing was written through the link`,
         details: { destination: rel, link },
       }),
     );

@@ -201,9 +201,10 @@ version` prints the engine version and the commit a binary was built from.
 - The purity scan refuses an import of any form — an `import` declaration,
   `export … from`, a dynamic `import(` and `require(` — and computed access to
   `Date`, `Math`, `performance`, `Intl` or `process` (`Date["now"]()`), each by
-  file, line and reason, and reads through comments, so a comment between a
-  banned word and its token hides nothing and a comment that mentions one is
-  no construct. `docs/extending.md` §The purity scan lists every rule, and
+  file, line and reason, reading each file as written and with its comments
+  blanked and refusing on either, so a comment between a banned word and its
+  token hides nothing and a comment that holds a construct is refused as
+  one. `docs/extending.md` §The purity scan lists every rule, and
   says what it is not: it narrows, it does not sandbox.
 - `type show --brief` leads its data with `brief`, `skeleton` and
   `section_lines`, before `fields`; key order only. `new` writes no `title:`

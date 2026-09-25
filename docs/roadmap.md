@@ -136,12 +136,12 @@ Every load scans a module's bytes for the constructs a pure module must not
 reach — the clock, randomness, the locale, the environment, the network,
 dynamic evaluation, computed access to those globals, and an import of any
 form — and refuses by file and line (`docs/extending.md` §The purity scan).
-It reads the source with its comments read through, so a comment between a
-banned word and its token hides nothing and a comment that mentions one is
-not refused. A `/` after `)` is read as division, so a regular expression
-there that holds `//` or `/*` makes the rest of its line, or everything up to
-the next `*/`, read as a comment and pass unscanned. A byte scan cannot see
-a name bound or built at runtime: `const D = Date; D.now()` passes it. It narrows what a module can reach; it is not a sandbox,
+It reads each file as written and with its comments blanked, and refuses on
+either, so a comment between a banned word and its token hides nothing, a
+regular expression that steers the comment reader into blanking code hides
+nothing either, and a comment that holds a construct is refused as one. A
+byte scan cannot see a name bound or built at runtime: `const D = Date;
+D.now()` passes it. It narrows what a module can reach; it is not a sandbox,
 and it is not the argument for running the module, which is the install.
 
 ### A module's proofs are taken once per process

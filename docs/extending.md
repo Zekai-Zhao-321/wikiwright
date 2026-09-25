@@ -384,16 +384,20 @@ without `node:`, is one of these; the specifier follows the reason:
 
 A line is reported once per rule it matches.
 
-Comments are read through. Before the rules run, every `/* … */` and `// …`
-outside a string, a template literal or a regular expression is replaced by
-spaces, its newlines kept, so each line number still holds: a comment
-between a banned word and the token that makes it a construct —
+The rules read each file twice, as written or with comments blanked, and a
+construct found in either reading refuses. In the second, every `/* … */`
+and `// …` outside a string, a template literal or a regular expression is
+replaced by spaces, its newlines kept, so each line number still holds: a
+comment between a banned word and the token that makes it a construct —
 `import/* … */ { … } from`, `export/* … */ * from`, `import/* … */(`,
-`require/* … */(`, `Date/* … */["now"]` — no longer hides it, and a comment
-that only mentions `import` is not a construct. A string holding `/*` opens
-no comment, and the `${ … }` of a template literal is read as code. Whether a
-`/` opens a regular expression is decided from the token before it, as a
-tokenizer decides it without parsing.
+`require/* … */(`, `Date/* … */["now"]` — does not hide it. A string holding
+`/*` opens no comment there, and the `${ … }` of a template literal is read
+as code. Whether a `/` opens a regular expression is decided from the token
+before it, as a tokenizer decides it without parsing, and a crafted source
+can steer that decision into blanking code; the reading as written is why
+that hides nothing. The union fails closed: a comment that holds a
+construct, `// see import("./beds.js")`, is refused as the construct it
+holds, while a comment that mentions `import` in prose is not.
 
 The rules otherwise read text, not a parsed program, and that has a cost the
 scan accepts rather than parse the language. The declaration and re-export
@@ -401,23 +405,20 @@ rules match a line that opens with `import`, or with `export … from`, or
 does so after a `;` or a `}`, whatever surrounds it: a line inside a
 template string that opens with `import`, and a string holding `; import`,
 are refused as imports though nothing is imported. The `import(` and
-`require(` rules match those words anywhere outside a comment, in a string
-too. A module that says either in its text rewords it; the refusal names the
+`require(` rules match those words anywhere, in a comment or a string too. A module that says either in its text rewords it; the refusal names the
 file and the line, so the false positive is found where it stands.
 
 The scan's result is kept for the process by the digest of the package's
 bytes and the scan's version, a number in `packages/core/src/modules/purity.ts`
-raised whenever a rule changes (3 since comments are read through), so two bundles that install the same bytes
+raised whenever a rule changes (4 since each file is read both as written
+and with its comments blanked), so two bundles that install the same bytes
 are scanned once, and no result outlives the process.
 
 What the scan does not do is stated here rather than implied. It narrows; it
 is not a sandbox. It reads bytes, so a name bound or built at runtime is
 outside it: `const D = Date; D.now()`, a banned method taken by reference
 and called later, a constructor reached through a prototype chain, and the
-members of `process` other than `env` all pass it. A `/` after `)` is read
-as division, so a regular expression there that holds `//` or `/*` — `if
-(x) /[/*]/.test(s)` — makes the rest of its line, or everything up to the
-next `*/`, read as a comment and pass unscanned. A module that means to
+members of `process` other than `env` all pass it. A module that means to
 reach the clock can. Neither the scan nor the determinism fixture is the
 argument for running a module's code with the engine's permissions:
 installing the module is, the decision every package manager asks of its

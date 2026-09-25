@@ -84,7 +84,7 @@ async function loadWithProbe(probe: string): Promise<{
   };
 }
 
-describe("the purity scan reads through comments (docs/extending.md §The purity scan)", () => {
+describe("the purity scan reads the source as written and with its comments blanked (docs/extending.md §The purity scan)", () => {
   // A comment between a banned word and the token that makes it a construct
   // hid the construct from the patterns: a kit could import a helper from
   // outside itself, whose bytes no digest covers, and change a verdict under
@@ -115,12 +115,42 @@ describe("the purity scan reads through comments (docs/extending.md §The purity
     });
   }
 
-  it("a comment that only mentions import is not a construct", async () => {
+  it("a comment that mentions import in prose is not a construct", async () => {
     const { loaded, violations } = await loadWithProbe(
-      '// We import nothing: see import("x") in the docs.\n/* import { beds } from "./beds.js"; */\nexport const note = 1;\n',
+      "// We import nothing here, and never will.\n/* Nothing is imported. */\nexport const note = 1;\n",
     );
     assert.deepEqual(violations, []);
     assert.equal(loaded, 1);
+  });
+
+  it("a comment that holds an import clause is refused: the source as written is read too", async () => {
+    const { loaded, violations } = await loadWithProbe(
+      '// A probe.\n// See import("./beds.js") for the beds.\nexport const note = 1;\n',
+    );
+    assert.equal(loaded, 0);
+    assert.ok(
+      violations.some((v) => v.line === 2 && v.reason === "imports a module at runtime (import())"),
+      JSON.stringify(violations),
+    );
+  });
+
+  it("a regular expression that steers the comment reader hides no import", async () => {
+    // The comment reader takes `/` after `)` for division, so `/*` inside
+    // this regular expression opens a comment that `// */` closes, and the
+    // blanked reading holds no import. The reading as written still does.
+    const { loaded, violations } = await loadWithProbe(
+      'if (false) /[/*]/.test("garden");\nimport { beds } from "../../garden-beds.mjs";\n// */\n',
+    );
+    assert.equal(loaded, 0, "the kit loaded");
+    assert.ok(
+      violations.some(
+        (v) =>
+          v.file === "probe.js" &&
+          v.line === 2 &&
+          v.reason === "imports a module (an import declaration)",
+      ),
+      JSON.stringify(violations),
+    );
   });
 
   it("a string holding /* opens no comment: what follows is still read", async () => {
