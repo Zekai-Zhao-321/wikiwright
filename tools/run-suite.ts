@@ -10,7 +10,7 @@
 //   bun tools/run-suite.ts [file ...]
 //
 // With no file, the files are `packages/core/test/*.test.ts` and
-// `packages/cli/test/*.test.ts`. The largest start first, so the long files
+// `packages/cli/test/*.test.ts` and `test/*.test.ts`. The largest start first, so the long files
 // are not the last to begin. A file passes when its process exits 0 and
 // reports at least one test; the run exits 1 when any file does not, and
 // prints that file's whole output.
@@ -25,7 +25,7 @@ import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
-const TEST_DIRS = ["packages/core/test", "packages/cli/test"];
+const TEST_DIRS = ["packages/core/test", "packages/cli/test", "test"];
 
 interface Outcome {
   file: string;
