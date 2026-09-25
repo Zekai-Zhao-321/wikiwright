@@ -37,6 +37,25 @@ export function runCli(
   args: readonly string[],
   options: CliOptions = {},
 ): SpawnSyncReturns<string> | SpawnSyncReturns<Buffer> {
+  return runCommand(BUN, args, options);
+}
+
+/** Run any executable the same way: a compiled binary, a launcher. */
+export function runCommand(
+  command: string,
+  args: readonly string[],
+  options: CliOptions & { encoding: BufferEncoding },
+): SpawnSyncReturns<string>;
+export function runCommand(
+  command: string,
+  args: readonly string[],
+  options?: CliOptions,
+): SpawnSyncReturns<Buffer>;
+export function runCommand(
+  command: string,
+  args: readonly string[],
+  options: CliOptions = {},
+): SpawnSyncReturns<string> | SpawnSyncReturns<Buffer> {
   const outPath = scratch("stdout");
   const inPath = options.input === undefined ? undefined : scratch("stdin");
   const out = openSync(outPath, "wx", 0o600);
@@ -46,7 +65,7 @@ export function runCli(
       writeFileSync(inPath, options.input ?? "", { mode: 0o600 });
       stdin = openSync(inPath, "r");
     }
-    const r = spawnSync(BUN, [...args], {
+    const r = spawnSync(command, [...args], {
       cwd: options.cwd,
       env: options.env ?? process.env,
       stdio: [stdin, out, "pipe"],

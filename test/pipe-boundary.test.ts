@@ -9,26 +9,43 @@
 // Three envelopes: a default one (`version`), one of exactly 70,000 bytes
 // (`read` of a synthetic gardening page padded to that size, past one pipe
 // buffer), and an error envelope (`check` of a root that does not exist).
+// Each is probed through `bun dist/main.js`, and through the compiled binary
+// when `bun run binary` has left one at `dist/wikiwright`: the binary's piped
+// envelope is held to its own filed one, so a binary older than the build is
+// still probed for what it is.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runCli } from "../packages/cli/test/fixtures/runtime.ts";
+import { runCli, runCommand } from "../packages/cli/test/fixtures/runtime.ts";
 
 const REPO = fileURLToPath(new URL("../", import.meta.url));
 const CLI = join(REPO, "packages", "cli", "dist", "main.js");
 const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
 const PAGE = "wiki/pruning-roses.md";
 const TARGET = 70_000;
+const BINARY = join(REPO, "dist", "wikiwright");
+
+/** An executable the probes run: its command line before the verb's arguments. */
+interface Engine {
+  name: string;
+  argv: readonly string[];
+}
+
+const SCRIPT: Engine = { name: "bun dist/main.js", argv: [process.execPath, CLI] };
+const ENGINES: Engine[] = existsSync(BINARY)
+  ? [SCRIPT, { name: "the binary", argv: [BINARY] }]
+  : [SCRIPT];
 
 /** The CLI through a pipe: every byte it wrote, read only after it has had time to fill the buffer. */
 async function piped(
+  engine: Engine,
   args: readonly string[],
   cwd: string,
 ): Promise<{ bytes: Buffer; status: number }> {
   const child = Bun.spawn({
-    cmd: [process.execPath, CLI, ...args],
+    cmd: [...engine.argv, ...args],
     cwd,
     stdin: "ignore",
     stdout: "pipe",
@@ -40,15 +57,25 @@ async function piped(
 }
 
 /** The same invocation with its stdout on a file: the reference. */
-function filed(args: readonly string[], cwd: string): { bytes: Buffer; status: number } {
-  const r = runCli([CLI, ...args], { cwd });
+function filed(
+  engine: Engine,
+  args: readonly string[],
+  cwd: string,
+): { bytes: Buffer; status: number } {
+  const [command = "", ...rest] = engine.argv;
+  const r = runCommand(command, [...rest, ...args], { cwd });
   return { bytes: r.stdout, status: r.status ?? -1 };
 }
 
-async function probe(args: readonly string[], cwd: string, status: number): Promise<Buffer> {
-  const reference = filed(args, cwd);
+async function probe(
+  engine: Engine,
+  args: readonly string[],
+  cwd: string,
+  status: number,
+): Promise<Buffer> {
+  const reference = filed(engine, args, cwd);
   expect(reference.status).toBe(status);
-  const through = await piped(args, cwd);
+  const through = await piped(engine, args, cwd);
   expect(through.status).toBe(status);
   expect(through.bytes.length).toBe(reference.bytes.length);
   expect(through.bytes.equals(reference.bytes)).toBe(true);
@@ -72,7 +99,7 @@ beforeAll(() => {
   let pad = 0;
   for (let step = 0; step < 8; step += 1) {
     writeFileSync(page, `${base}\nMulch${"e".repeat(pad)}.\n`);
-    const size = filed(["read", PAGE, "--root", root], REPO).bytes.length;
+    const size = runCli([CLI, "read", PAGE, "--root", root], { cwd: REPO }).stdout.length;
     if (size === TARGET) return;
     pad += TARGET - size;
   }
@@ -83,19 +110,19 @@ afterAll(() => {
   rmSync(join(root, ".."), { recursive: true, force: true });
 });
 
-describe("the CLI's envelope arrives whole through a pipe", () => {
+describe.each(ENGINES)("$name: the envelope arrives whole through a pipe", (engine) => {
   it("a default envelope", async () => {
-    const bytes = await probe(["version"], REPO, 0);
+    const bytes = await probe(engine, ["version"], REPO, 0);
     expect(JSON.parse(bytes.toString("utf8")).ok).toBe(true);
   });
 
   it("an envelope of 70,000 bytes, past one pipe buffer", async () => {
-    const bytes = await probe(["read", PAGE, "--root", root], REPO, 0);
+    const bytes = await probe(engine, ["read", PAGE, "--root", root], REPO, 0);
     expect(bytes.length).toBe(TARGET);
   });
 
   it("an error envelope", async () => {
-    const bytes = await probe(["check", "--root", join(root, "no-such-bundle")], REPO, 3);
+    const bytes = await probe(engine, ["check", "--root", join(root, "no-such-bundle")], REPO, 3);
     const envelope = JSON.parse(bytes.toString("utf8")) as { ok: boolean; error: { code: string } };
     expect(envelope.ok).toBe(false);
     expect(envelope.error.code).toBe("vault-not-found");

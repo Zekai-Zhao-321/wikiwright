@@ -52,28 +52,39 @@ export interface BuildInfo {
   dirty: boolean | null;
 }
 
+/** The stamp compiled into a binary by `bun build --define`; undeclared everywhere else. */
+declare const WIKIWRIGHT_BUILD_INFO: string | undefined;
+
+function parseBuildInfo(text: string): BuildInfo | undefined {
+  try {
+    const parsed = JSON.parse(text) as BuildInfo;
+    const commit = typeof parsed.commit === "string" ? parsed.commit : null;
+    const dirty = typeof parsed.dirty === "boolean" ? parsed.dirty : null;
+    return { commit, dirty };
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * The stamp `tools/write-build-info.ts` wrote beside the emitted JavaScript.
  * Looked for next to this module (the compiled `dist/` case) and then in the
  * package's `dist/` (running from `src/`, as the tests do), so "which code is
- * this" has one answer in both. `undefined` means no build info shipped with
- * this binary — reported as `source: "unknown"`, never guessed at.
+ * this" has one answer in both. A compiled binary (`bun run binary`) has no
+ * file beside it: the same stamp is compiled in as `WIKIWRIGHT_BUILD_INFO`,
+ * which `bun build --define` replaces with the stamp's JSON text, and which is
+ * read first. `undefined` means no build info shipped with this binary —
+ * reported as `source: "unknown"`, never guessed at.
  */
 export function readBuildInfo(): BuildInfo | undefined {
+  if (typeof WIKIWRIGHT_BUILD_INFO === "string") return parseBuildInfo(WIKIWRIGHT_BUILD_INFO);
   for (const candidate of [
     new URL("./build-info.json", import.meta.url),
     new URL("../dist/build-info.json", import.meta.url),
   ]) {
     const path = fileURLToPath(candidate);
     if (!existsSync(path)) continue;
-    try {
-      const parsed = JSON.parse(readFileSync(path, "utf8")) as BuildInfo;
-      const commit = typeof parsed.commit === "string" ? parsed.commit : null;
-      const dirty = typeof parsed.dirty === "boolean" ? parsed.dirty : null;
-      return { commit, dirty };
-    } catch {
-      return undefined;
-    }
+    return parseBuildInfo(readFileSync(path, "utf8"));
   }
   return undefined;
 }

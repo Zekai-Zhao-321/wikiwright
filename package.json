@@ -17,6 +17,7 @@
   },
   "scripts": {
     "build": "rm -rf packages/*/dist && tsc -b && bun tools/write-build-info.ts",
+    "binary": "bun run build && bun tools/build-binary.ts",
     "clean": "tsc -b --clean",
     "test": "bun run build && bun tools/run-suite.ts",
     "typecheck": "bun run build && tsc -p tsconfig.test.json",
