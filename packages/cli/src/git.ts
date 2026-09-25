@@ -50,6 +50,44 @@ export class GitInconsistentRead extends GitAnswerRefused {
 }
 
 /**
+ * docs/cli.md §Exit codes: a git child that did not finish within the
+ * timeout every git read carries (`gitTimeoutMs`), killed rather than waited
+ * for, refused by name as `git-timeout`. A hung git held one of the pool's
+ * slots, and the verb waited on it, for as long as it hung.
+ */
+export class GitTimedOut extends GitAnswerRefused {
+  readonly command: string;
+  readonly timeoutMs: number;
+  constructor(command: string, timeoutMs: number) {
+    super(`git ${command} did not finish within ${String(timeoutMs)} ms and was killed`);
+    this.command = command;
+    this.timeoutMs = timeoutMs;
+  }
+}
+
+/** How long one git child may run when `WIKIWRIGHT_GIT_TIMEOUT_MS` names no other bound. */
+export const GIT_TIMEOUT_DEFAULT_MS = 60_000;
+
+/**
+ * docs/cli.md §Environment: the bound on one git child, in milliseconds —
+ * `WIKIWRIGHT_GIT_TIMEOUT_MS` when it is set and not empty, else
+ * GIT_TIMEOUT_DEFAULT_MS — or `{invalid}` for a value that is not a whole
+ * number of milliseconds from 1 to 2^31 - 1 (the most a timer holds), which
+ * `main.ts` refuses as `git-timeout-invalid` before any verb runs.
+ */
+export function gitTimeoutSetting(): number | { invalid: string } {
+  const value = process.env["WIKIWRIGHT_GIT_TIMEOUT_MS"];
+  if (value === undefined || value === "") return GIT_TIMEOUT_DEFAULT_MS;
+  const ms = /^[1-9][0-9]{0,9}$/u.test(value) ? Number(value) : Number.NaN;
+  return ms <= 2_147_483_647 ? ms : { invalid: value };
+}
+
+function gitTimeoutMs(): number {
+  const setting = gitTimeoutSetting();
+  return typeof setting === "number" ? setting : GIT_TIMEOUT_DEFAULT_MS;
+}
+
+/**
  * `out` as git's whole answer to `args`: empty, or ending in its terminator — a
  * NUL for a `-z` listing, a newline for a line protocol. `nonEmpty` is for the
  * reads that always answer something, where no output at all is a cut too.
@@ -73,14 +111,18 @@ export function terminated(
 
 /**
  * One git child: its stdout read from the file it wrote, its stdin, when it has
- * one, a file the engine wrote (`stdoutfile.ts`). stderr is a pipe, captured,
+ * one, a file the engine wrote (`stdoutfile.ts`). It runs for at most the
+ * caller's `timeout`, else `gitTimeoutMs()`; a child killed for overrunning it
+ * is answered with `error` a GitTimedOut, which every reader throws, and every
+ * catch that turns a git failure into a quieter answer rethrows as itself.
+ * stderr is a pipe, captured,
  * never inherited: it rides on a thrown error's message instead of printing
  * `fatal:` beside a green envelope (docs/cli.md §The envelope), and two
  * answers are recognised from its text — `gitShowHead`'s absent path and
  * `gitTopLevel`'s "not a git repository" — each of which, with the text lost,
  * fails as a plumbing failure rather than a smaller answer.
  */
-export function gitRun(
+export async function gitRun(
   cwd: string,
   args: readonly string[],
   options: Omit<ChildOptions, "cwd"> = {},
@@ -90,7 +132,12 @@ export function gitRun(
   // read never takes the index lock to refresh it, so it never moves the
   // index under a dry run or races a concurrent read.
   const env = { ...(options.env ?? process.env), LC_ALL: "C", GIT_OPTIONAL_LOCKS: "0" };
-  return spawnWithStdoutFile("git", args, { ...options, cwd, env });
+  const timeout = options.timeout ?? gitTimeoutMs();
+  const answer = await spawnWithStdoutFile("git", args, { ...options, cwd, env, timeout });
+  if ((answer.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT") {
+    return { ...answer, error: new GitTimedOut(args.join(" "), timeout) };
+  }
+  return answer;
 }
 
 /**
@@ -567,6 +614,8 @@ export async function gitCheckoutState(dir: string): Promise<CheckoutState | und
     ],
     { env },
   );
+  // A git that hung is refused by name, not read as no checkout.
+  if (result.error instanceof GitTimedOut) throw result.error;
   if (result.error !== undefined || result.status !== 0) return undefined;
   // A cut answer could drop the entries that make the checkout dirty: it is
   // thrown, and the bundle block it would have fed is left off. Under `-z`

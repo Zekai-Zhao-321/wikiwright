@@ -8,7 +8,7 @@ import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
 import { resolveBundle } from "./discovery.ts";
 import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
-import { GitInconsistentRead, GitShortRead } from "./git.ts";
+import { GitInconsistentRead, GitShortRead, GitTimedOut, gitTimeoutSetting } from "./git.ts";
 import { type ExportMarker, MARKER_PATH, markerAt } from "./marker.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import { LinkedOutsideVault } from "./paths.ts";
@@ -91,8 +91,9 @@ type Target =
  * docs/cli.md §Exit codes: what a thrown error becomes. A vault path that
  * resolves outside the vault — a config linked out of it, say — is
  * `linked-outside-vault`. A git answer cut short is `git-short-read`; two git
- * answers that disagree are `git-inconsistent-read`. Anything else is the
- * engine breaking.
+ * answers that disagree are `git-inconsistent-read`; a git child killed for
+ * overrunning its timeout is `git-timeout`. Anything else is the engine
+ * breaking.
  */
 function thrown(command: string, e: unknown): CommandResult {
   // A git answer cut short, or contradicted by another, is the plumbing
@@ -102,6 +103,12 @@ function thrown(command: string, e: unknown): CommandResult {
     return fail(command, "internal", "git-short-read", e.message, {
       details: { command: `git ${e.command}` },
       hint: "git's answer ended before its terminator; nothing was judged from it — run the command again",
+    });
+  }
+  if (e instanceof GitTimedOut) {
+    return fail(command, "internal", "git-timeout", e.message, {
+      details: { command: `git ${e.command}`, timeout_ms: e.timeoutMs },
+      hint: "git did not answer in time and was killed; nothing was judged — run the command again, or raise WIKIWRIGHT_GIT_TIMEOUT_MS",
     });
   }
   if (e instanceof LinkedOutsideVault) {
@@ -354,11 +361,24 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
     );
   } else {
     const role = currentRole();
+    const gitTimeout = gitTimeoutSetting();
     if (typeof role !== "string") {
       emit(
         fail("wikiwright", "usage", "role-unknown", `WIKIWRIGHT_ROLE is "${role.unknown}"`, {
           details: { valid_values: [...ROLES] },
         }),
+      );
+    } else if (typeof gitTimeout !== "number") {
+      emit(
+        fail(
+          "wikiwright",
+          "usage",
+          "git-timeout-invalid",
+          `WIKIWRIGHT_GIT_TIMEOUT_MS is "${gitTimeout.invalid}"`,
+          {
+            hint: "a whole number of milliseconds from 1 to 2147483647, or unset for the default of 60000",
+          },
+        ),
       );
     } else {
       // Before --help and before parsing: a bounded caller cannot learn the

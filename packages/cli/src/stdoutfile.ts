@@ -19,12 +19,19 @@
 // The child is spawned asynchronously (`Bun.spawn`) and awaited to its exit
 // and to the end of its stderr pipe; the answer file is read only then. At
 // most CHILD_POOL children run at once, so a verb that asks for many reads
-// together does not fork them all at once. A timeout kills the child
-// (SIGKILL) and is reported as an error with code `ETIMEDOUT`. Every descriptor this call opens is closed, and every file it
-// creates removed, before it returns or throws.
+// together does not fork them all at once. A timeout, when the caller passes
+// one (git.ts passes one on every git read), bounds the child itself: a child
+// still running when it fires is killed (SIGKILL) and the call is an error
+// with code `ETIMEDOUT`; a child that has exited is never called timed out.
+// Every descriptor this call opens is closed, and every file it creates
+// removed, before it returns or throws.
 //
 // stderr stays a pipe, and it is read to its end, up to STDERR_MAX_BYTES; a
-// child that writes more is killed and the call is an error. Two answers are
+// child that writes more is killed and the call is an error. A child that has
+// exited can leave its stderr held open by a process it started (a daemon
+// git spawns, a background job of a script): its stderr is then read for
+// STDERR_GRACE_MS more and abandoned, so the call ends with the child, and
+// what was read by then is its stderr. Two answers are
 // recognised from its text — a path HEAD does not hold (git.ts `gitShowHead`)
 // and a directory in no repository (`gitTopLevel`) — and each fails
 // conservatively when that text is lost: the failure is thrown as a plumbing
@@ -37,6 +44,13 @@ import { join } from "node:path";
 
 /** stderr's bound: messages and the recognitions, never an answer's bytes. */
 const STDERR_MAX_BYTES = 8 * 1024 * 1024;
+
+/**
+ * How long stderr is still read after the child has exited: what the child
+ * wrote before it exited is already in the pipe, and a process the child
+ * started may hold the pipe open for as long as it lives.
+ */
+const STDERR_GRACE_MS = 1_000;
 
 /** How many children this process runs at once; a call beyond it waits its turn. */
 export const CHILD_POOL = 4;
@@ -58,7 +72,7 @@ export interface ChildOptions {
   env?: NodeJS.ProcessEnv | undefined;
   /** Written to a file the child reads as its stdin; without it the child reads nothing. */
   input?: string | undefined;
-  /** Milliseconds before the child is killed; without it the child runs to its end. */
+  /** Milliseconds the child may run before it is killed; without it the child runs to its end. */
   timeout?: number | undefined;
 }
 
@@ -120,6 +134,8 @@ async function run(
   }
   let error: Error | undefined;
   let killed = false;
+  /** Set when stderr is given up on, by a kill or after the grace: its end is not awaited. */
+  let abandoned = false;
   const kill = (): void => {
     killed = true;
     child.kill("SIGKILL");
@@ -128,6 +144,8 @@ async function run(
     options.timeout === undefined
       ? undefined
       : setTimeout(() => {
+          // A child that has exited is not timed out, whatever holds its stderr.
+          if (child.exitCode !== null || child.signalCode !== null) return;
           error ??= codedError(
             `${command} did not finish within ${String(options.timeout)} ms`,
             "ETIMEDOUT",
@@ -152,29 +170,44 @@ async function run(
       }
     } catch (e) {
       // stderr that could not be read to its end is not a whole answer.
-      if (!killed) error ??= e instanceof Error ? e : new Error(String(e));
+      if (!killed && !abandoned) error ??= e instanceof Error ? e : new Error(String(e));
     }
   })();
+  let code: number | null;
   try {
-    const code = await child.exited.catch((e: unknown) => {
+    code = await child.exited.catch((e: unknown) => {
       error ??= e instanceof Error ? e : new Error(String(e));
       return null;
     });
-    // A killed child's stderr may still be held open by a process it
-    // started, which would hold the call for as long as that process lives:
-    // once the killed child itself has exited, its stderr is abandoned.
-    if (killed) await reader.cancel().catch(() => undefined);
-    else await drained;
-    const signal = (child.signalCode ?? null) as NodeJS.Signals | null;
-    return {
-      status: signal === null ? code : null,
-      signal,
-      stderr: Buffer.concat(chunks).toString("utf8"),
-      error,
-    };
   } finally {
+    // The timeout bounds the child, not what it left behind.
     if (timer !== undefined) clearTimeout(timer);
   }
+  // A child's stderr may still be held open by a process it started, which
+  // would hold the call for as long as that process lives: a killed child's
+  // is abandoned at once, an exited child's after the grace.
+  if (!killed) {
+    let grace: ReturnType<typeof setTimeout> | undefined;
+    const held = await Promise.race([
+      drained.then(() => false),
+      new Promise<boolean>((resolve) => {
+        grace = setTimeout(() => resolve(true), STDERR_GRACE_MS);
+      }),
+    ]);
+    if (grace !== undefined) clearTimeout(grace);
+    if (held) abandoned = true;
+  }
+  if (killed || abandoned) {
+    abandoned = true;
+    await reader.cancel().catch(() => undefined);
+  }
+  const signal = (child.signalCode ?? null) as NodeJS.Signals | null;
+  return {
+    status: signal === null ? code : null,
+    signal,
+    stderr: Buffer.concat(chunks).toString("utf8"),
+    error,
+  };
 }
 
 function spawnPiped(

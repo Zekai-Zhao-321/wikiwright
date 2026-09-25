@@ -126,7 +126,7 @@ findings that refused it.
 | Exit | `error.type` | Meaning |
 |---|---|---|
 | 0 | | ok |
-| 1 | `internal` | the engine broke; `unexpected-error` carries the message, `git-short-read` names a git answer that ended before its terminator, and `git-inconsistent-read` two git answers about one state that disagree — the staged diff and the index listing, or a commit walk and its count — each refused rather than judged |
+| 1 | `internal` | the engine broke; `unexpected-error` carries the message, `git-short-read` names a git answer that ended before its terminator, `git-inconsistent-read` two git answers about one state that disagree — the staged diff and the index listing, or a commit walk and its count — and `git-timeout` a git child killed for running past `WIKIWRIGHT_GIT_TIMEOUT_MS`, each refused rather than judged |
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
 | 3 | `not_found` | the page, type, vocabulary entry, revision, directory or bundle skill asked for does not exist |
@@ -144,7 +144,12 @@ read for two recognitions — a path HEAD does not hold, a directory in no
 repository — each of which, with its text lost, fails as `git-unavailable`
 rather than giving a smaller answer. Every git child is spawned
 asynchronously, awaited to its exit, at most four at a time, with `LC_ALL=C`
-and `GIT_OPTIONAL_LOCKS=0` in its environment. Two pipes are not converted,
+and `GIT_OPTIONAL_LOCKS=0` in its environment. Each may run for
+`WIKIWRIGHT_GIT_TIMEOUT_MS` (60,000 ms when unset); one still running then is
+killed and the verb refused as `git-timeout`, with the command and the bound
+in `details`. A child that has exited is answered when it exits: stderr that a
+process it started still holds open is read for one second more and then
+given up. Two pipes are not converted,
 and neither chooses a judged page: the build stamp
 `tools/write-build-info.ts` records at build time, and the suite's own reads
 (`docs/roadmap.md`).
@@ -179,6 +184,7 @@ the report it always writes.
 |---|---|---|
 | `WIKIWRIGHT_ROLE` | the shell, before parsing; `brief`, as its default `--role` | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
 | `WIKIWRIGHT_TODAY` | `write`, `new`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
+| `WIKIWRIGHT_GIT_TIMEOUT_MS` | the shell, before parsing; every git child | how long one git child may run, a whole number of milliseconds from 1 to 2147483647; 60000 when unset or empty. A child still running then is killed and the verb refused as `git-timeout` (exit 1); any other value is `git-timeout-invalid` (exit 2) before any verb runs |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
 | `WIKIWRIGHT_SYSTEM_SKILL_DIR` | `--bundle`, `bundles list` | the machine's skill directory, probed after the user's two; `/etc/codex/skills` when unset, and none when empty. The suite sets it, over any value it inherits, to a directory under the temporary directory, and runs every scan with `HOME` there and its project tier inside a temporary repository, so no test probes a real machine's skill directories |
 | `WIKIWRIGHT_SKILL_DIRS` | `--bundle`, `bundles list` | more skill directories to probe after the project's, the user's and the system's, colon-separated, in order |

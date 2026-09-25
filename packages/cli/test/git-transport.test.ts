@@ -3,7 +3,8 @@
 // the pool of CHILD_POOL children, each answer read from the file git wrote:
 // every answer whole, no descriptor left open, no scratch file left behind,
 // never more than CHILD_POOL children at a time, and a child that overruns
-// its timeout killed.
+// its timeout killed — while a child that has exited, whatever still holds its
+// stderr, is answered at once and never called timed out.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -130,6 +131,36 @@ describe("the git transport under concurrent load", () => {
     expect(after.status).toBe(0);
     expect(openDescriptors()).toBeLessThanOrEqual(before);
     expect(leftovers()).toEqual([]);
+  }, 30_000);
+
+  it("answers a child that exited when it exits, though a process it started holds stderr", async () => {
+    if (!POSIX) return;
+    // The background job inherits stderr and keeps it open for four seconds
+    // after the child has exited 0 with its answer written.
+    const started = performance.now();
+    const r = await spawnWithStdoutFile("sh", ["-c", "(sleep 4) & echo out"], {
+      cwd: repo,
+      timeout: 300,
+    });
+    expect(performance.now() - started).toBeLessThan(3_000);
+    expect(r.error).toBeUndefined();
+    expect(r.status).toBe(0);
+    expect(r.signal).toBeNull();
+    expect(r.stdout.toString("utf8")).toBe("out\n");
+    expect(leftovers()).toEqual([]);
+  }, 30_000);
+
+  it("and with no timeout at all, the held stderr does not hold the call", async () => {
+    if (!POSIX) return;
+    const started = performance.now();
+    const r = await spawnWithStdoutFile("sh", ["-c", "echo a warning >&2; (sleep 4) & echo out"], {
+      cwd: repo,
+    });
+    expect(performance.now() - started).toBeLessThan(3_000);
+    expect(r.error).toBeUndefined();
+    expect(r.status).toBe(0);
+    expect(r.stderr).toBe("a warning\n");
+    expect(r.stdout.toString("utf8")).toBe("out\n");
   }, 30_000);
 
   it("kills a child whose stderr overruns its bound", async () => {

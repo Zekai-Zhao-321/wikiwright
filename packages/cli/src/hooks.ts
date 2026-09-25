@@ -4,7 +4,7 @@
 
 import { chmodSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { gitRun, terminated } from "./git.ts";
+import { GitTimedOut, gitRun, terminated } from "./git.ts";
 
 const HOOK_MARKER = "# installed by wikiwright";
 
@@ -75,6 +75,8 @@ export async function inspectHook(
   // Outside a work tree git says `fatal: not a git repository`; that answer is
   // the "no-git" return below, never a line beside a green envelope
   // (docs/cli.md §The envelope).
+  // A git that hung is refused by name (`git-timeout`), not read as no repository.
+  if (result.error instanceof GitTimedOut) throw result.error;
   if (result.error !== undefined || result.status !== 0) return { kind: "no-git" };
   const answer = result.stdout.toString("utf8");
   // A cut path would install the hooks somewhere else: refused, never written.

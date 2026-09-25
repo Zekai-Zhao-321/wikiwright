@@ -17,7 +17,7 @@ import {
   routeFindings,
 } from "@wikiwright/core";
 import { fail, ok } from "../envelope.ts";
-import { gitRun } from "../git.ts";
+import { GitTimedOut, gitRun } from "../git.ts";
 import { lawFor, lintOptionsFor, moveReasonsOf, rootsOf } from "../law.ts";
 import { collectPages, formerFolderTagFindings, sortFindings } from "../pages.ts";
 import { contentPathRefusal } from "../paths.ts";
@@ -156,6 +156,8 @@ export const moveCommand: CommandSpec = {
         throw new Error(`Command failed: git mv ${from} ${to}\n${moved.stderr}`);
       }
     } catch (e) {
+      // A git that hung is refused by name (`git-timeout`), as every git read is.
+      if (e instanceof GitTimedOut) throw e;
       return fail("move", "conflict", "git-unavailable", `git mv failed: ${String(e)}`, {
         hint: "move operates inside a git repository",
       });

@@ -204,7 +204,12 @@ version` prints the engine version and the commit a binary was built from.
   child's exit, at most four children at a time, keeping the file-backed
   protocol: the answer read from a file git wrote, a batch request handed
   over as a file, stderr read to its end under an 8 MiB bound, the
-  terminators and cross-checks. A timeout kills the child. Every git child
+  terminators and cross-checks. Every git child runs under a timeout,
+  `WIKIWRIGHT_GIT_TIMEOUT_MS` (60,000 ms when unset): one still running then
+  is killed and the verb refused as `git-timeout` (exit 1), and a value that
+  is not a whole number of milliseconds is `git-timeout-invalid` (exit 2).
+  A child that has exited is answered when it exits, its stderr given up one
+  second after if a process it started still holds it. Every git child
   carries `LC_ALL=C` and `GIT_OPTIONAL_LOCKS=0`, and the two `status` reads
   use `-z`. Every verb path awaits it, the loader included; envelopes are
   byte-identical to the synchronous build's. `move`'s `git mv` and the

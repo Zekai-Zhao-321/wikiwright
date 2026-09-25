@@ -578,7 +578,8 @@ but a channel with no prefix to return.
 
 The engine no longer calls a synchronous spawn at all: the transport spawns
 asynchronously (`Bun.spawn`), awaited to the child's exit, at most four
-children at a time, and no file the packages ship spawns synchronously
+children at a time, each killed if it runs past `WIKIWRIGHT_GIT_TIMEOUT_MS`
+(`git-timeout`), and no file the packages ship spawns synchronously
 (`no-sync-spawn.test.ts`). The CLI a test spawns runs under Bun with its
 stdout on a file the test reads back (`runCli`,
 `packages/cli/test/fixtures/runtime.ts`), and the plugin's hook scripts read
