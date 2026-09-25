@@ -15,7 +15,7 @@ import { normalizeIdentity } from "../identity/index.ts";
 import type { LawType } from "../law/compose.ts";
 import type { TypeLaw } from "../law/load.ts";
 import { utf8Text } from "../law/text.ts";
-import { isMapping, readYaml } from "../law/yaml.ts";
+import { isMapping, readYaml, setOwn } from "../law/yaml.ts";
 import { parseDoc } from "../parse/index.ts";
 import {
   type GrammarRecord,
@@ -326,7 +326,7 @@ function declaredKeyword(type: LawType, property: string, keyword: string): unkn
     const properties = part.raw["properties"];
     if (!isMapping(properties)) continue;
     const declared = properties[property];
-    if (isMapping(declared) && keyword in declared) return declared[keyword];
+    if (isMapping(declared) && Object.hasOwn(declared, keyword)) return declared[keyword];
   }
   return undefined;
 }
@@ -337,18 +337,21 @@ function declaredKeyword(type: LawType, property: string, keyword: string): unkn
  * shape declares `format: uri` whose value the WHATWG parser accepts.
  */
 export function buildPageInterface(parsed: ParsedPage, type: LawType): Record<string, unknown> {
+  // Every map here is keyed by what a page or a document wrote, so a key is
+  // set as an own property and looked up with Object.hasOwn: `constructor`
+  // is a frontmatter key or a page name like any other.
   const fields: Record<string, unknown> = { ...parsed.frontmatter };
   for (const property of type.properties) {
-    if (property in fields) continue;
+    if (Object.hasOwn(fields, property)) continue;
     const fallback = declaredKeyword(type, property, "default");
-    if (fallback !== undefined) fields[property] = fallback;
+    if (fallback !== undefined) setOwn(fields, property, fallback);
   }
   const urls: Record<string, Record<string, string>> = {};
   for (const property of type.properties) {
     const value = fields[property];
     if (typeof value !== "string" || declaredKeyword(type, property, "format") !== "uri") continue;
     const url = parseUrl(value);
-    if (url !== undefined) urls[property] = url;
+    if (url !== undefined) setOwn(urls, property, url);
   }
   return {
     path: parsed.path,
@@ -381,7 +384,7 @@ export function buildFacts(
 ): Record<string, unknown> {
   const vocabularies: Record<string, string[]> = {};
   for (const [name, vocabulary] of law.vocabularies)
-    vocabularies[name] = [...vocabulary.entries.keys()];
+    setOwn(vocabularies, name, [...vocabulary.entries.keys()]);
   const links: Record<string, Record<string, unknown>> = {};
   const targets = [
     ...parsed.links,
@@ -391,15 +394,18 @@ export function buildFacts(
   ];
   for (const name of targets) {
     const key = normalizeIdentity(name);
-    if (key in links) continue;
+    if (Object.hasOwn(links, key)) continue;
     const found = resolve(name);
-    links[key] =
+    setOwn(
+      links,
+      key,
       found === undefined
         ? { resolved: false, path: null, type: null }
-        : { resolved: true, path: found.path, type: found.type };
+        : { resolved: true, path: found.path, type: found.type },
+    );
   }
   const ancestry: Record<string, string[]> = {};
-  for (const [name, type] of law.types) ancestry[name] = [...type.ancestry];
+  for (const [name, type] of law.types) setOwn(ancestry, name, [...type.ancestry]);
   return { vocabularies, links, ancestry };
 }
 

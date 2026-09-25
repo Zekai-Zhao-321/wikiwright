@@ -7,7 +7,7 @@
 // integer and a float the author wrote stay distinguishable to CEL. A
 // consumer that needs JSON numbers (Ajv, the key tables) converts with
 // `jsonNumbers`.
-import { parseDocument } from "yaml";
+import { isScalar, parseDocument, visit } from "yaml";
 
 export type YamlResult =
   | { ok: true; value: unknown }
@@ -33,7 +33,41 @@ export function readYaml(text: string): YamlResult {
       ? { ok: false, message: reason }
       : { ok: false, message: reason, line };
   }
+  // `__proto__` is refused as a key: copied into an object by assignment it
+  // would set the object's prototype rather than add a key, and its members
+  // would then satisfy a shape by inheritance while leaving the digest.
+  let proto: number | undefined;
+  visit(doc, {
+    Pair(_key, pair) {
+      if (isScalar(pair.key) && pair.key.value === "__proto__") {
+        proto = pair.key.range?.[0] ?? 0;
+        return visit.BREAK;
+      }
+      return undefined;
+    },
+  });
+  if (proto !== undefined) {
+    return {
+      ok: false,
+      message: 'the key "__proto__" is refused',
+      line: text.slice(0, proto).split("\n").length,
+    };
+  }
   return { ok: true, value: int64(doc.toJS({ maxAliasCount: 100 })) };
+}
+
+/**
+ * Set `key` on `target` as an own data property. Plain assignment of
+ * `__proto__` sets the prototype instead; every copy the v2 law and the page
+ * interface make goes through this.
+ */
+export function setOwn(target: Record<string, unknown>, key: string, value: unknown): void {
+  Object.defineProperty(target, key, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
 }
 
 /** An integer outside int64 is a `double`, as §5 binds it. */
@@ -44,7 +78,7 @@ function int64(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(int64);
   if (value !== null && typeof value === "object") {
     const out: Record<string, unknown> = {};
-    for (const [key, v] of Object.entries(value)) out[key] = int64(v);
+    for (const [key, v] of Object.entries(value)) setOwn(out, key, int64(v));
     return out;
   }
   return value;
@@ -56,7 +90,7 @@ export function jsonNumbers(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(jsonNumbers);
   if (value !== null && typeof value === "object") {
     const out: Record<string, unknown> = {};
-    for (const [key, v] of Object.entries(value)) out[key] = jsonNumbers(v);
+    for (const [key, v] of Object.entries(value)) setOwn(out, key, jsonNumbers(v));
     return out;
   }
   return value;

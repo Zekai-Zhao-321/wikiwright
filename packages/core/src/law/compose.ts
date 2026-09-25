@@ -23,6 +23,7 @@ import {
 } from "./documents.ts";
 import type { LawIssue } from "./issues.ts";
 import { resolveReference } from "./names.ts";
+import { setOwn } from "./yaml.ts";
 
 export interface LawSection {
   heading: string;
@@ -610,7 +611,7 @@ function structuredCopy<T>(value: T): T {
   if (Array.isArray(value)) return value.map(structuredCopy) as T;
   if (value !== null && typeof value === "object") {
     const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value)) out[k] = structuredCopy(v);
+    for (const [k, v] of Object.entries(value)) setOwn(out, k, structuredCopy(v));
     return out as T;
   }
   return value;
@@ -721,8 +722,11 @@ function mergeConfig(
   const out: Record<string, unknown> = { ...prior };
   for (const [key, value] of Object.entries(next)) {
     const before = prior[key];
-    out[key] =
-      isRecord(before) && isRecord(value) ? mergeConfig(before, value) : structuredCopy(value);
+    setOwn(
+      out,
+      key,
+      isRecord(before) && isRecord(value) ? mergeConfig(before, value) : structuredCopy(value),
+    );
   }
   return out;
 }

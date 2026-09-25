@@ -25,6 +25,7 @@ import { codeUnitCompare } from "../identity/index.ts";
 import { PAGE_INTERFACE } from "../interface/identity.ts";
 import type { TypeLaw } from "../law/load.ts";
 import { utf8Compare } from "../law/paths.ts";
+import { setOwn } from "../law/yaml.ts";
 import { CEL_PROFILE } from "../rules/profile.ts";
 
 declare const TextEncoder: new () => { encode(text: string): Uint8Array };
@@ -70,7 +71,7 @@ export function pageDigest(
   else {
     const kept: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(frontmatter))
-      if (!meta.includes(key)) kept[key] = value;
+      if (!meta.includes(key)) setOwn(kept, key, value);
     head = ENCODER.encode(canonicalJson(kept));
   }
   return sha256HexOfBytes(concat([head, new Uint8Array([0]), body]));

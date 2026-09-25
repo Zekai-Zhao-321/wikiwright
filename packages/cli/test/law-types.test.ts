@@ -264,6 +264,11 @@ describe("load-time codes of the type documents", () => {
       "type-invalid",
     ],
     [
+      "a __proto__ key in a rule's config",
+      edit(PLANTING, "  known-bed: { beds:", "  known-bed: { __proto__: { beds: [x] }, beds:"),
+      "type-invalid",
+    ],
+    [
       "configure on a rule the type does not inherit",
       edit(PLANTING, "configure:", "configure:\n  frost-dates: { months: [5] }"),
       "type-invalid",

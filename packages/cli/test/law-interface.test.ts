@@ -193,6 +193,23 @@ describe("a parsed page", () => {
     ]);
   });
 
+  it("refuses a __proto__ key: no inherited member satisfies the shape, and the digest moves", () => {
+    const validate = law.validators.get("bed-note");
+    const digest = (text: string) => {
+      const page = read("wiki/note.md", text);
+      return buildPageInterface(page, law.types.get("bed-note") as LawType)["digest"];
+    };
+    const plain = "---\ntype: bed-note\n---\n";
+    const hidden = (title: string) => `---\ntype: bed-note\n__proto__:\n  title: ${title}\n---\n`;
+    const page = read("wiki/note.md", hidden("A"));
+    expect(page.frontmatterError).toBe('the key "__proto__" is refused');
+    expect(Object.getPrototypeOf(page.frontmatter)).toBe(Object.prototype);
+    expect("title" in page.frontmatter).toBe(false);
+    expect(validate?.(page.frontmatter)).toBe(false);
+    const digests = new Set([digest(plain), digest(hidden("A")), digest(hidden("B"))]);
+    expect(digests.size).toBe(3);
+  });
+
   it("refuses a page over 1 MiB as page-too-large", () => {
     const result = parsePage("wiki/big.md", new Uint8Array(1024 * 1024 + 1).fill(0x61), law);
     expect(result.ok ? undefined : result.code).toBe("page-too-large");
@@ -253,6 +270,16 @@ describe("the page interface", () => {
     expect(facts.links["tomato"]).toEqual({ resolved: false, path: null, type: null });
     expect(facts.ancestry["planting"]).toEqual(["garden/planting"]);
     expect(facts.ancestry["garden/planting"]).toEqual([]);
+  });
+
+  it("keys facts.links by own property: a link to [[Constructor]] or [[__proto__]] is a link", () => {
+    const page = read(
+      "wiki/links.md",
+      "---\ntype: bed-note\n---\n[[Constructor]] [[__proto__]] [[Basil]]\n",
+    );
+    const links = buildFacts(law, page)["links"] as Record<string, unknown>;
+    expect(Object.keys(links)).toEqual(["constructor", "__proto__", "basil"]);
+    expect(Object.getPrototypeOf(links)).toBe(Object.prototype);
   });
 
   it("binds before as absent with no base, and as the base's page and sections with one", () => {
