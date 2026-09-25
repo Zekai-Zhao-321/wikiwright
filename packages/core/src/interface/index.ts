@@ -26,6 +26,7 @@ import {
   type ResolveTarget,
 } from "../records/index.ts";
 import { recordValidators } from "../records/schemas.ts";
+import { overBound, RANGE_BOUNDS } from "../rules/bounds.ts";
 import { parseUrl } from "../schema/formats.ts";
 import { PAGE_BYTES_MAX } from "./identity.ts";
 
@@ -68,9 +69,40 @@ export interface ParsedPage {
   type?: LawType;
 }
 
+/**
+ * Which §6 bound a refused page exceeds: its bytes (1 MiB), its sections
+ * (200), the top-level items of one section (5,000), a list or map in its
+ * frontmatter (1,000), or the distinct link targets `facts.links` would hold
+ * (10,000).
+ */
+export type PageLimit = "bytes" | "sections" | "items" | "list" | "links";
+
 export type PageRead =
   | { ok: true; page: ParsedPage }
-  | { ok: false; code: "page-too-large" | "page-not-utf8"; message: string };
+  | {
+      ok: false;
+      code: "page-too-large";
+      limit: PageLimit;
+      message: string;
+      details: { limit: PageLimit; bound: number; size: number; pointer?: string };
+    }
+  | { ok: false; code: "page-not-utf8"; message: string };
+
+function tooLarge(
+  limit: PageLimit,
+  bound: number,
+  size: number,
+  message: string,
+  pointer?: string,
+): PageRead {
+  return {
+    ok: false,
+    code: "page-too-large",
+    limit,
+    message,
+    details: { limit, bound, size, ...(pointer === undefined ? {} : { pointer }) },
+  };
+}
 
 function utf8Length(text: string): number {
   let n = 0;
@@ -130,11 +162,12 @@ export function parsePage(
   resolve: ResolveTarget = () => undefined,
 ): PageRead {
   if (bytes.length > PAGE_BYTES_MAX) {
-    return {
-      ok: false,
-      code: "page-too-large",
-      message: `${path} is ${bytes.length} bytes; a page is at most ${PAGE_BYTES_MAX}`,
-    };
+    return tooLarge(
+      "bytes",
+      PAGE_BYTES_MAX,
+      bytes.length,
+      `${path} is ${bytes.length} bytes; a page is at most ${PAGE_BYTES_MAX}`,
+    );
   }
   const text = utf8Text(bytes);
   if (text === undefined)
@@ -168,6 +201,18 @@ export function parsePage(
   const body = bodyStartChar >= text.length ? "" : text.slice(bodyStartChar);
   const bodyBytes = bodyStartByte >= bytes.length ? new Uint8Array() : bytes.slice(bodyStartByte);
 
+  // §6: a list or map in the frontmatter is a range a rule may walk.
+  const list = overBound(frontmatter, RANGE_BOUNDS.list);
+  if (list !== undefined) {
+    return tooLarge(
+      "list",
+      RANGE_BOUNDS.list,
+      list.size,
+      `${path}: the frontmatter's ${list.pointer} holds ${list.size} members; a frontmatter list or map holds at most ${RANGE_BOUNDS.list}`,
+      list.pointer,
+    );
+  }
+
   const typeName = frontmatter["type"];
   const type = typeof typeName === "string" ? law.types.get(typeName) : undefined;
   const sections = type?.sections ?? null;
@@ -179,12 +224,34 @@ export function parsePage(
   for (const fence of doc.fences)
     for (let i = fence.line; i <= fence.endLine; i += 1) fenced.add(i);
   const headings = doc.headings.filter((h) => h.line > bodyLine);
+  // §6: `page.sections` holds one occurrence per heading, and `facts.links`
+  // one entry per distinct target; both are ranges. Refused before the walk
+  // below, whose work grows with the headings.
+  if (headings.length > RANGE_BOUNDS.sections) {
+    return tooLarge(
+      "sections",
+      RANGE_BOUNDS.sections,
+      headings.length,
+      `${path} has ${headings.length} headings; a page has at most ${RANGE_BOUNDS.sections} sections`,
+    );
+  }
+  const targets = new Set(doc.wikilinks.map((l) => normalizeIdentity(l.target)));
+  if (targets.size > RANGE_BOUNDS.facts) {
+    return tooLarge(
+      "links",
+      RANGE_BOUNDS.facts,
+      targets.size,
+      `${path} links ${targets.size} distinct pages; a page links at most ${RANGE_BOUNDS.facts}`,
+    );
+  }
 
   const occurrences: Occurrence[] = [];
   const unparsed: UnparsedItem[] = [];
   const stack: { depth: number; heading: string }[] = [];
   const seen = new Map<string, number>();
+  let overflow: { heading: string; line: number } | undefined;
   headings.forEach((heading, index) => {
+    if (overflow !== undefined) return;
     while (stack.length > 0 && (stack[stack.length - 1]?.depth ?? 0) >= heading.depth) stack.pop();
     stack.push({ depth: heading.depth, heading: heading.text });
     const next = headings.slice(index + 1).find((h) => h.depth <= heading.depth);
@@ -259,6 +326,7 @@ export function parsePage(
       }
       current = undefined;
     };
+    let items = 0;
     for (let n = contentFrom; n <= directEnd; n += 1) {
       const line = lines[n - 1];
       if (line === undefined || fenced.has(n)) continue;
@@ -271,6 +339,12 @@ export function parsePage(
       }
       flush();
       if (!LIST_ITEM.test(line.text)) continue; // prose between items
+      // §6: `section.items` is a range; parsed or not, an item counts.
+      items += 1;
+      if (items > RANGE_BOUNDS.items) {
+        overflow = { heading: heading.text, line: heading.line };
+        return;
+      }
       const parsed =
         grammar === "claims"
           ? parseClaimLine(line.text, law.engine.source_roots)
@@ -284,6 +358,15 @@ export function parsePage(
     }
     flush();
   });
+
+  if (overflow !== undefined) {
+    return tooLarge(
+      "items",
+      RANGE_BOUNDS.items,
+      RANGE_BOUNDS.items + 1,
+      `${path}: the section "${overflow.heading}" (line ${overflow.line}) has over ${RANGE_BOUNDS.items} items; a section has at most ${RANGE_BOUNDS.items}`,
+    );
+  }
 
   const out: ParsedPage = {
     path,

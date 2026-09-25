@@ -10,7 +10,13 @@ export {
   lawLines,
   pageDigest,
 } from "../digest/index.ts";
-export type { Occurrence, PageRead, ParsedPage, UnparsedItem } from "../interface/index.ts";
+export type {
+  Occurrence,
+  PageLimit,
+  PageRead,
+  ParsedPage,
+  UnparsedItem,
+} from "../interface/index.ts";
 export {
   buildBefore,
   buildFacts,

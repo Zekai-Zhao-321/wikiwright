@@ -736,6 +736,23 @@ over it:
   bound stands in the way of a claims transition over handles and of
   `relation-removed` over `before`; `docs/v2-dispositions.md` marks both for
   the navigator.
+- The static bound counts comprehension iterations, not the work inside
+  one. The data holds every bound the count multiplies: `parsePage`
+  refuses a page over 200 sections, a grammar section over 5,000 items, a
+  frontmatter list or map over 1,000 members and a page linking over
+  10,000 distinct targets as `page-too-large` (`details.limit`); the
+  loader refuses a rule's config list over 1,000 (`rule-invalid`, limit
+  `config`), a vocabulary over 10,000 entries (`vocabulary-invalid`), a
+  declared `default` list over 1,000 (`type-invalid`) and a law over
+  10,000 types or vocabularies (`law-too-large`). What stays uncounted is
+  the linear work a built-in does in one iteration: `x in` a list, `join`,
+  `contains`, `matches` over a string. `section.items.all(i, i.label in
+  facts.vocabularies['v'])` is admitted at 5,000 and does up to 5,000 ×
+  10,000 comparisons, and a string operation walks up to the page's 1 MiB.
+  Such a rule is finite and can still take seconds on a page at the
+  bounds. Counting `in` over a list would refuse the admitted form of
+  `relation-range` and the contracts' cost model does not count it; there
+  is no runtime budget, as §6 decides. That is the navigator's to weigh.
 - `Intl` is in the bundle: `@bufbuild/cel` calls `Intl.DateTimeFormat` for
   a `get*` time method given a time zone, and `Intl.NumberFormat` for
   `format`'s fixed-point clause. Neither is reachable from an admitted rule

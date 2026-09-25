@@ -74,6 +74,80 @@ describe("rule-invalid at load, the limit named", () => {
   });
 });
 
+describe("the law's own ranges, bound at load (§6)", () => {
+  const list = (n: number) => `[${Array.from({ length: n }, (_, i) => `b${i}`).join(", ")}]`;
+  const outcome = (result: TypeLawResult) =>
+    result.ok
+      ? "ok"
+      : result.issues.map((i) => [i.code, i.where, i.details?.["pointer"], i.details?.["size"]]);
+
+  it("refuses a rule's config list over 1,000 as rule-invalid, and admits one at 1,000", async () => {
+    const config = (n: number) =>
+      withRule(
+        rule("candidate", "page.fields.bed in config.beds", `    config: { beds: ${list(n)} }\n`),
+      );
+    expect(outcome(await load(config(1000)))).toBe("ok");
+    const result = await load(config(1001));
+    expect(outcome(result)).toEqual([
+      ["rule-invalid", "bundle:constitution/types/planting.yaml", "/rules/1/config/beds", 1001],
+    ]);
+    expect(result.ok ? undefined : result.issues[0]?.details).toMatchObject({
+      rule: "candidate",
+      limit: "config",
+      bound: 1000,
+    });
+  });
+
+  it("refuses a configure list over 1,000 where it is written", async () => {
+    const text = gardenTree()[PLANTING] ?? "";
+    const result = await load({
+      [PLANTING]: text.replace(
+        "known-bed: { beds: [north, south, herb, east] }",
+        `known-bed: { beds: ${list(1001).replace("[", "[north, south, herb, ")} }`,
+      ),
+    });
+    expect(outcome(result)).toEqual([
+      [
+        "rule-invalid",
+        "bundle:constitution/types/planting.yaml",
+        "/configure/known-bed/beds",
+        1004,
+      ],
+    ]);
+  });
+
+  it("refuses a vocabulary over 10,000 entries, contributions counted", async () => {
+    const entries = (n: number) =>
+      Array.from({ length: n }, (_, i) => `  shade-${i}: {}\n`).join("");
+    const contribution = (n: number) => ({
+      "constitution/vocabularies/relations.yaml": `vocabulary: relations\ncontributes_to: garden/relations\nentries:\n${entries(n)}`,
+    });
+    // The library declares two; 9,998 more reach the bound.
+    expect(outcome(await load(contribution(9998)))).toBe("ok");
+    expect(outcome(await load(contribution(9999)))).toEqual([
+      ["vocabulary-invalid", "garden:vocabularies/relations.yaml", "/entries", 10001],
+    ]);
+  });
+
+  it("refuses a declared default list over 1,000: it enters page.fields", async () => {
+    const text = gardenTree()[PLANTING] ?? "";
+    const result = await load({
+      [PLANTING]: text.replace(
+        "    updated: { type: string, format: date }",
+        `    updated: { type: string, format: date }\n    beds: { type: array, default: ${list(1001)} }`,
+      ),
+    });
+    expect(outcome(result)).toEqual([
+      [
+        "type-invalid",
+        "bundle:constitution/types/planting.yaml",
+        "/fields/properties/beds/default",
+        1001,
+      ],
+    ]);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // the six spike rules over the page interface
 

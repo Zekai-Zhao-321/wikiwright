@@ -3,6 +3,7 @@
 // a stage and stops between stages, as the old loader's was: a law whose
 // libraries did not resolve has no documents to read.
 import type { ValidateFunction } from "ajv/dist/2020.js";
+import { lawBoundIssues } from "../rules/bounds.ts";
 import { type CompiledRule, compileRule } from "../rules/evaluate.ts";
 import { admitRule } from "../rules/profile.ts";
 import { compileShapes } from "../schema/shapes.ts";
@@ -93,6 +94,9 @@ export function loadTypeLaw(snapshot: LawSnapshot): TypeLawResult {
 
   const composed = compose(typeDocs, fragmentDocs, vocabularyDocs);
   if (composed.issues.length > 0) return failed(composed.issues);
+  // §6: the ranges the law supplies to facts and to page.fields, bound.
+  const bounds = lawBoundIssues(composed.types, composed.vocabularies);
+  if (bounds.length > 0) return failed(bounds);
 
   const compiled = compileShapes(composed.types, engine);
   // §6: every rule is admitted under the profile, or refused with its limit.

@@ -229,6 +229,60 @@ describe("a parsed page", () => {
     const result = parsePage("wiki/big.md", new Uint8Array(1024 * 1024 + 1).fill(0x61), law);
     expect(result.ok ? undefined : result.code).toBe("page-too-large");
   });
+
+  // §6: the static cost bound multiplies these, so a page over one is refused
+  // before a rule walks it; a page at each bound reads.
+  const refused = (text: string) => {
+    const result = parsePage("wiki/big.md", enc(text), law, resolve);
+    return result.ok ? "read" : result.code === "page-too-large" ? result.details : result.code;
+  };
+  const planting = (body: string, extra = "") =>
+    `---\ntype: planting\ntitle: Basil\nbed: herb\nsown: 2026-04-12\n${extra}---\n${body}`;
+
+  it("refuses a page over 200 sections, and reads one at 200", () => {
+    const headings = (n: number) =>
+      Array.from({ length: n }, (_, i) => `## Part ${i}\n`).join("\n");
+    expect(refused(planting(headings(200)))).toBe("read");
+    expect(refused(planting(headings(201)))).toEqual({ limit: "sections", bound: 200, size: 201 });
+  });
+
+  it("refuses a section over 5,000 items, and reads one at 5,000", () => {
+    const history = (n: number) =>
+      `## History\n\n${Array.from({ length: n }, () => "- 2026-04-12 — sown\n").join("")}`;
+    expect(refused(planting(history(5000)))).toBe("read");
+    expect(refused(planting(history(5001)))).toEqual({
+      limit: "items",
+      bound: 5000,
+      size: 5001,
+    });
+  });
+
+  it("refuses a frontmatter list or map over 1,000 members, at any depth", () => {
+    const list = (n: number) => `[${Array.from({ length: n }, (_, i) => `t${i}`).join(", ")}]`;
+    expect(refused(planting("", `tags: ${list(1000)}\n`))).toBe("read");
+    expect(refused(planting("", `tags: ${list(1001)}\n`))).toEqual({
+      limit: "list",
+      bound: 1000,
+      size: 1001,
+      pointer: "/tags",
+    });
+    expect(refused(planting("", `log:\n  seen: ${list(1001)}\n`))).toEqual({
+      limit: "list",
+      bound: 1000,
+      size: 1001,
+      pointer: "/log/seen",
+    });
+  });
+
+  it("refuses a page linking over 10,000 distinct pages, and reads one at 10,000", () => {
+    const links = (n: number) => Array.from({ length: n }, (_, i) => `[[P${i}]]`).join(" ");
+    expect(refused(planting(`${links(10000)} [[P0]]\n`))).toBe("read");
+    expect(refused(planting(`${links(10001)}\n`))).toEqual({
+      limit: "links",
+      bound: 10000,
+      size: 10001,
+    });
+  });
 });
 
 describe("the page interface", () => {

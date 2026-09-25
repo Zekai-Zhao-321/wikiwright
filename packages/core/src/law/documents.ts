@@ -4,6 +4,7 @@
 // twins), and a value of the wrong kind is `<kind>-invalid`. Nothing here
 // composes: a document is read on its own, and `compose.ts` puts them
 // together.
+import { overBound, RANGE_BOUNDS } from "../rules/bounds.ts";
 import type { LawIssue } from "./issues.ts";
 import { isName, qualify, splitName } from "./names.ts";
 import { utf8Text, withoutBom } from "./text.ts";
@@ -152,6 +153,23 @@ class Reader {
       details: { pointer },
     });
     return undefined;
+  }
+
+  /**
+   * §6: a list or map in a rule's config is a range a rule may walk, bound
+   * at 1,000 members; `configure` replaces a list whole, so every effective
+   * config list is one written here.
+   */
+  configBound(config: Record<string, unknown>, pointer: string, rule: string): void {
+    const over = overBound(config, RANGE_BOUNDS.list);
+    if (over === undefined) return;
+    const at = `${pointer}${over.pointer}`;
+    this.issues.push({
+      code: "rule-invalid",
+      where: this.where,
+      message: `${at}: rule "${rule}": the config list holds ${over.size} members; a config list or map holds at most ${RANGE_BOUNDS.list}`,
+      details: { pointer: at, rule, limit: "config", bound: RANGE_BOUNDS.list, size: over.size },
+    });
   }
 
   unknownKeys(value: Record<string, unknown>, allowed: readonly string[], pointer: string): void {
@@ -343,6 +361,7 @@ function readRules(r: Reader, value: unknown): RuleDeclaration[] {
     if (raw["section"] !== undefined) section = r.string(raw["section"], `${pointer}/section`);
     if (id === undefined || expr === undefined || message === undefined) continue;
     if (!isMapping(config) || (severity !== "error" && severity !== "warning")) continue;
+    r.configBound(config, `${pointer}/config`, id);
     const rule: RuleDeclaration = { id, expr, config, severity, message, pointer };
     if (section !== undefined) rule.section = section;
     out.push(rule);
@@ -488,7 +507,10 @@ export function readDocument(
       for (const [id, config] of Object.entries(configure)) {
         if (!isName(id)) r.invalid(`/configure/${id}`, `"${id}" is not a rule id`);
         else if (!isMapping(config)) r.invalid(`/configure/${id}`, "a config mapping");
-        else type.configure[id] = config;
+        else {
+          r.configBound(config, `/configure/${id}`, id);
+          type.configure[id] = config;
+        }
       }
     }
   }

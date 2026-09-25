@@ -10,7 +10,15 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "@bufbuild/cel";
 import { strings } from "@bufbuild/cel/ext";
-import { admitRule, CEL_PROFILE, COST_MAX, compileRule, RANGE_BOUNDS } from "../src/index.ts";
+import {
+  admitRule,
+  CEL_PROFILE,
+  COST_MAX,
+  compileRule,
+  lawBoundIssues,
+  overBound,
+  RANGE_BOUNDS,
+} from "../src/index.ts";
 
 function limit(expr: string): string | undefined {
   const admission = admitRule(expr);
@@ -104,6 +112,35 @@ describe("admission", () => {
     expect(transition.ok && transition.transition).toBe(true);
     const shadowed = admitRule("page.sections.all(before, before.heading != '')");
     expect(shadowed.ok && shadowed.transition).toBe(false);
+  });
+});
+
+describe("the declared bounds, held on the data", () => {
+  it("finds the first list or map below the top over its bound, as a pointer", () => {
+    const big = Array.from({ length: 1001 }, (_, i) => i);
+    expect(overBound({ tags: big.slice(0, 1000) }, 1000)).toBe(undefined);
+    expect(overBound({ tags: big }, 1000)).toEqual({ pointer: "/tags", size: 1001 });
+    expect(overBound({ a: [{ b: big }] }, 1000)).toEqual({ pointer: "/a/0/b", size: 1001 });
+    const wide = Object.fromEntries(big.map((i) => [`k${i}`, i]));
+    expect(overBound({ m: wide }, 1000)).toEqual({ pointer: "/m", size: 1001 });
+    // The top-level map is not itself a range.
+    expect(overBound(wide, 1000)).toBe(undefined);
+  });
+
+  it("refuses a law of more than 10,000 types or vocabularies as law-too-large", () => {
+    const many = (n: number) =>
+      new Map(Array.from({ length: n }, (_, i) => [`t${i}`, { parts: [] } as never]));
+    expect(lawBoundIssues(many(RANGE_BOUNDS.facts), new Map())).toEqual([]);
+    expect(lawBoundIssues(many(RANGE_BOUNDS.facts + 1), new Map())).toMatchObject([
+      { code: "law-too-large", details: { limit: "facts", size: RANGE_BOUNDS.facts + 1 } },
+    ]);
+    const vocabularies = new Map(
+      Array.from({ length: RANGE_BOUNDS.facts + 1 }, (_, i) => [
+        `v${i}`,
+        { name: `v${i}`, where: "bundle:x", entries: new Map() } as never,
+      ]),
+    );
+    expect(lawBoundIssues(new Map(), vocabularies).map((i) => i.code)).toEqual(["law-too-large"]);
   });
 });
 

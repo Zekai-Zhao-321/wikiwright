@@ -61,8 +61,11 @@ version` prints the engine version and the commit a binary was built from.
     digits of sha256 over the core's normalised identity, computed and
     never written.
   - The page interface a rule is bound to (`page`, `section`, `config`,
-    `facts`, `before`; identity `page-interface/1`); a page over 1 MiB is
-    `page-too-large`.
+    `facts`, `before`; identity `page-interface/1`); a page over 1 MiB,
+    over 200 sections, with a grammar section over 5,000 items, a
+    frontmatter list or map over 1,000 members or links to over 10,000
+    distinct pages is `page-too-large`, the bound in `details.limit`
+    (`bytes`, `sections`, `items`, `list`, `links`).
   - Rules in CEL under the profile `cel-profile/1`: refused at load as
     `rule-invalid` with the limit in `details.limit` — `bytes` (over 4,096),
     `parentheses` (nesting over 32), `parse`, `nodes` (over 512), `call`
@@ -71,7 +74,11 @@ version` prints the engine version and the commit a binary was built from.
     `nesting` (comprehensions over 2 deep), `chaining` (over 4 side by
     side), `range-not-bound` (a comprehension over anything but a direct
     interface path) and `cost-bound` (a static worst case over 200,000
-    iterations). A result that is not a bool is `rule-error`; a transition
+    iterations), and `config` (a rule's config list or map, or one a
+    `configure` writes, over 1,000 members). The law's own ranges are held
+    at load: a vocabulary over 10,000 entries is `vocabulary-invalid`, a
+    declared `default` list over 1,000 is `type-invalid`, and over 10,000
+    types or vocabularies is `law-too-large`. A result that is not a bool is `rule-error`; a transition
     rule without a base is `unevaluated` (`no-base`).
   - The digests: `bytes`, `content`, `page.digest` (canonical frontmatter,
     `meta` keys removed) and `law` (every loader-read file, the interface
