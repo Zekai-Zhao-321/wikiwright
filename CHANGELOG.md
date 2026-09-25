@@ -57,7 +57,9 @@ version` prints the engine version and the commit a binary was built from.
     optional (`(valid →YYYY-MM-DD, superseded YYYY-MM-DD)`), after the
     provenance; `->` for `→`, a bare `(superseded D)`, a clause split in two
     parentheticals, another letter case, and a clause before the
-    provenance do not parse. The handle is today's, `#` and eight hex
+    provenance do not parse. A parenthetical is taken for the clause only
+    when one of its words is followed by a date or an arrow; `(valid for
+    zone 7)` or `(superseded by hybrids)` is core text. The handle is today's, `#` and eight hex
     digits of sha256 over the core's normalised identity, computed and
     never written.
   - The page interface a rule is bound to (`page`, `section`, `config`,

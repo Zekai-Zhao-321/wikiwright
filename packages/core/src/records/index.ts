@@ -76,8 +76,13 @@ export type ResolveTarget = (name: string) => { path: string; type: string } | u
 const DAY = "\\d{4}-\\d{2}-\\d{2}";
 const RETRACTED = new RegExp(`^retracted (${DAY})$`, "u");
 const SUPERSEDED = new RegExp(`^valid (${DAY})?→(${DAY}), superseded (${DAY})$`, "u");
-/** A parenthetical that opens like a lifecycle clause and is not the canonical one is refused. */
-const LIFECYCLE_KEYWORD = /^(?:retracted|valid|superseded)\b/iu;
+/**
+ * A parenthetical shaped like a lifecycle clause: one of its three words, in
+ * any letter case, then a date or an arrow. One that is not the canonical
+ * clause is refused; any other trailing parenthetical — "(valid for zone
+ * 7)", "(superseded by hybrids)" — is core text (§4).
+ */
+const LIFECYCLE_SHAPE = /^(?:retracted|valid|superseded)\s+(?:\d{4}-|→|->)/iu;
 const CLAIM = /^- \[([^[\]\s][^[\]]*)\] (\S.*)$/u;
 const WIKILINK_ONLY = /^\[\[([^[\]|#]+)(?:#([^[\]|]*))?(?:\|([^[\]]*))?\]\]$/u;
 const URL_ONLY = /^https?:\/\/\S+$/u;
@@ -128,7 +133,7 @@ export function parseClaimLine(line: string, sourceRoots: readonly string[]): Pa
   let retracted: ClaimRecord["retracted"] = null;
   let superseded: ClaimRecord["superseded"] = null;
   let last = trailingParenthetical(rest);
-  if (last !== undefined && LIFECYCLE_KEYWORD.test(last.body)) {
+  if (last !== undefined && LIFECYCLE_SHAPE.test(last.body)) {
     const r = RETRACTED.exec(last.body);
     const s = SUPERSEDED.exec(last.body);
     if (r !== null) retracted = { date: r[1] ?? "" };
@@ -157,7 +162,7 @@ export function parseClaimLine(line: string, sourceRoots: readonly string[]): Pa
   }
   // A lifecycle clause anywhere but last is not the canonical form either.
   const stray = trailingParenthetical(rest);
-  if (stray !== undefined && LIFECYCLE_KEYWORD.test(stray.body)) {
+  if (stray !== undefined && LIFECYCLE_SHAPE.test(stray.body)) {
     return { reason: `"(${stray.body})": the lifecycle clause comes last, after the provenance` };
   }
   const core = rest.trim();

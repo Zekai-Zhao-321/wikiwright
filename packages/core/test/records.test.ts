@@ -94,6 +94,35 @@ describe("claims", () => {
     }
   });
 
+  it("keep a parenthetical that only opens with a lifecycle word as core text", () => {
+    const neighbours: [string, string][] = [
+      [
+        "- [advice] Sow broad beans in March (valid for zone 7)",
+        "Sow broad beans in March (valid for zone 7)",
+      ],
+      [
+        "- [advice] Sow broad beans in March (Valid only under glass) ([[Sowing]])",
+        "Sow broad beans in March (Valid only under glass)",
+      ],
+      [
+        "- [observed] The old variety failed (superseded by hybrids)",
+        "The old variety failed (superseded by hybrids)",
+      ],
+      [
+        "- [observed] The trial ran (retracted in 2026) (raw/trial.md)",
+        "The trial ran (retracted in 2026)",
+      ],
+    ];
+    for (const [line, core] of neighbours) {
+      const parsed = claim(line);
+      expect("record" in parsed && parsed.record.core).toBe(core);
+      expect("record" in parsed && [parsed.record.retracted, parsed.record.superseded]).toEqual([
+        null,
+        null,
+      ]);
+    }
+  });
+
   it("refuse a line that is not a claim", () => {
     for (const line of [
       "- observed: basil",
