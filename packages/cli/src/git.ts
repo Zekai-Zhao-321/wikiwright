@@ -1,7 +1,5 @@
 // docs/architecture.md (spawned git plumbing; no git library) · docs/cli.md §lint (--staged
 // reads index content, never the working tree).
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import {
   BatchStreamTruncated,
   parseCatFileBatch,
@@ -77,18 +75,17 @@ export function terminated(
  * One git child: its stdout read from the file it wrote, its stdin, when it has
  * one, a file the engine wrote (`stdoutfile.ts`). stderr is a pipe, captured,
  * never inherited: it rides on a thrown error's message instead of printing
- * `fatal:` beside a green envelope (docs/cli.md §The envelope), and three
- * answers are recognised from its text — `gitShowHead`'s absent path,
- * `gitTopLevel`'s "not a git repository", `gitOriginFetch`'s refused filter —
- * each of which, with the text lost, fails as a plumbing failure or an
- * unreachable origin rather than a smaller answer.
+ * `fatal:` beside a green envelope (docs/cli.md §The envelope), and two
+ * answers are recognised from its text — `gitShowHead`'s absent path and
+ * `gitTopLevel`'s "not a git repository" — each of which, with the text lost,
+ * fails as a plumbing failure rather than a smaller answer.
  */
 export function gitRun(
   cwd: string,
   args: readonly string[],
   options: Omit<ChildOptions, "cwd"> = {},
 ): Promise<ChildAnswer> {
-  // `LC_ALL=C`: git's messages, which three answers are recognised from, in
+  // `LC_ALL=C`: git's messages, which two answers are recognised from, in
   // one language whatever the caller's locale. `GIT_OPTIONAL_LOCKS=0`: a
   // read never takes the index lock to refresh it, so it never moves the
   // index under a dry run or races a concurrent read.
@@ -221,91 +218,6 @@ export async function gitHasHead(root: string): Promise<boolean> {
   );
 }
 
-// ---------------------------------------------------------------------------
-// origins (docs/constitution.md §Shapes): the network half, with a timeout and no prompt
-
-/**
- * An origin that did not answer — the run-external failure `freshness` reports
- * as `origin-unreachable` on every page naming it. Distinct from a plumbing
- * failure (no git on PATH, a broken repository), which is thrown as itself and
- * becomes `freshness-unavailable`.
- */
-export class OriginUnreachable extends Error {}
-
-const ORIGIN_TIMEOUT_MS = 30_000;
-
-/** The ref the per-origin cache keeps the origin's HEAD under. */
-export const CACHE_HEAD = "refs/wikiwright/head";
-
-/**
- * A git call that may reach the network. `GIT_TERMINAL_PROMPT=0` so a private
- * origin fails instead of hanging on a credential prompt; a timeout so a dead
- * host is an answer; a non-zero exit is the origin's refusal, never a throw.
- */
-async function originGit(
-  cwd: string,
-  args: string[],
-): Promise<{ status: number | null; stdout: string; stderr: string }> {
-  const result = await gitRun(cwd, args, {
-    timeout: ORIGIN_TIMEOUT_MS,
-    env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
-  });
-  if (result.error !== undefined) {
-    if ((result.error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
-      throw new OriginUnreachable(`no answer within ${ORIGIN_TIMEOUT_MS / 1000} s`);
-    }
-    throw result.error;
-  }
-  return { status: result.status, stdout: result.stdout.toString("utf8"), stderr: result.stderr };
-}
-
-/** The origin's HEAD, with no clone: one round trip. */
-export async function gitLsRemoteHead(cwd: string, origin: string): Promise<string> {
-  const r = await originGit(cwd, ["ls-remote", "--quiet", origin, "HEAD"]);
-  if (r.status !== 0) {
-    throw new OriginUnreachable(r.stderr.trim() || `git ls-remote exited ${String(r.status)}`);
-  }
-  terminated(["ls-remote", "--quiet", origin, "HEAD"], r.stdout, "\n");
-  const sha = r.stdout.split(/\s+/u)[0] ?? "";
-  if (!/^[0-9a-f]{40,64}$/u.test(sha)) throw new OriginUnreachable("the origin advertised no HEAD");
-  return sha;
-}
-
-/**
- * Bring the origin's HEAD into its blobless bare cache. `--filter=blob:none`
- * fetches commits and trees and no file contents — enough for `rev-list` and a
- * `--name-only` diff between two trees; on a server that refuses filters the
- * fetch is retried whole, and the caller is told which. `--no-tags`: a tag is
- * not a head. The cache is created on first use; git makes the directory.
- */
-export async function gitOriginFetch(
-  root: string,
-  cache: string,
-  origin: string,
-): Promise<{ head: string; filter: "blob:none" | "none" }> {
-  if (!existsSync(join(cache, "HEAD"))) await git(root, ["init", "--bare", "-q", cache]);
-  const fetch = (filtered: boolean) =>
-    originGit(cache, [
-      "fetch",
-      "--quiet",
-      ...(filtered ? ["--filter=blob:none"] : []),
-      "--no-tags",
-      origin,
-      `+HEAD:${CACHE_HEAD}`,
-    ]);
-  let r = await fetch(true);
-  let filter: "blob:none" | "none" = "blob:none";
-  if (r.status !== 0 && /filter/iu.test(r.stderr)) {
-    r = await fetch(false);
-    filter = "none";
-  }
-  if (r.status !== 0) {
-    throw new OriginUnreachable(r.stderr.trim() || `git fetch exited ${String(r.status)}`);
-  }
-  const head = ["rev-parse", CACHE_HEAD];
-  return { head: terminated(head, await git(cache, head), "\n", true).trim(), filter };
-}
-
 /** A ref's commit, or null where the ref does not exist. */
 export async function gitRefHead(dir: string, ref: string): Promise<string | null> {
   const args = ["rev-parse", "--verify", "--quiet", ref];
@@ -381,9 +293,8 @@ export async function gitRevListCount(dir: string, from: string, to: string): Pr
 
 /**
  * Files the range touched, restricted to the covered paths (covering
- * diff). `--no-renames`: rename detection compares blob contents and would
- * lazily fetch blobs into a blobless cache; a `--name-only` diff of two trees
- * needs none. With `top`, `:(top)` pathspec magic keeps `covers`
+ * diff). `--no-renames`: a covered file that moved away is listed under the
+ * path it left, the path a page covers. With `top`, `:(top)` pathspec magic keeps `covers`
  * repo-root-relative when the vault is embedded in a subdirectory of the
  * repository it documents.
  */

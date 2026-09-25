@@ -333,6 +333,21 @@ version` prints the engine version and the commit a binary was built from.
   bytes and runs its determinism fixture before it judges anything. The loss
   is stated in `docs/roadmap.md`: a `git pull` that changes a module changes
   what runs without this machine asking first.
+- Remote freshness. `freshness` measures a pin only against the repository
+  the vault sits in (origin `"."`); a pin naming any other origin is
+  reported `unmeasured`, with a `reason` that begins `remote-origin:`, and is
+  never contacted. Gone with it: the `ls-remote` depth, the `--fetch` flag
+  and the blobless bare caches it kept under `.wikiwright/origins/`, the
+  `fast-forward-needs-fetch` refusal (`--fast-forward` now works alone: the
+  local objects are always at hand), the `behind` pin state (which named a
+  pin measured without its objects; `pins` counts five states), the `depth`
+  field of the envelope and of `generated/freshness.json`, the `cache` field
+  of each `origins` row, and in the engine `gitLsRemoteHead`,
+  `gitOriginFetch`, `OriginUnreachable`, `CACHE_HEAD`, `CACHE_ROOT` and
+  `cacheDirOf`. `origin-unreachable` stays, for a vault pinned to `"."` that
+  no repository encloses. The loss: a capture of another repository is no
+  longer held to that repository's history, and nothing tells its reader
+  that the source moved (`docs/roadmap.md`).
 
 ### Fixed
 

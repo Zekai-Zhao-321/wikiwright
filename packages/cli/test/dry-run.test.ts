@@ -524,8 +524,8 @@ const REFUSALS: Refusal[] = [
     },
   },
   {
-    name: "freshness --fast-forward without --fetch",
-    argv: ["freshness", "--fast-forward"],
+    name: "freshness --fetch, a flag remote freshness took with it",
+    argv: ["freshness", "--fetch"],
   },
   {
     name: "export of a name the config does not declare",
@@ -647,8 +647,8 @@ const FIDELITY: Fidelity[] = [
   },
   { name: "freshness", argv: ["freshness"], writes: true },
   {
-    name: "freshness --fetch --fast-forward",
-    argv: ["freshness", "--fetch", "--fast-forward"],
+    name: "freshness --fast-forward",
+    argv: ["freshness", "--fast-forward"],
     writes: true,
   },
   { name: "hook install", argv: ["hook", "install"], writes: true },
@@ -904,8 +904,7 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
   // `init`'s tree copy is the one declared exception: it lands a starter,
   // it does not edit a page, and a starter is a directory rather than a splice.
   "verbs/init.ts": "the starter tree copy — the declared exception",
-  "verbs/freshness.ts":
-    "the freshness report under generated/, and the self-ignoring .wikiwright/ the origin caches live under (fixed paths, not pages)",
+  "verbs/freshness.ts": "the freshness report under generated/ (a fixed path, not a page)",
   "verbs/move.ts": "`mkdirSync` for the destination directory, before `git mv`",
 };
 

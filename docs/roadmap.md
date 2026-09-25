@@ -76,6 +76,22 @@ install already happened, rendering `generated/` and the brief in that one
 run. That needs the plan to be asynchronous — a change to
 the dry-run law's machinery, not to `init`.
 
+### A capture of another repository is not measured
+
+`freshness` reads only the repository the vault sits in. A pin whose origin
+is a git URL is reported `unmeasured`, reason `remote-origin: …`, and the
+origin is never contacted: remote freshness — the `ls-remote` depth, the
+`--fetch` cache under `.wikiwright/origins/` — was removed with the
+network-reaching git calls, so the engine's git transport reads local
+repositories only. The loss: a source page that captures another
+repository is not held to that repository's history; when the source
+moves, nothing marks the page stale or its citations unresolved, and its
+reader is not told.
+
+Wanted: a way to measure a remote capture without the engine reaching the
+network, for example a local clone the bundle names as the origin, measured
+as the enclosing repository is.
+
 ### `freshness` holds a citation to its pin, not to what the lines say
 
 A code span is a citation when it is a repository path whose first segment

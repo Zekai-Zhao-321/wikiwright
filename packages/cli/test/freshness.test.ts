@@ -1,8 +1,7 @@
 // docs/cli.md §freshness, docs/constitution.md §Shapes: a pin is measured
-// against the ORIGIN its page names — a git URL, or "." for the repository
-// enclosing the vault — at the depth the flag chooses. Hermetic: the origins are local
-// bare repositories reached over `file://`, so `ls-remote` and `fetch` run
-// against them and the suite needs no network.
+// against the local repository — origin "." is the repository enclosing the
+// vault — and a pin naming any other origin is reported unmeasured, with no
+// contact: remote freshness was removed. Hermetic: nothing here needs the network.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -43,36 +42,6 @@ function git(cwd: string, args: string[]): string {
 function write(root: string, rel: string, text: string): void {
   mkdirSync(dirname(join(root, rel)), { recursive: true });
   writeFileSync(join(root, rel), text);
-}
-
-/** A work tree that pushes to a bare origin: the "upstream" the vault captures. */
-interface Origin {
-  url: string;
-  work: string;
-  commit(file: string, text: string, message: string): string;
-}
-
-function makeOrigin(name: string, allowFilter: boolean): Origin {
-  const dir = mkdtempSync(join(tmpdir(), `ww-origin-${name}-`));
-  const bare = join(dir, "origin.git");
-  git(dir, ["init", "--bare", "-q", bare]);
-  if (allowFilter) git(bare, ["config", "uploadpack.allowFilter", "true"]);
-  const work = join(dir, "work");
-  git(dir, ["init", "-q", "-b", "main", work]);
-  git(work, ["config", "user.email", "t@e.com"]);
-  git(work, ["config", "user.name", "T"]);
-  const url = pathToFileURL(bare).href;
-  const commit = (file: string, text: string, message: string): string => {
-    write(work, file, text);
-    git(work, ["add", "-A"]);
-    git(work, ["commit", "-qm", message]);
-    // `push.negotiate` may be on in the machine's global config; over
-    // `file://` it only adds a warning, and the suite's stderr stays clean.
-    git(work, ["-c", "push.negotiate=false", "push", "-q", url, "HEAD:refs/heads/main"]);
-    git(bare, ["symbolic-ref", "HEAD", "refs/heads/main"]);
-    return git(work, ["rev-parse", "HEAD"]);
-  };
-  return { url, work, commit };
 }
 
 const CONSTITUTION = {
@@ -119,102 +88,76 @@ function vault(
   return tmp;
 }
 
-describe("the default depth: ls-remote per origin, no clone (docs/constitution.md §Shapes)", () => {
-  it("every pin is listed with its state: current at the head, behind with nothing else knowable", () => {
-    const origin = makeOrigin("a", true);
-    const pin = origin.commit("src/thing.ts", "export const thing = 1;\n", "origin state");
-    const tmp = vault([
-      { name: "Thing", locator: origin.url, commit: pin, covers: ["src/thing.ts"] },
-    ]);
+/** A repository holding `src/thing.ts` and `src/other.ts`, the vault at its root, pinned to ".". */
+function selfPinned(): { tmp: string; pin: string } {
+  const tmp = vault([{ name: "Thing", locator: ".", commit: "0".repeat(40), covers: [] }]);
+  git(tmp, ["init", "-q"]);
+  git(tmp, ["config", "user.email", "t@e.com"]);
+  git(tmp, ["config", "user.name", "T"]);
+  write(tmp, "src/thing.ts", "1\n");
+  write(tmp, "src/other.ts", "1\n");
+  git(tmp, ["add", "-A"]);
+  git(tmp, ["commit", "-qm", "origin state"]);
+  const pin = git(tmp, ["rev-parse", "HEAD"]);
+  write(tmp, "raw/Thing.md", source("Thing", ".", pin, ["src/thing.ts"]));
+  git(tmp, ["add", "-A"]);
+  git(tmp, ["commit", "-qm", "the capture"]);
+  return { tmp, pin };
+}
+
+function commitFile(tmp: string, file: string, text: string, message: string): string {
+  write(tmp, file, text);
+  git(tmp, ["add", "-A"]);
+  git(tmp, ["commit", "-qm", message]);
+  return git(tmp, ["rev-parse", "HEAD"]);
+}
+
+describe("a remote origin is not measured (docs/roadmap.md: remote freshness was removed)", () => {
+  it("a pin naming a URL is unmeasured, with the reason, no finding and no contact", () => {
+    // The URL names nothing that exists: were it contacted, the run would
+    // have reported it unreachable.
+    const url = pathToFileURL(join(tmpdir(), "ww-no-such-origin.git")).href;
+    const tmp = vault([{ name: "Gone", locator: url, commit: "a".repeat(40), covers: [] }]);
     try {
-      const current = run(tmp, ["freshness"]);
-      assert.equal(current.status, 0, JSON.stringify(current));
-      assert.equal(current.data["depth"], "ls-remote");
-      assert.deepEqual(current.data["origins"], [
-        { origin: origin.url, reachable: true, head: pin, cache: null },
-      ]);
-      // Every pin is listed with its state, so "current" and "not
-      // measured" never read alike; the summary counts each state.
-      assert.deepEqual(
-        entries(current).map((e) => [e["path"], e["state"]]),
-        [["raw/Thing.md", "current"]],
-      );
-      assert.deepEqual(current.data["pins"], {
-        current: 1,
+      const r = run(tmp, ["freshness"]);
+      assert.equal(r.status, 0, JSON.stringify(r));
+      assert.deepEqual(r.data["origins"], [{ origin: url, reachable: false, head: null }]);
+      assert.equal(entries(r)[0]?.["state"], "unmeasured");
+      assert.match(String(entries(r)[0]?.["reason"]), /^remote-origin: /u);
+      assert.deepEqual(r.data["pins"], {
+        current: 0,
         unchanged: 0,
         stale: 0,
-        behind: 0,
         unknown: 0,
-        unmeasured: 0,
+        unmeasured: 1,
       });
-      assert.equal((current.data["summary"] as { pins?: number })["pins"], 1);
-      assert.deepEqual(findings(current), []);
+      assert.deepEqual(findings(r), []);
+      assert.equal(existsSync(join(tmp, ".wikiwright")), false, "no cache is kept");
       assert.equal(existsSync(join(tmp, "generated", "freshness.json")), true);
-      assert.equal(existsSync(join(tmp, ".wikiwright")), false, "no cache without --fetch");
-
-      const head = origin.commit("src/other.ts", "export const other = 1;\n", "origin moved");
-      const behind = run(tmp, ["freshness"]);
-      assert.equal(behind.status, 0);
-      assert.deepEqual(entries(behind), [
-        {
-          path: "raw/Thing.md",
-          field: "commit",
-          origin: origin.url,
-          pin,
-          state: "behind",
-          current: false,
-          known: null,
-          behind: null,
-          stale: null,
-          covering_touched: null,
-          measured_against: null,
-          citations: null,
-        },
-      ]);
-      assert.equal((behind.data["origins"] as Array<{ head: string }>)[0]?.head, head);
-      assert.deepEqual(findings(behind), [], "behind is never a finding by itself");
+      assert.equal("depth" in r.data, false, "there is one depth, and no field names it");
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
 
-  it("an origin that does not answer is origin-unreachable on every page naming it, and never an error", () => {
-    const tmp = vault([
-      {
-        name: "Gone",
-        locator: pathToFileURL(join(tmpdir(), "ww-no-such-origin.git")).href,
-        commit: "a".repeat(40),
-        covers: [],
-      },
-    ]);
+  it("--fetch is not a flag any more", () => {
+    const tmp = vault([{ name: "Self", locator: ".", commit: "b".repeat(40), covers: [] }]);
     try {
-      const r = run(tmp, ["freshness"]);
-      assert.equal(r.status, 0, JSON.stringify(r));
-      const f = findings(r);
-      assert.equal(f.length, 1);
-      assert.equal(f[0]?.["ruleId"], "origin-unreachable");
-      assert.equal(f[0]?.["severity"], "warning");
-      assert.equal(f[0]?.["path"], "raw/Gone.md");
-      assert.equal(f[0]?.["queue"], "source-review", "routed like every finding");
-      assert.equal((r.data["origins"] as Array<{ reachable: boolean }>)[0]?.reachable, false);
+      const r = run(tmp, ["freshness", "--fetch"]);
+      assert.equal(r.status, 2, JSON.stringify(r));
+      assert.equal(r.error["code"], "unknown-flag");
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
 });
 
-describe("--fetch: the blobless cache answers distance, the covering diff and the history (docs/constitution.md §Shapes)", () => {
+describe("the local repository answers distance, the covering diff and the history (docs/constitution.md §Shapes)", () => {
   it("an empty covering diff is unchanged; a touched one is stale, one hop into citing pages", () => {
-    const origin = makeOrigin("b", true);
-    const pin = origin.commit("src/thing.ts", "export const thing = 1;\n", "origin state");
-    origin.commit("src/other.ts", "export const other = 1;\n", "elsewhere");
-    const tmp = vault([
-      { name: "Thing", locator: origin.url, commit: pin, covers: ["src/thing.ts"] },
-    ]);
+    const { tmp, pin } = selfPinned();
     try {
-      const clean = run(tmp, ["freshness", "--fetch"]);
+      const clean = run(tmp, ["freshness"]);
       assert.equal(clean.status, 0, JSON.stringify(clean));
-      assert.equal(clean.data["depth"], "fetch");
       const entry = entries(clean)[0];
       assert.equal(entry?.["state"], "unchanged", "the read holds: the word says so");
       assert.equal(entry?.["known"], true);
@@ -223,13 +166,9 @@ describe("--fetch: the blobless cache answers distance, the covering diff and th
       assert.deepEqual(entry?.["covering_touched"], []);
       assert.equal(entry?.["measured_against"], "origin");
       assert.deepEqual(findings(clean), []);
-      assert.equal(existsSync(join(tmp, ".wikiwright", ".gitignore")), true);
-      assert.equal(readFileSync(join(tmp, ".wikiwright", ".gitignore"), "utf8"), "*\n");
-      const cache = (clean.data["origins"] as Array<{ cache: string }>)[0]?.cache;
-      assert.equal(typeof cache, "string", "the cache's head is reported");
 
-      const head = origin.commit("src/thing.ts", "export const thing = 2;\n", "the capture moved");
-      const stale = run(tmp, ["freshness", "--fetch"]);
+      const head = commitFile(tmp, "src/thing.ts", "2\n", "the capture moved");
+      const stale = run(tmp, ["freshness"]);
       assert.equal(stale.status, 0, "warnings never gate");
       const capture = findings(stale).find((f) => f["ruleId"] === "stale-capture");
       assert.equal(capture?.["path"], "raw/Thing.md");
@@ -245,35 +184,20 @@ describe("--fetch: the blobless cache answers distance, the covering diff and th
       assert.equal(entries(stale)[0]?.["state"], "stale");
       assert.equal(entries(stale)[0]?.["behind"], 2);
       assert.equal((stale.data["origins"] as Array<{ head: string }>)[0]?.head, head);
+      assert.notEqual(head, pin);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
 
-  it("an origin that never advertised filters still answers; a pin off the head's history is pin-unknown-to-origin", () => {
-    // git serves a whole pack where `uploadpack.allowFilter` is unset — the
-    // cache is then not blobless, and the measurement is the same.
-    const origin = makeOrigin("c", false);
-    const first = origin.commit("src/a.ts", "1\n", "first");
-    // Rewrite history: the pin the page carries is no longer on main.
-    git(origin.work, ["checkout", "-q", "--orphan", "rewritten"]);
-    git(origin.work, ["commit", "-qm", "rewritten", "--allow-empty"]);
-    git(origin.work, [
-      "-c",
-      "push.negotiate=false",
-      "push",
-      "-q",
-      "--force",
-      origin.url,
-      "HEAD:refs/heads/main",
-    ]);
-    const tmp = vault([{ name: "A", locator: origin.url, commit: first, covers: [] }]);
+  it("a pin off the head's history is pin-unknown-to-origin", () => {
+    const { tmp } = selfPinned();
     try {
-      const r = run(tmp, ["freshness", "--fetch"]);
+      write(tmp, "raw/Thing.md", source("Thing", ".", "e".repeat(40), ["src/thing.ts"]));
+      const r = run(tmp, ["freshness"]);
       assert.equal(r.status, 0, JSON.stringify(r));
-      const f = findings(r);
       assert.deepEqual(
-        f.map((x) => [x["ruleId"], x["severity"]]),
+        findings(r).map((x) => [x["ruleId"], x["severity"]]),
         [["pin-unknown-to-origin", "warning"]],
       );
       assert.equal(entries(r)[0]?.["known"], false);
@@ -289,37 +213,19 @@ describe("--fetch: the blobless cache answers distance, the covering diff and th
   });
 
   it("--fast-forward advances a clean pin through the Writer and leaves a stale one alone", () => {
-    const origin = makeOrigin("d", true);
-    const pin = origin.commit("src/thing.ts", "1\n", "state");
-    const head = origin.commit("src/other.ts", "1\n", "elsewhere");
-    const tmp = vault([
-      { name: "Thing", locator: origin.url, commit: pin, covers: ["src/thing.ts"] },
-    ]);
+    const { tmp, pin } = selfPinned();
     try {
-      const needsFetch = run(tmp, ["freshness", "--fast-forward"]);
-      assert.equal(needsFetch.status, 2);
-      assert.equal(needsFetch.error["code"], "fast-forward-needs-fetch");
-
-      const planned = run(tmp, ["freshness", "--fetch", "--fast-forward", "--dry-run"]);
+      const head = git(tmp, ["rev-parse", "HEAD"]);
+      const planned = run(tmp, ["freshness", "--fast-forward", "--dry-run"]);
       assert.equal(planned.status, 0, JSON.stringify(planned));
       const ops = (planned.data["ops"] as Array<{ kind: string; path: string }>).map(
         (o) => `${o.kind} ${o.path}`,
       );
-      assert.equal(ops.includes("write generated/freshness.json"), true);
-      assert.equal(ops.includes("create .wikiwright/.gitignore"), true);
-      assert.equal(
-        ops.some((o) => o.startsWith("create .wikiwright/origins/")),
-        true,
-      );
-      assert.equal(
-        ops.includes("write raw/Thing.md"),
-        false,
-        "no cache yet: a plan touches nothing and cannot know the covering diff",
-      );
-      assert.equal(existsSync(join(tmp, ".wikiwright")), false, "the dry run wrote nothing");
+      assert.deepEqual(ops, ["write generated/freshness.json", "write raw/Thing.md"]);
+      assert.equal(existsSync(join(tmp, "generated", "freshness.json")), false, "wrote nothing");
 
       const before = readFileSync(join(tmp, "raw", "Thing.md"), "utf8");
-      const ff = run(tmp, ["freshness", "--fetch", "--fast-forward"]);
+      const ff = run(tmp, ["freshness", "--fast-forward"]);
       assert.equal(ff.status, 0, JSON.stringify(ff));
       assert.deepEqual(ff.data["advanced"], [
         { path: "raw/Thing.md", field: "commit", from: pin, to: head },
@@ -332,45 +238,13 @@ describe("--fetch: the blobless cache answers distance, the covering diff and th
         "the report reflects the post-advance state",
       );
 
-      // Now the plan knows the cache, and a second dry run names the page write
-      // exactly where the run would land one.
-      origin.commit("src/elsewhere.ts", "1\n", "again");
-      run(tmp, ["freshness", "--fetch"]);
-      const second = run(tmp, ["freshness", "--fetch", "--fast-forward", "--dry-run"]);
-      const paths = (second.data["ops"] as Array<{ path: string }>).map((o) => o.path);
-      assert.equal(paths.includes("raw/Thing.md"), true);
-
       // A stale pin never advances.
-      origin.commit("src/thing.ts", "2\n", "the capture moved");
-      const stale = run(tmp, ["freshness", "--fetch", "--fast-forward"]);
+      commitFile(tmp, "src/thing.ts", "2\n", "the capture moved");
+      const stale = run(tmp, ["freshness", "--fast-forward"]);
       assert.equal(stale.status, 0);
       assert.deepEqual(stale.data["advanced"], []);
       assert.equal(ids(stale).includes("stale-capture"), true);
       assert.equal(readFileSync(join(tmp, "raw", "Thing.md"), "utf8"), after);
-    } finally {
-      rmSync(tmp, { recursive: true, force: true });
-    }
-  });
-
-  it("when the origin goes away the cache answers, and says so", () => {
-    const origin = makeOrigin("e", true);
-    const pin = origin.commit("src/thing.ts", "1\n", "state");
-    origin.commit("src/other.ts", "1\n", "elsewhere");
-    const tmp = vault([
-      { name: "Thing", locator: origin.url, commit: pin, covers: ["src/thing.ts"] },
-    ]);
-    try {
-      assert.equal(run(tmp, ["freshness", "--fetch"]).status, 0);
-      rmSync(dirname(fileURLToPath(origin.url)), { recursive: true, force: true });
-      const r = run(tmp, ["freshness", "--fetch"]);
-      assert.equal(r.status, 0, JSON.stringify(r));
-      const f = findings(r).find((x) => x["ruleId"] === "origin-unreachable");
-      assert.match(String(f?.["message"]), /measured against the cache/);
-      assert.equal(entries(r)[0]?.["measured_against"], "cache");
-      assert.equal(entries(r)[0]?.["behind"], 1, "the cache still answers the distance");
-      const state = (r.data["origins"] as Array<{ reachable: boolean; head: string | null }>)[0];
-      assert.equal(state?.reachable, false);
-      assert.equal(typeof state?.head, "string");
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -395,7 +269,7 @@ describe('origin "." is the repository enclosing the vault', () => {
       git(tmp, ["commit", "-qm", "vault pages"]);
       const behind = run(tmp, ["freshness"]);
       assert.equal(behind.status, 0, JSON.stringify(behind));
-      assert.equal(entries(behind)[0]?.["behind"], 1, "objects are local: measured at every depth");
+      assert.equal(entries(behind)[0]?.["behind"], 1, "the local objects answer the distance");
       assert.equal(entries(behind)[0]?.["stale"], false);
       assert.equal(entries(behind)[0]?.["state"], "unchanged");
       write(tmp, "src/thing.ts", "2\n");
@@ -427,9 +301,7 @@ describe('origin "." is the repository enclosing the vault', () => {
       // The page is not committed: at its pin, the head IS the pin.
       const current = run(vaultRoot, ["freshness"]);
       assert.equal(current.status, 0, JSON.stringify(current));
-      assert.deepEqual(current.data["origins"], [
-        { origin: ".", reachable: true, head: pin, cache: null },
-      ]);
+      assert.deepEqual(current.data["origins"], [{ origin: ".", reachable: true, head: pin }]);
       assert.equal(entries(current)[0]?.["state"], "current");
       assert.equal(entries(current)[0]?.["behind"], 0);
       assert.equal(entries(current)[0]?.["stale"], false);
@@ -650,9 +522,7 @@ describe('origin "." is the repository enclosing the vault', () => {
       const headless = run(tmp, ["freshness"]);
       assert.equal(headless.status, 0, JSON.stringify(headless));
       assert.deepEqual(findings(headless), [], "no commit yet is not a failure");
-      assert.deepEqual(headless.data["origins"], [
-        { origin: ".", reachable: true, head: null, cache: null },
-      ]);
+      assert.deepEqual(headless.data["origins"], [{ origin: ".", reachable: true, head: null }]);
       assert.equal(entries(headless)[0]?.["current"], null);
     } finally {
       rmSync(tmp, { recursive: true, force: true });

@@ -458,7 +458,7 @@ describe("terminated: a git answer held to its terminator", () => {
 /**
  * A repository whose vault pins itself: one source page with origin `.`,
  * pinned to the commit before HEAD and covering a path HEAD did not touch, so
- * `freshness --fetch --fast-forward` has one pin to advance.
+ * `freshness --fast-forward` has one pin to advance.
  */
 function pinnedRepo(): string {
   const tmp = mkdtempSync(join(tmpdir(), "ww-short-read-pin-"));
@@ -511,7 +511,7 @@ function refusalOf(r: Run): { status: number; code: unknown } {
 describe("freshness --fast-forward --dry-run refuses what the run refuses (docs/cli.md §The dry-run law)", () => {
   let tmp = "";
   let PATH = "";
-  const argv = ["freshness", "--fetch", "--fast-forward"];
+  const argv = ["freshness", "--fast-forward"];
   before(() => {
     if (POSIX_ONLY) return;
     tmp = pinnedRepo();

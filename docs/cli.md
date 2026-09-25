@@ -140,13 +140,14 @@ stdout, and a batch read hands git its request as a file too, so the answer
 and the request are whole by construction under any runtime; the
 terminators, the counts, each batch row's name against its request, and the
 two cross-checks stay as a second line. stderr is still a pipe, and it is
-read for three recognitions — a path HEAD does not hold, a directory in no
-repository, a server that refuses a filtered fetch — each of which, with its
-text lost, fails as `git-unavailable` or reports the origin unreachable
-rather than giving a smaller answer. Three pipes are not converted, and none
-chooses a judged page: the build stamp `tools/write-build-info.ts` records
-at build time, the plugin's hook scripts reading the CLI's envelope, and the
-suite's own reads (`docs/roadmap.md`).
+read for two recognitions — a path HEAD does not hold, a directory in no
+repository — each of which, with its text lost, fails as `git-unavailable`
+rather than giving a smaller answer. Every git child is spawned
+asynchronously, awaited to its exit, at most four at a time, with `LC_ALL=C`
+and `GIT_OPTIONAL_LOCKS=0` in its environment. Two pipes are not converted,
+and neither chooses a judged page: the build stamp
+`tools/write-build-info.ts` records at build time, and the suite's own reads
+(`docs/roadmap.md`).
 
 A usage error and a constitution error share exit 2 so a hook that tests only
 the code sees one answer, and carry different types so an agent that reads
@@ -670,24 +671,25 @@ What the registry rows below do not say.
   export's when it names none. The guard is a courtesy on this CLI, not a guarantee:
   a copy's files are protected by their permissions, and a process that does
   not go through the CLI is not stopped.
-- **`freshness [--fetch] [--fast-forward]`** measures every `pin` field
-  against the origin its page names: `ls-remote` per origin by default;
-  `--fetch` keeps a blobless bare cache under `.wikiwright/origins/` and
-  measures distance and the covering diff; `--fast-forward` advances only the
-  pins whose covering diff is empty, through the Writer. Origin `"."` is the
-  repository enclosing the vault — the vault root, or the nearest ancestor
-  work tree when the vault is a directory inside the repository it documents
-  — and its `covers` paths are repository-root-relative. `entries` lists every
-  pin with its `state`, one word naming what the writer must do: `current`
-  (the pin is the head), `unchanged` (the head moved and the covering diff is
-  empty: the read holds; these are the `--fast-forward` candidates), `stale`
-  (the covering diff touches a covered path: re-read and re-pin), `behind`
-  (the head moved and this run could not read the diff, at ls-remote depth:
-  run `--fetch`), `unknown` (under `--fetch`, a pin the origin's history does
-  not hold), or `unmeasured` with a `reason`; `behind`, `stale` and
-  `covering_touched` stay as data beside it, and `pins` counts all six. A
-  page with no `covers` is stale on any diff. At object depth the page's
-  citations are held to the pin as well. A backticked token is a citation in
+- **`freshness [--fast-forward]`** measures every `pin` field against the
+  local repository: origin `"."` is the repository enclosing the vault — the
+  vault root, or the nearest ancestor work tree when the vault is a directory
+  inside the repository it documents — and its `covers` paths are
+  repository-root-relative. A pin naming any other origin (a git URL) is not
+  contacted and not measured: its entry is `unmeasured` with a `reason` that
+  begins `remote-origin:`, and nothing is found on its page. Remote
+  freshness, the `ls-remote` depth and the `--fetch` cache, was removed
+  (`docs/roadmap.md`). `--fast-forward` advances only the pins whose covering
+  diff is empty, through the Writer, and its dry run names exactly those.
+  `entries` lists every pin with its `state`, one word naming what the writer
+  must do: `current` (the pin is the head), `unchanged` (the head moved and
+  the covering diff is empty: the read holds; these are the `--fast-forward`
+  candidates), `stale` (the covering diff touches a covered path: re-read and
+  re-pin), `unknown` (a pin the repository's history does not hold), or
+  `unmeasured` with a `reason`; `behind`, `stale` and `covering_touched` stay
+  as data beside it, and `pins` counts all five. A
+  page with no `covers` is stale on any diff. A measured page's citations
+  are held to the pin as well. A backticked token is a citation in
   one of four spellings: a repository path whose first segment is an entry at
   the root of the tree at the pin, a root file included; that path with
   `:<line>` or `:<from>-<to>`; a bare file name, suffix included, that is the
@@ -731,7 +733,7 @@ Global flags, accepted by every verb:
 | [`check`](#check) | writer | yes | The aggregate pass: registry + lint + generated-drift comparison. |
 | [`export`](#export) | maintainer | yes | Write one declared external export into another repository, as skills/<name>/. |
 | [`fix`](#fix) | writer | yes | Apply the mechanical ops one rule licenses, all-or-nothing, and prove them gone. |
-| [`freshness`](#freshness) | maintainer | yes | Measure every pin against the origin its page names: is it still the head (default), or how far behind and is the capture stale (--fetch); --fast-forward advances the clean pins. |
+| [`freshness`](#freshness) | maintainer | yes | Measure every pin against the local repository: how far behind its head, and is the capture stale; a pin naming another origin is reported unmeasured; --fast-forward advances the clean pins. |
 | [`gate`](#gate) | maintainer | no | The hooks' entry point: check the engine pin, then judge the staged vault. |
 | [`graph`](#graph) | consumer | no | Query the graph's edges by kind, label and the type on either side — or list the pages on one side that carry none (coverage, derived). |
 | [`hook`](#hook) | maintainer | yes | Install the marker pre-commit gate (and the commit-msg prefix hook when declared). |
@@ -849,20 +851,18 @@ wikiwright fix --rule renamed-without-alias --path wiki/lexer.md --staged --expe
 
 `wikiwright freshness`
 
-Measure every pin against the origin its page names: is it still the head (default), or how far behind and is the capture stale (--fetch); --fast-forward advances the clean pins.
+Measure every pin against the local repository: how far behind its head, and is the capture stale; a pin naming another origin is reported unmeasured; --fast-forward advances the clean pins.
 
 Role: `maintainer`. Writes: yes (accepts `--dry-run`).
 
 | Flag | Meaning |
 |---|---|
-| `--fetch` | keep a blobless bare cache per origin under .wikiwright/origins/ and measure pin distance and the covering diff against it |
-| `--fast-forward` | with --fetch: rewrite each pin whose covering diff is empty to the origin's head, through the Writer |
+| `--fast-forward` | rewrite each pin whose covering diff is empty to the repository's head, through the Writer |
 | `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
 
 ```text
 wikiwright freshness
-wikiwright freshness --fetch
-wikiwright freshness --fetch --fast-forward
+wikiwright freshness --fast-forward
 ```
 
 ### gate

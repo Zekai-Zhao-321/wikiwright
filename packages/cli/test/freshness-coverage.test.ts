@@ -128,10 +128,10 @@ describe("the freshness verb's own row (docs/cli.md §freshness)", () => {
     }
   });
 
-  it("--fetch --fast-forward with nothing pinned advances nothing and creates no cache", () => {
+  it("--fast-forward with nothing pinned advances nothing and creates no cache", () => {
     const tmp = vault();
     try {
-      const ff = run(tmp, ["freshness", "--fetch", "--fast-forward"]);
+      const ff = run(tmp, ["freshness", "--fast-forward"]);
       assert.equal(ff.status, 0, JSON.stringify(ff.envelope));
       assert.deepEqual(dataOf(ff)["advanced"], []);
       assert.equal(existsSync(join(tmp, ".wikiwright")), false);

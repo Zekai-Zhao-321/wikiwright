@@ -1,11 +1,11 @@
 // docs/cli.md §freshness, docs/constitution.md §Shapes: staleness is measured
-// against the ORIGIN a source page names — a git URL, or "." for the vault's
-// own repository — at two depths chosen by a flag, never silently. `ls-remote`
-// answers "is the pin still HEAD" with no clone; `--fetch` keeps a blobless
-// bare cache per origin and answers "how far behind, and does the covering
-// diff touch the capture". Snapshot-external findings are warnings; the report
-// is uncommitted; nothing here lands in frontmatter except through the Writer.
-import { createHash } from "node:crypto";
+// against the local repository only. A page whose origin is "." — the
+// repository the vault sits in — is measured against its history: how far
+// behind, and does the covering diff touch the capture. A page that names any
+// other origin (a git URL) is not measured and says so: remote freshness, the
+// `ls-remote` depth and the `--fetch` cache, was removed (CHANGELOG.md,
+// docs/roadmap.md). Snapshot-external findings are warnings; the report is
+// uncommitted; nothing here lands in frontmatter except through the Writer.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -18,31 +18,20 @@ import {
   pinFieldOf,
 } from "@wikiwright/core";
 import {
-  CACHE_HEAD,
   gitBlobLineCount,
   gitCommitKnown,
   gitDiffNames,
   gitHasHead,
   gitHead,
   gitIsAncestor,
-  gitLsRemoteHead,
   gitObjectType,
-  gitOriginFetch,
-  gitRefHead,
   gitRevListCount,
   gitTopLevel,
   gitTreeEntries,
-  OriginUnreachable,
 } from "./git.ts";
 
-/** The machine-local, self-ignoring directory the origin caches live under. */
-export const CACHE_ROOT = ".wikiwright";
-
-/** One origin's cache: the origin string digested, so a URL is never a path. */
-export function cacheDirOf(origin: string): string {
-  const digest = createHash("sha256").update(origin, "utf8").digest("hex").slice(0, 16);
-  return `${CACHE_ROOT}/origins/${digest}`;
-}
+/** The one origin measured: the repository the vault sits in. */
+export const LOCAL_ORIGIN = ".";
 
 /** A page carrying a well-formed pin, with the origin and paths its type's shape names. */
 export interface PinnedPage {
@@ -97,32 +86,28 @@ export function pinnedPages(
 
 export interface OriginState {
   origin: string;
-  /** Whether this run reached the origin; false with a non-null `head` means the cache answered. */
+  /** Whether this run read the origin's history: only a repository enclosing the vault, for ".". */
   reachable: boolean;
   head: string | null;
-  /** The cache's head after this run, or null where no cache is kept. */
-  cache: string | null;
 }
 
 /**
  * Every pin's standing, in one word that names what the writer must
- * do. `current` — the pin is the origin's head: nothing. `unchanged` — the
- * head moved and the covering diff is empty: the read holds, and the pin is
- * a `--fast-forward` candidate. `stale` — the covering diff touches a covered
- * path: re-read and re-pin. `behind` — the head moved and this run could not
- * read the diff (ls-remote depth, no objects): run `--fetch`. `unknown` —
- * under `--fetch`, the origin's history does not hold the pin (a force-push,
- * a rebase, a typo): re-read at the head. `unmeasured` — no head was learned,
- * and `reason` says why. `behind`, `stale` and `covering_touched` stay as
- * data beside the word.
+ * do. `current` — the pin is the head: nothing. `unchanged` — the head moved
+ * and the covering diff is empty: the read holds, and the pin is a
+ * `--fast-forward` candidate. `stale` — the covering diff touches a covered
+ * path: re-read and re-pin. `unknown` — the repository's history does not
+ * hold the pin (a force-push, a rebase, a typo): re-read at the head.
+ * `unmeasured` — no head was learned, or the origin is not the local
+ * repository, and `reason` says why. `behind`, `stale` and
+ * `covering_touched` stay as data beside the word.
  */
-export type PinState = "current" | "unchanged" | "stale" | "behind" | "unknown" | "unmeasured";
+export type PinState = "current" | "unchanged" | "stale" | "unknown" | "unmeasured";
 
 const NO_PINS: Record<PinState, number> = {
   current: 0,
   unchanged: 0,
   stale: 0,
-  behind: 0,
   unknown: 0,
   unmeasured: 0,
 };
@@ -148,17 +133,18 @@ export interface FreshnessEntry {
   origin: string;
   pin: string;
   state: PinState;
-  /** With `state: "unmeasured"`: why no head was learned. */
+  /** With `state: "unmeasured"`: why the pin was not measured. */
   reason?: string;
   /** `pin === head`; null where no head was learned. */
   current: boolean | null;
-  /** Known to the origin AND on its head's history; null below `--fetch` depth. */
+  /** Known to the repository AND on its head's history; null where unmeasured. */
   known: boolean | null;
   behind: number | null;
   stale: boolean | null;
   covering_touched: string[] | null;
-  measured_against: "origin" | "cache" | null;
-  /** The page's repository-path citations checked at the pin (object depth only); null where the objects were not read. */
+  /** "origin" where the local repository answered; null where the pin was not measured. */
+  measured_against: "origin" | null;
+  /** The page's repository-path citations checked at the pin; null where the objects were not read. */
   citations: { checked: number; unresolved: UnresolvedCitation[] } | null;
 }
 
@@ -169,7 +155,6 @@ export interface FreshnessEntry {
 export type FreshnessCoverage = { evaluated: true } | { not_applicable: "no-pin-field" };
 
 export interface FreshnessResult {
-  depth: "ls-remote" | "fetch";
   origins: OriginState[];
   /** Every pin the vault carries, with its state: a report where "current" and "not measured" read alike is no report. */
   entries: FreshnessEntry[];
@@ -182,14 +167,6 @@ export interface FreshnessResult {
 }
 
 export interface FreshnessOptions {
-  /** `--fetch`: measure against objects, through the per-origin cache. */
-  fetch: boolean;
-  /**
-   * Whether to contact the origins at all. A dry run measures against the cache
-   * as it stands, so the plan is exact for the machine state it was read from
-   * and touches nothing; the run fetches first.
-   */
-  network: boolean;
   /** The graph's edges, for the one-hop propagation of staleness into citing pages. */
   edges: readonly GraphEdge[];
 }
@@ -197,13 +174,11 @@ export interface FreshnessOptions {
 interface Measured {
   reachable: boolean;
   head: string | null;
-  cache: string | null;
-  /** The repository whose objects answer, or null where only a head is known. */
+  /** The repository whose objects answer, or null where none does. */
   dir: string | null;
-  headRef: string;
-  measuredAgainst: "origin" | "cache" | null;
-  /** `covers` paths are repository-root-relative in an embedded vault (`:(top)`). */
-  top: boolean;
+  /** Why the origin's pins are not measured, when it is not the local repository. */
+  unmeasured?: string;
+  /** Why the local repository could not answer; reported as `origin-unreachable`. */
   unreachable?: string;
 }
 
@@ -411,88 +386,32 @@ function warning(ruleId: string, path: string, message: string, remediation: str
  * has nothing to be fresh against, and says so with `head: null`). Git runs
  * from the vault root and `covers` is read with `:(top)`, so the paths a
  * page names are repository-root-relative wherever the vault sits. Any other
- * origin is a URL: `ls-remote` for its head, or the cache for its objects.
+ * origin is not contacted: its pins are unmeasured, and the reason says so.
  */
-async function measureOrigin(
-  root: string,
-  origin: string,
-  options: FreshnessOptions,
-): Promise<Measured> {
-  const none: Measured = {
-    reachable: false,
-    head: null,
-    cache: null,
-    dir: null,
-    headRef: "HEAD",
-    measuredAgainst: null,
-    top: false,
-  };
-  if (origin === ".") {
-    if ((await gitTopLevel(root)) === undefined) {
-      // A `.git` git does not recognise is the measurement breaking, not a
-      // vault outside every repository: thrown, so it is `git-unavailable`.
-      if (existsSync(join(root, ".git"))) {
-        throw new Error(`"${join(root, ".git")}" exists and git recognises no repository there`);
-      }
-      return {
-        ...none,
-        unreachable: `origin "." names the repository enclosing the vault, and no repository encloses it`,
-      };
+async function measureOrigin(root: string, origin: string): Promise<Measured> {
+  const none: Measured = { reachable: false, head: null, dir: null };
+  if (origin !== LOCAL_ORIGIN) {
+    return {
+      ...none,
+      unmeasured: `remote-origin: ${origin} is not the repository the vault sits in, and only that repository is measured`,
+    };
+  }
+  if ((await gitTopLevel(root)) === undefined) {
+    // A `.git` git does not recognise is the measurement breaking, not a
+    // vault outside every repository: thrown, so it is `git-unavailable`.
+    if (existsSync(join(root, ".git"))) {
+      throw new Error(`"${join(root, ".git")}" exists and git recognises no repository there`);
     }
-    if (!(await gitHasHead(root))) return { ...none, reachable: true, dir: root, top: true };
     return {
-      reachable: true,
-      head: await gitHead(root),
-      cache: null,
-      dir: root,
-      headRef: "HEAD",
-      measuredAgainst: "origin",
-      top: true,
+      ...none,
+      unreachable: `origin "." names the repository enclosing the vault, and no repository encloses it`,
     };
   }
-  if (!options.fetch) {
-    if (!options.network) return none;
-    try {
-      return { ...none, reachable: true, head: await gitLsRemoteHead(root, origin) };
-    } catch (error) {
-      if (error instanceof OriginUnreachable) return { ...none, unreachable: error.message };
-      throw error;
-    }
-  }
-  const dir = join(root, cacheDirOf(origin));
-  const fromCache = async (unreachable?: string): Promise<Measured> => {
-    const head = existsSync(join(dir, "HEAD")) ? await gitRefHead(dir, CACHE_HEAD) : null;
-    if (head === null) return { ...none, ...(unreachable === undefined ? {} : { unreachable }) };
-    return {
-      reachable: false,
-      head,
-      cache: head,
-      dir,
-      headRef: CACHE_HEAD,
-      measuredAgainst: "cache",
-      top: false,
-      ...(unreachable === undefined ? {} : { unreachable }),
-    };
-  };
-  if (!options.network) return fromCache();
-  try {
-    const fetched = await gitOriginFetch(root, dir, origin);
-    return {
-      reachable: true,
-      head: fetched.head,
-      cache: fetched.head,
-      dir,
-      headRef: CACHE_HEAD,
-      measuredAgainst: "origin",
-      top: false,
-    };
-  } catch (error) {
-    if (error instanceof OriginUnreachable) return fromCache(error.message);
-    throw error;
-  }
+  if (!(await gitHasHead(root))) return { ...none, reachable: true, dir: root };
+  return { reachable: true, head: await gitHead(root), dir: root };
 }
 
-/** How many pins stand in each of the six states, every state present even at zero. */
+/** How many pins stand in each of the five states, every state present even at zero. */
 function countPins(entries: readonly FreshnessEntry[]): Record<PinState, number> {
   const counts: Record<PinState, number> = { ...NO_PINS };
   for (const entry of entries) counts[entry.state] += 1;
@@ -506,10 +425,8 @@ export async function computeFreshness(
   options: FreshnessOptions,
 ): Promise<FreshnessResult> {
   const { pinned, declared } = pinnedPages(registry, pages);
-  const depth = options.fetch ? "fetch" : "ls-remote";
   if (!declared) {
     return {
-      depth,
       origins: [],
       entries: [],
       pins: { ...NO_PINS },
@@ -520,7 +437,7 @@ export async function computeFreshness(
   }
   const origins = [...new Set(pinned.map((p) => p.origin))].sort();
   const measured = new Map<string, Measured>();
-  for (const origin of origins) measured.set(origin, await measureOrigin(root, origin, options));
+  for (const origin of origins) measured.set(origin, await measureOrigin(root, origin));
   const entries: FreshnessEntry[] = [];
   const findings: Finding[] = [];
   const eligible: FreshnessResult["eligible"] = [];
@@ -535,23 +452,21 @@ export async function computeFreshness(
       field: page.field,
       origin: page.origin,
       pin: page.pin,
-      state: current === null ? "unmeasured" : current ? "current" : "behind",
+      // Settled below once the history is read; a pin with no head stays here.
+      state: "unmeasured",
       current,
       known: null,
       behind: null,
       stale: null,
       covering_touched: null,
-      measured_against: state.measuredAgainst,
+      measured_against: state.head === null ? null : "origin",
       citations: null,
     };
     if (current === null) {
       entry.reason =
+        state.unmeasured ??
         state.unreachable ??
-        (state.reachable
-          ? `the origin ${page.origin} has no head to measure against`
-          : options.network
-            ? `no head was learned for ${page.origin}`
-            : `no network this run, and no cache holds ${page.origin}`);
+        `the origin ${page.origin} has no head to measure against`;
     }
     entries.push(entry);
     if (state.unreachable !== undefined) {
@@ -559,17 +474,15 @@ export async function computeFreshness(
         warning(
           "origin-unreachable",
           page.path,
-          state.head === null
-            ? `the origin ${page.origin} did not answer: ${state.unreachable}`
-            : `the origin ${page.origin} did not answer (${state.unreachable}); measured against the cache's head ${state.head.slice(0, 12)} instead`,
-          "check the URL and the machine's git credentials, then rerun `wikiwright freshness`",
+          `the origin ${page.origin} did not answer: ${state.unreachable}`,
+          "run `wikiwright freshness` from inside the repository the pages were pinned in",
         ),
       );
     }
     if (state.dir === null || state.head === null) continue;
     const known =
       (await gitCommitKnown(state.dir, page.pin)) &&
-      (await gitIsAncestor(state.dir, page.pin, state.headRef));
+      (await gitIsAncestor(state.dir, page.pin, "HEAD"));
     entry.known = known;
     if (!known) {
       entry.state = "unknown";
@@ -583,8 +496,9 @@ export async function computeFreshness(
       );
       continue;
     }
-    const behind = await gitRevListCount(state.dir, page.pin, state.headRef);
-    const touched = await gitDiffNames(state.dir, page.pin, state.headRef, page.covers, state.top);
+    const behind = await gitRevListCount(state.dir, page.pin, "HEAD");
+    // `covers` is repository-root-relative wherever the vault sits (`:(top)`).
+    const touched = await gitDiffNames(state.dir, page.pin, "HEAD", page.covers, true);
     entry.behind = behind;
     entry.stale = touched.length > 0;
     entry.covering_touched = touched;
@@ -619,7 +533,7 @@ export async function computeFreshness(
     }
     // The diff was read, so the word can say what it found: a page whose
     // covered paths did not move is not behind in any sense a writer acts on.
-    if (!current) entry.state = entry.stale ? "stale" : "unchanged";
+    entry.state = current ? "current" : entry.stale ? "stale" : "unchanged";
     if (entry.stale) {
       stalePaths.add(page.path);
       findings.push(
@@ -658,15 +572,9 @@ export async function computeFreshness(
   }
 
   return {
-    depth,
     origins: origins.map((origin) => {
       const state = measured.get(origin);
-      return {
-        origin,
-        reachable: state?.reachable ?? false,
-        head: state?.head ?? null,
-        cache: state?.cache ?? null,
-      };
+      return { origin, reachable: state?.reachable ?? false, head: state?.head ?? null };
     }),
     entries,
     pins: countPins(entries),
@@ -680,7 +588,6 @@ export async function computeFreshness(
 export function freshnessReportJson(result: FreshnessResult): string {
   const body = {
     schema: "wikiwright/freshness",
-    depth: result.depth,
     origins: result.origins,
     pins: result.pins,
     entries: result.entries,

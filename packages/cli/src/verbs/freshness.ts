@@ -1,8 +1,9 @@
-// docs/cli.md §freshness (pins are measured against the origin
-// the source page names, at a depth the flag chooses; --fast-forward advances
-// only the clean pins, through the Writer) · docs/architecture.md §Directories.
+// docs/cli.md §freshness (pins are measured against the local repository
+// the vault sits in; a pin naming another origin is reported unmeasured;
+// --fast-forward advances only the clean pins, through the Writer) ·
+// docs/architecture.md §Directories.
 
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   buildNameIndex,
@@ -13,14 +14,7 @@ import {
 } from "@wikiwright/core";
 import { replaceFile } from "../atomicwrite.ts";
 import { type CommandResult, fail, ok } from "../envelope.ts";
-import {
-  CACHE_ROOT,
-  cacheDirOf,
-  computeFreshness,
-  type FreshnessResult,
-  freshnessReportJson,
-  pinnedPages,
-} from "../freshness.ts";
+import { computeFreshness, type FreshnessResult, freshnessReportJson } from "../freshness.ts";
 import { GitAnswerRefused } from "../git.ts";
 import { generateOptionsFor, lawFor, rootsOf, type VaultOk } from "../law.ts";
 import { collectPages, sortFindings, summarize } from "../pages.ts";
@@ -37,21 +31,8 @@ import { loadVault, readPage, walkPages } from "../vaultio.ts";
 import { commitWrite, proveWrite, splicePlan, writeOps } from "../writer.ts";
 
 const REPORT = "generated/freshness.json";
-const CACHE_IGNORE = `${CACHE_ROOT}/.gitignore`;
 
-/** The distinct external origins the vault's pins name, sorted. */
-function externalOrigins(vault: VaultOk, root: string): string[] {
-  const pages = collectPages(root, walkPages(root, rootsOf(vault)));
-  const { pinned } = pinnedPages(vault.registry, pages);
-  return [...new Set(pinned.map((p) => p.origin).filter((o) => o !== "."))].sort();
-}
-
-async function measure(
-  vault: VaultOk,
-  root: string,
-  fetch: boolean,
-  network: boolean,
-): Promise<FreshnessResult> {
+async function measure(vault: VaultOk, root: string): Promise<FreshnessResult> {
   const pages = collectPages(root, walkPages(root, rootsOf(vault)));
   const edges = graphOf(
     vault.registry,
@@ -59,46 +40,24 @@ async function measure(
     buildNameIndex(pages),
     generateOptionsFor(vault),
   ).edges;
-  return computeFreshness(root, pages, vault.registry, { fetch, network, edges });
+  return computeFreshness(root, pages, vault.registry, { edges });
 }
 
 /**
  * docs/cli.md §The dry-run law: one of the INVERTED verbs. The default is the
- * report and `--fetch` / `--fast-forward` are what write more. Under `--fetch`
- * the plan names the machine-local cache per origin and the file that makes
- * the directory ignore itself; under `--fast-forward` the pins whose covering
- * diff is empty — measured against the cache AS IT STANDS, because a plan
- * touches nothing and a fetch is a write. The run fetches first, so a pin the
- * cache is behind on may advance where the plan did not name it; the plan is
- * exact for the machine state it was read from. A measurement that fails is
- * thrown, and the dry run answers it with the refusal the run gives: a plan
- * that left the advances out would read as a vault with none to make.
+ * report and `--fast-forward` is what writes more: the plan names the pins
+ * whose covering diff is empty, measured against the local repository as it
+ * stands — the same measurement the run makes, since reading the history
+ * writes nothing. A measurement that fails is thrown, and the dry run answers
+ * it with the refusal the run gives: a plan that left the advances out would
+ * read as a vault with none to make.
  */
 async function planForFreshness(args: CommandArgs): Promise<Plan> {
   const ops: PlanOp[] = [{ kind: "write", path: REPORT, summary: "the freshness report" }];
   const vault = await loadVault("freshness", args.root);
   if (!vault.ok) return planOf(ops);
-  const fetch = args.flags["fetch"] === true;
-  const fastForward = args.flags["fast-forward"] === true;
-  if (!fetch || (fastForward && !fetch)) return planOf(ops);
-  const origins = externalOrigins(vault, args.root);
-  if (origins.length > 0 && !existsSync(join(args.root, CACHE_IGNORE))) {
-    ops.push({
-      kind: "create",
-      path: CACHE_IGNORE,
-      summary: "the machine-local directory ignores itself",
-    });
-  }
-  for (const origin of origins) {
-    const dir = cacheDirOf(origin);
-    ops.push({
-      kind: existsSync(join(args.root, dir, "HEAD")) ? "write" : "create",
-      path: dir,
-      summary: `the blobless bare cache of ${origin}`,
-    });
-  }
-  if (!fastForward) return planOf(ops);
-  const result = await measure(vault, args.root, true, false);
+  if (args.flags["fast-forward"] !== true) return planOf(ops);
+  const result = await measure(vault, args.root);
   // docs/architecture.md §How a verdict is produced: a pin advance is a page write, so it goes through the Writer.
   for (const candidate of result.eligible) {
     ops.push(
@@ -114,8 +73,8 @@ async function planForFreshness(args: CommandArgs): Promise<Plan> {
 
 /**
  * A measurement that failed, as the run and its dry run both answer it. Only a
- * genuine plumbing failure reaches here — an origin that did not answer is a
- * finding on the pages that name it, never a refusal. A cut or contradicted git
+ * genuine plumbing failure reaches here — a vault no repository encloses is a
+ * finding on the pages that pin to ".", never a refusal. A cut or contradicted git
  * answer is refused as itself.
  */
 function measurementRefused(e: unknown): CommandResult {
@@ -127,46 +86,26 @@ export const freshnessCommand: CommandSpec = {
   name: "freshness",
   role: "maintainer",
   summary:
-    "Measure every pin against the origin its page names: is it still the head (default), or how far behind and is the capture stale (--fetch); --fast-forward advances the clean pins.",
+    "Measure every pin against the local repository: how far behind its head, and is the capture stale; a pin naming another origin is reported unmeasured; --fast-forward advances the clean pins.",
   positionals: [],
   flags: [
-    {
-      name: "fetch",
-      type: "boolean",
-      summary:
-        "keep a blobless bare cache per origin under .wikiwright/origins/ and measure pin distance and the covering diff against it",
-    },
     {
       name: "fast-forward",
       type: "boolean",
       summary:
-        "with --fetch: rewrite each pin whose covering diff is empty to the origin's head, through the Writer",
+        "rewrite each pin whose covering diff is empty to the repository's head, through the Writer",
     },
   ],
-  examples: [
-    "wikiwright freshness",
-    "wikiwright freshness --fetch",
-    "wikiwright freshness --fetch --fast-forward",
-  ],
+  examples: ["wikiwright freshness", "wikiwright freshness --fast-forward"],
   writes: true,
   needsVaultModules: true,
   plan: planForFreshness,
   run: async (args) => {
-    const fetch = args.flags["fetch"] === true;
     const fastForward = args.flags["fast-forward"] === true;
-    if (fastForward && !fetch) {
-      return fail(
-        "freshness",
-        "usage",
-        "fast-forward-needs-fetch",
-        "--fast-forward advances a pin only on an empty covering diff, which needs the origin's objects",
-        { hint: "pass --fetch with --fast-forward" },
-      );
-    }
     const vault = await loadVault("freshness", args.root);
     if (!vault.ok) return vault.result;
-    // After the load and the usage refusal, and before the first write — the
-    // cache, the advanced pins, then the report.
+    // After the load, and before the first write — the advanced pins, then
+    // the report.
     if (isDryRun(args)) {
       try {
         return ok("freshness", await planForFreshness(args));
@@ -174,17 +113,9 @@ export const freshnessCommand: CommandSpec = {
         return measurementRefused(e);
       }
     }
-    if (fetch && externalOrigins(vault, args.root).length > 0) {
-      // The cache lives in a directory that ignores itself: machine-local,
-      // never committed, deletable by hand — the same standing as `.git`.
-      mkdirSync(join(args.root, CACHE_ROOT, "origins"), { recursive: true });
-      if (!existsSync(join(args.root, CACHE_IGNORE))) {
-        replaceFile(join(args.root, CACHE_IGNORE), "*\n");
-      }
-    }
     let result: FreshnessResult;
     try {
-      result = await measure(vault, args.root, fetch, true);
+      result = await measure(vault, args.root);
     } catch (e) {
       return measurementRefused(e);
     }
@@ -222,9 +153,8 @@ export const freshnessCommand: CommandSpec = {
           to: candidate.head,
         });
       }
-      // The report reflects the post-advance state, against the cache the run
-      // just brought current: no second round trip.
-      if (advanced.length > 0) result = await measure(vault, args.root, true, false);
+      // The report reflects the post-advance state: measured again.
+      if (advanced.length > 0) result = await measure(vault, args.root);
     }
     mkdirSync(join(args.root, "generated"), { recursive: true });
     replaceFile(join(args.root, REPORT), freshnessReportJson(result));
@@ -232,7 +162,6 @@ export const freshnessCommand: CommandSpec = {
     const findings = routeFindings(sortFindings([...result.findings]), lawFor(vault), pages);
     const summary = summarize(findings, pages.length);
     const data = {
-      depth: result.depth,
       origins: result.origins,
       pins: result.pins,
       entries: result.entries,
