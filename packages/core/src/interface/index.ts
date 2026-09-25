@@ -27,11 +27,9 @@ import {
 } from "../records/index.ts";
 import { recordValidators } from "../records/schemas.ts";
 import { parseUrl } from "../schema/formats.ts";
+import { PAGE_BYTES_MAX } from "./identity.ts";
 
-export const PAGE_INTERFACE = "page-interface/1";
-
-/** §6: a page over 1 MiB is `page-too-large`; strings in a rule are bounded by it. */
-export const PAGE_BYTES_MAX = 1024 * 1024;
+export { PAGE_BYTES_MAX, PAGE_INTERFACE } from "./identity.ts";
 
 export interface Occurrence {
   heading: string;

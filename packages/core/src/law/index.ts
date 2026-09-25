@@ -1,7 +1,15 @@
 // v2 contracts §2, §3: the type-document loader's surface. Beside the old
 // loader (registry/), which still loads every corpus in the repository.
 
-export { canonicalJson, pageDigest } from "../digest/index.ts";
+export {
+  bytesDigest,
+  canonicalJson,
+  contentDigest,
+  LAW_DEPENDENCIES,
+  lawDigest,
+  lawLines,
+  pageDigest,
+} from "../digest/index.ts";
 export type { Occurrence, PageRead, ParsedPage, UnparsedItem } from "../interface/index.ts";
 export {
   buildBefore,
