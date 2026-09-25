@@ -3,7 +3,7 @@ type: subsystem
 title: "The judge and its passes"
 description: "One pure function turns a vault state and a law into a verdict: the per-page passes, the vault passes, the grammar arms, routing, exceptions, the gate rule, the coverage block and the cap."
 tags: [kernel]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
 origin: .
 covers: [packages/core/src/judge/, packages/core/src/passes/, packages/core/src/lint/, packages/core/src/grammar/]
 ---

@@ -3,7 +3,7 @@ type: subsystem
 title: "Generated artifacts"
 description: "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, and the bundle's rendered exports under skills/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges."
 tags: [kernel, cli]
-pin: 842c67fcc34e5fd972af04521a999be7f6dab783
+pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
 origin: .
 covers: [packages/core/src/generate/, packages/core/src/hash/, packages/cli/src/artifacts.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/graph.ts]
 ---
@@ -38,13 +38,16 @@ the bundle's law digest (see [[skills-and-brief]]), then the bundle's
 `output: skills` exports (see [[exports]]); `writeArtifacts`
 (`packages/cli/src/artifacts.ts:50-58`) lands every file write-then-rename;
 `writeBrief` (`:42-48`) is the brief alone through the same loop, for
-`skills update`; `writeExports` (`:88-134`) replaces each export's planned
-files that differ and removes what its plan no longer holds, a link in its
-place removed first and never written through (`:136-151`), pruning the
-directories that leaves empty and nothing outside them (`:153-167`);
-`artifactOps` (`:192-232`) answers the dry run from the generator itself,
+`skills update`; `writeExports` (`:88-135`) replaces each export's planned
+files that differ, an ordinary file left in place until its replacement is
+renamed over it, and removes what its plan no longer holds, a link in its
+place removed first and never written through (`:137-152`), pruning the
+directories that leaves empty and nothing outside them (`:154-168`); a
+destination with a link on its path from the bundle root is never planned
+(see [[exports]]);
+`artifactOps` (`:193-233`) answers the dry run from the generator itself,
 the brief named after the kernel's plans and the exports' writes and
-removals from `exportOps` (`:169-190`). The `check` verb
+removals from `exportOps` (`:170-191`). The `check` verb
 (`packages/cli/src/verbs/check.ts`) reads the tree into one state and parses
 it once, through `parsedPages`, for everything that follows (`:73-79`),
 plans the exports from the same pages (`:83-90`), writes the three plans,
@@ -54,7 +57,7 @@ the exports' own findings and each rendered copy against a fresh plan,
 `export-stale` (`:116-121`), then the machine-local findings about skills,
 the brief and the installed hooks (`:122-149`) — a brief that differs from
 the one already rendered from those pages is `brief-stale`, `info`, whose
-advisory is `check --write` (`packages/cli/src/verbs/brief.ts:41-59`;
+advisory is `check --write` (`packages/cli/src/verbs/brief.ts:42-60`;
 `packages/core/src/passes/index.ts:381`) — names the shell passes it ran
 (`packages/cli/src/verbs/check.ts:157-167`), hands the same state to one
 judge (`:171-176`) and lists the four files it generates and the export
@@ -114,9 +117,9 @@ is held at runtime.
   keys the edge by the item's kind (`:74-80`, `:137-141`).
 - The plan's paths come from the generator itself, so a dry run can never
   name a file the writer would not produce
-  (`packages/cli/src/artifacts.ts:192-198`), and an export's plan names only
+  (`packages/cli/src/artifacts.ts:193-199`), and an export's plan names only
   the files that differ and the ones it removes, the delta the writer makes
-  (`:169-190`); drift is compared against a fresh
+  (`:170-191`); drift is compared against a fresh
   rebuild, never a remembered set (`packages/cli/src/verbs/check.ts:98-115`),
   and at the gate against the index, never the working tree
   (see [[writer-and-staged-gate]]).
@@ -140,7 +143,7 @@ is held at runtime.
 - An unknown type, kind or label in `graph edges` is exit 3 with the nearest
   names within three edits (`packages/cli/src/verbs/graph.ts:24-33`).
 - `brief-stale` (info, advisory `check --write`) when the installed brief is
-  absent or differs from the render (`packages/cli/src/verbs/brief.ts:41-59`);
+  absent or differs from the render (`packages/cli/src/verbs/brief.ts:42-60`);
   `missing-side` (usage) when `--missing` names no side or both
   (`packages/cli/src/verbs/graph.ts:94-98`).
 

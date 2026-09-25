@@ -3,7 +3,7 @@ type: subsystem
 title: "Skills and the brief"
 description: "The three shipped skills copied into a vault under a stamp the engine can audit, the per-role brief rendered from the verb registry and the loaded constitution under its law digest, and the machine-local findings that say when either is behind the binary."
 tags: [cli]
-pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
+pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
 origin: .
 covers: [packages/cli/src/skills.ts, packages/cli/src/brief.ts, packages/cli/src/shipped.ts, packages/cli/src/verbs/skills.ts, packages/cli/src/verbs/brief.ts, packages/cli/src/artifacts.ts, packages/cli/skills/]
 ---
@@ -14,8 +14,10 @@ covers: [packages/cli/src/skills.ts, packages/cli/src/brief.ts, packages/cli/src
 
 The binary ships three skills beside itself — `wikiwright-consume` for using
 what a bundle knows, which is also the runtime skill every bundle skill
-requires and so names the consumer's commands and the one setup route
-(`packages/cli/skills/wikiwright-consume/SKILL.md:19`), `wikiwright-write` for
+requires and so names the consumer's commands and the one setup route — a
+built clone's binary run by its absolute path from the caller's own
+directory, where `--bundle` resolves
+(`packages/cli/skills/wikiwright-consume/SKILL.md:19-29`), `wikiwright-write` for
 writing into one, and `wikiwright-maintain` for maintaining one, its export
 practices included (`packages/cli/skills/wikiwright-maintain/SKILL.md:93`) —
 resolved at a fixed depth by
@@ -55,18 +57,22 @@ contributed in load order (`:207-222`), and the reserved basenames (`:238`,
 `:292-298`). `briefOf` (`:303-347`) is the one renderer `init`, `skills
 update`, `check` and an export's consumer brief share, the export named by
 its caller or read off the root's marker (`:349-359`), and its law digest is
-the one every vault envelope's `metadata.bundle.law` carries (`:336-344`). `brief` is a consumer's
-verb: without `--role` it prints the session's `WIKIWRIGHT_ROLE`, the writer's
-when none is set (`packages/cli/src/verbs/brief.ts:85-86`); `briefFor` reads
-the vault and its pages for the renderer (`:18-30`); `briefFindings` (`:41`)
+the one every vault envelope's `metadata.bundle.law` carries, or the law an
+export's marker records, over the kit bytes the copy carries (`:337-344`).
+`brief` is a consumer's verb: without `--role` it prints the session's
+`WIKIWRIGHT_ROLE`, the writer's when none is set
+(`packages/cli/src/verbs/brief.ts:84-93`); over an installed copy it prints
+the consumer's whatever the role asked, the brief the copy carries, and says
+why in `details` (`:94-112`); `briefFor` reads
+the vault and its pages for the renderer (`:19-31`); `briefFindings` (`:42`)
 compares the brief its caller already rendered and reports `brief-stale`
-(`:47`), and the stamp covers the brief so a skills refresh refreshes the file
+(`:48`), and the stamp covers the brief so a skills refresh refreshes the file
 that carries the verbs (`packages/cli/src/verbs/skills.ts:49-51`).
 
 ## Entry points
 
 - `briefCommand` and `briefFor`, `briefOf`, `briefFindings`
-  (`packages/cli/src/verbs/brief.ts:18`, `:41`; `packages/cli/src/brief.ts:310`);
+  (`packages/cli/src/verbs/brief.ts:19`, `:42`; `packages/cli/src/brief.ts:310`);
   `briefPlan` and
   `writeBrief`, through the artifact write loop
   (`packages/cli/src/artifacts.ts:33`, `:43`); `renderBrief`,

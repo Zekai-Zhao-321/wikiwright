@@ -3,7 +3,7 @@ type: code-concept
 title: "Findings and total routing"
 description: "Every error or warning finding carries exactly one of a runnable fix and a queue lane; an info finding is a census row; the property is held statically over the pass table and at runtime over every emit path."
 tags: [kernel]
-pin: 842c67fcc34e5fd972af04521a999be7f6dab783
+pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
 origin: .
 covers: [packages/core/src/passes/index.ts, packages/core/src/modules/index.ts, packages/core/src/judge/index.ts, packages/core/src/fixers/index.ts, packages/cli/src/envelope.ts, packages/cli/src/brief.ts, tools/render-playbook.ts]
 ---

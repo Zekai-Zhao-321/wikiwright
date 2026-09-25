@@ -2,12 +2,12 @@
   "schema": "wikiwright/manifest",
   "totals": {
     "pages": 35,
-    "edges": 264
+    "edges": 267
   },
   "by_kind": {
     "relation": 72,
     "tagged": 48,
-    "wikilink": 144
+    "wikilink": 147
   },
   "by_label": {
     "relation": {
@@ -431,6 +431,7 @@
           "wiki/command-runtime.md",
           "wiki/generated-artifacts.md",
           "wiki/git.md",
+          "wiki/modules.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md",
@@ -444,6 +445,8 @@
           "wiki/envelope-and-exit-codes.md",
           "wiki/generated-artifacts.md",
           "wiki/git.md",
+          "wiki/loading-a-module.md",
+          "wiki/modules.md",
           "wiki/one-judge-five-states.md",
           "wiki/registry-pipeline.md",
           "wiki/testing-guide.md",
@@ -778,6 +781,7 @@
           "meta/D-002.md",
           "meta/D-004.md",
           "meta/D-007.md",
+          "wiki/exports.md",
           "wiki/judge.md",
           "wiki/modules.md",
           "wiki/wikiwright-architecture.md"
@@ -828,6 +832,7 @@
           "meta/D-002.md",
           "meta/D-003.md",
           "meta/D-007.md",
+          "wiki/exports.md",
           "wiki/judge.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
@@ -837,6 +842,7 @@
       "inbound": {
         "wikilink": [
           "wiki/deterministic-artifacts.md",
+          "wiki/exports.md",
           "wiki/loading-a-module.md",
           "wiki/registry-pipeline.md",
           "wiki/section-grammars.md"

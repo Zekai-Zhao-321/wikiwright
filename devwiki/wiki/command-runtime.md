@@ -3,7 +3,7 @@ type: subsystem
 title: "The command runtime"
 description: "One spec-driven registry of 24 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the `--bundle` scan of the skill directories, the read-only guard on a marked root, the bundle every vault envelope names, the one clock, and the place a loaded vault becomes the judge's law."
 tags: [cli]
-pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
+pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
 origin: .
 covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/bundle.ts, packages/cli/src/discovery.ts, packages/cli/src/verbs/]
 ---
@@ -42,11 +42,12 @@ shadowed (`:68-84`, `:293-295`); `emit` writes one envelope to stdout, the
 verb's UX text to stderr and sets the exit code (`:25-30`).
 `packages/cli/src/bundle.ts` computes that block without loading anything —
 label, real root, head and dirty from one `git status`, the law digest over
-the config and each installed module's digest, the content digest over every
-page's bytes (`:39-54`, `:71-75`, `:151-197`); over a copy, a root that
+the config and each installed module's digest — an export passes the digest
+of the kit bytes it carries instead — the content digest over every
+page's bytes (`:42-59`, `:76-80`, `:156-202`); over a copy, a root that
 carries a marker, the label is the bundle the marker names, `head` and
 `dirty` are null, and `export` names the export, `intact: false` when the
-recomputed digests differ from the marker's (`:132-135`, `:168-187`).
+recomputed digests differ from the marker's (`:137-140`, `:173-192`).
 `packages/cli/src/discovery.ts` is the scan: the skill directories in the
 order a name resolves in — the project's `.claude/skills` and
 `.agents/skills` from the working directory up to the top of its repository,
@@ -72,7 +73,8 @@ writing verb (`:177-191`), `isDryRun` and `listFlag` as the one reader each
 (`:68-73`, `:193-196`), the closed `PlanOp` kinds and `planOf` (`:75-107`),
 `ROLE_RANK` — consumer, writer, maintainer (`:109-118`) — and `declaredRole`,
 the one reader of `WIKIWRIGHT_ROLE`, which `main.ts` bounds the surface by
-and `brief` takes as its default role (`packages/cli/src/spec.ts:120-129`). `packages/cli/src/argv.ts` builds `parseArgs` options from the
+and `brief` takes as its default role (`packages/cli/src/spec.ts:120-129`)
+everywhere but a copy, whose brief is always the consumer's. `packages/cli/src/argv.ts` builds `parseArgs` options from the
 same list and refuses an unknown flag with the valid flags, extra positionals,
 a missing or unknown subcommand, each with the legal domain in `details`
 (`:68-150`); `scanInvocation` finds `--help` without reading a string flag's
@@ -145,7 +147,7 @@ and `directory-not-found` names the directory it looked in as
 ## State
 
 Per process: the clock's one read (`packages/cli/src/clock.ts:8-9`), the
-module preload cache (`packages/cli/src/moduleload.ts:593`) and each vault
+module preload cache (`packages/cli/src/moduleload.ts:624`) and each vault
 root's real path (`packages/cli/src/paths.ts:18`). Nothing of a vault between
 processes; between them Node keeps its compile cache of the engine's
 JavaScript, which `bin.ts` switches on and `NODE_DISABLE_COMPILE_CACHE=1`
@@ -178,7 +180,7 @@ turns off.
   when the root holds a constitution, ok or refused; an envelope answered
   before the verb runs names none (`packages/cli/src/main.ts:68-84`,
   `:293-295`); over a copy it names the export the copy is, from its marker
-  (`packages/cli/src/bundle.ts:168-187`).
+  (`packages/cli/src/bundle.ts:173-192`).
 - A copy is read only however it is named: the marker is checked on every
   resolved root before any module preloads, and a verb that can write is
   refused over it (`packages/cli/src/main.ts:233-261`, `:274-275`).

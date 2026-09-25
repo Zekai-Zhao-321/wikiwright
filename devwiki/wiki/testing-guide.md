@@ -3,7 +3,7 @@ type: testing-guide
 title: "Testing the engine"
 description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install the code kit into a copy."
 tags: [repo]
-pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
+pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
 origin: .
 covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/discovery.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts, tools/run-suite.ts]
 ---
@@ -27,7 +27,10 @@ against its own directory, unless the variable is set already; with no
 under Bun; and its summary names the runtime (`tools/run-suite.ts:17-21`,
 `:79-117`, `:155-163`, `:193`). Every test that spawns the CLI spawns it
 under `CLI_RUNTIME`, that variable or the test's own runtime
-(`packages/cli/test/fixtures/runtime.ts:4-14`). The engine ships for Node,
+(`packages/cli/test/fixtures/runtime.ts:4-14`), and the same module points
+`WIKIWRIGHT_SYSTEM_SKILL_DIR` at a directory under `os.tmpdir()` that
+nothing creates, whatever the caller's environment names, so no spawned CLI
+reads a real machine's system skill directory (`:16-20`). The engine ships for Node,
 and under load Bun 1.3.11's synchronous spawn handed back a child's piped
 stdout cut short with exit 0 — 7 of 900 calls in a stress run, none of
 3,600 under Node — which was the gate's intermittent `lint --staged`
@@ -100,21 +103,26 @@ A test that spawns a verb that stamps a date sets `WIKIWRIGHT_TODAY`: spread
 `PINNED_CLOCK` from `packages/cli/test/fixtures/clock.ts` (`:1-5`, today
 `2026-09-04`) into the spawn's `env`, so no page carries the wall clock. A
 test that scans the skill directories points `HOME` at a directory under its
-temporary directory and, where the project tier is exercised, runs inside a
-`git init` repository there, so no skill directory of the developer's is
-read (`packages/cli/test/discovery.test.ts:1-11`).
+temporary directory and runs inside a `git init` repository there, so the
+project tier stops inside it and no skill directory of the developer's is
+read (`packages/cli/test/discovery.test.ts:1-11`;
+`packages/cli/test/bundles.test.ts:8`, `:73`;
+`packages/cli/test/multi-bundle.test.ts:112`). The build-info writer is
+tested against a temporary git-committed copy of its scaffold, never this
+checkout's `dist/` (`packages/cli/test/version.test.ts:32-38`).
 
 For a bundle over the code kit, `packages/cli/test/fixtures/kit-code.ts`
 carries the helpers: `installKit(root)` rewrites the bundle's `package.json`
 to depend on the shipped package by absolute `file:` path and runs
-`bun install`, then replaces every symlink with the bytes it points at so an
-edit in the copy never writes through
-(`packages/cli/test/fixtures/kit-code.ts:48-68`, `:34-46`); `kitEnv()` is
+`bun install` with the package manager's cache under the bundle itself, then
+replaces every symlink with the bytes it points at so an edit in the copy
+never writes through (`packages/cli/test/fixtures/kit-code.ts:48-74`,
+`:34-46`); `kitEnv()` is
 the spawn environment, the pinned clock (`:29-32`); `runKit(root, argv)`
 spawns the built CLI with `--root` and parses the envelope, treating a
-non-zero exit as a verdict rather than a failure (`:76-87`);
+non-zero exit as a verdict rather than a failure (`:82-93`);
 `installedCopy(source, prefix)` copies a bundle without its `node_modules`
-and installs the kit, nothing else (`:89-103`). A bundle that carries a kit
+and installs the kit, nothing else (`:95-109`). A bundle that carries a kit
 by a declared `path` copies the neutral gardening kit,
 `packages/cli/test/fixtures/kit-garden/`, to `kit/garden` in a bundle under
 the temporary directory (`packages/cli/test/fixtures/kit-garden/index.js:1-9`). The judge's own behaviour tests load the memory law — a small

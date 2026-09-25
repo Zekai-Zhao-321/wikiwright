@@ -28,7 +28,7 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,640 tests across 115 files. At `29dbfb9`, when it held 1,590,
+The suite is 1,658 tests across 115 files. At `29dbfb9`, when it held 1,590,
 the full gate, `bun run check`, passed them all with the test files under
 Bun and the CLI under Node (`tools/run-suite.ts`), and the full node runner,
 `bun run test:node`, passed 1,590 of 1,590 with every file under Node. It
@@ -136,7 +136,9 @@ Every load scans a module's bytes for the constructs a pure module must not
 reach — the clock, randomness, the locale, the environment, the network,
 dynamic evaluation, computed access to those globals, and an import of any
 form — and refuses by file and line (`docs/extending.md` §The purity scan).
-A byte scan cannot see a name bound or built at runtime: `const D = Date;
+It reads the source with its comments read through, so a comment between a
+banned word and its token hides nothing and a comment that mentions one is
+not refused. A byte scan cannot see a name bound or built at runtime: `const D = Date;
 D.now()` passes it. It narrows what a module can reach; it is not a sandbox,
 and it is not the argument for running the module, which is the install.
 
@@ -160,7 +162,9 @@ deferred until the fixture's cost is measured to matter.
 
 ### Artifact writes are per-file atomic, not batch-atomic
 
-`check --write` lands each generated file temp-then-rename. A crash in the
+`check --write` lands each generated file temp-then-rename, an export's
+included: an existing file stays in place until its replacement is renamed
+over it, so a render that fails leaves the previous bytes. A crash in the
 middle of the loop leaves a mix of old and new files; the next
 `check --write` converges them. There is no transactional write of the set.
 
@@ -407,7 +411,9 @@ name an install command.
 A kit under `node_modules` is not in the index, so the staged gate renders an
 export's copy of it from the working tree, as the preload loads it: a commit
 is judged against the kit installed on the machine that commits, not one the
-commit carries. A kit declared by `path` is in the index and read from it.
+commit carries. A kit declared by `path` is in the index and read from it,
+and the law the copy's marker names takes that kit's digest from the same
+staged bytes, so an unstaged edit to the kit does not make the copy stale.
 
 Wanted: nothing while `node_modules` stays untracked; a bundle that must pin
 its kit exactly declares it by `path`.
@@ -442,7 +448,7 @@ session only when the host loads it.
 ### Plugin caches are not scanned
 
 `--bundle` and `bundles list` read the project's skill directories, the
-user's and those `WIKIWRIGHT_SKILL_DIRS` names. A bundle skill a host keeps
+user's, the machine's and those `WIKIWRIGHT_SKILL_DIRS` names. A bundle skill a host keeps
 in its plugin cache is not found by name unless the host, or the user, names
 that directory in the variable; `--root` reaches it either way.
 
@@ -630,10 +636,17 @@ alternative is to carry the history with the tree.
    dependency between bundles, `references` and `outline`, a report type a
    proposal is written in, and a filter by applicability.
 3. Run the two hook scripts inside a host and record what a session sees.
-4. Find a copy by name over the skill directories and guard every marked
-   root against a write; then the runtime skill, and the export practices in
-   the maintainer's skill.
-5. The capture verb, the connector layer, rich-content checks, publication
+4. For bundle skills: publish the engine and the kit, so the runtime skill's
+   setup and a bundle skill can name an install command; run live on both
+   hosts whether a bundle skill's "requires" line loads the runtime skill,
+   and how each host's skill store lists a generated plugin; then the thin
+   pointer and `propose`, each deferred rather than refused (§Exports not
+   built yet, §What a host does with a copy is unverified).
+5. For modules: a proof cache that outlives the process, keyed on the
+   engine version too (§A module's proofs are taken once per process), and
+   a `modules list` that reports a declared module without importing it
+   (§A module runs because it is installed).
+6. The capture verb, the connector layer, rich-content checks, publication
    and access control are candidates, none scheduled.
 
 ## Developing against it

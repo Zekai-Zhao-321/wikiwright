@@ -528,6 +528,11 @@
     },
     {
       "from": "wiki/exports.md",
+      "to": "wiki/modules.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/exports.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
       "label": "mapped_in"
@@ -959,6 +964,11 @@
     },
     {
       "from": "wiki/loading-a-module.md",
+      "to": "wiki/exports.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/loading-a-module.md",
       "to": "wiki/judge.md",
       "kind": "wikilink"
     },
@@ -1020,6 +1030,11 @@
       "from": "wiki/modules.md",
       "to": "tag:kernel",
       "kind": "tagged"
+    },
+    {
+      "from": "wiki/modules.md",
+      "to": "wiki/exports.md",
+      "kind": "wikilink"
     },
     {
       "from": "wiki/modules.md",

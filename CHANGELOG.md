@@ -12,8 +12,9 @@ version` prints the engine version and the commit a binary was built from.
 - A bundle declares its **exports** in `config/engine.json`: read-only
   copies of the bundle, or of part of it, that an agent host installs as
   skills. Each selects every page, the pages carrying a tag or the pages under
-  a directory; says whether a link to a page left out is refused (`links:
-  closed`) or cut and counted (`cut`); names a guide page, where a problem
+  a directory; says whether a link to a page left out withholds the export
+  until the selection is widened (`links: closed`) or is cut and counted
+  (`cut`); names a guide page, where a problem
   with the copy is reported, a license and a fragment of its own for the
   skill text; and is rendered into the bundle's own `skills/<name>/`
   (`output: skills`) or written into another repository (`output:
@@ -23,7 +24,9 @@ version` prints the engine version and the commit a binary was built from.
   refused when the config loads, by name.
 - A rendered export is a vault: its pages, `config/` verbatim, the templates
   and examples the loader validates, each declared kit at its declared
-  location, the files its pages embed, `generated/` over the selection with a
+  location — exactly the files its digest covers, and the marker's law taken
+  from the bytes the copy carries, the index's under the staged gate — the
+  files its pages embed, `generated/` over the selection with a
   consumer's brief that names the export, a `SKILL.md`, and the marker,
   `config/export.json`, which names the export and the bundle and records the
   digests it was cut with. A copy holds bytes, never a link: the working tree
@@ -33,8 +36,11 @@ version` prints the engine version and the commit a binary was built from.
   a link the index tracks at the staged gate, refuses the export,
   `export-symlink`.
 - `check --write` renders every `output: skills` export and the plugin
-  manifests, replacing what differs and removing what the plan no longer
-  holds, and nothing else; `check` holds each rendered copy to a fresh render,
+  manifests, replacing what differs — an ordinary file stays until its
+  replacement is renamed over it — and removing what the plan no longer
+  holds, and nothing else; a symbolic link on the path from the root to where
+  an export writes, `skills/` itself included, is `export-destination-linked`
+  and nothing is written through it; `check` holds each rendered copy to a fresh render,
   `export-stale` (fixed by `check --write`), and queues the render's own
   refusals to `export-review`. The staged gate makes the same comparison over
   the index, so a page or a kit declared by `path` staged without its
@@ -43,13 +49,15 @@ version` prints the engine version and the commit a binary was built from.
   repository at `<dir>`, as `<dir>/skills/<name>/` with the manifests beside
   it, and refuses an undeclared name, an `output: skills` export, a
   destination that is the bundle's root or in a content root, a
-  `skills/<name>/` without a marker, and a symbolic link where it writes.
+  `skills/<name>/` without a marker, a symbolic link where it writes, and an
+  export a render finding refuses or withholds.
 - An installed copy identifies itself: over a root that carries a marker,
   `metadata.bundle` takes its label from the marker, reports no `head` and no
   `dirty`, and names the export in `export`, with `intact: false` when the
   copy's law or pages changed after it was cut. A marker that is not one is
   refused, `export-marker-invalid` (exit 4), before any module loads. The
-  brief's header over a copy names the export.
+  brief over a copy is always the consumer's, whatever role is asked for, and
+  its header names the export.
 - A module declaration may name a bundle-relative directory, `path`, instead
   of an installation under `node_modules`: `{ "package": "kit-garden",
   "path": "kit/garden" }`, for a kit a bundle carries in its own tree. The
@@ -149,7 +157,8 @@ version` prints the engine version and the commit a binary was built from.
 - A third shipped skill, `wikiwright-consume`, the runtime skill every bundle
   skill requires: how to run the engine (the one route today, since no
   published package exists yet: clone the repository, `bun install`,
-  `bun run build`, and run `node packages/cli/dist/main.js`), what a bundle
+  `bun run build`, and run `node <clone>/packages/cli/dist/main.js` by its
+  absolute path from the directory you work in), what a bundle
   skill is and how to find one, the consumer's commands with their
   discipline — say which bundle answered, read the coherent section, hand a
   subagent the words verbatim with the bundle, the path and the digest —
@@ -192,8 +201,10 @@ version` prints the engine version and the commit a binary was built from.
 - The purity scan refuses an import of any form — an `import` declaration,
   `export … from`, a dynamic `import(` and `require(` — and computed access to
   `Date`, `Math`, `performance`, `Intl` or `process` (`Date["now"]()`), each by
-  file, line and reason. `docs/extending.md` §The purity scan lists every rule,
-  and says what it is not: it narrows, it does not sandbox.
+  file, line and reason, and reads through comments, so a comment between a
+  banned word and its token hides nothing and a comment that mentions one is
+  no construct. `docs/extending.md` §The purity scan lists every rule, and
+  says what it is not: it narrows, it does not sandbox.
 - `type show --brief` leads its data with `brief`, `skeleton` and
   `section_lines`, before `fields`; key order only. `new` writes no `title:`
   where `field_sources.title` is `basename` and the title given is the
@@ -409,6 +420,11 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Developing
 
+- The suite reads no machine state: every scan runs with `HOME` under the
+  temporary directory and its project tier inside a temporary repository,
+  the system skill directory is overridden whatever the caller's environment
+  says, the build-info writer is tested against a temporary scaffold, and a
+  kit's install uses a package-manager cache of its own.
 - `fixtures/handbooks/orchard` and `fixtures/handbooks/allotment`: two small
   gardening handbooks, each a `procedure-page` type with a required climate
   and a `guide-page` for the page to read first, and a page with one title
