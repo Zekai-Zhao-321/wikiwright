@@ -141,7 +141,7 @@ logical change is one commit).
 | `devwiki/generated/*`, the brief included | `wikiwright check --write --root devwiki`, after the install above |
 | `fixtures/handbooks/*/generated/*`, the briefs included, and `fixtures/handbooks/*/skills/*`, the rendered exports | `wikiwright check --write --root fixtures/handbooks/orchard`, and the same for `allotment` |
 | `packages/cli/skills/wikiwright-maintain/lint-response.md` | `bun tools/render-playbook.ts` (`--check` verifies) |
-| the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies) |
+| the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies, and the suite runs it with nothing on PATH) |
 | `packages/core/src/identity/casefold-data.ts` | `bun tools/generate-casefold.ts` |
 
 `freshness --root devwiki` measures every devwiki page against this

@@ -5,8 +5,15 @@
 //   bun docs/render-cli.ts            print the generated block
 //   bun docs/render-cli.ts --write    replace the block between the markers in docs/cli.md
 //   bun docs/render-cli.ts --check    exit 1 when docs/cli.md's block is not what the binary renders
-import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+//
+// The CLI runs under the Bun running this script (`process.execPath`), the one
+// runtime the repository names, so nothing here needs Node on PATH. Its
+// envelope comes back through a file it writes itself, never a pipe, as a
+// test reads it (packages/cli/test/fixtures/runtime.ts).
+import { spawnSync } from "node:child_process";
+import { closeSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BIN = fileURLToPath(new URL("../packages/cli/dist/main.js", import.meta.url));
@@ -34,7 +41,27 @@ interface Schema {
   data: { global_flags: Flag[]; commands: Command[] };
 }
 
-const schema = JSON.parse(execFileSync("node", [BIN, "schema"], { encoding: "utf8" })) as Schema;
+function readSchema(): Schema {
+  const scratch = mkdtempSync(join(tmpdir(), "wikiwright-render-cli-"));
+  const outPath = join(scratch, "schema.json");
+  try {
+    const out = openSync(outPath, "wx", 0o600);
+    let status: number | null;
+    try {
+      status = spawnSync(process.execPath, [BIN, "schema"], {
+        stdio: ["ignore", out, "inherit"],
+      }).status;
+    } finally {
+      closeSync(out);
+    }
+    if (status !== 0) throw new Error(`\`wikiwright schema\` exited ${String(status)}`);
+    return JSON.parse(readFileSync(outPath, "utf8")) as Schema;
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+const schema = readSchema();
 
 function usage(c: Command): string {
   const parts = [`wikiwright ${c.name}`];

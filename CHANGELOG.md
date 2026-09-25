@@ -471,6 +471,13 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Developing
 
+- `docs/render-cli.ts`, the one generator of `docs/cli.md`'s verb block, ran
+  the CLI under `node`, so on a machine with only Bun the block could not be
+  rendered. It runs the CLI under the Bun running it and reads the schema
+  from a file the CLI writes. `bun-pin.test.ts` runs its `--check` with
+  nothing on PATH, so the gate now holds the block to the binary, and
+  refuses a spawn of `node` in the tools, the renderer, the hooks, the
+  workflows and the tests, where it had read only the package scripts.
 - The suite reads no skill directory of the machine's, writes no build stamp
   into the checkout and installs nothing into the caller's package cache:
   every scan runs with `HOME` under the temporary directory and its project

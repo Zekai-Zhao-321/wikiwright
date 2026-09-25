@@ -99,7 +99,7 @@ by name when it breaks. Test files live under `packages/core/test`,
 | The path law | a vault path names a file inside the vault: shape in core, containment in the shell, at every read and write | `path-law` (core and cli), `provenance-path` |
 | Every declared key has a consumer | every top-level `engine.json` key names a reader that exists and has an end-to-end fixture marked `e2e:<key>`; every consumer entry names a declared key | `schema-walk`, `engine-config` |
 | The engine spawns no child synchronously | every git read goes through the asynchronous transport, file-backed, at most four children at once, a timeout killing the child; no file the packages ship names a synchronous spawn; a test runs the CLI with its stdout on a file, and the pipe probes read the CLI's envelope through a pipe on purpose and hold it to the filed one | `git-transport`, `git-short-read`, `no-sync-spawn`, `pipe-boundary` |
-| One pinned runtime | `.bun-version` is the running Bun and every `engines.bun` pins it exactly; the compiled binary (`bun run binary`) answers `--help` and `check` byte for byte as `bun dist/main.js` does | `bun-pin`, `binary` |
+| One pinned runtime | `.bun-version` is the running Bun and every `engines.bun` pins it exactly; no tool, hook, workflow or test spawns `node`, and `docs/cli.md`'s verb block renders, and matches, with nothing on PATH; the compiled binary (`bun run binary`) answers `--help` and `check` byte for byte as `bun dist/main.js` does | `bun-pin`, `binary` |
 | The shell has one clock | the verbs that stamp a date read `today()`; a test pins `WIKIWRIGHT_TODAY` and proves the pin reaches the page | `write-verb` |
 | One code per meaning | every `fail(` in the CLI uses a kebab-case code mapped to exactly one exit type | `exit-taxonomy` |
 | The command registry is the only surface | `--help`, `schema`, the brief and the parser render one table; every documented invocation in a shipped skill parses; every writer verb has a brief workflow slot and every slot names a verb; the playbook is byte-identical to its generator's output | `per-command-help`, `schema-walk`, `skills`, `skills-update`, `verbs`, `role-enforcement` |
@@ -203,7 +203,7 @@ invokes it. Windows has no carrier in this repository and is unverified.
   devwiki`, after the install above),
   `packages/cli/skills/wikiwright-maintain/lint-response.md`
   (`bun tools/render-playbook.ts`), `docs/cli.md`'s verb block
-  (`bun docs/render-cli.ts --write`), `packages/core/src/identity/casefold-data.ts`
+  (`bun docs/render-cli.ts --write`; the gate runs its `--check`), `packages/core/src/identity/casefold-data.ts`
   (`bun tools/generate-casefold.ts`).
 - No private or personal data enters this repository; the fixtures are
   synthetic.
