@@ -269,8 +269,11 @@ What the registry rows below do not say.
   that leaves the bundle), `export-destination-invalid` and
   `export-destination-linked` (a symbolic link on the path from the root to
   `skills/<name>`, `skills` itself included, or to the manifests' directory:
-  nothing is written through it) (errors, and the export is not rendered), `export-not-closed` (a warning: a
-  selected page links to a page left out under `links: closed`), and
+  nothing is written through it) (errors, and the export is not rendered), `export-not-closed` (a warning, since
+  widening the selection or declaring `cut` is a judgment: a selected page
+  links to a page left out under `links: closed`, and that export is withheld
+  — not rendered, its previous bytes left as they were, and refused by
+  `export`), and
   `export-orphan` (a warning: a `skills/<name>/` holds a marker no declaration
   names; the engine never removes it). A root that holds `config/export.json`
   is a copy and renders nothing. `data.generated.exports` lists the export

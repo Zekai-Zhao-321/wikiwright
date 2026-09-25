@@ -180,6 +180,30 @@ describe("export <name> --to <dir> (docs/cli.md §export)", () => {
     assert.deepEqual(again.envelope.data?.["ops"], []);
   });
 
+  it("refuses a closed export with a cut link, with the finding, and writes nothing", () => {
+    const { root, to } = garden();
+    // A roses page links to a beds page the roses export leaves out.
+    write(root, {
+      "wiki/pruning-roses.md": note(
+        "Pruning roses",
+        ["roses"],
+        "Mulch after, as [[raised-beds]] say.",
+      ),
+      "config/engine.json": `${JSON.stringify({
+        content_roots: ["wiki"],
+        exports: [{ ...ROSES, links: "closed" }],
+      })}\n`,
+    });
+    const r = run(root, ["export", "garden-roses", "--to", to]);
+    assert.equal(r.status, 5, JSON.stringify(r.envelope));
+    const found = (r.envelope.data?.["findings"] ?? []) as { ruleId: string }[];
+    assert.deepEqual(
+      found.map((f) => f.ruleId),
+      ["export-not-closed"],
+    );
+    assert.deepEqual(readdirSync(to), []);
+  });
+
   it("refuses a name the config does not declare, naming the ones it does", () => {
     const { root, to } = garden();
     const r = run(root, ["export", "no-such-export", "--to", to]);

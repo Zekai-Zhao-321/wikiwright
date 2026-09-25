@@ -424,8 +424,10 @@ removing the link and never what it names. The render's other refusals are
 `export-tag-unknown` (a selected tag the vocabulary does not register),
 `export-guide-outside` (a guide the selection does not hold),
 `export-skill-invalid` (a fragment under a content root, or absent),
-`export-not-closed` (a warning: under `links: closed`, a selected page links
-to one left out) and `export-destination-invalid` (a destination inside a
+`export-not-closed` (a warning, since the answer is a judgment: under
+`links: closed`, a selected page links to one left out, and the export is
+withheld until the selection is widened or `cut` declared, so a marker never
+says `closed` beside a link it cut) and `export-destination-invalid` (a destination inside a
 content root) (docs/cli.md §Notes per verb).
 
 **The marker**, `config/export.json`, is written last and in a fixed key

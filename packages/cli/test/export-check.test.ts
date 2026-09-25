@@ -219,6 +219,76 @@ describe("check --write renders the in-repository exports, and check holds them 
     assert.equal(stale?.path, "plugin.json");
   });
 
+  it("a closed export with a cut link is withheld: not rendered, its previous bytes left, the others rendered", () => {
+    const linking = note("Turning compost", ["compost"], "Spread it on the [[raised-beds]].");
+    const root = garden(
+      {
+        content_roots: ["wiki"],
+        exports: [
+          ALL,
+          {
+            name: "garden-compost",
+            select: { kind: "tag", tags: ["compost"] },
+            links: "cut",
+            contribution: { mode: "none" },
+          },
+        ],
+      },
+      { "wiki/turning-compost.md": linking },
+    );
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    const marker = join(root, "skills", "garden-compost", "config", "export.json");
+    const before = readFileSync(marker, "utf8");
+    // Declared closed: the cut link now withholds the render.
+    write(root, {
+      "config/engine.json": `${JSON.stringify({
+        content_roots: ["wiki"],
+        exports: [
+          ALL,
+          {
+            name: "garden-compost",
+            select: { kind: "tag", tags: ["compost"] },
+            contribution: { mode: "none" },
+          },
+        ],
+      })}\n`,
+      "wiki/raised-beds.md": note("Raised beds", ["beds"], "Beds edged in oak."),
+    });
+    const r = run(root, ["check", "--write"]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    const [closed] = findings(r.envelope).filter((f) => f.ruleId === "export-not-closed");
+    assert.equal(closed?.severity, "warning");
+    assert.equal(closed?.queue, "export-review");
+    assert.match(closed?.message ?? "", /so it was not rendered/u);
+    assert.equal(readFileSync(marker, "utf8"), before, "the withheld export was rewritten");
+    assert.match(before, /"links": "cut"/u);
+    // The whole export was rendered from the edited page all the same.
+    assert.match(
+      readFileSync(join(root, "skills", "garden", "wiki", "raised-beds.md"), "utf8"),
+      /Beds edged in oak/u,
+    );
+  });
+
+  it("a closed export with a cut link is never rendered in the first place", () => {
+    const root = garden(
+      {
+        content_roots: ["wiki"],
+        exports: [
+          {
+            name: "garden-compost",
+            select: { kind: "tag", tags: ["compost"] },
+            contribution: { mode: "none" },
+          },
+        ],
+      },
+      {
+        "wiki/turning-compost.md": note("Turning compost", ["compost"], "See [[raised-beds]]."),
+      },
+    );
+    run(root, ["check", "--write"]);
+    assert.equal(existsSync(join(root, "skills", "garden-compost")), false);
+  });
+
   it("a linked skills/ is export-destination-linked, and nothing is written through it", () => {
     if (process.platform === "win32") return;
     const root = garden({ content_roots: ["wiki"], exports: [ALL] });

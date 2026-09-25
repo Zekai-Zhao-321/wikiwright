@@ -217,7 +217,7 @@ describe("the plan of an export (docs/constitution.md §exports)", () => {
     );
   });
 
-  it("links to pages left out are counted in the source; closed refuses them as a judgment, cut carries them", async () => {
+  it("links to pages left out are counted in the source; closed withholds the export as a judgment, cut carries them", async () => {
     const root = garden(
       {
         content_roots: ["wiki", "raw"],
@@ -254,7 +254,9 @@ describe("the plan of an export (docs/constitution.md §exports)", () => {
     const finding = closed.findings[0];
     assert.equal(finding?.severity, "warning");
     assert.match(finding?.message ?? "", /raised-beds\.md/u);
-    assert.notEqual(closed.files, undefined, "a judgment does not refuse the render");
+    assert.match(finding?.message ?? "", /so it was not rendered/u);
+    // A judgment, not a gate: queued, and nothing rendered until it is made.
+    assert.equal(closed.files, undefined, "a closed export with a cut link was rendered");
     assert.deepEqual(cut.marker.cut, { links: 1, citations: 1, attachments: 0 });
     assert.deepEqual(rules(cut), []);
   });

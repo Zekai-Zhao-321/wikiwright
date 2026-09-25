@@ -481,13 +481,18 @@ export function planExport(input: ExportInput): ExportPlan {
     else cutLinks += 1;
     cutTargets.add(edge.to);
   }
-  if (declaration.links === "closed" && cutLinks + cutCitations > 0) {
+  // A closed export that is not closed is withheld: widening the selection or
+  // declaring `cut` is a judgment, so the finding queues rather than gates,
+  // and nothing is rendered until one of the two is made. A marker never says
+  // `links: "closed"` beside a link it cut.
+  const withheld = declaration.links === "closed" && cutLinks + cutCitations > 0;
+  if (withheld) {
     const first = [...cutTargets].sort(codeUnitCompare).slice(0, 10);
     findings.push(
       exportFinding(declaration, {
         ruleId: "export-not-closed",
         severity: "warning",
-        message: `its pages link to ${cutTargets.size} page(s) it does not carry: ${first.join(", ")}`,
+        message: `its pages link to ${cutTargets.size} page(s) it does not carry, so it was not rendered: ${first.join(", ")}`,
         remediation:
           'select the linked pages too, or declare `"links": "cut"` to carry the counts instead',
         details: { links: cutLinks, citations: cutCitations },
@@ -662,7 +667,7 @@ export function planExport(input: ExportInput): ExportPlan {
     engine: ENGINE_VERSION,
   };
 
-  if (findings.some((finding) => finding.severity === "error")) {
+  if (withheld || findings.some((finding) => finding.severity === "error")) {
     return { export: declaration, files: undefined, findings, marker };
   }
 
