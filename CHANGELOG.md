@@ -18,9 +18,14 @@ version` prints the engine version and the commit a binary was built from.
   `shipped-files-absent` (exit 2), `check` compares no installed skill, and
   `version` reports no checkout (`docs/roadmap.md` §The compiled binary).
 - The pipe probes (`test/pipe-boundary.test.ts`): the built CLI's envelope,
-  read through a pipe on purpose by a reader that starts late, arrives
-  whole — a default envelope, a 70,000-byte one and an error envelope, and
-  through the binary as well when one is built.
+  read through an operating-system pipe (a shell's) on purpose by a reader
+  that starts late, arrives whole — a default envelope, a 70,000-byte one
+  and an error envelope, through `bun dist/main.js` and through a binary
+  built for the run. The probe is proven able to fail: a writer that calls
+  `process.exit()` after a 70,000-byte write comes out of it short. Bun's
+  own spawned "pipe", which the first probes read, is a socket on macOS
+  that buffered more than 500 KB, so a CLI that cut its envelope passed
+  them.
 
 - A bundle declares its **exports** in `config/engine.json`: read-only
   copies of the bundle, or of part of it, that an agent host installs as

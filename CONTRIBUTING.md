@@ -85,8 +85,10 @@ else is not covered.
   piped output short (`docs/roadmap.md`). A new test file uses `bun:test`.
 - A test of the built CLI as a whole goes under `test/`: the pipe probes
   (`test/pipe-boundary.test.ts`), the one place a test reads the CLI's
-  envelope through a pipe, on purpose, and the compiled binary
-  (`test/binary.test.ts`), which builds one under `os.tmpdir()`.
+  envelope through a pipe, on purpose — a shell's pipe, since Bun's spawned
+  "pipe" is a socket with a far larger buffer on macOS — and the compiled
+  binary (`test/binary.test.ts`); each builds its binary under
+  `os.tmpdir()` (`test/fixtures/binary.ts`).
 - Every test writes under `os.tmpdir()`, never in the repository. The
   packed-install test installs under a package cache of its own there, so
   every run fetches the packed core's dependencies from the registry: the

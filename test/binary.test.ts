@@ -8,15 +8,15 @@
 // `init` and `skills` are `shipped-files-absent` (docs/roadmap.md §The
 // compiled binary), and `version` has no checkout to report.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { cpSync, existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCli, runCommand } from "../packages/cli/test/fixtures/runtime.ts";
+import { buildBinary } from "./fixtures/binary.ts";
 
 const REPO = fileURLToPath(new URL("../", import.meta.url));
 const CLI = join(REPO, "packages", "cli", "dist", "main.js");
-const TOOL = join(REPO, "tools", "build-binary.ts");
 const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
 
 let dir = "";
@@ -28,10 +28,7 @@ beforeAll(() => {
   binary = join(dir, "wikiwright");
   bundle = join(dir, "orchard");
   cpSync(ORCHARD, bundle, { recursive: true });
-  const built = runCli([TOOL, "--outfile", binary], { cwd: REPO, encoding: "utf8" });
-  if (built.status !== 0 || !existsSync(binary)) {
-    throw new Error(`the binary did not build: ${built.stdout}${built.stderr}`);
-  }
+  buildBinary(binary);
 }, 120_000);
 
 afterAll(() => {

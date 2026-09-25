@@ -684,8 +684,8 @@ What follows, each held by `binary.test.ts`:
 - `version`'s `checkout_commit` and `checkout_dirty` are null: the
   binary's code sits in no checkout. `commit` and `dirty` name the build.
 
-The binary is not published, and the pipe probes run through it only when
-one is present.
+The binary is not published; the pipe probes build one under the temporary
+directory and read its envelopes through a pipe.
 
 Wanted: the shipped files the surviving verbs need, embedded in the binary,
 when a binary is distributed.
