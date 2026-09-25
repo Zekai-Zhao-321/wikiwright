@@ -9,6 +9,16 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- `bun run binary` compiles the CLI into one executable, `dist/wikiwright`
+  (`bun build --compile --bytecode --format=esm
+  --no-compile-autoload-dotenv --no-compile-autoload-bunfig`, the build
+  stamp compiled in through `--define`), which answers `--help` and `check`
+  byte for byte as `bun packages/cli/dist/main.js` does.
+- The pipe probes (`test/pipe-boundary.test.ts`): the built CLI's envelope,
+  read through a pipe on purpose by a reader that starts late, arrives
+  whole — a default envelope, a 70,000-byte one and an error envelope, and
+  through the binary as well when one is built.
+
 - A bundle declares its **exports** in `config/engine.json`: read-only
   copies of the bundle, or of part of it, that an agent host installs as
   skills. Each selects every page, the pages carrying a tag or the pages under
@@ -190,6 +200,23 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- Every git read is an asynchronous spawn (`Bun.spawn`) awaited to the
+  child's exit, at most four children at a time, keeping the file-backed
+  protocol: the answer read from a file git wrote, a batch request handed
+  over as a file, stderr read to its end under an 8 MiB bound, the
+  terminators and cross-checks. A timeout kills the child. Every git child
+  carries `LC_ALL=C` and `GIT_OPTIONAL_LOCKS=0`, and the two `status` reads
+  use `-z`. Every verb path awaits it, the loader included; envelopes are
+  byte-identical to the synchronous build's. `move`'s `git mv` and the
+  plugin's hook scripts no longer spawn synchronously, and no shipped file
+  does.
+- Bun only. `.bun-version` pins the Bun the engine is built, tested and run
+  with (1.3.11), and every `engines.bun` pins it exactly; no package names a
+  Node engine. `bin.js` and `main.js` are Bun scripts, and the plugin's
+  hooks run under `bun`. The suite runs the CLI under Bun with its stdout on
+  a file (`runCli`); the `WIKIWRIGHT_CLI_RUNTIME` seam, which ran it under
+  Node, is gone.
+
 - `bun run build` removes each package's `dist/` before it compiles, so the
   output of a deleted source can no longer be packed.
 - Every load proves a module: after the purity scan and the entry and
@@ -333,6 +360,9 @@ version` prints the engine version and the commit a binary was built from.
   bytes and runs its determinism fixture before it judges anything. The loss
   is stated in `docs/roadmap.md`: a `git pull` that changes a module changes
   what runs without this machine asking first.
+- The node runner: the `test:node` script, the workflow step that ran it and
+  the release matrix's Node arms. `bin.js` no longer switches on Node's
+  compile cache.
 - Remote freshness. `freshness` measures a pin only against the repository
   the vault sits in (origin `"."`); a pin naming any other origin is
   reported `unmeasured`, with a `reason` that begins `remote-origin:`, and is

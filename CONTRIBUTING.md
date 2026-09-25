@@ -19,7 +19,9 @@ bun packages/cli/dist/bin.js version
 ```
 
 The executable is `packages/cli/dist/bin.js`, a Bun script that loads
-`packages/cli/dist/main.js`, the engine, which the suite runs directly; `version` reports the commit it
+`packages/cli/dist/main.js`, the engine, which the suite runs directly
+(`bun run binary` also compiles it into one executable, `dist/wikiwright`,
+which answers as `bun packages/cli/dist/main.js` does); `version` reports the commit it
 was built from and whether the checkout was dirty, so a stale build is never
 mistaken for the checkout. The installed pre-commit hook of a bundle looks
 for `wikiwright` on PATH, so put a one-line launcher there if you want it:
@@ -81,6 +83,10 @@ else is not covered.
   with the CLI's stdout on a file the test created and read back from it,
   never through a pipe. Under load Bun's synchronous spawn has cut a child's
   piped output short (`docs/roadmap.md`). A new test file uses `bun:test`.
+- A test of the built CLI as a whole goes under `test/`: the pipe probes
+  (`test/pipe-boundary.test.ts`), the one place a test reads the CLI's
+  envelope through a pipe, on purpose, and the compiled binary
+  (`test/binary.test.ts`), which builds one under `os.tmpdir()`.
 - Every test writes under `os.tmpdir()`, never in the repository. The
   packed-install test installs under a package cache of its own there, so
   every run fetches the packed core's dependencies from the registry: the

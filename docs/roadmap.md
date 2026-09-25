@@ -30,20 +30,23 @@ own `devwiki`.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`). The suite
-judges five corpora (`devwiki`, `fixtures/memory-synth`,
+is 1,680 tests across 120 files, and the gate, `bun run check`, passed all
+of them three times in a row on 2026-09-26 at the end of the v2 runtime and
+transport slice. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
 the module ladder end to end twice: with a neutral module fixture under
 `fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
 this repository: `check --root devwiki` reports zero findings and
-`freshness --root devwiki` holds every citation to its pin. Measured on
-2026-09-25 on the development machine, where `check --root devwiki` needs
-the install and nothing else, `freshness` reads all 27 pinned pages
-`current` (8) or `unchanged` (19) and none `stale`, with no
-`stale-capture`, `stale-source-cited` or `citation-unresolved` finding,
-before the commit that carries those pins; once it lands, the 8 are
-`unchanged`. A later change to code a page covers makes that page `stale`
-until it is re-read and re-pinned, and `freshness` names it.
+`freshness --root devwiki` holds every citation to its pin. The runtime and
+transport slice of the v2 delivery (the asynchronous git transport, Bun only,
+remote freshness removed, the binary) changed code 21 of the 27 pinned pages
+cover: measured at its last commit, `freshness` reads 21 `stale` and 6
+`unchanged`, with `stale-capture` and `stale-source-cited` findings and no
+`citation-unresolved`. Those pages still describe the transport before the
+slice (a synchronous spawn, the Node runner, `freshness --fetch`); they are
+re-read and re-pinned in the documentation step of the delivery, and until
+then `freshness` names each.
 A citation into a file its page does not cover is held to the pin but not
 to the file's later changes, so such a reference either is covered or goes
 through the page that covers the file.
@@ -62,16 +65,17 @@ would want.
 
 ### `init` does not load a starter's declared modules
 
-The module preload is the one asynchronous step in `main.ts`, keyed on the
-target root's existing `engine.json`, and a verb's `plan` is synchronous.
-So `init --constitution code` always lands without artifacts and brief,
-even when the kit is already installed, and its envelope names the steps to
-run next (`bun install`, the first load that proves the kit, `check --write`).
+The module preload runs once in `main.ts`, before the verb, keyed on the
+target root's existing `engine.json`, so a starter's modules are not loaded
+by the `init` that copies them. So `init --constitution code` always lands
+without artifacts and brief, even when the kit is already installed, and its
+envelope names the steps to run next (`bun install`, the first load that
+proves the kit, `check --write`).
 
 Wanted: `wikiwright init --constitution code`, in a directory where the
 install already happened, rendering `generated/` and the brief in that one
-run. That needs the plan to be asynchronous — a change to
-the dry-run law's machinery, not to `init`.
+run. A verb's `plan` may now be asynchronous, so what is missing is `init`
+loading the starter's declared modules itself.
 
 ### A capture of another repository is not measured
 
@@ -582,6 +586,16 @@ the envelope the same way. `judge-property.test.ts`, which judges states it
 builds in its own process, asserts each state's pages before any verdict read
 from it, since an empty or short state judges clean.
 
+The asynchronous spawn goes through `Bun.spawn`, not Bun's
+`node:child_process` layer: through that layer, on 2026-09-25 under Bun
+1.3.11 with the suite's load on twelve cores, a test process that spawned two
+children at once saw one of them exit and be reaped with no `exit` event and
+no end of its stderr delivered, and the call waited forever — 2 of 128
+parallel runs of `judge-property.test.ts`, 7 of 640 of a replica — where the
+same runs through `Bun.spawn` lost none of 928. It is a runtime defect
+observed, not understood; the transport's tests would hang, not pass, if it
+came back.
+
 Left: two readers are not converted, and none chooses a page the engine
 judges. `tools/write-build-info.ts` reads git through a pipe when it stamps a
 build, where a cut could misstate the build's commit, never a verdict; and
@@ -647,6 +661,26 @@ first commit and re-pin it there. The bytes are the same, so the read is
 quick, but it is a read: the engine cannot see that the bytes match, so
 there is no verb that re-pins blindly and there will not be one. The
 alternative is to carry the history with the tree.
+
+### The binary reads shipped files from the checkout it was built in
+
+`bun run binary` compiles the CLI into `dist/wikiwright`, with the build
+stamp compiled in, and `binary.test.ts` holds its `--help` and a `check`
+envelope byte for byte to `bun dist/main.js`. A verb that reads a file the
+package ships at run time — `init`'s starters, `skills`' shipped skills —
+resolves it from the paths the binary was compiled from, so a binary moved
+off that machine is not claimed to answer those verbs. The binary is not
+published, and the pipe probes run through it only when one is present.
+
+Wanted: the shipped files embedded in the binary, when a binary is
+distributed.
+
+### No envelope-size bound yet
+
+No verb refuses a large envelope and no verb takes `--out`; the v2 contracts
+bound an envelope at 1 MiB with an `envelope-too-large` refusal, and the pipe
+probes cover a default, a 70,000-byte and an error envelope until that
+refusal exists to probe.
 
 ## Next work
 

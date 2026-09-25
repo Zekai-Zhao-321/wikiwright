@@ -116,7 +116,10 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
   `os.tmpdir()`.
 - `fixtures/conformance`: the neutral module fixture and the two bundles that
   consume it. Test infrastructure, not a domain model.
-- `tools/`: the build-info writer, the playbook renderer, the case-fold table
-  generator, the uncovered-directory lister, the suite runner the gate uses,
-  and the benchmark of `check` and `lint --staged`.
+- `tools/`: the build-info writer, the binary builder (`bun run binary`), the
+  playbook renderer, the case-fold table generator, the uncovered-directory
+  lister, the suite runner the gate uses, and the benchmark of `check` and
+  `lint --staged`.
+- `test/`: the tests of the built CLI as a whole — the pipe probes and the
+  compiled binary.
 - `docs/`: the documentation, and the CLI reference renderer.
