@@ -3,7 +3,7 @@ type: code-concept
 title: "Loading a module"
 description: "Module code runs inside the judge, and installing a module is the consent to run it; what the engine adds is proof over the installed bytes at every load — the digest the law names, a purity scan that refuses by file and line, and the module's own determinism fixture — once per digest in a process; a stranger's bug is one attributed finding, never a crash."
 tags: [cli, kit]
-pin: de86822dad88d5cb8c5b51a1210245588ef19cc6
+pin: 11409794f5ab7f6a8fde671a8b7fb9c568bb8dd0
 origin: .
 covers: [packages/core/src/modules/purity.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/kit-code/, packages/core/src/grammar/index.ts, packages/core/src/lint/index.ts]
 aliases: ["trust-law"]
@@ -31,37 +31,39 @@ one sha256 over every lexical path of the package but its own
 directory reached by two paths listed under both, so repointing the entry or
 editing the expectation moves it; an export carries that same inventory and
 digests the bytes it carried (`packages/cli/src/moduleload.ts:208-275`,
-`:752-796`; see [[exports]]); the law digest every
+`:760-804`; see [[exports]]); the law digest every
 envelope carries names it, so the bytes that judged are named wherever a
 verdict is. The purity scan reads every executable file, and the entry
 whatever its suffix, before any of them runs, and refuses by file and line
 the ordinary ways of reaching the clock, randomness, the locale, the
 environment, the network or dynamic evaluation, computed access to those
-globals, and an import of any form, over the source with every comment read
-through, so a comment neither hides a construct nor is one
-(`packages/core/src/modules/purity.ts:44-94`, `:101-116`, `:155-259`;
-`packages/cli/src/moduleload.ts:503-516`); it narrows and does
+globals, and an import of any form, in the source as written and with every
+comment blanked, refusing on either, so a comment hides no construct and a
+crafted regular expression that steers the comment reader hides none either
+(`packages/core/src/modules/purity.ts:44-94`, `:101-116`, `:155-263`,
+`:286-326`;
+`packages/cli/src/moduleload.ts:511-524`); it narrows and does
 not sandbox, and says so, and it is not the argument for running a module
 (`packages/core/src/modules/purity.ts:11-20`). The entry and the fixture must
-be members of the digested file set (`packages/cli/src/moduleload.ts:518-544`);
+be members of the digested file set (`packages/cli/src/moduleload.ts:526-552`);
 the entry is imported and must default-export a manifest whose stated version
-agrees with the package (`:546-576`). Then the determinism fixture runs — the
+agrees with the package (`:554-584`). Then the determinism fixture runs — the
 same pages judged twice in one process under the standard library plus that
 module alone, compared with the findings the module ships as its own
 expectation (`packages/cli/src/modulefixture.ts:75-80`, `:136-166`) — and a
 module that fails it is refused with the fixture's own code and hint, from
-every verb that reads the law (`packages/cli/src/moduleload.ts:578-592`).
+every verb that reads the law (`packages/cli/src/moduleload.ts:586-600`).
 
 Both proofs are kept for the process by what they proved, never by where the
 bytes lie: the scan by the digest and the scan's version, the fixture by the
 digest, that version and the declared name, so two bundles installing one kit
 are proved once and other bytes are proved on their own
-(`packages/cli/src/moduleload.ts:344-371`, `:733-738`;
+(`packages/cli/src/moduleload.ts:351-378`, `:741-746`;
 `packages/core/src/modules/purity.ts:22-28`). Nothing is kept between
 processes: the fixture composes the standard library and runs the judge, so
 its outcome is a function of the engine too, and a read of the vault does not
 run either proof again within the process
-(`packages/cli/src/vaultio.ts:240-244`). The blast radius of a stranger's bug
+(`packages/cli/src/vaultio.ts:249-253`). The blast radius of a stranger's bug
 is one arm on one item: a module that throws while parsing or in an arm is
 one `module-failure` finding naming the module, its version and the arm,
 routed to the kernel's `module-review` lane, and the vault still has a verdict

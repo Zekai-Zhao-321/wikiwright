@@ -3,7 +3,7 @@ type: code-concept
 title: "One judge, five states"
 description: "Every write path — the working tree, the staged gate, a draft on stdin, a write, a replay of history — constructs a state and calls the one judge under the one law, so no verb can be told one thing at write time and another at the gate."
 tags: [kernel, cli]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+pin: 11409794f5ab7f6a8fde671a8b7fb9c568bb8dd0
 origin: .
 covers: [packages/core/src/judge/index.ts, packages/cli/src/state.ts, packages/cli/src/writer.ts, packages/cli/src/staged.ts, packages/cli/src/law.ts, packages/cli/src/verbs/lint.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/fix.ts, packages/cli/src/verbs/write.ts]
 ---
@@ -46,12 +46,13 @@ A verb that reports findings without judging — `okf check`, `move`, `new`,
 (`:264-277`). The exports' findings ride into the judge as shell findings,
 planned from the same state's pages: the working tree's under `check`
 (`packages/cli/src/verbs/check.ts:83-90`, `:116-121`), the index's under the
-staged gate (`packages/cli/src/staged.ts:122-137`; see [[exports]]).
+staged gate, a kit declared by `path` loaded from its staged bytes for
+the plan (`packages/cli/src/staged.ts:79-117`, `:165-189`; see [[exports]]).
 
 Whichever state a verb builds, its envelope names the bundle it was built
 over: `metadata.bundle` carries the root, the checkout, a digest of the
 pages and the law digest over the config and module bytes the law is built
-from (`packages/cli/src/bundle.ts:39-54`, `:151-197`;
+from (`packages/cli/src/bundle.ts:42-59`, `:156-202`;
 see [[command-runtime]]). A bundle named by `--bundle`
 is resolved to the root `--root` would name before any module loads, so it is
 judged by the same constructors under the same law; the runtime's refusals —

@@ -3,7 +3,7 @@ type: subsystem
 title: "Exports"
 description: "A bundle's declared exports: read-only copies of the bundle, or of part of it, that a host installs as skills, planned by one function, rendered into the bundle's own skills/ by check --write or into another repository by export, held to a fresh render by check and the staged gate, and read as a vault under the identity their marker gives."
 tags: [cli]
-pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
+pin: 11409794f5ab7f6a8fde671a8b7fb9c568bb8dd0
 origin: .
 covers: [packages/cli/src/exports.ts, packages/cli/src/marker.ts, packages/cli/src/verbs/export.ts]
 ---
@@ -15,45 +15,52 @@ covers: [packages/cli/src/exports.ts, packages/cli/src/marker.ts, packages/cli/s
 `exportPlans` (`packages/cli/src/exports.ts:77`) resolves each declaration in
 `config/engine.json`'s `exports` with its defaults: its name, derived from the
 bundle's label when it declares none, its destination under `skills/`, its
-repository, links, guide and contribution. `planExport` (`:380`) is the one
+repository, links, guide and contribution. `planExport` (`:384`) is the one
 planner, and a pure function of its source: the selection, all pages or
 those carrying a tag or under a directory, an unknown tag refused
-(`:388-437`); the guide, which must lie in the selection, and the
+(`:392-441`); the guide, which must lie in the selection, and the
 maintainer's fragment, which must lie outside every content root
-(`:438-470`); the links a selected page makes to a page left out, counted,
+(`:442-474`); the links a selected page makes to a page left out, counted,
 and under `links: closed` a judgment that withholds the render until the
-selection widens or the declaration says `cut` (`:471-502`); the files the
+selection widens or the declaration says `cut` (`:475-506`); the files the
 copy carries beside its pages — `config/` verbatim, the templates and
 examples the loader validates at their declared paths, the source roots
 under `sources: include`, each embedded file, and each declared kit at its
 declared location — every link read through and its bytes carried, a kit's
 files the one inventory its module digest covers (see [[modules]]), and
 refused only where a link leaves the bundle or the index tracks one
-(`:422-432`, `:503-635`); the marker, with the content digest over the
+(`:426-436`, `:507-639`); the marker, with the content digest over the
 selected pages and a law digest whose kit lines are the digests of the kit
 bytes the copy carries, so a staged render names the staged kit's law
-(`:636-669`); then the generated artifacts over the selection, the
+(`:640-673`); then the generated artifacts over the selection, the
 consumer's brief naming the export and the marker's law, the marker and the
-`SKILL.md` a host reads (`:674-717`). An export a finding refuses, and a
-closed export with a cut link, plans no files (`:670-672`).
+`SKILL.md` a host reads (`:678-721`). An export a finding refuses, and a
+closed export with a cut link, plans no files (`:674-676`).
 
-`repositoryExports` (`:930-1020`) plans every `output: skills` export of a
+`repositoryExports` (`:933-1023`) plans every `output: skills` export of a
 bundle for `check`, refusing as `export-destination-linked` a destination
 with a symbolic link anywhere on its path from the bundle root, `skills/`
-included, and the manifests' directory the same way (`:944-963`,
-`:1015-1018`, `:1027-1034`), refusing a destination inside a content root
+included, and the manifests' directory the same way (`:947-966`,
+`:1018-1021`, `:1030-1037`), refusing a destination inside a content root
 and naming a `skills/<name>/` whose marker no declaration names as
 `export-orphan` — never under a linked `skills/` — and renders nothing over a
-root that is itself a copy (`:938`). `exportDifferences`
-(`:1043-1077`) compares each plan with what is on disk or in the index, a
-link where a file belongs a difference, and
-`exportStaleFindings` (`:1084-1114`) turns a difference into `export-stale`,
+root that is itself a copy (`:941`). `exportDifferences`
+(`:1046-1080`) compares each plan with what is on disk or in the index —
+every file under the export's directory, a `.git` or `.obsidian` name
+included, since the directory is owned whole — a link where a file belongs
+a difference, and
+`exportStaleFindings` (`:1087-1117`) turns a difference into `export-stale`,
 naming the first ten files that differ. The planner reads through an
-`ExportSource`: the working tree (`fsExportSource`, `:197-276`), read
-through its links, each kit by the module digest's own inventory, or the git
-index for the staged gate (`indexExportSource`, `:865`), where a link is known by its mode, holds no
+`ExportSource`: the working tree (`fsExportSource`, `:201-280`), read
+through its links, each kit by the module digest's own inventory, the
+source's listing skipping `.git` and `.obsidian` and a copy's listing
+skipping nothing (`:194-198`), or the git index for the staged gate
+(`indexExportSource`, `:869`), where a link is known by its mode, holds no
 bytes and is refused, and a kit under `node_modules`, which the index does
-not hold, is read from the working tree (`:856-864`; see [[git]]).
+not hold, is read from the working tree (`:860-868`; see [[git]]). Under
+the staged gate a kit declared by `path` is also loaded from its staged
+bytes, so the plan's registry and brief are the staged kit's (see
+[[writer-and-staged-gate]]).
 `pluginManifests` (`:125`) renders the two plugin manifests when `plugin` is
 declared.
 
@@ -72,7 +79,7 @@ directory or anywhere under the destination included (`:77-234`).
 - `exportPlans`, `planExport`, `repositoryExports`, `exportDifferences`,
   `exportStaleFindings`, `pluginManifests`, `fsExportSource`,
   `indexExportSource` (`packages/cli/src/exports.ts`); `EXPORT_PASSES`, the
-  shell passes `check` and the staged gate name (`:1125`).
+  shell passes `check` and the staged gate name (`:1128`).
 - `markerAt`, `markerOf` (`packages/cli/src/marker.ts:176`, `:92`).
 - `exportCommand` (`packages/cli/src/verbs/export.ts:241`); `check --write`
   through `writeExports` (see [[generated-artifacts]]); the staged gate (see
@@ -91,7 +98,7 @@ held at runtime.
 
 - One planner: `check --write`, `check`, the staged gate and `export` render
   through `planExport`, so a rendered copy, a staleness verdict and an external
-  copy cannot disagree (`packages/cli/src/exports.ts:380`).
+  copy cannot disagree (`packages/cli/src/exports.ts:384`).
 - A copy is a vault: it carries what the loader needs to judge it and every
   reader answers over a plain copy of it with nothing installed; its marker
   names the export, and the envelope over it names the bundle it was cut
@@ -101,16 +108,17 @@ held at runtime.
   `wiki/` never publishes foreign bytes, while a declared kit's files are read
   through their links unchecked, since the law digest already covers them and
   the declaration makes them the bundle's; a link the index tracks refuses it
-  too (`packages/cli/src/exports.ts:503-529`, `:609-634`); a link found in
+  too (`packages/cli/src/exports.ts:507-533`, `:613-638`); a link found in
   a rendered copy is replaced by bytes, never written through
   (`packages/cli/src/artifacts.ts`); and `export` refuses one where it would
   write (`packages/cli/src/verbs/export.ts:46-60`, `:158-175`), nor does
   `check --write` render under a linked `skills/` or any link on the way
-  to its destination (`packages/cli/src/exports.ts:944-963`).
+  to its destination (`packages/cli/src/exports.ts:947-966`).
 - The engine owns only what it writes: the files of an export's own
-  `skills/<name>/` and the two manifests; a directory there without a marker
-  is not the engine's (`:183-194`), and a marker no declaration names is
-  never removed (`packages/cli/src/exports.ts:988-1014`).
+  `skills/<name>/`, all of them, and the two manifests; a directory there
+  without a marker is not the engine's
+  (`packages/cli/src/verbs/export.ts:183-194`), and a marker no declaration
+  names is never removed (`packages/cli/src/exports.ts:991-1017`).
 
 ## Failure modes
 
@@ -120,7 +128,7 @@ held at runtime.
   is not rendered), `export-not-closed` (a warning; under `links: closed`
   the export is not rendered), `export-orphan` (a warning), and
   `export-stale` (error, fixer `check --write`)
-  (`packages/cli/src/exports.ts:1125-1135`).
+  (`packages/cli/src/exports.ts:1128-1138`).
 - `export-not-declared`, `export-output-skills`,
   `export-destination-inside-bundle` (exit 2), `directory-not-found` (exit 3),
   `export-destination-linked`, `export-destination-occupied` (exit 4), and

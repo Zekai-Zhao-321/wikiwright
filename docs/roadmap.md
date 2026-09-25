@@ -28,10 +28,11 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,658 tests across 115 files. At `f725d75` the full gate,
-`bun run check`, passed 1,658 of 1,658 with the test files under Bun and the
-CLI under Node (`tools/run-suite.ts`), and the full node runner,
-`bun run test:node`, passed 1,658 of 1,658 with every file under Node. It
+The suite is 1,663 tests across 115 files. At `f725d75`, when it held
+1,658, the full gate, `bun run check`, passed 1,658 of 1,658 with the test
+files under Bun and the CLI under Node (`tools/run-suite.ts`), and the full
+node runner, `bun run test:node`, passed 1,658 of 1,658 with every file under
+Node. It
 judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
@@ -41,9 +42,9 @@ this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. Measured on
 2026-09-25 on the development machine, where `check --root devwiki` needs
 the install and nothing else, `freshness` reads all 27 pinned pages
-`current` (4) or `unchanged` (23) and none `stale`, with no
+`current` (9) or `unchanged` (18) and none `stale`, with no
 `stale-capture`, `stale-source-cited` or `citation-unresolved` finding,
-before the commit that carries those pins; once it lands, the 4 are
+before the commit that carries those pins; once it lands, the 9 are
 `unchanged`. A later change to code a page covers makes that page `stale`
 until it is re-read and re-pinned, and `freshness` names it.
 A citation into a file its page does not cover is held to the pin but not
@@ -413,12 +414,21 @@ name an install command.
 A kit under `node_modules` is not in the index, so the staged gate renders an
 export's copy of it from the working tree, as the preload loads it: a commit
 is judged against the kit installed on the machine that commits, not one the
-commit carries. A kit declared by `path` is in the index and read from it,
-and the law the copy's marker names takes that kit's digest from the same
-staged bytes, so an unstaged edit to the kit does not make the copy stale.
+commit carries. A kit declared by `path` is in the index, and the export's
+plan takes it from there whole: the copy's kit files, the law its marker
+names, and the registry and brief, loaded from the staged bytes written out
+under the temporary directory. So an unstaged edit to the kit makes no copy
+stale and reaches no staged brief.
 
-Wanted: nothing while `node_modules` stays untracked; a bundle that must pin
-its kit exactly declares it by `path`.
+The staged verdict over the pages is the exception: it is reached under the
+modules the entry point loaded from the working tree, a kit declared by
+`path` included, so a page is judged by an unstaged kit edit while the
+export beside it is planned without it.
+
+Wanted: the staged verdict under the staged kit too, which is a change to
+what the gate judges and a maintainer's decision; nothing for
+`node_modules` while it stays untracked, and a bundle that must pin its kit
+exactly declares it by `path`.
 
 ### Exports not built yet
 

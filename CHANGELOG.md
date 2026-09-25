@@ -38,13 +38,16 @@ version` prints the engine version and the commit a binary was built from.
 - `check --write` renders every `output: skills` export and the plugin
   manifests, replacing what differs — an ordinary file stays until its
   replacement is renamed over it — and removing what the plan no longer
-  holds, and nothing else; a symbolic link on the path from the root to where
+  holds, a `.git` or `.obsidian` name under the export's directory included,
+  and nothing else; a symbolic link on the path from the root to where
   an export writes, `skills/` itself included, is `export-destination-linked`
   and nothing is written through it; `check` holds each rendered copy to a fresh render,
   `export-stale` (fixed by `check --write`), and queues the render's own
   refusals to `export-review`. The staged gate makes the same comparison over
   the index, so a page or a kit declared by `path` staged without its
-  re-rendered export is refused. The two gardening handbooks track theirs.
+  re-rendered export is refused; it plans that kit from its staged bytes,
+  its registry and the copy's brief included, while its verdict over the
+  staged pages is reached under the kit the working tree holds. The two gardening handbooks track theirs.
 - `export <name> --to <dir>` writes one `output: external` export into the
   repository at `<dir>`, as `<dir>/skills/<name>/` with the manifests beside
   it, and refuses an undeclared name, an `output: skills` export, a

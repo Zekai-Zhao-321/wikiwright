@@ -295,8 +295,9 @@ What the registry rows below do not say.
   `details.resolved`), a `<dir>` that is the bundle's root or lies in one of
   its content roots (`export-destination-inside-bundle`, exit 2), a `<dir>/skills/<name>/` that
   exists and holds no `config/export.json` (`export-destination-occupied`,
-  exit 4), and a symbolic link at `<dir>/skills` or anywhere under
-  `<dir>/skills/<name>/` (`export-destination-linked`, exit 4). An export a
+  exit 4), and a symbolic link at `<dir>/skills`, at `<dir>/.claude-plugin`
+  when `plugin` is declared, or anywhere under `<dir>/skills/<name>/`
+  (`export-destination-linked`, exit 4), each before anything is written. An export a
   render finding refuses (`export-tag-unknown`, `export-symlink`, …) exits 5
   with the findings and writes nothing. A copy carries bytes, never a link:
   a vault file reached through a link that leaves the bundle is refused as

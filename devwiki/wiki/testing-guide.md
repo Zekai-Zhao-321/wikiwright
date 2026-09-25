@@ -3,7 +3,7 @@ type: testing-guide
 title: "Testing the engine"
 description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install the code kit into a copy."
 tags: [repo]
-pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
+pin: 11409794f5ab7f6a8fde671a8b7fb9c568bb8dd0
 origin: .
 covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/discovery.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts, tools/run-suite.ts]
 ---
@@ -122,7 +122,9 @@ the spawn environment, the pinned clock (`:29-32`); `runKit(root, argv)`
 spawns the built CLI with `--root` and parses the envelope, treating a
 non-zero exit as a verdict rather than a failure (`:82-93`);
 `installedCopy(source, prefix)` copies a bundle without its `node_modules`
-and installs the kit, nothing else (`:95-109`). A bundle that carries a kit
+and installs the kit, nothing else (`:95-109`). The packed-install test's
+two installs keep a package cache of their own the same way
+(`packages/cli/test/pack-install.test.ts:59-70`). A bundle that carries a kit
 by a declared `path` copies the neutral gardening kit,
 `packages/cli/test/fixtures/kit-garden/`, to `kit/garden` in a bundle under
 the temporary directory (`packages/cli/test/fixtures/kit-garden/index.js:1-9`). The judge's own behaviour tests load the memory law — a small
@@ -138,10 +140,12 @@ file's own (`packages/cli/test/dry-run.test.ts:1-13`, `:166-193`). The
 source scans read text: the import
 graph and the vault-loading declaration check share one recognizer of
 runtime import edges (`packages/cli/test/fixtures/imports.ts:1-27`), and
-each scan says where it is defined what it cannot see; the one module
-outside the Writer that writes a file of its own, the stdout file a git
-child writes to, is declared there with its reason, as `artifacts.ts` is
-for the export files it removes (`packages/cli/test/dry-run.test.ts:933-952`). A git
+each scan says where it is defined what it cannot see; the two modules
+outside the Writer that write files of their own under the temporary
+directory — the stdout file a git child writes to, and a kit declared by
+path written out from the index for the staged export plan — are declared
+there with their reasons, as `artifacts.ts` is for the export files it
+removes (`packages/cli/test/dry-run.test.ts:892-910`). A git
 answer is tested by cutting it, not by trusting a parser to notice:
 `packages/cli/test/git-short-read.test.ts` puts an `sh` launcher named `git`
 first on PATH that runs the real git and prints one command's answer cut —
