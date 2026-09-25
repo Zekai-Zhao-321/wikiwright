@@ -3,7 +3,7 @@
 // docs/cli.md §The dry-run law (the plan names every file written and removed,
 // by absolute path, since the destination is not the vault).
 import { lstatSync, readdirSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parsedPages, routeFindings } from "@wikiwright/core";
 import { exportOps, writeExports } from "../artifacts.ts";
 import { bundleLabel } from "../bundle.ts";
@@ -12,6 +12,7 @@ import {
   type ExportPlan,
   exportPlans,
   fsExportSource,
+  PLUGIN_MANIFESTS,
   planExport,
   pluginManifests,
   type RepositoryExports,
@@ -146,13 +147,21 @@ function prepare(args: CommandArgs): Prepared | CommandResult {
     );
   }
   const dir = join(destination, SKILLS_DIR, name);
-  const skillsDir = join(destination, SKILLS_DIR);
-  let linked: string | undefined;
-  try {
-    if (lstatSync(skillsDir).isSymbolicLink()) linked = skillsDir;
-  } catch {
-    // No skills/ yet: nothing to be a link.
-  }
+  const isLinkAt = (path: string): boolean => {
+    try {
+      return lstatSync(path).isSymbolicLink();
+    } catch {
+      // Nothing there yet: nothing to be a link.
+      return false;
+    }
+  };
+  // Every directory the export writes into, from <dir> down: skills/ and the
+  // manifests' own directory, then anything under skills/<name>.
+  const owned = [
+    join(destination, SKILLS_DIR),
+    ...(pluginManifests(vault).length > 0 ? [join(destination, dirname(PLUGIN_MANIFESTS[1]))] : []),
+  ];
+  let linked = owned.find(isLinkAt);
   linked ??= linkUnder(dir);
   if (linked !== undefined) {
     return fail(

@@ -70,6 +70,7 @@ only when you name the rule.
 | `export-skill-invalid` | `error` | queue `export-review` |
 | `export-destination-invalid` | `error` | queue `export-review` |
 | `export-symlink` | `error` | queue `export-review` |
+| `export-destination-linked` | `error` | queue `export-review` |
 | `renamed-without-alias` | `error` | fixer `frontmatter-set` (MachineApplicable) — else queue `—` |
 | `exception-stale` | `warning` | queue `exception-review` |
 | `exception-illegal` | `error` | queue `exception-review` |

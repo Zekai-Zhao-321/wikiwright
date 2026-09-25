@@ -396,7 +396,14 @@ describe("every export finding routes (docs/constitution.md §exports)", () => {
         join(linked, "wiki", "raised-beds.md"),
         note("Raised beds", ["beds"], "Beds edged in timber.\n\n![[shed.png]]"),
       );
-      roots.push(invalid, linked);
+      // A skills/ that is a link to a directory outside the bundle.
+      const outside = garden({
+        content_roots: ["wiki"],
+        exports: [{ name: "h", select: { kind: "all" }, contribution: none }],
+      });
+      mkdirSync(join(dirname(outside), "elsewhere"));
+      symlinkSync(join(dirname(outside), "elsewhere"), join(outside, "skills"));
+      roots.push(invalid, linked, outside);
       for (const root of roots) {
         const found = findingsIn(run(root, ["check"]).envelope);
         assertRouted(found, `check ${root}`);
@@ -411,6 +418,7 @@ describe("every export finding routes (docs/constitution.md §exports)", () => {
         "export-stale",
         "export-destination-invalid",
         "export-symlink",
+        "export-destination-linked",
       ]) {
         assert.equal(seen.has(rule), true, `${rule} did not fire: ${[...seen].join(", ")}`);
       }

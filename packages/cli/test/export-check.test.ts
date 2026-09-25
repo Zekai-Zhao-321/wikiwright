@@ -11,6 +11,7 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -18,6 +19,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -215,6 +217,49 @@ describe("check --write renders the in-repository exports, and check holds them 
     writeFileSync(join(root, "plugin.json"), "{}\n");
     const stale = findings(run(root, ["check"]).envelope).find((f) => f.ruleId === "export-stale");
     assert.equal(stale?.path, "plugin.json");
+  });
+
+  it("a linked skills/ is export-destination-linked, and nothing is written through it", () => {
+    if (process.platform === "win32") return;
+    const root = garden({ content_roots: ["wiki"], exports: [ALL] });
+    // A sibling tree the link points at, holding a sentinel where the export
+    // would land.
+    const sibling = join(dirname(root), "elsewhere");
+    write(sibling, { "garden/wiki/turning-compost.md": "a sentinel, not the bundle's page\n" });
+    symlinkSync(sibling, join(root, "skills"));
+    const before = filesUnder(sibling).map((f) => [f, readFileSync(join(sibling, f), "utf8")]);
+    const r = run(root, ["check", "--write"]);
+    assert.equal(r.status, 5, JSON.stringify(r.envelope));
+    const [linked] = findings(r.envelope).filter((f) => f.ruleId === "export-destination-linked");
+    assert.equal(linked?.path, "skills");
+    assert.equal(linked?.queue, "export-review");
+    assert.match(linked?.message ?? "", /"skills" is a symbolic link/u);
+    assert.deepEqual(
+      filesUnder(sibling).map((f) => [f, readFileSync(join(sibling, f), "utf8")]),
+      before,
+      "the render wrote outside the bundle",
+    );
+  });
+
+  it("a render that fails leaves the previous bytes: a file is replaced, never removed first", () => {
+    if (process.platform === "win32" || process.getuid?.() === 0) return;
+    const root = garden({ content_roots: ["wiki"], exports: [ALL] });
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    const skill = join(root, "skills", "garden", "SKILL.md");
+    const previous = readFileSync(skill, "utf8");
+    // A page changes, so the marker and SKILL.md must be rewritten; the
+    // marker's directory refuses the write.
+    write(root, { "wiki/raised-beds.md": note("Raised beds", ["beds"], "Beds edged in oak.") });
+    const config = join(root, "skills", "garden", "config");
+    chmodSync(config, 0o555);
+    try {
+      const r = run(root, ["check", "--write"]);
+      assert.notEqual(r.status, 0, JSON.stringify(r.envelope));
+      assert.equal(readFileSync(skill, "utf8"), previous, "SKILL.md was lost");
+      assert.equal(existsSync(join(config, "export.json")), true, "the marker was lost");
+    } finally {
+      chmodSync(config, 0o755);
+    }
   });
 
   it("a root that carries a marker is a copy: check --write is refused there, and renders nothing", () => {

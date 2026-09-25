@@ -427,6 +427,15 @@ export const PASS_TABLE: readonly PassRow[] = [
     input: "shell",
   },
   { id: "export-symlink", kind: "LAW", severity: "error", lane: "export-review", input: "shell" },
+  // A link on the path from the bundle root to where an export writes: a
+  // write would land wherever the link points, outside the bundle.
+  {
+    id: "export-destination-linked",
+    kind: "LAW",
+    severity: "error",
+    lane: "export-review",
+    input: "shell",
+  },
 
   // --- the judge's own rows (docs/concepts.md §The gate, docs/concepts.md §Findings and routing) -----
   // P4 needs a base: an Obsidian rename that drops the alias ritual is the one

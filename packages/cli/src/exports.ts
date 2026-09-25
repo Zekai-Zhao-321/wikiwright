@@ -912,9 +912,26 @@ export function repositoryExports(input: {
   const findings: Finding[] = [];
   const plans: ExportPlan[] = [];
   const destinations: string[] = [];
+  /** A link on the path from the root to `rel`, the directory a render writes into, refused by name. */
+  const linkedAt = (declaration: { name: string }, rel: string): boolean => {
+    const link = linkOnPath(source, rel);
+    if (link === undefined) return false;
+    findings.push(
+      exportFinding(declaration, {
+        ruleId: "export-destination-linked",
+        severity: "error",
+        path: link,
+        message: `"${link}" is a symbolic link on the path to "${rel}", and a render writes bytes only inside the bundle, never through a link`,
+        remediation: `replace "${link}" with a directory of the bundle's own; nothing was written`,
+        details: { destination: rel, link },
+      }),
+    );
+    return true;
+  };
   for (const declaration of declared) {
     if (declaration.output !== "skills") continue;
     const dest = declaration.destination;
+    if (linkedAt(declaration, dest)) continue;
     if (under(dest, roots) || roots.some((root) => root === dest || root.startsWith(`${dest}/`))) {
       findings.push(
         exportFinding(declaration, {
@@ -941,7 +958,11 @@ export function repositoryExports(input: {
   }
   const names = new Set(declared.map((d) => d.name));
   const orphans = new Set<string>();
-  for (const path of source.present(SKILLS_DIR)) {
+  // A linked skills/ names another tree: what it holds is not this bundle's
+  // to call orphaned.
+  const skillsPresent =
+    linkOnPath(source, SKILLS_DIR) === undefined ? source.present(SKILLS_DIR) : [];
+  for (const path of skillsPresent) {
     const parts = path.split("/");
     const name = parts[1];
     if (name === undefined || parts.slice(2).join("/") !== MARKER_PATH) continue;
@@ -962,7 +983,25 @@ export function repositoryExports(input: {
       ),
     );
   }
-  return { plans, destinations, manifests: pluginManifests(vault), findings };
+  // The manifests' own directory is held to the same rule.
+  const manifests = pluginManifests(vault).filter(
+    (file) => !file.path.includes("/") || !linkedAt({ name: "plugin" }, posix.dirname(file.path)),
+  );
+  return { plans, destinations, manifests, findings };
+}
+
+/**
+ * docs/cli.md §check: the first symbolic link on the path from the bundle root
+ * to `rel`, `rel` included, or none. A render into a directory reached through
+ * a link would write wherever the link points.
+ */
+function linkOnPath(source: ExportSource, rel: string): string | undefined {
+  const parts = rel.split("/");
+  for (let i = 1; i <= parts.length; i += 1) {
+    const at = parts.slice(0, i).join("/");
+    if (source.isLink(at)) return at;
+  }
+  return undefined;
 }
 
 /** One file of a rendered export against its plan. */
@@ -1063,4 +1102,5 @@ export const EXPORT_PASSES: readonly string[] = [
   "export-skill-invalid",
   "export-destination-invalid",
   "export-symlink",
+  "export-destination-linked",
 ];

@@ -117,10 +117,11 @@ export function writeExports(root: string, exports: RepositoryExports): string[]
     // A copy holds bytes, never a link. A planned file whose place a link
     // holds, or that lies under a linked directory, is replaced by bytes: each
     // link goes first, itself and never what it names, so the rename lands a
-    // file here and nothing is written or removed through the link.
+    // file here and nothing is written or removed through the link. An
+    // ordinary file stays where it is until its replacement is renamed over
+    // it, so a render that fails leaves the previous bytes.
     for (const replacement of replacements) {
       unlinkLinks(root, replacement.path, exports.destinations);
-      rmSync(join(root, replacement.path), { force: true });
     }
     replaceFiles(replacements.map((r) => ({ path: join(root, r.path), contents: r.contents })));
   }

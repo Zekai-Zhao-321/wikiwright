@@ -22,7 +22,7 @@ A finding with `fix` names an argv a writer runs: report the finding and run not
 A finding with `queue` is a judgment for a maintainer. A queued finding on a line you
 did not write is a warning, not a block.
 
-Of 81 passes, 15 name a fixer; the rest are queues or census rows.
+Of 82 passes, 15 name a fixer; the rest are queues or census rows.
 
 One sentence on search: not-found is only as good as the coverage block. Never
 claim absence while `caps.hit` is true — the cap cut the list before the end.

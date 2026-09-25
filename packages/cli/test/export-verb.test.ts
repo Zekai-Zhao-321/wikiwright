@@ -218,6 +218,20 @@ describe("export <name> --to <dir> (docs/cli.md §export)", () => {
     assert.deepEqual(filesUnder(join(to, "skills", "garden-roses")), ["notes.md"]);
   });
 
+  it("refuses a linked directory the manifests would land in", () => {
+    const { root, to } = garden({
+      plugin: { name: "garden-handbook", version: "1.0.0", description: "A gardening handbook." },
+    });
+    const elsewhere = join(dirname(to), "manifests-elsewhere");
+    mkdirSync(elsewhere);
+    symlinkSync(elsewhere, join(to, ".claude-plugin"));
+    const r = run(root, ["export", "garden-roses", "--to", to]);
+    assert.equal(r.status, 4, JSON.stringify(r.envelope));
+    assert.equal(r.envelope.error?.code, "export-destination-linked");
+    assert.deepEqual(readdirSync(elsewhere), []);
+    assert.equal(existsSync(join(to, "skills")), false);
+  });
+
   it("refuses a symbolic link where it writes", () => {
     const { root, to } = garden();
     assert.equal(run(root, ["export", "garden-roses", "--to", to]).status, 0);

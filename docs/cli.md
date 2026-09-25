@@ -259,13 +259,17 @@ What the registry rows below do not say.
   (docs/constitution.md §exports), and the plugin manifests when `plugin` is
   declared: every planned file is replaced and every file under an export's
   own `skills/<name>/` that the plan no longer holds is removed, and nothing
-  else is touched. `check` compares each rendered copy with a fresh render:
+  else is touched; an ordinary file stays in place until its replacement is
+  renamed over it, so a render that fails leaves the previous bytes. `check`
+  compares each rendered copy with a fresh render:
   `export-stale` (error, fixed by `check --write`) names the first ten files
   that differ, each `missing`, `extra` or `changed`. The render's own findings
   are queued to `export-review`: `export-tag-unknown`, `export-guide-outside`,
   `export-skill-invalid`, `export-symlink` (a file reached through a link
-  that leaves the bundle) and `export-destination-invalid` (errors, and the
-  export is not rendered), `export-not-closed` (a warning: a
+  that leaves the bundle), `export-destination-invalid` and
+  `export-destination-linked` (a symbolic link on the path from the root to
+  `skills/<name>`, `skills` itself included, or to the manifests' directory:
+  nothing is written through it) (errors, and the export is not rendered), `export-not-closed` (a warning: a
   selected page links to a page left out under `links: closed`), and
   `export-orphan` (a warning: a `skills/<name>/` holds a marker no declaration
   names; the engine never removes it). A root that holds `config/export.json`
