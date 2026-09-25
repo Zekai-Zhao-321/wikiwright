@@ -3,7 +3,7 @@ type: code-concept
 title: "Loading a module"
 description: "Module code runs inside the judge, and installing a module is the consent to run it; what the engine adds is proof over the installed bytes at every load — the digest the law names, a purity scan that refuses by file and line, and the module's own determinism fixture — once per digest in a process; a stranger's bug is one attributed finding, never a crash."
 tags: [cli, kit]
-pin: 11409794f5ab7f6a8fde671a8b7fb9c568bb8dd0
+pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
 origin: .
 covers: [packages/core/src/modules/purity.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/kit-code/, packages/core/src/grammar/index.ts, packages/core/src/lint/index.ts]
 aliases: ["trust-law"]
@@ -63,7 +63,7 @@ are proved once and other bytes are proved on their own
 processes: the fixture composes the standard library and runs the judge, so
 its outcome is a function of the engine too, and a read of the vault does not
 run either proof again within the process
-(`packages/cli/src/vaultio.ts:249-253`). The blast radius of a stranger's bug
+(`packages/cli/src/vaultio.ts:251-255`). The blast radius of a stranger's bug
 is one arm on one item: a module that throws while parsing or in an arm is
 one `module-failure` finding naming the module, its version and the arm,
 routed to the kernel's `module-review` lane, and the vault still has a verdict

@@ -3,7 +3,7 @@ type: subsystem
 title: "The Writer and the staged gate"
 description: "The splice-only Writer in core, the shell that proves a splice with a second judge and lands it temp-then-rename, the four state constructors, and the staged gate the hooks run."
 tags: [kernel, cli]
-pin: 11409794f5ab7f6a8fde671a8b7fb9c568bb8dd0
+pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
 origin: .
 covers: [packages/core/src/writer/, packages/core/src/gitplan/, packages/core/src/prefixes/, packages/cli/src/writer.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/staged.ts, packages/cli/src/stagedkits.ts, packages/cli/src/state.ts, packages/cli/src/hooks.ts, packages/cli/src/verbs/write.ts, packages/cli/src/verbs/gate.ts]
 ---
@@ -51,31 +51,33 @@ rethrown as itself past the catch that would read it as a missing parent
 (`:235-237`).
 
 `packages/cli/src/staged.ts` is the gate and `lint --staged` in one function,
-`runStagedLint` (`:119`): refuse unmerged paths (`:124-128`), read the staged
-constitution through the index (`:129-142`) — a git answer cut short or
-contradicted passes the `git-unavailable` catch as itself (`:135-136`) — check
-the engine pin first for
-`gate` (`:143-146`), rebuild the artifacts from the index's pages and compare
-them with the index's bytes (`:46-77`, `:163-164`), add the former-folder-tag
-findings a rename raises (`:157-162`), render the exports from the index's
-pages, config, templates, attachments and a kit declared by `path` — that
-kit also loaded from its staged bytes, written out under the temporary
-directory by `packages/cli/src/stagedkits.ts`, proved there and removed, so
-the plan's registry and brief are the staged kit's; a kit under
-`node_modules` is not in the index and is read from the working tree — and,
-when the index tracks a rendered export, compare it with the index's bytes
-as `export-stale` (`packages/cli/src/staged.ts:79-117`, `:165-189`; see
-[[exports]]); the verdict over the staged pages is still reached under the
-modules the entry point preloaded from the working tree. It judges with
-`gate: true`, `configChanged` and the shell passes named (`:191-203`); the
+`runStagedLint` (`:117`): refuse unmerged paths (`:122-126`), read the staged
+constitution through the index and load the law it declares (`:127-140`,
+`:84-115`) — a git answer cut short or contradicted passes the
+`git-unavailable` catch as itself (`:133-134`) — check the engine pin first
+for `gate` (`:141-144`), rebuild the artifacts from the index's pages and compare
+them with the index's bytes (`:51-82`, `:161-162`), add the former-folder-tag
+findings a rename raises (`:155-160`), render the exports from the index's
+pages, config, templates, attachments and a kit declared by `path`, and, when the
+index tracks a rendered export, compare it with the index's bytes as
+`export-stale` (`:163-180`; see [[exports]]). The verdict, the artifacts
+and the exports are all reached under that one staged law: a kit declared
+by `path` is loaded from its staged bytes, written out under the temporary
+directory by `packages/cli/src/stagedkits.ts` — a link the index tracks
+written as that link — proved there and removed; a kit under
+`node_modules` is read from the working tree, the one exception; and a
+staged kit that does not load refuses the gate with the loader's own code.
+It judges with
+`gate: true`, `configChanged` and the shell passes named
+(`packages/cli/src/staged.ts:182-194`); the
 drift pass, the rename review, the exports and the verdict take one parse of
 the index (`parsedPages`). `runCommitMsgGate`
-(`:231`) judges the opening of a commit message's first line — `word:`,
+(`:222`) judges the opening of a commit message's first line — `word:`,
 `word(scope):`, `word!:` or `word(scope)!:`, the registered set naming words
 and never scopes — against `commit_prefixes` through `commitPrefixVerdict`
 (`packages/core/src/prefixes/index.ts:51`), refusing with one stderr line that
 names the valid set and says whether the word was unregistered or the line
-had no opening (`packages/cli/src/staged.ts:247-257`). `packages/core/src/gitplan/index.ts` parses
+had no opening (`packages/cli/src/staged.ts:238-248`). `packages/core/src/gitplan/index.ts` parses
 `git diff --cached --name-status -z -M` output in pure core (`:14-39`).
 `packages/cli/src/hooks.ts` renders the marker hooks from one renderer
 (`:105-156`): the bundle's chained script first, then the `WIKIWRIGHT_BYPASS`
@@ -116,8 +118,8 @@ newest open claims of the category it stands beside and a count of the rest
   `revisionReader` (`packages/cli/src/state.ts`), chosen by `lint`
   (`packages/cli/src/verbs/lint.ts:62`, `:84`, `:101`, `:210`), `check`, `fix`
   and the write verbs.
-- `runStagedLint`, `runCommitMsgGate` (`packages/cli/src/staged.ts:119`,
-  `:231`); `gateCommand` (`packages/cli/src/verbs/gate.ts:50`), which prints
+- `runStagedLint`, `runCommitMsgGate` (`packages/cli/src/staged.ts:117`,
+  `:222`); `gateCommand` (`packages/cli/src/verbs/gate.ts:50`), which prints
   the rule census and the error findings onto stderr when it refuses
   (`:15-42`); `writeCommand` (`packages/cli/src/verbs/write.ts:777`).
 - `renderHooks`, `installedHooks`, `installHook`, `inspectHook`
@@ -149,8 +151,9 @@ in the directory `git rev-parse --git-path hooks` names.
   `:68-71`); a batch lands together or not at all (`:116-123`;
   `packages/cli/src/verbs/write.ts:433-441`).
 - The gate judges the index and only the index: the staged constitution
-  (`packages/cli/src/staged.ts:129-142`), the staged pages, the staged
-  artifacts (`:36-45`); an unchanged page's base is its own staged content so
+  and the kit it declares by `path`
+  (`packages/cli/src/staged.ts:127-140`), the staged pages, the staged
+  artifacts (`:41-50`); an unchanged page's base is its own staged content so
   its diff-gated arms evaluate rather than count unevaluated
   (`packages/cli/src/state.ts:86-92`, `:158-161`); a deletion is a base fact so
   the gate can build the name index the base held (`:164-170`); a `config/`
@@ -176,10 +179,10 @@ in the directory `git rev-parse --git-path hooks` names.
   `directory-not-found` for `--from` (`:878`); `unknown-section` and
   `section-absent` (`:158`, `:203`, `:213`).
 - `unmerged-paths` and `git-unavailable` at the gate
-  (`packages/cli/src/staged.ts:124-139`), and `git-short-read` or
+  (`packages/cli/src/staged.ts:122-137`), and `git-short-read` or
   `git-inconsistent-read` (exit 1) when a git answer ended before its
   terminator or two disagree ([[git]]); `message-not-found` and
-  `commit-prefix` from the commit-msg arm (`:236-257`).
+  `commit-prefix` from the commit-msg arm (`:227-248`).
 - A crash inside the rename loop is the one window where a batch is partly
   landed (`packages/cli/src/writer.ts:122`).
 

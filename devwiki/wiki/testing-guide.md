@@ -3,7 +3,7 @@ type: testing-guide
 title: "Testing the engine"
 description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install the code kit into a copy."
 tags: [repo]
-pin: 11409794f5ab7f6a8fde671a8b7fb9c568bb8dd0
+pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
 origin: .
 covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/discovery.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts, tools/run-suite.ts]
 ---
@@ -143,7 +143,7 @@ runtime import edges (`packages/cli/test/fixtures/imports.ts:1-27`), and
 each scan says where it is defined what it cannot see; the two modules
 outside the Writer that write files of their own under the temporary
 directory — the stdout file a git child writes to, and a kit declared by
-path written out from the index for the staged export plan — are declared
+path written out from the index for the staged gate — are declared
 there with their reasons, as `artifacts.ts` is for the export files it
 removes (`packages/cli/test/dry-run.test.ts:892-910`). A git
 answer is tested by cutting it, not by trusting a parser to notice:

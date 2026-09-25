@@ -3,7 +3,7 @@ type: architecture-overview
 title: wikiwright architecture
 description: The four-layer shape of the engine and how a page's obligations flow through it.
 tags: [kernel, stdlib, cli, kit]
-pin: 11409794f5ab7f6a8fde671a8b7fb9c568bb8dd0
+pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
 origin: .
 covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/discovery.ts, packages/cli/src/law.ts, packages/kit-code/]
 ---
