@@ -93,6 +93,25 @@ export function gitRun(
   return spawnWithStdoutFile("git", args, { ...options, cwd, env });
 }
 
+/**
+ * Reads asked for together, answered as if they had run one after another:
+ * each runs to its end, and the first failure in argument order is the one
+ * thrown. `Promise.all` throws whichever failure settles first, so two git
+ * children failing at once put either message in the envelope depending on
+ * scheduling, and the same input answered with different bytes.
+ */
+export async function inArgumentOrder<T extends readonly unknown[] | []>(
+  reads: T,
+): Promise<{ -readonly [K in keyof T]: Awaited<T[K]> }> {
+  const settled = await Promise.allSettled(reads);
+  const values: unknown[] = [];
+  for (const read of settled) {
+    if (read.status === "rejected") throw read.reason;
+    values.push(read.value);
+  }
+  return values as { -readonly [K in keyof T]: Awaited<T[K]> };
+}
+
 /** git's whole answer as text; a spawn failure or a non-zero exit is thrown with stderr. */
 export async function gitText(root: string, args: readonly string[]): Promise<string> {
   const result = await gitRun(root, args);

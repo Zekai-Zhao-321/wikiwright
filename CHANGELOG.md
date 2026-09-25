@@ -381,6 +381,11 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
+- Reads the engine asks git for together (the staged diff beside the index
+  listing, a commit walk beside its count, two trees, a walk's parents)
+  report a failure in argument order. Under `Promise.all` whichever child
+  failed first reached the envelope, so the gate over a bundle in no
+  repository answered with one of two messages from run to run.
 - A `config/engine.json` that starts with a byte order mark, which the vault
   loader reads, declared no module to the preload and none to the law
   digest: its modules were refused `module-not-loaded`, and the bundle block

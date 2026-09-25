@@ -21,6 +21,7 @@ import {
   gitStagedChanges,
   gitText,
   type IndexEntry,
+  inArgumentOrder,
   terminated,
 } from "./git.ts";
 import { readPage, type VaultReader, walkPages } from "./vaultio.ts";
@@ -58,8 +59,10 @@ export interface IndexSnapshot {
  * snapshot, so neither call is spawned again for the second.
  */
 export async function indexSnapshot(root: string): Promise<IndexSnapshot> {
-  // The two reads are asked for together; each is its own git child.
-  const [changes, entries] = await Promise.all([gitStagedChanges(root), gitIndexEntries(root)]);
+  // The two reads are asked for together; each is its own git child, and a
+  // failure is reported in argument order, the diff's first, whichever child
+  // fails sooner.
+  const [changes, entries] = await inArgumentOrder([gitStagedChanges(root), gitIndexEntries(root)]);
   const snapshot = {
     changes,
     entries: entries.map((e) => ({ ...e, path: e.path.normalize("NFC") })),
@@ -223,7 +226,7 @@ export async function commitPairs(
   const list = async (range: string): Promise<string[]> => {
     const args = ["rev-list", "--first-parent", "--reverse", range];
     const counting = ["rev-list", "--first-parent", "--count", range];
-    const [walkedText, countText] = await Promise.all([git(root, args), git(root, counting)]);
+    const [walkedText, countText] = await inArgumentOrder([git(root, args), git(root, counting)]);
     const walked = terminated(args, walkedText, "\n")
       .split("\n")
       .filter((s) => s !== "");
@@ -251,7 +254,7 @@ export async function commitPairs(
     if (at < 0) throw new Error(`"${since}" is not an ancestor of HEAD`);
     revs = all.slice(at);
   }
-  return Promise.all(revs.map(async (rev) => ({ rev, base: await firstParent(root, rev) })));
+  return inArgumentOrder(revs.map(async (rev) => ({ rev, base: await firstParent(root, rev) })));
 }
 
 const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
@@ -312,7 +315,7 @@ export async function revisionState(
   roots: readonly string[] = ["wiki", "raw", "meta"],
 ): Promise<VaultState & { renames: StateRename[] }> {
   const base = given ?? (await firstParent(root, rev));
-  const [revTree, baseTree] = await Promise.all([lsTree(root, rev), lsTree(root, base)]);
+  const [revTree, baseTree] = await inArgumentOrder([lsTree(root, rev), lsTree(root, base)]);
   const current = revTree.filter((e) => isContentPath(e.path, roots));
   const parent = new Map(baseTree.map((e) => [e.path, e] as const));
   const parentContent = [...parent.values()].filter((e) => isContentPath(e.path, roots));
