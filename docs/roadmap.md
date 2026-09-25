@@ -29,10 +29,11 @@ a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
-files and the CLI they spawn run under it (`tools/run-suite.ts`). The suite
-is 1,680 tests across 120 files, and the gate, `bun run check`, passed all
-of them three times in a row on 2026-09-26 at the end of the v2 runtime and
-transport slice. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
+files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
+test file is written to `bun:test`. The suite is 1,699 tests across 123
+files, and the gate, `bun run check`, passed all of them three times in a
+row on 2026-09-26, after the fixes that followed the review of the v2
+runtime and transport slice. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
 the module ladder end to end twice: with a neutral module fixture under
@@ -40,8 +41,9 @@ the module ladder end to end twice: with a neutral module fixture under
 this repository: `check --root devwiki` reports zero findings and
 `freshness --root devwiki` holds every citation to its pin. The runtime and
 transport slice of the v2 delivery (the asynchronous git transport, Bun only,
-remote freshness removed, the binary) changed code 21 of the 27 pinned pages
-cover: measured at its last commit, `freshness` reads 21 `stale` and 6
+remote freshness removed, the binary) and its review fixes changed code 21
+of the 27 pinned pages cover: measured at the last of them, `freshness`
+reads 21 `stale` and 6
 `unchanged`, with `stale-capture` and `stale-source-cited` findings and no
 `citation-unresolved`. Those pages still describe the transport before the
 slice (a synchronous spawn, the Node runner, `freshness --fetch`); they are
@@ -87,7 +89,10 @@ network-reaching git calls, so the engine's git transport reads local
 repositories only. The loss: a source page that captures another
 repository is not held to that repository's history; when the source
 moves, nothing marks the page stale or its citations unresolved, and its
-reader is not told.
+reader is not told. The `freshness` verb reports such a pin `unmeasured`
+with no finding; the v2 contracts' `pin-unmeasured` info finding belongs to
+`check`, which absorbs pin measurement when `freshness` leaves with the
+old verbs, and `freshness` does not gain it before then.
 
 Wanted: a way to measure a remote capture without the engine reaching the
 network, for example a local clone the bundle names as the origin, measured
@@ -601,7 +606,10 @@ Left: two readers are not converted, and none chooses a page the engine
 judges. `tools/write-build-info.ts` reads git through a pipe when it stamps a
 build, where a cut could misstate the build's commit, never a verdict; and
 the test files' own setup `git` calls still come through Bun's piped
-synchronous spawn, where a cut setup read is not checked.
+synchronous spawn, where a cut setup read is not checked. The v2 contracts'
+ban on `spawnSync` is the engine's (a navigator's ruling on the slice): a
+test may spawn synchronously, a test that runs the CLI reads its envelope
+from a file the CLI wrote (`runCli`), and the setup calls are not converted.
 
 Wanted: a Bun whose synchronous spawn returns a child's whole output.
 
