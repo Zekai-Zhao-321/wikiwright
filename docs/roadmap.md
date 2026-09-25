@@ -773,6 +773,11 @@ over it:
   vendored as a submodule is therefore refused, not read. A bundle in no
   repository is its own top level: its library paths are read from the
   bundle root.
+- Date stamping leaves with no replacement: the v1 `date` field's `auto:
+  on-create | on-write` goes with templates and `new`, and nothing in the
+  v2 contracts sets `created` or `updated` — §3.1 reserves the keys and §9
+  `write` stamps nothing. A page's author writes both. If stamping
+  returns, its home is `write`, reading `today()` as the old verbs do.
 - A library's `library.yaml` has its own line in the law digest, beside
   the five law directories the contracts list, because it can change the
   library's id and with it every qualified name.

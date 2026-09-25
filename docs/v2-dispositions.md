@@ -208,7 +208,7 @@ Every field-shape kind and the keys it admits, and the keys every kind admits (`
 | `enum` | kernel | `enum` |
 | `enum.values` | kernel | `enum`'s list |
 | `date` | kernel | `type: string, format: date` (engine-written validator) |
-| `date.auto` | dropped | `auto: on-create \| on-write` removed with templates and `new`: `created` and `updated` are reserved keys the writer sets. |
+| `date.auto` | dropped | `auto: on-create \| on-write` removed with templates and `new`, with no replacement: `created` and `updated` stay reserved keys (§3.1), and nothing stamps them; the page's author writes both, and `write` sets neither. |
 | `datetime` | kernel | `type: string, format: date-time` (engine-written validator) |
 | `list` | kernel | `type: array` |
 | `list.item` | kernel | `items` |
