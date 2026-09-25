@@ -14,8 +14,8 @@ import {
 } from "@wikiwright/core";
 import { indexLawSnapshot, workingTreeLawSnapshot } from "../src/lawfiles.ts";
 import {
+  bareTree,
   engineJson,
-  gardenTree,
   gitStageAll,
   link,
   removeTree,
@@ -29,7 +29,7 @@ afterAll(() => {
 });
 
 function tree(overrides: Tree = {}, drop: string[] = []): string {
-  const files = { ...gardenTree(), ...overrides };
+  const files = { ...bareTree(), ...overrides };
   for (const path of drop) delete files[path];
   const dir = writeTree(files);
   made.push(dir);
