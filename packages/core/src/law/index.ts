@@ -1,5 +1,11 @@
 // v2 contracts §2, §3: the type-document loader's surface. Beside the old
 // loader (registry/), which still loads every corpus in the repository.
+
+export { ENGINE_KEYWORDS, errorLine, strictAjv } from "../schema/ajv.ts";
+export { isDate, isDateTime, isUri, parseUrl } from "../schema/formats.ts";
+export { RESERVED_KEYS, reservedShape } from "../schema/reserved.ts";
+export type { CompiledShapes, ShapeContext } from "../schema/shapes.ts";
+export { compileShapes, ENGINE_DEFS } from "../schema/shapes.ts";
 export type {
   Composition,
   LawRule,

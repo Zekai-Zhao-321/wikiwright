@@ -32,6 +32,7 @@
       "name": "@wikiwright/core",
       "version": "0.1.0",
       "dependencies": {
+        "@bufbuild/re2": "0.6.1",
         "ajv": "8.20.0",
         "mdast-util-from-markdown": "^2.0.3",
         "mdast-util-frontmatter": "^2.0.1",
@@ -63,6 +64,8 @@
     "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.5.11", "", { "os": "win32", "cpu": "arm64" }, "sha512-e49E6K9hzH/ohJNx8Y26mY8HaV4I4ZViIeoqhKsmoXLKHhQnMeBAVqCgsGf2Wa3lXlS7RkporDXMHHWkzvZzFw=="],
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.5.11", "", { "os": "win32", "cpu": "x64" }, "sha512-QSQr/KjOgXA7OzXJUWS+oguKyAZ3Q0l/lnlDGbu397eKo83atuWUjBPJrsqbKNF6CARGw8XXJLGzpHC8Ryhd4Q=="],
+
+    "@bufbuild/re2": ["@bufbuild/re2@0.6.1", "", {}, "sha512-VY7zV7bWKdAsf46epowVKidolEfMKw/FoHo2xYVDVzLj/hiP5qDL3nXqJt6seZClRYfG+uzAPFQBZBlj07wO5A=="],
 
     "@types/bun": ["@types/bun@1.3.11", "", { "dependencies": { "bun-types": "1.3.11" } }, "sha512-5vPne5QvtpjGpsGYXiFyycfpDF2ECyPcTSsFBMa0fraoxiQyMJ3SmuQIGhzPg2WJuWxVBoxWJ2kClYTcw/4fAg=="],
 

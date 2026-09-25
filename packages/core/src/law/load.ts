@@ -2,6 +2,8 @@
 // (registry/). One function of one snapshot; issue collection is total within
 // a stage and stops between stages, as the old loader's was: a law whose
 // libraries did not resolve has no documents to read.
+import type { ValidateFunction } from "ajv/dist/2020.js";
+import { compileShapes } from "../schema/shapes.ts";
 import { compose, type LawType, type LawVocabulary } from "./compose.ts";
 import {
   type FragmentDocument,
@@ -30,6 +32,10 @@ export interface TypeLaw {
   types: Map<string, LawType>;
   fragments: Map<string, FragmentDocument>;
   vocabularies: Map<string, LawVocabulary>;
+  /** §3.1: each type's compiled effective shape. */
+  validators: Map<string, ValidateFunction>;
+  /** §3.1: each type's effective shape as compiled. */
+  shapes: Map<string, Record<string, unknown>>;
 }
 
 const KINDS: Readonly<Record<string, "type" | "fragment" | "vocabulary">> = {
@@ -83,6 +89,9 @@ export function loadTypeLaw(snapshot: LawSnapshot): TypeLawResult {
 
   const composed = compose(typeDocs, fragmentDocs, vocabularyDocs);
   if (composed.issues.length > 0) return failed(composed.issues);
+
+  const compiled = compileShapes(composed.types, engine);
+  if (compiled.issues.length > 0) return failed(compiled.issues);
   return {
     ok: true,
     law: {
@@ -92,6 +101,8 @@ export function loadTypeLaw(snapshot: LawSnapshot): TypeLawResult {
       types: composed.types,
       fragments: composed.fragments,
       vocabularies: composed.vocabularies,
+      validators: compiled.validators,
+      shapes: compiled.schemas,
     },
   };
 }
