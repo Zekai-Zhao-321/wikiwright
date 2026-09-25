@@ -18,6 +18,7 @@ import { bundleLabel } from "./bundle.ts";
 import { type CommandResult, capOptions, fail, ok, verdictEnvelope } from "./envelope.ts";
 import {
   EXPORT_PASSES,
+  type ExportSource,
   exportStaleFindings,
   exportsTracked,
   indexExportSource,
@@ -25,10 +26,12 @@ import {
 } from "./exports.ts";
 import { GitAnswerRefused } from "./git.ts";
 import { checkEnginePin, generateOptionsFor, lawFor, rootsOf, type VaultOk } from "./law.ts";
+import { loadDeclaredModules } from "./moduleload.ts";
 import { formerFolderTagFindings } from "./pages.ts";
 import type { CommandArgs } from "./spec.ts";
+import { withStagedKits } from "./stagedkits.ts";
 import { type IndexState, indexSnapshot, indexState } from "./state.ts";
-import { loadVault, loadVaultVia } from "./vaultio.ts";
+import { loadVault, loadVaultVia, type VaultLoad, type VaultReader } from "./vaultio.ts";
 
 /**
  * docs/cli.md §gate: `generated-drift` over the STAGED state. The artifacts are
@@ -71,6 +74,46 @@ function stagedDriftFindings(
     });
   }
   return { judged: true, findings };
+}
+
+/**
+ * docs/cli.md §gate: the law the staged exports are planned under. A kit
+ * declared by `path` is part of what the commit carries, so its registry,
+ * its brief lines and its proofs come from the bytes the index stages, not
+ * from the working tree the entry point preloaded: those files are written
+ * out under the temporary directory, loaded from there and proved, and the
+ * directory is removed once they are (`stagedkits.ts`). A kit under
+ * `node_modules` is not in the index and is loaded from the working tree, as
+ * the preload loads it. A bundle that renders no export, or declares no kit
+ * by path, plans under `vault`, and so does a kit the index holds a link in:
+ * the index holds no bytes for it, and the plan refuses it as
+ * `export-symlink`.
+ */
+async function stagedExportVault(
+  command: string,
+  root: string,
+  reader: VaultReader,
+  vault: VaultOk,
+  source: ExportSource,
+): Promise<VaultLoad> {
+  const declared = vault.engine.modules ?? [];
+  const rendered = (vault.engine.exports ?? []).some(
+    (declaration) => (declaration.output ?? "skills") === "skills",
+  );
+  const paths = declared.flatMap((declaration) =>
+    declaration.path === undefined
+      ? []
+      : source.kitFiles(declaration.path).map((rel) => `${declaration.path}/${rel}`),
+  );
+  if (!rendered || paths.length === 0 || paths.some((path) => source.refusesLink(path))) {
+    return vault;
+  }
+  return withStagedKits(source, paths, async (dir) => {
+    const outcome = await loadDeclaredModules(root, declared, {
+      rootOf: (declaration) => (declaration.path === undefined ? root : dir),
+    });
+    return loadVaultVia(command, reader, { root, modules: outcome });
+  });
 }
 
 export async function runStagedLint(args: CommandArgs, command = "lint"): Promise<CommandResult> {
@@ -120,14 +163,23 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
   const drift = stagedDriftFindings(state, vault);
   shellFindings.push(...drift.findings);
   // docs/cli.md §gate: the exports over the STAGED state. Pages, config,
-  // templates, attachments and a kit declared by path are the index's; a kit
-  // under node_modules is not in the index and is read from the working tree,
-  // as the preload reads it. The rendered copies are compared with the index's
-  // bytes under skills/, and only when the index tracks one — as the artifacts
-  // are — and each export's own findings are the staged declaration's.
+  // templates, attachments and a kit declared by path are the index's, the
+  // kit's registry and proofs included; a kit under node_modules is not in
+  // the index and is read from the working tree, as the preload reads it.
+  // The rendered copies are compared with the index's bytes under skills/,
+  // and only when the index tracks one — as the artifacts are — and each
+  // export's own findings are the staged declaration's.
   const exportSource = indexExportSource(args.root, parsedPages(state), snapshot.entries);
-  const exports = repositoryExports({
+  const exportVault = await stagedExportVault(
+    command,
+    args.root,
+    state.reader,
     vault,
+    exportSource,
+  );
+  if (!exportVault.ok) return exportVault.result;
+  const exports = repositoryExports({
+    vault: exportVault,
     source: exportSource,
     label: bundleLabel(args.root),
     commands: args.commands,

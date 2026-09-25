@@ -23,7 +23,7 @@ import {
 } from "@wikiwright/core";
 import { bundleLabel } from "./bundle.ts";
 import { type CommandResult, fail } from "./envelope.ts";
-import { type LoadedModule, preloadedModules } from "./moduleload.ts";
+import { type LoadedModule, type ModuleLoadOutcome, preloadedModules } from "./moduleload.ts";
 import { LinkedOutsideVault, vaultReadAbsolute } from "./paths.ts";
 import { CONSTITUTION_PATH, ENGINE_PATH, fsReader, type VaultReader } from "./vaultfiles.ts";
 
@@ -67,6 +67,13 @@ export interface VaultLoadOptions {
    * that loaded a different module set would judge two revisions under two laws.
    */
   root?: string;
+  /**
+   * The module set to compose instead of the root's preload. The one caller
+   * is the staged gate's export plan, which composes a kit declared by `path`
+   * from the bytes the index stages (docs/cli.md §gate); every other reader
+   * composes the preload.
+   */
+  modules?: ModuleLoadOutcome;
 }
 
 export function loadVault(command: string, root: string, options?: VaultLoadOptions): VaultLoad {
@@ -203,7 +210,9 @@ export function loadVaultVia(
   if (declared.length === 0) {
     modules = standardLibrary();
   } else {
-    const outcome = options?.root === undefined ? undefined : preloadedModules(options.root);
+    const outcome =
+      options?.modules ??
+      (options?.root === undefined ? undefined : preloadedModules(options.root));
     if (outcome === undefined) {
       return {
         ok: false,

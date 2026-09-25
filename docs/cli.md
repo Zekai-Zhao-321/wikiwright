@@ -326,7 +326,12 @@ What the registry rows below do not say.
   run (`capability-unavailable`). Each rendered export is rendered from the
   staged pages, config, templates, attachments and a kit declared by `path`,
   and compared with the staged bytes under `skills/`, so a page or a kit
-  staged without its re-rendered export is `export-stale`. A link the index
+  staged without its re-rendered export is `export-stale`. A kit declared by
+  `path` is also loaded from its staged bytes for that render — written out
+  under the temporary directory, proved there and removed — so the copy's
+  brief names the staged kit's types, not the working tree's; the verdict
+  over the staged pages is still reached under the modules the entry point
+  loaded from the working tree. A link the index
   tracks is refused as `export-symlink`, since the index holds a link's target
   and not its bytes; the working tree is read through its links. A kit
   installed under `node_modules` is not in the index: it is read from the

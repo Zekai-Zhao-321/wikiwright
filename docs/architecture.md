@@ -55,7 +55,7 @@ packages/cli/src/
   moduleload.ts, modulefixture.ts   the module ladder: resolve, digest, scan, load, prove
   sha256.ts    the shell's sha256 over bytes: a module's files, a page, a shipped skill
   discovery.ts the skill directories `--bundle` and `bundles list` scan: a name to the nearest copy of one bundle, reading markers only
-  hooks.ts, staged.ts   the installed hooks and the staged gate
+  hooks.ts, staged.ts, stagedkits.ts   the installed hooks, the staged gate, and a path kit it loads from the index
   verbs/<name>.ts   one CommandSpec per verb; verbs/bundles.ts lists the scan, verbs/read.ts is the consumer's read
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit
 packages/cli/skills/          the three shipped skills (consume, write, maintain) and the generated playbook

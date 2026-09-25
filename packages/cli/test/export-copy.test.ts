@@ -71,10 +71,14 @@ interface Envelope {
   };
 }
 
-function run(root: string, argv: readonly string[]): { status: number; envelope: Envelope } {
+function run(
+  root: string,
+  argv: readonly string[],
+  extra: NodeJS.ProcessEnv = {},
+): { status: number; envelope: Envelope } {
   const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
     encoding: "utf8",
-    env: { ...process.env, ...PINNED_CLOCK },
+    env: { ...process.env, ...PINNED_CLOCK, ...extra },
   });
   assert.equal(typeof r.stdout, "string", `the CLI printed no envelope: ${r.stderr}`);
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Envelope };
@@ -638,6 +642,43 @@ describe("a copy carries the kit its law covers (docs/constitution.md §exports)
       findings(checked.envelope).filter((f) => f.ruleId === "export-stale"),
       [],
     );
+  });
+
+  it("the staged plan composes a path kit from the index: a type only the working tree's kit adds is in no staged brief", () => {
+    const root = carrying(() => undefined);
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    git(root, "init", "-q");
+    git(root, "add", "-A");
+    git(root, "commit", "-q", "-m", "baseline");
+    const brief = join(root, "skills", "garden", "generated", "BRIEF.md");
+    const marker = join(root, "skills", "garden", "config", "export.json");
+    const committed = { brief: readFileSync(brief, "utf8"), marker: readFileSync(marker, "utf8") };
+    // A concrete type in the working tree's kit only; nothing is staged.
+    const entry = join(root, "kit", "garden", "index.js");
+    writeFileSync(
+      entry,
+      readFileSync(entry, "utf8").replace(
+        "  types: {\n",
+        '  types: {\n    "garden/rotation": { extends: "procedure", description: "A crop rotation across the beds." },\n',
+      ),
+    );
+    // The working tree's own render differs in its brief: the edit reaches one.
+    const tree = findings(run(root, ["check"]).envelope).filter((f) => f.ruleId === "export-stale");
+    assert.match(tree[0]?.message ?? "", /generated\/BRIEF\.md \(changed\)/u, JSON.stringify(tree));
+    // The staged plan is the staged kit's: its brief and marker are the
+    // committed copy's, so the staged copy is not stale. The kit is written
+    // out under the temporary directory the CLI is given, and removed.
+    const temporary = scratch();
+    const staged = run(root, ["lint", "--staged"], { TMPDIR: temporary });
+    assert.equal(staged.status, 0, JSON.stringify(staged.envelope));
+    assert.deepEqual(readdirSync(temporary), [], "the staged kit was left behind");
+    assert.deepEqual(
+      findings(staged.envelope).filter((f) => f.ruleId === "export-stale"),
+      [],
+    );
+    assert.equal(readFileSync(brief, "utf8"), committed.brief);
+    assert.equal(readFileSync(marker, "utf8"), committed.marker);
+    assert.equal(committed.brief.includes("garden/rotation"), false);
   });
 
   it("the staged gate takes a path kit's law from the index: an unstaged kit edit is no export-stale", () => {

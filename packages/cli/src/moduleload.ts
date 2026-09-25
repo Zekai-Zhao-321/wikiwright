@@ -331,6 +331,13 @@ function contractOf(packageJson: unknown): PackageContract | undefined {
 export interface ModuleLoadOptions {
   /** The running engine's version; the module's declared range is checked against it. */
   engineVersion?: string;
+  /**
+   * The directory each declaration resolves from, when not the vault root. The
+   * staged gate's export plan resolves a kit declared by `path` from its
+   * staged bytes, written out under the temporary directory, and every other
+   * declaration from the vault root (docs/cli.md §gate).
+   */
+  rootOf?: (declaration: ModuleDeclaration) => string;
 }
 
 /**
@@ -399,7 +406,8 @@ export async function loadDeclaredModules(
     }
     seen.add(name);
 
-    const resolved = resolveModule(vaultRoot, declaration);
+    const from = options.rootOf?.(declaration) ?? vaultRoot;
+    const resolved = resolveModule(from, declaration);
     if (!resolved.ok) {
       issues.push(resolved.issue);
       continue;
@@ -489,7 +497,7 @@ export async function loadDeclaredModules(
     // One definition of "the module's bytes": the law digest, the purity scan,
     // the fixture's cache and the `modules list` row all read the same digest,
     // so a proof cannot be taken of one reading and reported for another.
-    const scanned = moduleDigest(vaultRoot, declaration);
+    const scanned = moduleDigest(from, declaration);
     if (scanned === undefined) {
       issues.push({
         code: "module-unresolved",
