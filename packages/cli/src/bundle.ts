@@ -34,21 +34,26 @@ import {
  * modules load: a refused module still has bytes, and the refusal names the
  * law it refused. So the digest is the same on every machine that holds the
  * same bytes. The texts are the ones the loader reads, and the envelope and
- * the brief both call this, so the two print one digest.
+ * the brief both call this, so the two print one digest. An export passes
+ * `digestOf` to take a kit's digest from the bytes it carries — the index's,
+ * for a kit declared by path under the staged gate — rather than the
+ * working tree's.
  */
 export function lawDigest(
   root: string,
   constitution: string,
   engine: string | undefined,
   declarations: readonly ModuleDeclaration[],
+  digestOf: (declaration: ModuleDeclaration) => string | undefined = (declaration) =>
+    moduleDigest(root, declaration)?.sha256,
 ): string {
   const lines = [
     `${CONSTITUTION_PATH} ${sha256Of(constitution)}`,
     `${ENGINE_PATH} ${sha256Of(engine ?? "")}`,
   ];
   for (const declaration of declarations) {
-    const installed = moduleDigest(root, declaration);
-    if (installed !== undefined) lines.push(`module:${declaration.package} ${installed.sha256}`);
+    const installed = digestOf(declaration);
+    if (installed !== undefined) lines.push(`module:${declaration.package} ${installed}`);
   }
   return sha256Of(lines.join("\n"));
 }

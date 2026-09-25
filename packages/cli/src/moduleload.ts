@@ -205,10 +205,25 @@ function isPackageVersion(value: unknown): value is string {
   return typeof value === "string" && PACKAGE_VERSION.test(value);
 }
 
-/** Every file in the package, excluding its own dependencies. */
-function moduleFiles(root: string): string[] {
+/**
+ * docs/extending.md §Loading a module: the files a module is — what its digest
+ * covers and what an export carries of it, one list for both. Every lexical
+ * path under the package root, relative to it, read through links; the
+ * package's own `node_modules` is the one exclusion. A directory reached by
+ * two lexical paths is listed under both, since a package may name either; a
+ * link back to a directory above it is a cycle and is not walked again.
+ */
+export function moduleInventory(root: string): string[] {
   const out: string[] = [];
-  const walk = (dir: string): void => {
+  const walk = (dir: string, rel: string, chain: ReadonlySet<string>): void => {
+    let real: string;
+    try {
+      real = realpathSync(dir);
+    } catch {
+      return;
+    }
+    if (chain.has(real)) return;
+    const inner = new Set(chain).add(real);
     for (const entry of readdirSync(dir, { withFileTypes: true, encoding: "utf8" })) {
       // `node_modules` is the package's DEPENDENCY TREE, pinned by its
       // own lockfile rather than by this digest, and it is the only exclusion.
@@ -217,8 +232,9 @@ function moduleFiles(root: string): string[] {
       // moving the digest a single bit.
       if (entry.name === "node_modules") continue;
       const path = join(dir, entry.name);
+      const at = rel === "" ? entry.name : `${rel}/${entry.name}`;
       if (entry.isDirectory()) {
-        walk(path);
+        walk(path, at, inner);
         continue;
       }
       // A `file:` install links each file back into its source tree, so a link
@@ -229,18 +245,33 @@ function moduleFiles(root: string): string[] {
         try {
           directory = statSync(path).isDirectory();
         } catch {
-          // A broken link hashes as the read failure it is, below.
+          // A broken link hashes as the read failure it is.
         }
         if (directory) {
-          walk(path);
+          walk(path, at, inner);
           continue;
         }
       }
-      out.push(path);
+      out.push(at);
     }
   };
-  walk(root);
+  walk(root, "", new Set());
   return out.sort(codeUnitCompare);
+}
+
+/**
+ * A module's digest over its files, each a path relative to the package root
+ * and its bytes: sha256 over one line per file, `/<path> <sha256 of bytes>`,
+ * in code-unit order of path. `moduleDigest` computes it over the installed
+ * package; an export computes it over the bytes it carries.
+ */
+export function moduleDigestOf(files: readonly { path: string; bytes: Buffer }[]): string {
+  return sha256Of(
+    [...files]
+      .sort((a, b) => codeUnitCompare(a.path, b.path))
+      .map((file) => `/${file.path} ${sha256Of(file.bytes)}`)
+      .join("\n"),
+  );
 }
 
 /**
@@ -269,7 +300,7 @@ const PORTABLE_ENTRY = /\.(?:js|mjs|cjs)$/u;
  * each of a package's files at an absolute path back into its source tree, so
  * every legitimate local install would fail a realpath containment test — and
  * local installs are the whole of `docs/extending.md §Declaring a module`. What closes the hole is
- * not where a link points but whether the digest covers it: `moduleFiles` reads
+ * not where a link points but whether the digest covers it: `moduleInventory` reads
  * THROUGH links, so a linked file's bytes are in the digest and editing them
  * moves it. The caller asserts that membership, which is the property that
  * matters; this only refuses the paths that are not the package's to name.
@@ -735,15 +766,17 @@ export function moduleDigest(
   let read: Map<string, Buffer> | undefined;
   if (reading === undefined) {
     const entry = entryOf(root);
-    const files = moduleFiles(root);
+    const inventory = moduleInventory(root);
+    const files = inventory.map((rel) => join(root, rel));
     read = new Map();
-    const parts: string[] = [];
-    for (const file of files) {
+    const contents: { path: string; bytes: Buffer }[] = [];
+    for (const [k, rel] of inventory.entries()) {
+      const file = files[k] as string;
       const bytes = readFileSync(file);
       read.set(file, bytes);
-      parts.push(`${file.slice(root.length)} ${sha256Of(bytes)}`);
+      contents.push({ path: rel, bytes });
     }
-    reading = { sha256: sha256Of(parts.join("\n")), files, entry };
+    reading = { sha256: moduleDigestOf(contents), files, entry };
     READINGS.set(root, reading);
   }
   const scanKey = `${reading.sha256}\u0000${String(PURITY_SCAN_VERSION)}`;

@@ -314,6 +314,7 @@ export function briefOf(
   role: Role,
   commands: readonly CommandSpec[],
   exportOf?: { name: string; bundle: string },
+  law?: string,
 ): string {
   const options = lintOptionsFor(vault, buildNameIndex(pages));
   // docs/constitution.md §Vocabularies: every vocabulary the loaded modules register,
@@ -336,12 +337,11 @@ export function briefOf(
     // The texts this vault was loaded from and the modules it declares, so a
     // plan rendered before its files land (`init`) digests the law it will
     // carry; the same function the envelope's `bundle.law` comes from.
-    lawDigest: lawDigest(
-      root,
-      vault.lawText.constitution,
-      vault.lawText.engine,
-      vault.engine.modules ?? [],
-    ),
+    // An export names the law of the bytes it carries (`law`), the one its
+    // marker records.
+    lawDigest:
+      law ??
+      lawDigest(root, vault.lawText.constitution, vault.lawText.engine, vault.engine.modules ?? []),
     ...exportHeader(root, exportOf),
   });
 }

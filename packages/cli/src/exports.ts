@@ -38,7 +38,7 @@ import { ENGINE_VERSION } from "./envelope.ts";
 import { gitReadBlobBytes, type IndexEntry } from "./git.ts";
 import { generateOptionsFor, rootsOf, type VaultOk } from "./law.ts";
 import { type ExportMarker, MARKER_PATH } from "./marker.ts";
-import { moduleLocation } from "./moduleload.ts";
+import { moduleDigestOf, moduleInventory, moduleLocation } from "./moduleload.ts";
 import { LinkedOutsideVault, vaultReadAbsolute } from "./paths.ts";
 import type { CommandSpec } from "./spec.ts";
 import { CONSTITUTION_PATH, ENGINE_PATH } from "./vaultfiles.ts";
@@ -163,6 +163,13 @@ export interface ExportSource {
   read(rel: string): Buffer;
   /** A declared module's file's bytes, read as the module digest reads them. */
   readKit(rel: string): Buffer;
+  /**
+   * A declared module's files under its vault-relative location, relative to
+   * it: in the working tree the one inventory the module digest covers
+   * (`moduleInventory`), in the index every tracked file below it; the
+   * module's own `node_modules` left out either way.
+   */
+  kitFiles(location: string): string[];
   /** Whether a vault-relative file is there. */
   exists(rel: string): boolean;
   /** Whether a vault-relative path, or a directory above it, is a symbolic link. */
@@ -258,6 +265,8 @@ export function fsExportSource(root: string, pages: readonly PageInput[]): Expor
     pages,
     read,
     readKit: (rel) => readFileSync(join(root, rel)),
+    kitFiles: (location) =>
+      existsSync(join(root, location)) ? moduleInventory(join(root, location)) : [],
     exists: (rel) => existsSync(join(root, rel)),
     isLink,
     refusesLink: () => false,
@@ -569,10 +578,13 @@ export function planExport(input: ExportInput): ExportPlan {
       else carry(path);
     }
   }
-  // The kits: each declared module's whole directory at the location it is
-  // declared at, its own dependencies left out as the digest leaves them. A
-  // kit under node_modules is read from the working tree, as the loader reads it.
+  // The kits: each declared module's files at the location it is declared at
+  // — the one inventory its digest covers, so the copy holds exactly what the
+  // law names — and the digest of the bytes carried, which the marker's law
+  // is taken from. A kit under node_modules is read from the working tree, as
+  // the loader reads it; a kit declared by path, from the source.
   const tree = fsExportSource(source.root, []);
+  const kitDigests = new Map<string, string>();
   for (const module of vault.engine.modules ?? []) {
     const location = moduleLocation(module);
     const from = module.path === undefined ? tree : source;
@@ -580,16 +592,14 @@ export function planExport(input: ExportInput): ExportPlan {
       tracked.push(location);
       continue;
     }
-    for (const file of from.list(location)) {
-      if (
-        file
-          .slice(location.length + 1)
-          .split("/")
-          .includes("node_modules")
-      )
-        continue;
-      carry(file, from, true);
+    const carried: { path: string; bytes: Buffer }[] = [];
+    for (const rel of from.kitFiles(location)) {
+      const path = `${location}/${rel}`;
+      carry(path, from, true);
+      const bytes = files.get(path);
+      if (bytes !== undefined) carried.push({ path: rel, bytes });
     }
+    if (carried.length > 0) kitDigests.set(module.package, moduleDigestOf(carried));
   }
   if (tracked.length + leaving.length > 0) {
     const listed = (paths: readonly string[]): string =>
@@ -625,11 +635,14 @@ export function planExport(input: ExportInput): ExportPlan {
       bytes: files.get(page.path) ?? source.read(page.path),
     })),
   );
+  // The law of the bytes this copy carries: a kit's digest is the one over
+  // its carried files, so a staged render names the staged kit's law.
   const law = lawDigest(
     source.root,
     vault.lawText.constitution,
     vault.lawText.engine,
     vault.engine.modules ?? [],
+    (declaration) => kitDigests.get(declaration.package),
   );
   const marker: ExportMarker = {
     schema: "wikiwright/export",
@@ -666,10 +679,15 @@ export function planExport(input: ExportInput): ExportPlan {
   out.set(
     BRIEF_PATH,
     Buffer.from(
-      briefOf(source.root, vault, pages, "consumer", input.commands, {
-        name: declaration.name,
-        bundle: label,
-      }),
+      briefOf(
+        source.root,
+        vault,
+        pages,
+        "consumer",
+        input.commands,
+        { name: declaration.name, bundle: label },
+        law,
+      ),
     ),
   );
   out.set(MARKER_PATH, Buffer.from(serializeArtifact(marker)));
@@ -870,6 +888,12 @@ export function indexExportSource(
     pages,
     read,
     readKit: read,
+    kitFiles: (location) =>
+      [...byPath.keys()]
+        .filter((path) => path.startsWith(`${location}/`))
+        .map((path) => path.slice(location.length + 1))
+        .filter((rel) => !rel.split("/").includes("node_modules"))
+        .sort(codeUnitCompare),
     exists: (rel) => byPath.has(rel),
     isLink,
     refusesLink: isLink,

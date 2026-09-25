@@ -390,9 +390,12 @@ either. A name, a repository, a guide or a skill outside its own grammar is
 - every template and example the loader validates, at its declared path; an
   example that is a page under a content root travels as one of the copy's
   pages, since the loader refuses a copy without it;
-- each declared module's directory, at `node_modules/<package>` or at its
-  declared `path`, its own `node_modules` left out, as the law digest leaves
-  it out;
+- each declared module's files, at `node_modules/<package>` or at its
+  declared `path`: exactly the files its digest covers, every lexical path
+  read through links (a directory reached by two paths carried under both, a
+  `.git` inside the kit included), its own `node_modules` left out. The
+  marker's `law` is taken from the bytes the copy carries, so a render from
+  the index names the staged kit's law, and the copy recomputes the same;
 - every file a selected page embeds: `![[name]]` resolved by name, or as a
   vault path when it holds a `/`, under the content roots, and `![alt](path)`
   resolved against the page. One that resolves

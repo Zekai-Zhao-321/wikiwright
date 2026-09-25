@@ -433,7 +433,10 @@ module judges anything:
 1. **The digest.** The loader resolves the declaration (under `node_modules`,
    or at its declared `path`) and takes one sha256 over every file of the
    package, its own `node_modules` excepted, `package.json` and the fixture
-   included. The law digest every envelope carries names it
+   included: every lexical path under the package, read through links, so a
+   directory reached by two paths is covered under both, and a `.git` or
+   `.obsidian` inside a kit is covered too. An export carries exactly this
+   list of files. The law digest every envelope carries names it
    (`module:<package> <digest>`), and `modules list` reports it, so the bytes
    that judged are named wherever a verdict is.
 2. **The purity scan.** Every executable file is read and refused by file

@@ -426,22 +426,22 @@ describe("export --to over an earlier export (docs/cli.md §export)", () => {
   });
 });
 
-describe("the working tree is read through its links; the index's links are refused (docs/cli.md §check, §gate)", () => {
-  const PLANTING_LAW = `${JSON.stringify({
-    schema: "wikiwright/constitution",
-    schema_version: 3,
-    vocabularies: { tags: { mode: "registered", entries: {} } },
-    types: {
-      planting: {
-        extends: "garden/planting",
-        description: "One planting in one bed.",
-        checks: [{ use: "garden/known-bed", config: { beds: ["north", "south"] } }],
-      },
+const PLANTING_LAW = `${JSON.stringify({
+  schema: "wikiwright/constitution",
+  schema_version: 3,
+  vocabularies: { tags: { mode: "registered", entries: {} } },
+  types: {
+    planting: {
+      extends: "garden/planting",
+      description: "One planting in one bed.",
+      checks: [{ use: "garden/known-bed", config: { beds: ["north", "south"] } }],
     },
-  })}\n`;
-  const GARLIC =
-    "---\ntype: planting\ntitle: Garlic\ndescription: Garlic cloves set in the north bed.\ntags: []\nbed: north\nsown: 2026-10-12\n---\n\n# Garlic\n\nGarlic cloves set in the north bed.\n\n## Care\n\nWeed by hand; stop watering once the leaves yellow.\n";
+  },
+})}\n`;
+const GARLIC =
+  "---\ntype: planting\ntitle: Garlic\ndescription: Garlic cloves set in the north bed.\ntags: []\nbed: north\nsown: 2026-10-12\n---\n\n# Garlic\n\nGarlic cloves set in the north bed.\n\n## Care\n\nWeed by hand; stop watering once the leaves yellow.\n";
 
+describe("the working tree is read through its links; the index's links are refused (docs/cli.md §check, §gate)", () => {
   /** A bundle over the garden kit installed under node_modules as a package manager links it. */
   function linkedKit(layout: "files" | "directory"): string {
     const root = join(scratch(), "garden");
@@ -551,5 +551,92 @@ describe("the working tree is read through its links; the index's links are refu
       /the index tracks 1 symbolic link\(s\).*kit\/garden\/fixture\.json/u,
     );
     assert.equal(symlink?.queue, "export-review");
+  });
+});
+
+describe("a copy carries the kit its law covers (docs/constitution.md §exports)", () => {
+  /** A gardening bundle carrying the garden kit at kit/garden, its files arranged by `arrange`. */
+  function carrying(arrange: (kit: string) => void): string {
+    const root = join(scratch(), "garden");
+    const kit = join(root, "kit", "garden");
+    cpSync(KIT_GARDEN, kit, { recursive: true });
+    arrange(kit);
+    write(root, {
+      "config/constitution.json": PLANTING_LAW,
+      "config/engine.json": `${JSON.stringify({
+        content_roots: ["wiki"],
+        modules: [{ package: "kit-garden", version: "^1.0.0", path: "kit/garden" }],
+        exports: [{ select: { kind: "all" }, contribution: { mode: "none" } }],
+      })}\n`,
+      "wiki/garlic.md": GARLIC,
+    });
+    return root;
+  }
+
+  /** Render, install by a plain copy, and read the copy's envelope. */
+  function renderAndRead(root: string): Envelope {
+    const rendered = run(root, ["check", "--write"]);
+    assert.equal(rendered.status, 0, JSON.stringify(rendered.envelope));
+    const copy = install(root, "garden");
+    const r = run(copy, ["type", "show", "planting", "--brief"]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
+    return r.envelope;
+  }
+
+  it("a directory reached by two paths is carried under both, and the declared entry loads", () => {
+    if (process.platform === "win32") return;
+    const root = carrying((kit) => {
+      // The entry moves into data/, and alias/ is a link to it.
+      mkdirSync(join(kit, "data"));
+      cpSync(join(kit, "index.js"), join(kit, "data", "index.js"));
+      rmSync(join(kit, "index.js"));
+      const manifest = join(kit, "package.json");
+      writeFileSync(
+        manifest,
+        readFileSync(manifest, "utf8").replace('"./index.js"', '"./data/index.js"'),
+      );
+      symlinkSync("data", join(kit, "alias"));
+    });
+    const envelope = renderAndRead(root);
+    const kit = join(root, "skills", "garden", "kit", "garden");
+    assert.equal(lstatSync(join(kit, "data", "index.js")).isFile(), true);
+    assert.equal(lstatSync(join(kit, "alias", "index.js")).isFile(), true);
+    assert.equal(envelope.metadata.bundle?.law, lawOf(root));
+    assert.equal(envelope.metadata.bundle?.export?.intact, undefined);
+  });
+
+  it("a kit that carries .git carries it in its digest, and the copy is intact", () => {
+    const root = carrying((kit) => {
+      mkdirSync(join(kit, ".git"));
+      writeFileSync(join(kit, ".git", "HEAD"), "ref: refs/heads/main\n");
+    });
+    const envelope = renderAndRead(root);
+    assert.equal(existsSync(join(root, "skills", "garden", "kit", "garden", ".git", "HEAD")), true);
+    assert.equal(envelope.metadata.bundle?.law, lawOf(root));
+    assert.equal(envelope.metadata.bundle?.export?.intact, undefined);
+  });
+
+  it("the staged gate takes a path kit's law from the index: an unstaged kit edit is no export-stale", () => {
+    const root = carrying(() => undefined);
+    assert.equal(run(root, ["check", "--write"]).status, 0);
+    git(root, "init", "-q");
+    git(root, "add", "-A");
+    git(root, "commit", "-q", "-m", "baseline");
+    // The working tree's kit moves; nothing is staged.
+    const entry = join(root, "kit", "garden", "index.js");
+    writeFileSync(entry, `${readFileSync(entry, "utf8")}\n// an edit not yet staged\n`);
+    const staged = run(root, ["lint", "--staged"]);
+    assert.equal(staged.status, 0, JSON.stringify(staged.envelope));
+    assert.deepEqual(
+      findings(staged.envelope).filter((f) => f.ruleId === "export-stale"),
+      [],
+    );
+    // The committed copy still names the committed law, and says it is intact.
+    const copy = install(root, "garden");
+    git(root, "stash", "-q");
+    const committed = lawOf(root);
+    const read = run(copy, ["type", "list"]);
+    assert.equal(read.envelope.metadata.bundle?.law, committed);
+    assert.equal(read.envelope.metadata.bundle?.export?.intact, undefined);
   });
 });
