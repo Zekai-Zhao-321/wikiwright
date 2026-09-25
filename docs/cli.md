@@ -328,16 +328,20 @@ What the registry rows below do not say.
   staged pages, config, templates, attachments and a kit declared by `path`,
   and compared with the staged bytes under `skills/`, so a page or a kit
   staged without its re-rendered export is `export-stale`. A kit declared by
-  `path` is also loaded from its staged bytes for that render — written out
-  under the temporary directory, proved there and removed — so the copy's
-  brief names the staged kit's types, not the working tree's; the verdict
-  over the staged pages is still reached under the modules the entry point
-  loaded from the working tree. A link the index
-  tracks is refused as `export-symlink`, since the index holds a link's target
-  and not its bytes; the working tree is read through its links. A kit
-  installed under `node_modules` is not in the index: it is read from the
-  working tree, as the module preload reads it, so a change to it is judged as
-  the tree holds it, not as a commit would. `--commit-msg <file>` is the
+  `path` is part of what the commit carries, so it is loaded from its staged
+  bytes — written out under the temporary directory, a link the index tracks
+  written as that link, proved there and removed — and the verdict over the
+  staged pages, the rebuilt artifacts and the export plan are all reached
+  under it: a check the working tree's kit attaches and the staged kit does
+  not never fires here, and the copy's brief names the staged kit's types. A
+  staged kit that does not load refuses the gate with the loader's own code
+  (`module-impure`, `module-load-failed`, …), as a working-tree kit refuses a
+  verb. A link the index tracks is refused for an export as
+  `export-symlink`, since the index holds a link's target and not its bytes;
+  the working tree is read through its links. A kit installed under
+  `node_modules` is the one exception: it is not in the index, so it is read
+  from the working tree, as the module preload reads it, and a change to it
+  is judged as the tree holds it, not as a commit would. `--commit-msg <file>` is the
   commit-msg arm: with `commit_prefixes` declared, the message's first line
   must open with a registered prefix in one of the four Conventional Commits
   shapes — `fix:`, `fix(scope):`, `fix!:`, `fix(scope)!:`, a scope being any

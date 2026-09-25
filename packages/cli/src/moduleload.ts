@@ -333,9 +333,9 @@ export interface ModuleLoadOptions {
   engineVersion?: string;
   /**
    * The directory each declaration resolves from, when not the vault root. The
-   * staged gate's export plan resolves a kit declared by `path` from its
-   * staged bytes, written out under the temporary directory, and every other
-   * declaration from the vault root (docs/cli.md §gate).
+   * staged gate resolves a kit declared by `path` from its staged bytes,
+   * written out under the temporary directory, and every other declaration
+   * from the vault root (docs/cli.md §gate).
    */
   rootOf?: (declaration: ModuleDeclaration) => string;
 }

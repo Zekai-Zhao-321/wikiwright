@@ -28,7 +28,7 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,663 tests across 115 files. At `f725d75`, when it held
+The suite is 1,665 tests across 115 files. At `f725d75`, when it held
 1,658, the full gate, `bun run check`, passed 1,658 of 1,658 with the test
 files under Bun and the CLI under Node (`tools/run-suite.ts`), and the full
 node runner, `bun run test:node`, passed 1,658 of 1,658 with every file under
@@ -411,24 +411,18 @@ name an install command.
 
 ### The staged gate reads a `node_modules` kit from the working tree
 
-A kit under `node_modules` is not in the index, so the staged gate renders an
-export's copy of it from the working tree, as the preload loads it: a commit
-is judged against the kit installed on the machine that commits, not one the
-commit carries. A kit declared by `path` is in the index, and the export's
-plan takes it from there whole: the copy's kit files, the law its marker
-names, and the registry and brief, loaded from the staged bytes written out
-under the temporary directory. So an unstaged edit to the kit makes no copy
-stale and reaches no staged brief.
+A kit under `node_modules` is not in the index, so the staged gate loads it
+from the working tree, as the preload loads it, and renders an export's copy
+of it from there: a commit is judged against the kit installed on the
+machine that commits, not one the commit carries. It is the one exception.
+A kit declared by `path` is in the index, and the staged gate takes it from
+there whole: the verdict over the staged pages, the copy's kit files, the
+law its marker names and its brief are all reached under the staged bytes,
+written out under the temporary directory and loaded there. So an unstaged
+edit to such a kit changes no staged verdict and makes no copy stale.
 
-The staged verdict over the pages is the exception: it is reached under the
-modules the entry point loaded from the working tree, a kit declared by
-`path` included, so a page is judged by an unstaged kit edit while the
-export beside it is planned without it.
-
-Wanted: the staged verdict under the staged kit too, which is a change to
-what the gate judges and a maintainer's decision; nothing for
-`node_modules` while it stays untracked, and a bundle that must pin its kit
-exactly declares it by `path`.
+Wanted: nothing while `node_modules` stays untracked; a bundle that must pin
+its kit exactly declares it by `path`.
 
 ### Exports not built yet
 
@@ -490,6 +484,19 @@ slice rather than being caused by it.
 
 Wanted: nothing in the engine. Run the gate on a quiet machine, or keep the
 temporary directory out of indexing.
+
+### The packed-install test needs the network
+
+No test writes outside the temporary directory, so the packed-install test
+installs under a package cache of its own there, and that cache starts
+empty: every run fetches the packed core's dependencies from the registry.
+The gate needs the network for that one test, as a fresh clone's
+`bun install` does. Measured on 2026-09-25 on the development machine, the
+file took 5.6 to 8.4 seconds alone with its own cache over ten runs, and
+2.0 to 4.5 with the shared one.
+
+Wanted: nothing while the cost stays under a minute; past that, a local
+package mirror, not the caller's cache.
 
 ### Under load, the suite's runtime cut a child's output short
 

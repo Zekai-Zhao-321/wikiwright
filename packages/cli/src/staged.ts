@@ -18,20 +18,25 @@ import { bundleLabel } from "./bundle.ts";
 import { type CommandResult, capOptions, fail, ok, verdictEnvelope } from "./envelope.ts";
 import {
   EXPORT_PASSES,
-  type ExportSource,
   exportStaleFindings,
   exportsTracked,
   indexExportSource,
   repositoryExports,
 } from "./exports.ts";
-import { GitAnswerRefused } from "./git.ts";
+import { GitAnswerRefused, type IndexEntry } from "./git.ts";
 import { checkEnginePin, generateOptionsFor, lawFor, rootsOf, type VaultOk } from "./law.ts";
-import { loadDeclaredModules } from "./moduleload.ts";
+import { declaredModulesInText, loadDeclaredModules } from "./moduleload.ts";
 import { formerFolderTagFindings } from "./pages.ts";
 import type { CommandArgs } from "./spec.ts";
 import { withStagedKits } from "./stagedkits.ts";
 import { type IndexState, indexSnapshot, indexState } from "./state.ts";
-import { loadVault, loadVaultVia, type VaultLoad, type VaultReader } from "./vaultio.ts";
+import {
+  ENGINE_PATH,
+  loadVault,
+  loadVaultVia,
+  type VaultLoad,
+  type VaultReader,
+} from "./vaultio.ts";
 
 /**
  * docs/cli.md §gate: `generated-drift` over the STAGED state. The artifacts are
@@ -77,38 +82,31 @@ function stagedDriftFindings(
 }
 
 /**
- * docs/cli.md §gate: the law the staged exports are planned under. A kit
- * declared by `path` is part of what the commit carries, so its registry,
- * its brief lines and its proofs come from the bytes the index stages, not
- * from the working tree the entry point preloaded: those files are written
- * out under the temporary directory, loaded from there and proved, and the
- * directory is removed once they are (`stagedkits.ts`). A kit under
- * `node_modules` is not in the index and is loaded from the working tree, as
- * the preload loads it. A bundle that renders no export, or declares no kit
- * by path, plans under `vault`, and so does a kit the index holds a link in:
- * the index holds no bytes for it, and the plan refuses it as
- * `export-symlink`.
+ * docs/cli.md §gate: the law the staged state is judged under. The staged
+ * gate judges what the commit carries, and a kit declared by `path` is part
+ * of it: its files are written out from the index under the temporary
+ * directory (`stagedkits.ts`), loaded and proved there, and the verdict over
+ * the staged pages, the generated artifacts and the export plan all compose
+ * that module set. A kit under `node_modules` is not in the index and is
+ * loaded from the working tree, as the preload loads it — the one exception.
+ * A staged kit that does not load refuses the gate with the loader's own
+ * code, as a working-tree kit refuses a verb. A bundle that declares no kit
+ * by path is judged under the preload.
  */
-async function stagedExportVault(
+async function stagedVault(
   command: string,
   root: string,
   reader: VaultReader,
-  vault: VaultOk,
-  source: ExportSource,
+  entries: readonly IndexEntry[],
 ): Promise<VaultLoad> {
-  const declared = vault.engine.modules ?? [];
-  const rendered = (vault.engine.exports ?? []).some(
-    (declaration) => (declaration.output ?? "skills") === "skills",
+  const declared = reader.exists(ENGINE_PATH)
+    ? declaredModulesInText(reader.read(ENGINE_PATH))
+    : [];
+  const locations = declared.flatMap((declaration) =>
+    declaration.path === undefined ? [] : [declaration.path],
   );
-  const paths = declared.flatMap((declaration) =>
-    declaration.path === undefined
-      ? []
-      : source.kitFiles(declaration.path).map((rel) => `${declaration.path}/${rel}`),
-  );
-  if (!rendered || paths.length === 0 || paths.some((path) => source.refusesLink(path))) {
-    return vault;
-  }
-  return withStagedKits(source, paths, async (dir) => {
+  if (locations.length === 0) return loadVaultVia(command, reader, { root });
+  return withStagedKits(root, entries, locations, async (dir) => {
     const outcome = await loadDeclaredModules(root, declared, {
       rootOf: (declaration) => (declaration.path === undefined ? root : dir),
     });
@@ -138,7 +136,7 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
       hint: "the staged gate runs inside a git repository",
     });
   }
-  const vault = loadVaultVia(command, state.reader, { root: args.root });
+  const vault = await stagedVault(command, args.root, state.reader, snapshot.entries);
   if (!vault.ok) return vault.result;
   // The pin is judged BEFORE any page is - against the STAGED
   // constitution, the one the commit would contain.
@@ -164,22 +162,15 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
   shellFindings.push(...drift.findings);
   // docs/cli.md §gate: the exports over the STAGED state. Pages, config,
   // templates, attachments and a kit declared by path are the index's, the
-  // kit's registry and proofs included; a kit under node_modules is not in
-  // the index and is read from the working tree, as the preload reads it.
-  // The rendered copies are compared with the index's bytes under skills/,
-  // and only when the index tracks one — as the artifacts are — and each
-  // export's own findings are the staged declaration's.
+  // kit's registry and proofs included (`stagedVault`); a kit under
+  // node_modules is not in the index and is read from the working tree, as
+  // the preload reads it. The rendered copies are compared with the index's
+  // bytes under skills/, and only when the index tracks one — as the
+  // artifacts are — and each export's own findings are the staged
+  // declaration's.
   const exportSource = indexExportSource(args.root, parsedPages(state), snapshot.entries);
-  const exportVault = await stagedExportVault(
-    command,
-    args.root,
-    state.reader,
-    vault,
-    exportSource,
-  );
-  if (!exportVault.ok) return exportVault.result;
   const exports = repositoryExports({
-    vault: exportVault,
+    vault,
     source: exportSource,
     label: bundleLabel(args.root),
     commands: args.commands,

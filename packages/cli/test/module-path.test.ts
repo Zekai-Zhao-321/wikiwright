@@ -10,7 +10,7 @@
 // fragment, one template, one check and the lane the check routes to. Every
 // bundle here is a copy under os.tmpdir().
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   cpSync,
@@ -262,5 +262,128 @@ describe("a kit reaches no helper outside itself behind a comment (docs/extendin
     }
     // The helper changed and nothing judged: no verdict depends on it.
     assert.deepEqual(outcomes[1], outcomes[0]);
+  });
+});
+
+describe("the staged gate judges under the staged path kit (docs/cli.md §gate)", () => {
+  function git(cwd: string, ...args: string[]): void {
+    execFileSync(
+      "git",
+      [
+        "-c",
+        "user.name=T",
+        "-c",
+        "user.email=t@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        ...args,
+      ],
+      { cwd, stdio: "ignore" },
+    );
+  }
+
+  /** A committed garden bundle whose constitution attaches no check, and one page in an undeclared bed. */
+  function committedGarden(): { root: string; kit: string } {
+    const root = join(SCRATCH, `staged-${++serial}`);
+    const kit = join(root, "kit", "garden");
+    mkdirSync(join(root, "config"), { recursive: true });
+    mkdirSync(join(root, "wiki"), { recursive: true });
+    writeFileSync(
+      join(root, "config", "constitution.json"),
+      `${JSON.stringify({
+        schema: "wikiwright/constitution",
+        schema_version: 3,
+        vocabularies: { tags: { mode: "registered", entries: {} } },
+        types: {
+          planting: { extends: "garden/planting", description: "A planting in this garden." },
+        },
+      })}\n`,
+    );
+    writeFileSync(
+      join(root, "config", "engine.json"),
+      `${JSON.stringify({
+        content_roots: ["wiki"],
+        modules: [{ package: "kit-garden", version: "^1.0.0", path: "kit/garden" }],
+      })}\n`,
+    );
+    writeFileSync(
+      join(root, "wiki", "rhubarb.md"),
+      page("Rhubarb", "orchard", "2026-03-01", "Mulch the crowns with compost in autumn."),
+    );
+    cpSync(KIT, kit, { recursive: true });
+    git(root, "init", "-q");
+    git(root, "add", "-A");
+    git(root, "commit", "-q", "-m", "baseline");
+    return { root, kit };
+  }
+
+  /**
+   * The kit with `garden/known-bed` attached in its own abstract type, so a
+   * planting in an undeclared bed is found whatever the bundle attaches; the
+   * fixture moves its attachment into the kit with it, and expects the same.
+   */
+  function attachInKit(kit: string): void {
+    const entry = join(kit, "index.js");
+    writeFileSync(
+      entry,
+      readFileSync(entry, "utf8").replace(
+        '      fragments: ["garden/planted"],\n',
+        '      fragments: ["garden/planted"],\n      checks: [{ use: "garden/known-bed", config: { beds: ["north", "south"] } }],\n',
+      ),
+    );
+    const fixture = join(kit, "fixture.json");
+    const parsed = JSON.parse(readFileSync(fixture, "utf8")) as {
+      constitution: { types: { planting: { checks?: unknown } } };
+    };
+    delete parsed.constitution.types.planting.checks;
+    writeFileSync(fixture, `${JSON.stringify(parsed, null, 2)}\n`);
+  }
+
+  const fires = (envelope: Envelope): boolean =>
+    ((envelope.data?.["findings"] ?? []) as { ruleId: string }[]).some(
+      (f) => f.ruleId === "garden/known-bed",
+    );
+
+  it("a check attached only in the working tree's kit does not fire; one attached only in the staged kit does", () => {
+    const { root, kit } = committedGarden();
+    const committed = {
+      entry: readFileSync(join(kit, "index.js")),
+      fixture: readFileSync(join(kit, "fixture.json")),
+    };
+    // The staged gate judges the pages a commit changes: the page is staged.
+    writeFileSync(
+      join(root, "wiki", "rhubarb.md"),
+      page("Rhubarb", "orchard", "2026-03-01", "Force the crowns under a pot in late winter."),
+    );
+    git(root, "add", "wiki");
+    // The working tree's kit attaches the check; the kit is not staged.
+    attachInKit(kit);
+    assert.equal(fires(run(root, ["check"]).envelope), true, "the attachment reaches the tree");
+    const unstaged = run(root, ["lint", "--staged"]);
+    assert.equal(fires(unstaged.envelope), false, JSON.stringify(unstaged.envelope));
+    // The attachment staged, and the working tree's kit put back.
+    git(root, "add", "kit");
+    writeFileSync(join(kit, "index.js"), committed.entry);
+    writeFileSync(join(kit, "fixture.json"), committed.fixture);
+    assert.equal(fires(run(root, ["check"]).envelope), false, "the tree's kit attaches nothing");
+    const staged = run(root, ["lint", "--staged"]);
+    assert.equal(fires(staged.envelope), true, JSON.stringify(staged.envelope));
+  });
+
+  it("a staged kit that does not load refuses the gate with the loader's own code", () => {
+    const { root, kit } = committedGarden();
+    const entry = join(kit, "index.js");
+    const committed = readFileSync(entry);
+    writeFileSync(entry, `${committed.toString("utf8")}\nexport const sownAt = Date.now();\n`);
+    git(root, "add", "kit");
+    writeFileSync(entry, committed);
+    const refused = run(root, ["lint", "--staged"]);
+    assert.equal(
+      refused.envelope.error?.["code"],
+      "module-impure",
+      JSON.stringify(refused.envelope),
+    );
+    // The working tree's kit is clean, and loads.
+    assert.notEqual(run(root, ["check"]).envelope.error?.["code"], "module-impure");
   });
 });

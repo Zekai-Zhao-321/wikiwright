@@ -61,17 +61,19 @@ export type VaultLoad =
 export interface VaultLoadOptions {
   /**
    * docs/extending.md §Declaring a module: the vault root, for the reader that does not
-   * carry one. A module set is preloaded per root, so a loader reading the git
-   * index or a past revision still asks for the modules of the WORKING TREE it
-   * sits in — the law a bundle declares is the law at the root, and a replay
-   * that loaded a different module set would judge two revisions under two laws.
+   * carry one. A module set is preloaded per root, so a loader reading a past
+   * revision still asks for the modules of the WORKING TREE it sits in — the
+   * law a bundle declares is the law at the root, and a replay that loaded a
+   * different module set would judge two revisions under two laws. The staged
+   * gate is the exception, through `modules`: a kit declared by `path` is
+   * part of the commit it judges.
    */
   root?: string;
   /**
    * The module set to compose instead of the root's preload. The one caller
-   * is the staged gate's export plan, which composes a kit declared by `path`
-   * from the bytes the index stages (docs/cli.md §gate); every other reader
-   * composes the preload.
+   * is the staged gate, which composes a kit declared by `path` from the
+   * bytes the index stages (docs/cli.md §gate); every other reader composes
+   * the preload.
    */
   modules?: ModuleLoadOutcome;
 }

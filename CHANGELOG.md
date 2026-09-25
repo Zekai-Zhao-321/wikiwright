@@ -45,9 +45,11 @@ version` prints the engine version and the commit a binary was built from.
   `export-stale` (fixed by `check --write`), and queues the render's own
   refusals to `export-review`. The staged gate makes the same comparison over
   the index, so a page or a kit declared by `path` staged without its
-  re-rendered export is refused; it plans that kit from its staged bytes,
-  its registry and the copy's brief included, while its verdict over the
-  staged pages is reached under the kit the working tree holds. The two gardening handbooks track theirs.
+  re-rendered export is refused. It loads that kit from its staged bytes and
+  reaches its verdict over the staged pages, its artifacts and its export
+  plan under them, and a staged kit that does not load refuses it with the
+  loader's own code; a kit under `node_modules` is read from the working
+  tree. The two gardening handbooks track theirs.
 - `export <name> --to <dir>` writes one `output: external` export into the
   repository at `<dir>`, as `<dir>/skills/<name>/` with the manifests beside
   it, and refuses an undeclared name, an `output: skills` export, a
@@ -430,7 +432,8 @@ version` prints the engine version and the commit a binary was built from.
   tier inside a temporary repository, the system skill directory is
   overridden whatever the caller's environment says, the build-info writer is tested against a temporary scaffold, and
   every install it makes, a kit's and the packed engine's, uses a package
-  cache of its own under the temporary directory.
+  cache of its own under the temporary directory; the packed-install test
+  therefore fetches from the registry on every run.
 - `fixtures/handbooks/orchard` and `fixtures/handbooks/allotment`: two small
   gardening handbooks, each a `procedure-page` type with a required climate
   and a `guide-page` for the page to read first, and a page with one title

@@ -897,7 +897,7 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
   "skills.ts": "the shipped skills' install and its stamp",
   "stagedkits.ts":
-    "a kit declared by path, written out from the index under os.tmpdir() for the staged export plan and removed once loaded: never a vault path (docs/cli.md §gate)",
+    "a kit declared by path, written out from the index under os.tmpdir() for the staged gate and removed once loaded: never a vault path (docs/cli.md §gate)",
   "stdoutfile.ts":
     "the file a git child writes its stdout to: created exclusively under os.tmpdir(), removed once read, never a vault path (docs/roadmap.md)",
   "writer.ts": "THE Writer: every content page, temp-then-rename",

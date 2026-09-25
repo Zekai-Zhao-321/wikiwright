@@ -857,7 +857,7 @@ function skillText(input: {
 // the exports under the bundle's own root (docs/cli.md §check)
 
 /** docs/constitution.md §exports: the git mode of a symbolic link. */
-const LINK_MODE = "120000";
+export const LINK_MODE = "120000";
 
 /**
  * docs/cli.md §gate: the git index at `root` as an export's source — each

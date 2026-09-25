@@ -86,7 +86,11 @@ else is not covered.
   variable is unset, rather than let the CLI run under Bun. Under load Bun's
   synchronous spawn has cut a child's output short (`docs/roadmap.md`), and
   the engine ships for Node. A test that means Bun names `bun`.
-- Every test writes under `os.tmpdir()`, never in the repository.
+- Every test writes under `os.tmpdir()`, never in the repository. The
+  packed-install test installs under a package cache of its own there, so
+  every run fetches the packed core's dependencies from the registry: the
+  gate needs the network for that one test, as a fresh clone's
+  `bun install` does.
 - A test that spawns a verb that stamps a date (`write`, `new`) sets
   `WIKIWRIGHT_TODAY`, or the stamp moves with the day.
 - Bun's per-test budget is five seconds. A case that installs a kit and
