@@ -1,0 +1,254 @@
+// v2 contracts §5, §6: rules under the CEL profile, loaded from the gardening
+// constitution under os.tmpdir() — refused at load with the limit named, and
+// the six rules of the feasibility spike evaluated over the page interface of
+// real parsed pages, a passing and a failing sample each.
+import { afterAll, describe, expect, it } from "bun:test";
+import {
+  buildFacts,
+  buildPageInterface,
+  celOccurrence,
+  loadTypeLaw,
+  normalizeIdentity,
+  parsePage,
+  type RuleVerdict,
+  type TypeLaw,
+  type TypeLawResult,
+} from "@wikiwright/core";
+import { workingTreeLawSnapshot } from "../src/lawfiles.ts";
+import { gardenTree, removeTree, type Tree, writeTree } from "./fixtures/garden-law.ts";
+
+const made: string[] = [];
+afterAll(() => {
+  for (const dir of made) removeTree(dir);
+});
+
+async function load(overrides: Tree = {}): Promise<TypeLawResult> {
+  const dir = writeTree({ ...gardenTree(), ...overrides });
+  made.push(dir);
+  return loadTypeLaw(await workingTreeLawSnapshot(dir));
+}
+
+const PLANTING = "constitution/types/planting.yaml";
+
+/** The bundle planting with one more rule appended. */
+function withRule(rule: string): Tree {
+  const text = gardenTree()[PLANTING] ?? "";
+  return { [PLANTING]: `${text}${rule}` };
+}
+
+function rule(id: string, expr: string, extra = ""): string {
+  return `  - id: ${id}\n    expr: ${JSON.stringify(expr)}\n    message: ${id}.\n${extra}`;
+}
+
+describe("rule-invalid at load, the limit named", () => {
+  it.each([
+    ["bytes", `page.path == "${"a".repeat(4100)}"`],
+    ["parentheses", `${"(".repeat(33)}true${")".repeat(33)}`],
+    ["parse", "page.fields.bed in"],
+    ["nodes", Array.from({ length: 150 }, () => "1==1").join("||")],
+    ["call", 'timestamp("2026-03-08T02:30:00Z") > timestamp("2026-01-01T00:00:00Z")'],
+    ["call", 'duration("1h") > duration("1m")'],
+    ["call", "page.fields.sown.getFullYear() == 2026"],
+    ["call", '"%s".format([page.path]) != ""'],
+    ["literal", "google.protobuf.Timestamp{seconds: 1} != google.protobuf.Timestamp{seconds: 2}"],
+    ["pattern", 'page.path.matches("(a)\\\\1")'],
+    ["nesting", "page.sections.all(s, s.items.all(i, config.beds.all(b, true)))"],
+    [
+      "chaining",
+      "config.beds.all(a, true) && config.beds.all(b, true) && config.beds.all(c, true) && config.beds.all(d, true) && config.beds.all(e, true)",
+    ],
+    ["range-not-bound", "page.body.split('\\n').all(l, size(l) < 400)"],
+    ["range-not-bound", "page.sections.filter(s, s.heading == 'History').all(s, true)"],
+    ["cost-bound", "page.sections.all(s, s.items.all(i, i.kind != ''))"],
+  ])("refuses %s", async (limit, expr) => {
+    const result = await load(withRule(rule("candidate", expr)));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.map((i) => [i.code, i.details?.["limit"]])).toEqual([
+      ["rule-invalid", limit],
+    ]);
+    expect(result.issues[0]).toMatchObject({
+      where: "bundle:constitution/types/planting.yaml",
+      details: { pointer: "/rules/1/expr", rule: "candidate" },
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// the six spike rules over the page interface
+
+/** The spike's two nested forms, which the static bound refuses. */
+const SPIKE_RELATIONS_REQUIRED =
+  "config.require.all(r, section.items.filter(i, i.label in r.labels).size() >= r.min)";
+const SPIKE_RELATION_RANGE =
+  "section.items.all(i, !(i.label in config.ranges) || (i.target.resolved && (i.target.type in config.ranges[i.label] || facts.ancestry[i.target.type].exists(t, t in config.ranges[i.label]))))";
+
+/** Their admitted forms: one require row per rule, the range as one RE2 match over the joined ancestry. */
+const RULES = [
+  rule(
+    "relations-required",
+    "section.items.filter(i, i.label in config.labels).size() >= config.min",
+    "    section: Relations\n    config: { labels: [grows-in], min: 1 }\n",
+  ),
+  rule(
+    "relation-range",
+    'section.items.all(i, !(i.label in config.ranges) || (i.target.resolved && ([i.target.type] + facts.ancestry[i.target.type]).join(" ").matches(config.ranges[i.label])))',
+    "    section: Relations\n    config:\n      ranges: { grows-in: '(^| )garden/bed( |$)', companion-of: '(^| )garden/planting( |$)' }\n",
+  ),
+].join("");
+
+const DIGEST_TYPE: Tree = {
+  "constitution/types/logbook-digest.yaml": `type: logbook-digest
+role: reference
+description: A digest of logbook files.
+fields:
+  type: object
+  properties:
+    covers: { type: array, items: { type: string }, minItems: 1 }
+rules:
+  - id: covers-repository-path
+    expr: 'page.fields.covers.all(p, p != "" && !p.startsWith("/") && !p.matches(r"(^|/)\\.\\.(/|$)"))'
+    message: A covered path is a repository path.
+`,
+};
+
+const HERB_BED = "---\ntype: garden/bed\ntitle: Herb bed\n---\n";
+const TOMATO = "---\ntype: planting\ntitle: Tomato\nbed: south\nsown: 2026-04-20\n---\n";
+function basil(frontmatter: string, history: string, relations: string): string {
+  return `---
+type: planting
+title: Basil
+bed: herb
+sown: 2026-04-12
+${frontmatter}---
+
+# Basil
+
+## History
+
+${history}
+
+## Relations
+
+${relations}
+`;
+}
+const BASIL_GOOD = basil(
+  "source: https://seeds.example/basil\n",
+  "- 2026-04-12 — sown\n- 2026-05-02 — thinned",
+  "- grows-in [[Herb bed]]\n- companion-of [[Tomato]]",
+);
+
+let law: TypeLaw | undefined;
+async function spikeLaw(): Promise<TypeLaw> {
+  if (law !== undefined) return law;
+  const result = await load({ ...withRule(RULES), ...DIGEST_TYPE });
+  if (!result.ok) throw new Error(JSON.stringify(result.issues, null, 2));
+  law = result.law;
+  return law;
+}
+
+/** Every verdict of one rule on one page: once per page rule, once per matching occurrence. */
+async function verdicts(
+  ruleId: string,
+  pagePath: string,
+  pages: Record<string, string>,
+): Promise<RuleVerdict[]> {
+  const loaded = await spikeLaw();
+  const index = new Map<string, { path: string; type: string }>();
+  for (const [path, text] of Object.entries(pages)) {
+    const read = parsePage(path, new TextEncoder().encode(text), loaded);
+    if (!read.ok) throw new Error(read.message);
+    const title = read.page.frontmatter["title"];
+    if (typeof title === "string" && read.page.type !== undefined) {
+      index.set(normalizeIdentity(title), { path, type: read.page.type.name });
+    }
+  }
+  const resolve = (name: string) => index.get(normalizeIdentity(name));
+  const read = parsePage(
+    pagePath,
+    new TextEncoder().encode(pages[pagePath] ?? ""),
+    loaded,
+    resolve,
+  );
+  if (!read.ok || read.page.type === undefined) throw new Error("no page");
+  const type = read.page.type;
+  const declared = type.rules.find((r) => r.id === ruleId);
+  const compiled = loaded.rules.get(ruleId);
+  if (declared === undefined || compiled === undefined)
+    throw new Error(`${ruleId} is not on ${type.name}`);
+  const bindings = {
+    page: buildPageInterface(read.page, type),
+    config: declared.config,
+    facts: buildFacts(loaded, read.page, resolve),
+    before: { present: false },
+  };
+  if (declared.section === undefined) return [compiled.evaluate(bindings)];
+  return read.page.occurrences
+    .filter((o) => o.heading === declared.section && o.depth === type.sections?.depth)
+    .map((o) => compiled.evaluate({ ...bindings, section: celOccurrence(o) }));
+}
+
+const VAULT = { "wiki/herb-bed.md": HERB_BED, "wiki/tomato.md": TOMATO };
+
+describe("the six spike rules over the page interface", () => {
+  const cases: [string, string, string][] = [
+    ["known-bed", BASIL_GOOD, BASIL_GOOD.replace("bed: herb", "bed: pond")],
+    [
+      "source-host-allowed",
+      BASIL_GOOD,
+      BASIL_GOOD.replace("https://seeds.example/basil", "https://market.example/basil"),
+    ],
+    ["history-dated", BASIL_GOOD, BASIL_GOOD.replace("2026-05-02 — thinned", "2026-05 — thinned")],
+    ["relations-required", BASIL_GOOD, BASIL_GOOD.replace("- grows-in [[Herb bed]]\n", "")],
+    [
+      "relation-range",
+      BASIL_GOOD,
+      BASIL_GOOD.replace("grows-in [[Herb bed]]", "grows-in [[Tomato]]"),
+    ],
+  ];
+  it.each(cases)(
+    "%s passes its passing sample and finds on its failing one",
+    async (id, pass, fail) => {
+      expect(await verdicts(id, "wiki/basil.md", { ...VAULT, "wiki/basil.md": pass })).toEqual([
+        { verdict: "pass" },
+      ]);
+      expect(await verdicts(id, "wiki/basil.md", { ...VAULT, "wiki/basil.md": fail })).toEqual([
+        { verdict: "fail" },
+      ]);
+    },
+  );
+
+  it("covers-repository-path passes its passing sample and finds on its failing one", async () => {
+    const digest = (covers: string) =>
+      `---\ntype: logbook-digest\ntitle: Season digest\ncovers: ${covers}\n---\n`;
+    const pass = { "raw/digest.md": digest("[raw/logbook/2026.md, raw/..notes/x.md]") };
+    const fail = { "raw/digest.md": digest("[raw/logbook/2026.md, raw/../../etc/passwd]") };
+    expect(await verdicts("covers-repository-path", "raw/digest.md", pass)).toEqual([
+      { verdict: "pass" },
+    ]);
+    expect(await verdicts("covers-repository-path", "raw/digest.md", fail)).toEqual([
+      { verdict: "fail" },
+    ]);
+  });
+
+  it("refuses the spike's nested forms of relations-required and relation-range as cost-bound", async () => {
+    for (const expr of [SPIKE_RELATIONS_REQUIRED, SPIKE_RELATION_RANGE]) {
+      const result = await load(withRule(rule("nested", expr, "    section: Relations\n")));
+      expect(result.ok ? [] : result.issues.map((i) => i.details?.["limit"])).toEqual([
+        "cost-bound",
+      ]);
+    }
+  });
+
+  it("evaluates a section rule once per matching occurrence and skips a page with none", async () => {
+    const twice = BASIL_GOOD.replace(
+      "## Relations",
+      "## History\n\n- 2026 — second season\n\n## Relations",
+    );
+    expect(
+      await verdicts("history-dated", "wiki/basil.md", { ...VAULT, "wiki/basil.md": twice }),
+    ).toEqual([{ verdict: "pass" }, { verdict: "fail" }]);
+    expect(await verdicts("history-dated", "wiki/tomato.md", VAULT)).toEqual([]);
+  });
+});

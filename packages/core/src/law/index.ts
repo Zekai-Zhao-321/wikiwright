@@ -28,6 +28,7 @@ export {
   parseRelationLine,
 } from "../records/index.ts";
 export { RECORD_SCHEMAS, recordValidators } from "../records/schemas.ts";
+export * from "../rules/index.ts";
 export { ENGINE_KEYWORDS, errorLine, strictAjv } from "../schema/ajv.ts";
 export { isDate, isDateTime, isUri, parseUrl } from "../schema/formats.ts";
 export { RESERVED_KEYS, reservedShape } from "../schema/reserved.ts";

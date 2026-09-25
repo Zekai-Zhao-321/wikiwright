@@ -3,6 +3,8 @@
 // a stage and stops between stages, as the old loader's was: a law whose
 // libraries did not resolve has no documents to read.
 import type { ValidateFunction } from "ajv/dist/2020.js";
+import { type CompiledRule, compileRule } from "../rules/evaluate.ts";
+import { admitRule } from "../rules/profile.ts";
 import { compileShapes } from "../schema/shapes.ts";
 import { compose, type LawType, type LawVocabulary } from "./compose.ts";
 import {
@@ -36,6 +38,8 @@ export interface TypeLaw {
   validators: Map<string, ValidateFunction>;
   /** §3.1: each type's effective shape as compiled. */
   shapes: Map<string, Record<string, unknown>>;
+  /** §6: every rule, admitted under the profile and planned, by id. */
+  rules: Map<string, CompiledRule>;
 }
 
 const KINDS: Readonly<Record<string, "type" | "fragment" | "vocabulary">> = {
@@ -91,6 +95,23 @@ export function loadTypeLaw(snapshot: LawSnapshot): TypeLawResult {
   if (composed.issues.length > 0) return failed(composed.issues);
 
   const compiled = compileShapes(composed.types, engine);
+  // §6: every rule is admitted under the profile, or refused with its limit.
+  const rules = new Map<string, CompiledRule>();
+  for (const doc of [...fragmentDocs, ...typeDocs]) {
+    for (const rule of doc.rules) {
+      const admission = admitRule(rule.expr);
+      if (!admission.ok) {
+        compiled.issues.push({
+          code: "rule-invalid",
+          where: doc.where,
+          message: `${rule.pointer}/expr: rule "${rule.id}": ${admission.message}`,
+          details: { pointer: `${rule.pointer}/expr`, rule: rule.id, limit: admission.limit },
+        });
+        continue;
+      }
+      rules.set(rule.id, compileRule(admission));
+    }
+  }
   if (compiled.issues.length > 0) return failed(compiled.issues);
   return {
     ok: true,
@@ -103,6 +124,7 @@ export function loadTypeLaw(snapshot: LawSnapshot): TypeLawResult {
       vocabularies: composed.vocabularies,
       validators: compiled.validators,
       shapes: compiled.schemas,
+      rules,
     },
   };
 }
