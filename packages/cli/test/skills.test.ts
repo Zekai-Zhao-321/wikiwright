@@ -119,10 +119,16 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
   it("the consume skill is the runtime skill: setup first, the brief is the engine's to print", () => {
     const text = readFileSync(join(SKILLS_DIR, "wikiwright-consume", "SKILL.md"), "utf8");
     assert.match(text, /generated\/BRIEF\.md/u);
-    assert.match(text, /engine prints the same brief for any bundle, from any\s+directory/u);
+    assert.match(
+      text,
+      /the engine prints that same brief\s+for it from the copy or from anywhere/u,
+    );
+    // The engine runs from the caller's directory, never the clone's.
+    assert.match(text, /`node <clone>\/packages\/cli\/dist\/main\.js`/u);
+    assert.match(text, /Never `cd` into the clone/u);
     // The one route that exists, and that no published package does.
     assert.match(text, /no published package exists yet/u);
-    for (const step of ["`bun install`", "`bun run build`", "`node packages/cli/dist/main.js`"]) {
+    for (const step of ["`bun install`", "`bun run build`"]) {
       assert.equal(text.includes(step), true, `the setup names ${step}`);
     }
     const headings = [...text.matchAll(/^## (.+)$/gmu)].map((m) => m[1]);

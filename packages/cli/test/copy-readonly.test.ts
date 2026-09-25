@@ -50,11 +50,12 @@ function run(
   cwd: string,
   argv: readonly string[],
   input = "",
+  extra: NodeJS.ProcessEnv = {},
 ): { status: number; envelope: Envelope } {
   const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
     cwd,
     encoding: "utf8",
-    env: { ...process.env, ...PINNED_CLOCK, HOME: home, WIKIWRIGHT_SKILL_DIRS: "" },
+    env: { ...process.env, ...PINNED_CLOCK, HOME: home, WIKIWRIGHT_SKILL_DIRS: "", ...extra },
     input,
   });
   assert.equal(typeof r.stdout, "string", `the CLI printed no envelope: ${r.stderr}`);
@@ -189,6 +190,33 @@ describe("a marked root refuses every write path (docs/cli.md §bundles)", () =>
     assert.equal(r.envelope.error?.code, "bundle-readonly", JSON.stringify(r.envelope));
     assert.equal(r.envelope.error?.details?.["root"], installed);
     rmSync(installed, { recursive: true, force: true });
+  });
+
+  it("a copy's brief is the consumer's whatever the role, and is the brief the copy carries", () => {
+    const copy = copyWith({ mode: "none" });
+    const installed = join(home, ".claude", "skills", "garden");
+    mkdirSync(dirname(installed), { recursive: true });
+    cpSync(copy, installed, { recursive: true });
+    try {
+      for (const argv of [
+        ["brief", "--root", copy],
+        ["brief", "--bundle", "garden"],
+        ["brief", "--role", "maintainer", "--root", copy],
+      ]) {
+        const r = run(tmp, argv, "", { WIKIWRIGHT_ROLE: "writer" });
+        assert.equal(r.status, 0, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
+        assert.equal(r.envelope.data?.["role"], "consumer", argv.join(" "));
+        const details = r.envelope.data?.["details"] as { reason?: string } | undefined;
+        assert.equal(details?.reason, "installed copy");
+        assert.equal(
+          r.envelope.data?.["brief"],
+          readFileSync(join(copy, "generated", "BRIEF.md"), "utf8"),
+          `${argv.join(" ")} printed another brief than the copy carries`,
+        );
+      }
+    } finally {
+      rmSync(installed, { recursive: true, force: true });
+    }
   });
 
   it("a marker that is not one is refused before the write guard, and before anything loads", () => {

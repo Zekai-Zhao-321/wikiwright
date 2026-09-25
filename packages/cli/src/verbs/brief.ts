@@ -6,6 +6,7 @@ import type { Finding } from "@wikiwright/core";
 import { BRIEF_PATH, briefOf } from "../brief.ts";
 import { fail, ok } from "../envelope.ts";
 import { rootsOf } from "../law.ts";
+import { markerAt } from "../marker.ts";
 import { collectPages } from "../pages.ts";
 import { type CommandSpec, declaredRole, type Role } from "../spec.ts";
 import { loadVault, walkPages } from "../vaultio.ts";
@@ -68,7 +69,8 @@ export const briefCommand: CommandSpec = {
     {
       name: "role",
       type: "string",
-      summary: "consumer | writer | maintainer (default: WIKIWRIGHT_ROLE when set, else writer)",
+      summary:
+        "consumer | writer | maintainer (default: WIKIWRIGHT_ROLE when set, else writer); an installed copy's is always the consumer's",
     },
   ],
   examples: [
@@ -83,12 +85,17 @@ export const briefCommand: CommandSpec = {
     // writer's — a bounded session that asks for its brief gets its own, not
     // one listing verbs it may not run.
     const raw = args.flags["role"];
-    const role = typeof raw === "string" ? raw : (declaredRole() ?? "writer");
-    if (!(ROLES as readonly string[]).includes(role)) {
-      return fail("brief", "usage", "unknown-role", `no brief for the role "${role}"`, {
+    const asked = typeof raw === "string" ? raw : (declaredRole() ?? "writer");
+    if (!(ROLES as readonly string[]).includes(asked)) {
+      return fail("brief", "usage", "unknown-role", `no brief for the role "${asked}"`, {
         details: { valid_values: [...ROLES] },
       });
     }
+    // docs/cli.md §brief: over an installed copy every write is refused, so
+    // the only brief that describes what may be run there is the consumer's,
+    // whatever role was asked for — the one the copy carries.
+    const copy = markerAt(args.root).kind === "valid";
+    const role = copy ? "consumer" : asked;
     const rendered = briefFor(args.root, role as Role, args.commands);
     if (!rendered.ok) {
       const vault = loadVault("brief", args.root);
@@ -98,6 +105,7 @@ export const briefCommand: CommandSpec = {
     }
     return ok("brief", {
       role,
+      ...(copy ? { details: { reason: "installed copy", asked } } : {}),
       path: null,
       bytes: Buffer.byteLength(rendered.text),
       brief: rendered.text,

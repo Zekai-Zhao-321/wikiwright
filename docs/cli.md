@@ -547,7 +547,11 @@ What the registry rows below do not say.
   its vocabularies' census, the loaded modules' skill fragments and the naming
   rules. The verb is a consumer verb, so every role may print its own brief;
   `--role` takes any of the three and defaults to the session's
-  `WIKIWRIGHT_ROLE`, or to `writer` when the session declares none. Every
+  `WIKIWRIGHT_ROLE`, or to `writer` when the session declares none. Over an
+  installed copy the brief is always the consumer's, whatever role is asked
+  for, since the copy refuses every write: `role` is `consumer` and
+  `details.reason` is `installed copy`, beside the role `asked`, and the brief
+  is the one the copy carries in `generated/BRIEF.md`. Every
   role's loop opens on one line, "Use the engine to decide, to write and to
   attribute; use your own tools to look.", which each shipped skill states
   once too. The consumer's loop names no verb: select the bundle and pass its root
@@ -571,7 +575,9 @@ What the registry rows below do not say.
   Three skills ship, one for each way of working with a bundle, beside the
   brief that carries the verbs: `wikiwright-consume`, the runtime skill every
   bundle skill requires — how to run the engine (the one route today: clone,
-  `bun install`, `bun run build`, `node packages/cli/dist/main.js`), what a
+  `bun install`, `bun run build`, then `node <clone>/packages/cli/dist/main.js`
+  by its absolute path from the caller's own directory, since `--bundle`
+  resolves from where a command runs), what a
   bundle skill is and how to find one, the consumer's commands, each of which
   must parse, with their discipline (which bundle answered, the section rather
   than the sentence, a child handed the words with their source), where a
@@ -742,7 +748,7 @@ Role: `consumer`. Writes: no.
 
 | Flag | Meaning |
 |---|---|
-| `--role <value>` | consumer \| writer \| maintainer (default: WIKIWRIGHT_ROLE when set, else writer) |
+| `--role <value>` | consumer \| writer \| maintainer (default: WIKIWRIGHT_ROLE when set, else writer); an installed copy's is always the consumer's |
 
 ```text
 wikiwright brief --role writer

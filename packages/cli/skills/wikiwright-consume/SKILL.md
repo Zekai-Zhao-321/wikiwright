@@ -8,9 +8,9 @@ description: Judgment for using what a wikiwright bundle knows — the runtime s
 A wikiwright bundle skill is a package; this skill is the runtime it requires.
 A bundle skill carries only what is its own — its name, what it holds, where a
 problem goes — and everything that is the same for every bundle is here.
-**The flags of every command are in the brief: `generated/BRIEF.md` in a
-bundle, and the engine prints the same brief for any bundle, from any
-directory.**
+**The flags of every command are in the brief: a copy carries its own in
+`generated/BRIEF.md`, the consumer's, and the engine prints that same brief
+for it from the copy or from anywhere by `--bundle`.**
 
 Use the engine to decide, to write and to attribute; use your own tools to look. Reading lines with their
 context, listing and counting are yours; which page a name means, what a bundle
@@ -20,9 +20,11 @@ holds and which version said it are the engine's.
 
 Run `wikiwright version`. If the command is not found, there is one route
 today, since no published package exists yet: clone the engine's repository,
-run `bun install` and then `bun run build` in the clone, and run the engine as
-`node packages/cli/dist/main.js` from it, in place of `wikiwright` in every
-command below. A bundle skill names the engine it needs ("the wikiwright engine
+run `bun install` and then `bun run build` in the clone, and run the engine by
+its absolute path, `node <clone>/packages/cli/dist/main.js`, in place of
+`wikiwright` in every command below — from the directory you are working in.
+Never `cd` into the clone to run it: `--bundle` resolves from the directory
+the command runs in, and the clone is not where your bundle skills are. A bundle skill names the engine it needs ("the wikiwright engine
 at 0.1.0 or later"); compare that with the `engine` field `wikiwright version`
 prints, and say so rather than read on under an older one.
 
@@ -59,7 +61,8 @@ exactly like one from the right one.
 - `wikiwright type show <type> --brief --bundle <name>` for what a page of a
   type must hold; `wikiwright vocabulary show <name> --bundle <name>` for what
   a vocabulary admits.
-- `wikiwright brief --bundle <name>` for the rest of what your role may run.
+- `wikiwright brief --bundle <name>` for the copy's own brief, the consumer's:
+  a copy refuses every write, so its brief names only what may be run there.
 
 Which bundle an answer came from, and at which version, is part of the answer.
 Every envelope says it in `metadata.bundle`, and over a copy
