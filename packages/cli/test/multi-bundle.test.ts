@@ -26,14 +26,14 @@
 // copies of the two handbooks, never the shipped fixtures, with HOME under the
 // temporary directory.
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
@@ -67,7 +67,7 @@ function run(
   extra: NodeJS.ProcessEnv = {},
   input = "",
 ): { status: number; envelope: Envelope } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
+  const r = runCli([CLI, ...argv], {
     cwd: elsewhere,
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK, ...env, ...extra },

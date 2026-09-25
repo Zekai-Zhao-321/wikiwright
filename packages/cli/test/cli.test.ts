@@ -5,7 +5,6 @@
 // are usage) · docs/architecture.md §Directories (byte-deterministic output; byte-entry normalization — a BOM
 // on a registry, a backslash in a filename).
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -14,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { parseInvocation } from "../src/argv.ts";
 import { COMMANDS } from "../src/commands.ts";
 import { EXIT, fail, ok } from "../src/envelope.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -26,7 +25,7 @@ interface RunOutcome {
 }
 
 function run(args: string[], cwd?: string): RunOutcome {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], {
+  const r = runCli([CLI, ...args], {
     encoding: "utf8",
     ...(cwd !== undefined ? { cwd } : {}),
   });
@@ -132,8 +131,8 @@ describe("lint — the gate", () => {
   });
 
   it("is byte-deterministic across runs", () => {
-    const a = spawnSync(CLI_RUNTIME, [CLI, "lint", "--root", FIXTURE]);
-    const b = spawnSync(CLI_RUNTIME, [CLI, "lint", "--root", FIXTURE]);
+    const a = runCli([CLI, "lint", "--root", FIXTURE]);
+    const b = runCli([CLI, "lint", "--root", FIXTURE]);
     assert.equal(a.stdout.length > 0, true);
     assert.equal(a.stdout.equals(b.stdout), true);
   });

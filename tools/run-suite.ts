@@ -2,27 +2,26 @@
 // machine has cores. `bun test` runs its files one after another in a single
 // process, and most of this suite's time is spent waiting on the CLI processes
 // its tests spawn, so the files run side by side instead. They are independent:
-// every test writes under os.tmpdir(), and the node runner already runs the
-// same files in parallel. `bun run check` and `bun run test` run the suite
-// through this; `bun test ./<file>` still runs one file.
+// every test writes under os.tmpdir(). `bun run check` and `bun run test` run
+// the suite through this; `bun test ./<file>` still runs one file. It is the
+// bridge until `bun test --parallel` is proven on this suite, and is deleted
+// that day.
 //
 //   bun tools/run-suite.ts [file ...]
 //
 // With no file, the files are `packages/core/test/*.test.ts` and
-// `packages/cli/test/*.test.ts`, the set `bun run test:node` runs. The largest
-// start first, so the long files are not the last to begin. A file passes when
-// its process exits 0 and reports at least one test; the run exits 1 when any
-// file does not, and prints that file's whole output.
+// `packages/cli/test/*.test.ts`. The largest start first, so the long files
+// are not the last to begin. A file passes when its process exits 0 and
+// reports at least one test; the run exits 1 when any file does not, and
+// prints that file's whole output.
 //
-// The tests run the engine's CLI under WIKIWRIGHT_CLI_RUNTIME
-// (packages/cli/test/fixtures/runtime.ts). Under Bun the runner sets it to the
-// `node` on PATH, as an absolute path, the runtime the engine ships for, unless
-// it is set already; with no `node` to find it refuses to run rather than let
-// the tests fall back to Bun. The summary names the runtime it used.
+// Everything runs under Bun, the one runtime the engine runs on: the test
+// files, and the CLI the tests spawn, whose stdout a test reads from a file
+// (packages/cli/test/fixtures/runtime.ts).
 import { spawn } from "node:child_process";
-import { accessSync, constants, readdirSync, statSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { availableParallelism } from "node:os";
-import { delimiter, isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -72,49 +71,8 @@ function testsOf(output: string): number {
 // case written against the documented budget holds under both.
 const TIMEOUT_MS = 20_000;
 
-// Under Bun the runner's own binary runs each file; under anything else, the
-// `bun` on PATH does, so the runner's test can drive it from the node runner.
-const BUN = process.versions["bun"] === undefined ? "bun" : process.execPath;
-
-/**
- * The first `node` executable on PATH, found without spawning anything, as an
- * absolute path: the tests spawn it from their own working directories, so a
- * relative PATH entry is resolved against the runner's, and an empty entry is
- * the runner's directory, as a shell reads it.
- */
-function nodeOnPath(path = process.env["PATH"] ?? ""): string | undefined {
-  const name = process.platform === "win32" ? "node.exe" : "node";
-  for (const dir of path.split(delimiter)) {
-    const candidate = resolve(dir === "" ? "." : dir, name);
-    try {
-      accessSync(candidate, constants.X_OK);
-      if (statSync(candidate).isFile()) return candidate;
-    } catch {
-      // Not here; the next directory.
-    }
-  }
-  return undefined;
-}
-
-/**
- * docs/roadmap.md: under load, Bun's synchronous spawn has handed back a
- * child's stdout cut short with exit 0, and the engine's git reads took the
- * cut answers for shorter listings. The engine ships for Node, so the suite
- * runs it under Node; a test that means Bun names `bun` itself.
- */
-const OVERRIDE = process.env["WIKIWRIGHT_CLI_RUNTIME"];
-// A deliberate override is kept; one spelled as a relative path is made
-// absolute for the same reason a PATH entry is. A bare name is left for PATH.
-const CLI_RUNTIME =
-  OVERRIDE !== undefined
-    ? OVERRIDE.includes("/") || OVERRIDE.includes("\\")
-      ? resolve(OVERRIDE)
-      : OVERRIDE
-    : process.versions["bun"] === undefined
-      ? undefined
-      : nodeOnPath();
-const CHILD_ENV =
-  CLI_RUNTIME === undefined ? process.env : { ...process.env, WIKIWRIGHT_CLI_RUNTIME: CLI_RUNTIME };
+// The runner's own Bun runs each file.
+const BUN = process.execPath;
 
 function runFile(file: string): Promise<Outcome> {
   return new Promise((resolve) => {
@@ -124,7 +82,7 @@ function runFile(file: string): Promise<Outcome> {
     const target = isAbsolute(file) ? file : `./${file}`;
     const child = spawn(BUN, ["test", "--timeout", String(TIMEOUT_MS), target], {
       cwd: ROOT,
-      env: CHILD_ENV,
+      env: process.env,
       stdio: ["ignore", "pipe", "pipe"],
     });
     const chunks: Buffer[] = [];
@@ -153,14 +111,6 @@ function seconds(ms: number): string {
 }
 
 async function main(): Promise<number> {
-  if (process.versions["bun"] !== undefined && CLI_RUNTIME === undefined) {
-    // Falling back to Bun would run the CLI under the runtime whose spawn cut
-    // its output short (docs/roadmap.md), and call it a pass.
-    process.stderr.write(
-      "run-suite: no `node` on PATH, and WIKIWRIGHT_CLI_RUNTIME is not set: the suite runs the CLI under Node and will not fall back to Bun\n",
-    );
-    return 2;
-  }
   const started = performance.now();
   const given = process.argv.slice(2);
   const files = (given.length > 0 ? given : suiteFiles()).sort(
@@ -190,7 +140,7 @@ async function main(): Promise<number> {
   const tests = outcomes.reduce((n, o) => n + o.tests, 0);
   const across = `${files.length} file${files.length === 1 ? "" : "s"}`;
   process.stdout.write(
-    `\n ${pass} pass\n ${fail} fail\nThe CLI ran under ${CLI_RUNTIME ?? process.execPath}.\nRan ${tests} test${tests === 1 ? "" : "s"} across ${across}, ${jobs} at a time. [${seconds(performance.now() - started)}]\n`,
+    `\n ${pass} pass\n ${fail} fail\nRan ${tests} test${tests === 1 ? "" : "s"} across ${across}, ${jobs} at a time. [${seconds(performance.now() - started)}]\n`,
   );
   if (failed.length > 0) {
     process.stdout.write(

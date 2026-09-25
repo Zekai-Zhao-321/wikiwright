@@ -4,7 +4,6 @@
 // handbooks, whose sections declare no grammar, and on a temporary bundle of
 // gardening claims.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,7 +11,7 @@ import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { claimsBundle, itemLinesOf, lineSearch, RECALL_QUERIES } from "./fixtures/garden-claims.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
@@ -46,7 +45,7 @@ function run(
   root: string,
   argv: readonly string[],
 ): { status: number; envelope: Record<string, unknown> } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
+  const r = runCli([CLI, ...argv, "--root", root], {
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK },
   });

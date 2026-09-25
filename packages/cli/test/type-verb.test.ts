@@ -3,13 +3,12 @@
 // docs/constitution.md §Types (the charter's use_when names the file; one map,
 // `required` inside the shape, `contributedBy` beside it).
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -20,7 +19,7 @@ interface Outcome {
 }
 
 function run(cwd: string, args: string[]): Outcome {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
+  const r = runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env: process.env,

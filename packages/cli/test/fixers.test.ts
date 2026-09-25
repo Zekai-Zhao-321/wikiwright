@@ -8,7 +8,7 @@
 // applies, a case where it must REFUSE rather than guess, and — through
 // `writer-fuzz` — coverage of the splice its ops ride on.
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -22,7 +22,7 @@ import {
   standardLibrary,
 } from "@wikiwright/core";
 import { layMemoryLaw } from "./fixtures/memory-law.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-fixers-test-"));
@@ -35,7 +35,7 @@ interface Run {
 }
 
 function run(cwd: string, args: string[]): Run {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
+  const r = runCli([CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
   const envelope = JSON.parse(r.stdout) as {
     ok: boolean;
     data?: Record<string, unknown>;

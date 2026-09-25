@@ -12,7 +12,7 @@
 // imports a `node:fs` write API or spawns a writing `git` subcommand — and that
 // no module but the Writer computes a page path to write.
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   cpSync,
@@ -31,7 +31,7 @@ import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
@@ -183,7 +183,7 @@ function run(
     HOME,
     WIKIWRIGHT_SKILL_DIRS: "",
   };
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
+  const r = runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env,

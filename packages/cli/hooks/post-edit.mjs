@@ -10,7 +10,7 @@
 // without a base is named too. A session whose role may not write the bundle
 // is told so; a file the engine does not take for a page gets nothing.
 //
-// Plain Node, no dependencies, and no law loaded here: it reads a copy's
+// A Bun script with no dependencies, and no law loaded here: it reads a copy's
 // marker to say where a change goes, and the judging is the engine's. It
 // inherits the environment. Whatever goes wrong it prints nothing and exits 0.
 import { spawn } from "node:child_process";

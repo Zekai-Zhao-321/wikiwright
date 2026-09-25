@@ -6,7 +6,6 @@
 // vault that renders exports into its own `skills/` tracks them too
 // (docs/constitution.md §exports), and they are rebuilt from nothing the same way.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import {
   cpSync,
   existsSync,
@@ -21,7 +20,7 @@ import { basename, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
@@ -75,7 +74,7 @@ describe("the tracked generated/ of every shipped vault is what this build rende
         rmSync(join(tmp, "generated"), { recursive: true, force: true });
         const exported = filesUnder(join(source, "skills"));
         rmSync(join(tmp, "skills"), { recursive: true, force: true });
-        const r = spawnSync(CLI_RUNTIME, [CLI, "check", "--write", "--root", tmp], {
+        const r = runCli([CLI, "check", "--write", "--root", tmp], {
           encoding: "utf8",
           env: kitEnv(),
         });

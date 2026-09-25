@@ -51,9 +51,9 @@ per clone:
 git config core.hooksPath scripts/hooks
 ```
 
-Before a release run `bun run test:node` (the node runner) and
-`sh scripts/release-matrix.sh` by hand; Windows is unverified, and
-`docs/roadmap.md` says so.
+The engine runs on Bun only, the version `.bun-version` pins (and every
+`engines.bun` with it). Before a release run `sh scripts/release-matrix.sh`
+by hand; Windows is unverified, and `docs/roadmap.md` says so.
 
 ## Discipline
 

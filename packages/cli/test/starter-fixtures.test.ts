@@ -10,7 +10,6 @@
 // from the shipped package. The shipped devwiki is never installed into from a
 // test.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -25,7 +24,7 @@ import {
   kitEnv,
   REPO,
 } from "./fixtures/kit-code.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const STARTERS = fileURLToPath(new URL("../constitutions/", import.meta.url));
 const CODE_STARTER = join(STARTERS, "code");
@@ -40,7 +39,7 @@ interface Finding {
 }
 
 function lint(root: string): { status: number; findings: Finding[] } {
-  const r = spawnSync(CLI_RUNTIME, [DIST_CLI, "lint", "--root", root], {
+  const r = runCli([DIST_CLI, "lint", "--root", root], {
     encoding: "utf8",
     env: kitEnv(),
   });
@@ -85,11 +84,10 @@ function devwikiUnderStarter(): string {
 /** The code starter as `init` lands it, then installed: what a user's first `check` judges. */
 function starterBundle(): string {
   const root = mkdtempSync(join(tmpdir(), "ww-starter-init-"));
-  const init = spawnSync(
-    CLI_RUNTIME,
-    [DIST_CLI, "init", "--constitution", "code", "--root", root],
-    { encoding: "utf8", env: kitEnv() },
-  );
+  const init = runCli([DIST_CLI, "init", "--constitution", "code", "--root", root], {
+    encoding: "utf8",
+    env: kitEnv(),
+  });
   assert.equal(init.status, 0, init.stdout);
   installKit(root);
   return root;
@@ -241,7 +239,7 @@ describe("the code starter is the reference registered relations vocabulary", ()
     // only from the JSON.
     const root = starterBundle();
     SCRATCH.push(root);
-    const r = spawnSync(CLI_RUNTIME, [DIST_CLI, "type", "show", "subsystem", "--root", root], {
+    const r = runCli([DIST_CLI, "type", "show", "subsystem", "--root", root], {
       encoding: "utf8",
       env: kitEnv(),
     });

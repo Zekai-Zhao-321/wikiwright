@@ -5,7 +5,7 @@
 // its input) · docs/cli.md §brief (the code starter's types are the fix for
 // measured drift).
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   cpSync,
@@ -24,7 +24,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { installKit, KIT_PACKAGE, runKit } from "./fixtures/kit-code.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
@@ -35,7 +35,7 @@ interface Outcome {
 }
 
 function run(cwd: string, args: string[]): Outcome {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
+  const r = runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK },

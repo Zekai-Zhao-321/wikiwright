@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\""
+            "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\""
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-edit.mjs\""
+            "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/post-edit.mjs\""
           }
         ]
       }

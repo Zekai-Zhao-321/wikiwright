@@ -106,10 +106,7 @@ for (const count of sizes) {
       }
       console.log(
         JSON.stringify({
-          runtime:
-            process.versions["bun"] === undefined
-              ? `Node ${process.version}`
-              : `Bun ${process.versions["bun"]}`,
+          runtime: `Bun ${process.versions["bun"] ?? "unknown"}`,
           pages: count,
           command: args.join(" "),
           runs,

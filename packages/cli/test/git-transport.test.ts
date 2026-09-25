@@ -13,9 +13,18 @@ import { CHILD_POOL, spawnWithStdoutFile } from "../src/stdoutfile.ts";
 
 const POSIX = process.platform !== "win32";
 
-/** The descriptors this process holds open now. */
+/**
+ * The descriptors this process holds open now. The runtime opens and closes
+ * some of its own as it goes, so a leak is a count that grows, and the
+ * baseline is taken after one child has run.
+ */
 function openDescriptors(): number {
   return readdirSync("/dev/fd").length;
+}
+
+async function baseline(): Promise<number> {
+  await spawnWithStdoutFile("git", ["--version"], { cwd: repo });
+  return openDescriptors();
 }
 
 /** The scratch files this process's transport has left under the temporary directory. */
@@ -53,7 +62,7 @@ afterAll(() => {
 describe("the git transport under concurrent load", () => {
   it("answers 300 concurrent reads whole, through the pool, leaking no descriptor and no file", async () => {
     if (!POSIX) return;
-    const before = openDescriptors();
+    const before = await baseline();
     const ids = [...blobs.keys()];
     const requests = Array.from({ length: 300 }, (_, i) => ids[i % ids.length] ?? "");
     const answers = await Promise.all(
@@ -74,7 +83,7 @@ describe("the git transport under concurrent load", () => {
       if (answer.stdout.toString("utf8") === expected) whole += 1;
     });
     expect(whole).toBe(300);
-    expect(openDescriptors()).toBe(before);
+    expect(openDescriptors()).toBeLessThanOrEqual(before);
     expect(leftovers()).toEqual([]);
   }, 60_000);
 
@@ -102,7 +111,7 @@ describe("the git transport under concurrent load", () => {
 
   it("kills a child that overruns its timeout, and the pool goes on", async () => {
     if (!POSIX) return;
-    const before = openDescriptors();
+    const before = await baseline();
     const started = performance.now();
     // The child prints its process id to its file before it sleeps.
     const r = await spawnWithStdoutFile("sh", ["-c", "echo $$; exec sleep 30"], {
@@ -119,7 +128,7 @@ describe("the git transport under concurrent load", () => {
     expect(() => process.kill(pid, 0)).toThrow();
     const after = await spawnWithStdoutFile("git", ["--version"], { cwd: repo });
     expect(after.status).toBe(0);
-    expect(openDescriptors()).toBe(before);
+    expect(openDescriptors()).toBeLessThanOrEqual(before);
     expect(leftovers()).toEqual([]);
   }, 30_000);
 

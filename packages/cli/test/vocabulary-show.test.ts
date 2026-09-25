@@ -9,7 +9,6 @@
 // admits — the widest possible range and a range naming a type nobody extends
 // read identically in the file.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -17,7 +16,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { installKit, kitEnv } from "./fixtures/kit-code.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
@@ -68,8 +67,8 @@ interface Envelope {
   error?: { code: string; type: string; details?: Record<string, unknown> };
 }
 
-function raw(cwd: string, args: string[], exe = CLI_RUNTIME): string {
-  return spawnSync(exe, [CLI, ...args, "--root", "."], {
+function raw(cwd: string, args: string[]): string {
+  return runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env: kitEnv(),
@@ -77,7 +76,7 @@ function raw(cwd: string, args: string[], exe = CLI_RUNTIME): string {
 }
 
 function run(cwd: string, args: string[]): { status: number; envelope: Envelope } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
+  const r = runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env: kitEnv(),
@@ -100,7 +99,7 @@ function write(root: string, rel: string, text: string): void {
 /** The code starter as `init` lands it, with its kit installed (docs/extending.md §The code kit). */
 function codeVault(): string {
   const tmp = mkdtempSync(join(tmpdir(), "ww-vocab-code-"));
-  const init = spawnSync(CLI_RUNTIME, [CLI, "init", "--constitution", "code", "--root", "."], {
+  const init = runCli([CLI, "init", "--constitution", "code", "--root", "."], {
     cwd: tmp,
     encoding: "utf8",
     env: kitEnv(),
@@ -514,7 +513,7 @@ describe("the observed census (docs/constitution.md §Vocabularies)", () => {
 });
 
 describe("vocabulary is a read, and its envelope is deterministic", () => {
-  it("the same envelope, byte for byte, under bun and node", () => {
+  it("the same envelope, byte for byte, from two processes", () => {
     const tmp = scratchVault();
     try {
       for (const args of [
@@ -522,10 +521,10 @@ describe("vocabulary is a read, and its envelope is deterministic", () => {
         ["vocabulary", "show", "relations", "--target", "company"],
         ["vocabulary", "show", "tags"],
       ]) {
-        const underNode = raw(tmp, args);
-        const underBun = raw(tmp, args, "bun");
-        assert.equal(underNode.length > 0, true, `node produced an envelope for ${args.join(" ")}`);
-        assert.equal(underBun, underNode, `${args.join(" ")} is byte-identical across runtimes`);
+        const first = raw(tmp, args);
+        const second = raw(tmp, args);
+        assert.equal(first.length > 0, true, `an envelope for ${args.join(" ")}`);
+        assert.equal(second, first, `${args.join(" ")} is byte-identical across processes`);
       }
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -610,7 +609,7 @@ describe("two answers a bundle author asked to keep", () => {
   it("an empty answer explains itself: no relations vocabulary, so nothing can be unknown", () => {
     const dir = bareVault();
     try {
-      const r = spawnSync(CLI_RUNTIME, [CLI, "vocabulary", "show", "relations", "--root", "."], {
+      const r = runCli([CLI, "vocabulary", "show", "relations", "--root", "."], {
         cwd: dir,
         encoding: "utf8",
       });
@@ -633,8 +632,7 @@ describe("two answers a bundle author asked to keep", () => {
   it("--target says which block is the answer", () => {
     const dir = bareVault();
     try {
-      const r = spawnSync(
-        CLI_RUNTIME,
+      const r = runCli(
         [CLI, "vocabulary", "show", "relations", "--target", "note", "--root", "."],
         { cwd: dir, encoding: "utf8" },
       );

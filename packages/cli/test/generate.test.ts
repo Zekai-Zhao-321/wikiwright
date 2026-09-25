@@ -3,7 +3,6 @@
 // (generated files: one generator, deletable, byte-reproducible) · docs/architecture.md §Directories (canonical
 // writer, atomic all-or-nothing) · docs/concepts.md (generated drift = error).
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import {
   cpSync,
   mkdirSync,
@@ -18,13 +17,13 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
 
 function run(args: string[]): { status: number; envelope: Record<string, unknown> } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], { encoding: "utf8" });
+  const r = runCli([CLI, ...args], { encoding: "utf8" });
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Record<string, unknown> };
 }
 

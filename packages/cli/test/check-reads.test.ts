@@ -4,14 +4,13 @@
 // digest (docs/cli.md §The envelope), so a page is read exactly twice: a third
 // read is the verb reading the tree again. Count reads, not wall time.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
@@ -53,8 +52,7 @@ process.on("exit", () => fs.writeFileSync(${JSON.stringify(log)}, JSON.stringify
 `,
       );
       for (const flags of [["--write"], []]) {
-        const result = spawnSync(
-          CLI_RUNTIME,
+        const result = runCli(
           ["--require", preload, CLI, "check", ...flags, "--root", root, "--all"],
           { encoding: "utf8" },
         );

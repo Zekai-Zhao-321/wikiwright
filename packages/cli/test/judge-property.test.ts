@@ -6,9 +6,9 @@
 // the case is arranged so it can fail, .29 (NFC at every
 // constructor), .21 (the correction guards).
 //
-// This file runs under `bun test` AND `node --test` (package.json's `test` and
-// `test:node` scripts both glob it), which is what makes the property a
-// determinism claim and not just an agreement claim.
+// Each constructor reads its bytes through its own path — the disk, the git
+// index, git's objects — so agreement across them is a claim about the
+// constructors, not about one read.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

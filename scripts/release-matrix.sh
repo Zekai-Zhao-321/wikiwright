@@ -14,9 +14,9 @@
 # the output can be pasted into a release note as evidence.
 #
 # What it does NOT cover, stated so nobody reads a green run as more than it is:
-# Windows, and any operating system but the one it runs on. The node runner arm
-# below is the cross-RUNTIME half; the cross-PLATFORM half is the workflow's
-# Linux and macOS matrix, and Windows has no carrier at all.
+# Windows, and any operating system but the one it runs on. The engine runs on
+# one runtime, the Bun `.bun-version` pins; the cross-PLATFORM half is the
+# workflow's Linux and macOS matrix, and Windows has no carrier at all.
 
 set -u
 
@@ -42,12 +42,10 @@ arm() {
 #    under bun. This is what `scripts/hooks/pre-commit` runs on every commit.
 arm "bun: biome + build + typecheck + suite" bun run check
 
-# 2. The node runner. `docs/architecture.md §Directories` says the shipped artifact is node-builtins-only,
-#    and this is the only thing that proves it: bun tolerates shapes node
-#    rejects, and an absolute-path dynamic import that only node refuses is a
-#    defect this repository has actually shipped.
-arm "node: the whole suite under the shipped runtime" \
-  node --test "packages/core/test/*.test.ts" "packages/cli/test/*.test.ts"
+# 2. The pinned runtime is the one running: `.bun-version` names it exactly.
+arm "bun: the running Bun is the pinned one" sh -c '
+  test "$(bun --version)" = "$(cat .bun-version)"
+'
 
 # 3. Pack and install, as a consumer does. Covered by a test file too, so this
 #    arm is the same assertion from outside the suite: if the packages cannot be
@@ -62,14 +60,13 @@ arm "pack: both packages build a tarball" sh -c '
   exit $status
 '
 
-# 4. Determinism: the same bytes twice. `docs/architecture.md §The gate` asserts this in-suite under
-#    one runtime; this arm compares ACROSS runtimes, which no test in the suite
-#    does.
-arm "cross-runtime: one corpus, two runtimes, one verdict" sh -c '
+# 4. Determinism: the same bytes from the source and from the build, two
+#    processes over one corpus.
+arm "source and build: one corpus, one verdict" sh -c '
   a=$(mktemp) || exit 1
   b=$(mktemp) || exit 1
-  bun  packages/cli/src/main.ts lint --root fixtures/memory-synth --all --limit 100000 > "$a" 2>/dev/null
-  node packages/cli/dist/main.js lint --root fixtures/memory-synth --all --limit 100000 > "$b" 2>/dev/null
+  bun packages/cli/src/main.ts lint --root fixtures/memory-synth --all --limit 100000 > "$a" 2>/dev/null
+  bun packages/cli/dist/main.js lint --root fixtures/memory-synth --all --limit 100000 > "$b" 2>/dev/null
   diff -q "$a" "$b" >/dev/null
   status=$?
   rm -f "$a" "$b"
@@ -95,8 +92,8 @@ arm "corpora: every shipped fixture still judges as it declares" \
 
 printf '\n=== release matrix ===\n'
 printf '%b' "$RESULTS"
-printf '\nplatform: %s\nbun: %s\nnode: %s\n' \
-  "$(uname -s -m)" "$(bun --version 2>/dev/null || echo absent)" "$(node --version 2>/dev/null || echo absent)"
+printf '\nplatform: %s\nbun: %s\n' \
+  "$(uname -s -m)" "$(bun --version 2>/dev/null || echo absent)"
 printf '\nNOT covered by this run: Windows, any other operating system.\n'
 
 exit "$FAILED"

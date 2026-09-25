@@ -28,7 +28,7 @@ package. Two teams can share how their wikis are built without sharing a page
 of what is in them.
 
 The gate is `bun run check`: biome, the build, a test-project typecheck and
-the whole suite, on Bun and on Node. This repository documents itself in
+the whole suite, on Bun, the one runtime the engine runs on. This repository documents itself in
 `devwiki/`, a bundle over the shipped code kit, judged by that same gate.
 `docs/roadmap.md` states what is missing, deferred or unverified.
 
@@ -53,24 +53,24 @@ repository's own `devwiki` (`docs/extending.md`, "The code kit").
 
 ## Install
 
-Requires Bun 1.3 or later, or Node 22.12 or later, to run the built binary.
+Requires Bun, the version `.bun-version` pins (1.3.11): the engine builds,
+tests and runs on Bun only.
 
 ```sh
 git clone https://github.com/Zekai-Zhao-321/wikiwright.git
 cd wikiwright
 bun install
 bun run build
-node packages/cli/dist/bin.js version
+bun packages/cli/dist/bin.js version
 ```
 
-The executable is `packages/cli/dist/bin.js`: it switches on Node's compile
-cache for the engine's own JavaScript and loads `packages/cli/dist/main.js`,
-which runs the verbs and can be run directly. The pre-commit hook `init`
+The executable is `packages/cli/dist/bin.js`, a Bun script that loads
+`packages/cli/dist/main.js`, which runs the verbs and can be run directly. The pre-commit hook `init`
 installs in a bundle looks for `wikiwright` on PATH, so put a one-line
 launcher there:
 
 ```sh
-printf '#!/bin/sh\nexec node /path/to/wikiwright/packages/cli/dist/bin.js "$@"\n' > ~/.local/bin/wikiwright
+printf '#!/bin/sh\nexec bun /path/to/wikiwright/packages/cli/dist/bin.js "$@"\n' > ~/.local/bin/wikiwright
 chmod +x ~/.local/bin/wikiwright
 ```
 

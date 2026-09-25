@@ -3,18 +3,17 @@
 // act on. The envelope names the pass and the reason, in `write` and in every
 // judging verb, and `summary.unevaluated` stays the scalar every reader sums).
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
 function run(cwd: string, args: string[], stdin?: string): Record<string, unknown> {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
+  const r = runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     input: stdin ?? "",

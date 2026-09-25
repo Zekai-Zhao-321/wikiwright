@@ -5,7 +5,7 @@
 // the engine name none. docs/cli.md §brief: the brief's header prints the same
 // law digest.
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   appendFileSync,
@@ -25,7 +25,7 @@ import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const CONFORMANCE = fileURLToPath(new URL("../../../fixtures/conformance/", import.meta.url));
@@ -52,7 +52,7 @@ function run(
   argv: readonly string[],
   env: NodeJS.ProcessEnv = {},
 ): { status: number; envelope: Envelope } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
+  const r = runCli([CLI, ...argv], {
     cwd,
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK, ...env },

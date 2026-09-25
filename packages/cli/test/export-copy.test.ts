@@ -7,9 +7,9 @@
 // reader: a page it left out is not there to read.
 //
 // Every bundle is a gardening bundle under os.tmpdir(), and the CLI runs under
-// CLI_RUNTIME.
+// Bun.
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import {
   cpSync,
   existsSync,
@@ -28,7 +28,7 @@ import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { installedCopy } from "./fixtures/kit-code.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
@@ -76,7 +76,7 @@ function run(
   argv: readonly string[],
   extra: NodeJS.ProcessEnv = {},
 ): { status: number; envelope: Envelope } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
+  const r = runCli([CLI, ...argv, "--root", root], {
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK, ...extra },
   });

@@ -29,7 +29,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { BUN, runCli } from "./fixtures/runtime.ts";
 
 const PACKAGE = fileURLToPath(new URL("../", import.meta.url));
 const CLI = join(PACKAGE, "dist", "main.js");
@@ -48,7 +48,7 @@ function hook(
   stdin: string,
   extra: NodeJS.ProcessEnv = {},
 ): { status: number; stdout: string } {
-  const r = spawnSync(CLI_RUNTIME, [script], {
+  const r = runCli([script], {
     cwd: tmp,
     encoding: "utf8",
     input: stdin,
@@ -70,7 +70,7 @@ function contextOf(stdout: string, event: string): string {
 
 /** The engine itself, under the hooks' environment. */
 function cli(argv: readonly string[]): { status: number; stdout: string } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
+  const r = runCli([CLI, ...argv], {
     encoding: "utf8",
     env: { ...process.env, ...env },
   });
@@ -305,7 +305,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
       for (const entry of entries) {
         for (const command of entry.hooks) {
           assert.equal(command.type, "command");
-          const script = /^node "\$\{CLAUDE_PLUGIN_ROOT\}\/(hooks\/[a-z-]+\.mjs)"$/u.exec(
+          const script = /^bun "\$\{CLAUDE_PLUGIN_ROOT\}\/(hooks\/[a-z-]+\.mjs)"$/u.exec(
             command.command,
           )?.[1];
           assert.ok(script !== undefined, command.command);
@@ -387,14 +387,17 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     );
     // Replayed through a POSIX shell exactly as printed, the engine in place of
     // the command name: the dry run plans the one fix on the one page.
-    const command = `${suggestion.replace(/^wikiwright /u, `'${CLI_RUNTIME}' '${CLI}' `)} --dry-run`;
-    const r = spawnSync("sh", ["-c", command], {
+    const command = `${suggestion.replace(/^wikiwright /u, `'${BUN}' '${CLI}' `)} --dry-run`;
+    // The envelope goes to a file, never through the pipe the test reads.
+    const envelopeFile = join(tmp, "replayed.json");
+    const r = spawnSync("sh", ["-c", `${command} > '${envelopeFile}'`], {
       cwd: tmp,
       encoding: "utf8",
       env: { ...process.env, ...env },
     });
-    assert.equal(r.status, 0, `${command}\n${r.stdout}${r.stderr}`);
-    const planned = JSON.parse(r.stdout) as { ok: boolean; data: { ops: { path?: string }[] } };
+    const replayed = readFileSync(envelopeFile, "utf8");
+    assert.equal(r.status, 0, `${command}\n${replayed}${r.stderr}`);
+    const planned = JSON.parse(replayed) as { ok: boolean; data: { ops: { path?: string }[] } };
     assert.equal(planned.ok, true);
     assert.deepEqual(
       planned.data.ops.map((op) => op.path),

@@ -17,14 +17,14 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { versionData } from "../src/buildinfo.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const BUILD_INFO = fileURLToPath(new URL("../dist/build-info.json", import.meta.url));
 
 function envelopeOf(args: string[]): { data?: Record<string, unknown> } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], { cwd: REPO, encoding: "utf8" });
+  const r = runCli([CLI, ...args], { cwd: REPO, encoding: "utf8" });
   return JSON.parse(r.stdout) as { data?: Record<string, unknown> };
 }
 
@@ -217,7 +217,7 @@ interface Outcome {
 }
 
 function runIn(cwd: string, args: string[], env: Record<string, string> = {}): Outcome {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
+  const r = runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env: { ...process.env, ...env },

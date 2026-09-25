@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 import { passRows, standardLibrary } from "@wikiwright/core";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { MEMORY_LAW } from "./fixtures/memory-law.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
@@ -38,7 +38,7 @@ interface Finding {
 }
 
 function envelopeOf(args: string[], root?: string): { data?: { findings?: Finding[] } } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], {
+  const r = runCli([CLI, ...args], {
     encoding: "utf8",
     // A corpus over a kit runs under the pinned clock, as every kit bundle does.
     ...(root === undefined ? {} : { env: kitEnv() }),
@@ -193,7 +193,7 @@ describe("every emitted finding routes (docs/concepts.md §Findings and routing)
 });
 
 function run(cwd: string, args: string[]): { status: number; envelope: RunEnvelope } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
+  const r = runCli([CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as RunEnvelope };
 }
 
@@ -443,7 +443,7 @@ describe("every export finding routes (docs/constitution.md §exports)", () => {
     const to = join(dirname(root), "elsewhere");
     mkdirSync(to);
     try {
-      const r = spawnSync(CLI_RUNTIME, [CLI, "export", "a", "--to", to, "--root", root], {
+      const r = runCli([CLI, "export", "a", "--to", to, "--root", root], {
         encoding: "utf8",
       });
       assert.equal(r.status, 5, r.stdout);
@@ -472,7 +472,7 @@ describe("a vault read refused by the path law routes no finding (docs/cli.md §
       cpSync(engine, join(tmp, "engine.json"));
       rmSync(engine);
       symlinkSync(join(tmp, "engine.json"), engine);
-      const r = spawnSync(CLI_RUNTIME, [CLI, "check", "--root", root], { encoding: "utf8" });
+      const r = runCli([CLI, "check", "--root", root], { encoding: "utf8" });
       assert.equal(r.status, 4, r.stdout);
       const envelope = JSON.parse(r.stdout) as RunEnvelope;
       assert.equal(envelope.error?.["code"], "linked-outside-vault");

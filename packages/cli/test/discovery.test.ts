@@ -10,7 +10,7 @@
 // inside a `git init` repository there: no test reads a real skill directory
 // of the developer's.
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import {
   cpSync,
   mkdirSync,
@@ -27,7 +27,7 @@ import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
@@ -85,7 +85,7 @@ function rendered(repository: string | undefined, body = "Turn it weekly."): str
     })}\n`,
     "wiki/turning-compost.md": note("Turning compost", body),
   });
-  const r = spawnSync(CLI_RUNTIME, [CLI, "check", "--write", "--root", root], {
+  const r = runCli([CLI, "check", "--write", "--root", root], {
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK },
   });
@@ -116,7 +116,7 @@ function run(
   argv: readonly string[],
   env: NodeJS.ProcessEnv,
 ): { status: number; envelope: Envelope } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
+  const r = runCli([CLI, ...argv], {
     cwd,
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK, WIKIWRIGHT_SKILL_DIRS: "", ...env },

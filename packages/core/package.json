@@ -16,7 +16,7 @@
     "dist"
   ],
   "engines": {
-    "node": ">=22.12.0"
+    "bun": "1.3.11"
   },
   "dependencies": {
     "mdast-util-from-markdown": "^2.0.3",

@@ -34,7 +34,7 @@ import { lawFor } from "../src/law.ts";
 import { fixtureRunCount, loadDeclaredModules } from "../src/moduleload.ts";
 import { loadVault } from "../src/vaultio.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const CONFORMANCE = join(REPO, "fixtures", "conformance");
@@ -70,14 +70,19 @@ interface Envelope {
 }
 
 function run(root: string, argv: readonly string[]): { status: number; envelope: Envelope } {
-  const result = execFileSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
+  const result = runCli([CLI, ...argv, "--root", root], {
     cwd: REPO,
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK },
-    // A non-zero exit is a VERDICT here, not a harness failure.
-    stdio: ["ignore", "pipe", "pipe"],
   });
-  return { status: 0, envelope: JSON.parse(result) as Envelope };
+  // A non-zero exit is a VERDICT, which `runAny` reads; `run` holds the run to exit 0.
+  if (result.status !== 0) {
+    throw Object.assign(new Error(`the CLI exited ${String(result.status)}: ${result.stderr}`), {
+      status: result.status,
+      stdout: result.stdout,
+    });
+  }
+  return { status: 0, envelope: JSON.parse(result.stdout) as Envelope };
 }
 
 /** The same, tolerating the engine's own non-zero exits (2 = constitution, 5 = findings). */

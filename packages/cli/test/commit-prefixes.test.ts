@@ -18,7 +18,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { BUN, runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -34,7 +34,7 @@ interface Run {
 }
 
 function run(cwd: string, args: string[]): Run {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], { cwd, encoding: "utf8" });
+  const r = runCli([CLI, ...args], { cwd, encoding: "utf8" });
   return {
     status: r.status ?? -1,
     stderr: r.stderr,
@@ -80,7 +80,7 @@ function shimPath(tmp: string): string {
   const bin = join(tmp, ".bin");
   mkdirSync(bin, { recursive: true });
   const launcher = join(bin, "wikiwright");
-  writeFileSync(launcher, `#!/bin/sh\nexec ${CLI_RUNTIME} ${CLI} "$@"\n`);
+  writeFileSync(launcher, `#!/bin/sh\nexec ${BUN} ${CLI} "$@"\n`);
   chmodSync(launcher, 0o755);
   return `${bin}${delimiter}${process.env["PATH"] ?? ""}`;
 }

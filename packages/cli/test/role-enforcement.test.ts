@@ -3,11 +3,10 @@
 // with role-forbidden and a role-filtered valid_commands; an unrecognised value
 // is a usage error, never a silent maintainer)
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
@@ -21,7 +20,7 @@ interface Run {
 }
 
 function run(args: string[], env?: Record<string, string>): Run {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args], {
+  const r = runCli([CLI, ...args], {
     encoding: "utf8",
     env: { ...process.env, ...(env ?? {}) } as Record<string, string>,
   });

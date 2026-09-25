@@ -3,7 +3,6 @@
 // raw bytes; a budget that returns sections in page order while they fit and
 // lists the rest by address; the envelope's bundle block as the attribution.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { type ParsedDoc, parseDoc } from "@wikiwright/core";
 import { pageNamed } from "../src/verbs/read.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
@@ -61,7 +60,7 @@ function read(
   status: number;
   envelope: Envelope;
 } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, "read", ...argv], {
+  const r = runCli([CLI, "read", ...argv], {
     cwd: tmp,
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK, ...env },
@@ -311,7 +310,7 @@ describe("read returns a page's sections with attribution (docs/cli.md §read)",
       join(vault, "wiki", "Mulching beds.md"),
       "---\ntype: procedure-page\ntags: [fruit]\napplies_to: temperate\n---\n\nSpread a mulch over bare soil in late spring.\n\n## Steps\n\n1. Weed the bed.\n2. Spread the mulch.\n",
     );
-    const written = spawnSync(CLI_RUNTIME, [CLI, "check", "--write", "--root", vault], {
+    const written = runCli([CLI, "check", "--write", "--root", vault], {
       encoding: "utf8",
     });
     assert.equal(written.status, 0, written.stdout);
@@ -414,7 +413,7 @@ describe("read returns a page's sections with attribution (docs/cli.md §read)",
         "## Steps\n\n1. Water the bush well once it is pruned.\n\n## Notes",
       ),
     );
-    const lint = spawnSync(CLI_RUNTIME, [CLI, "lint", "--page", PAGE, "--root", vault], {
+    const lint = runCli([CLI, "lint", "--page", PAGE, "--root", vault], {
       cwd: tmp,
       encoding: "utf8",
       env: { ...process.env, ...PINNED_CLOCK },
@@ -506,7 +505,7 @@ describe("read returns a page's sections with attribution (docs/cli.md §read)",
     const apples = join(vault, "wiki", "thinning-apples.md");
     writeFileSync(apples, readFileSync(apples, "utf8").replaceAll("\n", "\r\n"));
 
-    const lint = spawnSync(CLI_RUNTIME, [CLI, "lint", "--root", vault], {
+    const lint = runCli([CLI, "lint", "--root", vault], {
       cwd: tmp,
       encoding: "utf8",
       env: { ...process.env, ...PINNED_CLOCK },

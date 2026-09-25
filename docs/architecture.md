@@ -1,7 +1,7 @@
 # Architecture
 
-Two packages, TypeScript, built with Bun, running on Node 22.12 or later and on
-Bun. `@wikiwright/core` is a pure library: functions over bytes, with no Node
+Two packages, TypeScript, built, tested and run with Bun only, the version
+`.bun-version` pins. `@wikiwright/core` is a pure library: functions over bytes, with no Node
 typings in its tsconfig, so a filesystem call does not typecheck there. The
 `wikiwright` package is the shell: argv, envelopes, exit codes, the filesystem,
 git, and one module per verb. A third workspace package, `@wikiwright/kit-code`,
@@ -154,34 +154,28 @@ many at once as the machine has cores, because `bun test` runs its files one
 after another and most of the suite's time is spent waiting on the CLI
 processes the tests spawn; a run passes only when every file does. It gives
 a test or a hook 20 seconds rather than Bun's 5, because a file's time under
-that contention was measured at about 2.4 times its time alone. Under Bun it
-runs the CLI the tests spawn under the `node` on PATH, and refuses to run
-when it finds none (`docs/roadmap.md`).
+that contention was measured at about 2.4 times its time alone. Every file
+and the CLI the tests spawn run under Bun; a test reads the CLI's stdout from
+a file (`packages/cli/test/fixtures/runtime.ts`).
 `scripts/hooks/pre-commit` runs it locally; enable the hook once per clone:
 
 ```sh
 git config core.hooksPath scripts/hooks
 ```
 
-`.github/workflows/check.yml` runs the same command, and then the node
-runner, on every push and pull request, on Linux and on macOS. What neither
-covers, so nobody assumes it does: Windows, and any Linux distribution but
-the one the workflow provisions. The node runner by hand is:
-
-```sh
-bun run test:node
-```
-
-which is `node --test "packages/core/test/*.test.ts" "packages/cli/test/*.test.ts"`.
-`sh scripts/release-matrix.sh` runs the gate, the node runner, a pack and the
-corpus verdicts in one command and prints PASS or FAIL per arm; nothing
+`.github/workflows/check.yml` runs the same command, under the Bun
+`.bun-version` names, on every push and pull request, on Linux and on macOS.
+What neither covers, so nobody assumes it does: Windows, and any Linux
+distribution but the one the workflow provisions.
+`sh scripts/release-matrix.sh` runs the gate, the Bun pin, a pack, a source
+and build comparison and the corpus verdicts in one command and prints PASS or FAIL per arm; nothing
 invokes it. Windows has no carrier in this repository and is unverified.
 
 ## Developing
 
 - `bun install`, then `bun run build`. The executable is
-  `packages/cli/dist/bin.js`, which switches on Node's compile cache and loads
-  the engine, `packages/cli/dist/main.js`; `wikiwright version` reports the commit it was
+  `packages/cli/dist/bin.js`, a Bun script that loads the engine,
+  `packages/cli/dist/main.js`; `wikiwright version` reports the commit it was
   built from and whether the checkout was dirty, so a stale build is never
   mistaken for the checkout.
 - `devwiki` is a bundle over `@wikiwright/kit-code`, which `bun install` links

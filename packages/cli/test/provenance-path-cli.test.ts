@@ -5,20 +5,19 @@
 // e2e:source_roots — a declared root in config/engine.json changes what the
 // binary calls provenance, from bytes on disk to a command's answer.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIELD_SOURCES = { title: "basename", description: "lede" };
 
 function run(cwd: string, args: string[]): { status: number; data: Record<string, unknown> } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
+  const r = runCli([CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
   const envelope = JSON.parse(r.stdout) as { data?: Record<string, unknown> };
   return { status: r.status ?? -1, data: envelope.data ?? {} };
 }

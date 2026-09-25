@@ -9,7 +9,7 @@
 //
 // Every bundle is a gardening bundle under os.tmpdir().
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import {
   chmodSync,
   cpSync,
@@ -27,7 +27,7 @@ import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const KIT_GARDEN = fileURLToPath(new URL("./fixtures/kit-garden", import.meta.url));
@@ -50,7 +50,7 @@ interface Envelope {
 }
 
 function run(root: string, argv: readonly string[]): { status: number; envelope: Envelope } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
+  const r = runCli([CLI, ...argv, "--root", root], {
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK },
   });

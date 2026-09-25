@@ -28,11 +28,8 @@ hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
-The suite is 1,665 tests across 115 files. At `f725d75`, when it held
-1,658, the full gate, `bun run check`, passed 1,658 of 1,658 with the test
-files under Bun and the CLI under Node (`tools/run-suite.ts`), and the full
-node runner, `bun run test:node`, passed 1,658 of 1,658 with every file under
-Node. It
+The engine runs on Bun only, the version `.bun-version` pins; the test
+files and the CLI they spawn run under it (`tools/run-suite.ts`). The suite
 judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
@@ -53,8 +50,8 @@ through the page that covers the file.
 
 The gate is `bun run check` (biome, the build, the test-project typecheck,
 the whole suite). `scripts/hooks/pre-commit` runs it on the machine that
-commits, and `.github/workflows/check.yml` runs it, then the node runner
-(`bun run test:node`), on every push and pull request on Linux and macOS.
+commits, and `.github/workflows/check.yml` runs it on every push and pull
+request on Linux and macOS.
 `sh scripts/release-matrix.sh` is run by hand before a release; Windows is
 unverified.
 
@@ -193,12 +190,10 @@ A verb starts, reads the pages its state names, judges them and exits; the
 only state of the vault between two runs is the bytes in git. There is no
 cache of parsed pages and no long-lived process, on purpose: a cache is a
 second state that can disagree with the first, and a daemon is the process
-the thesis excludes (`docs/architecture.md`). The one thing kept between runs
-is Node's compile cache of the engine's own JavaScript, which
-`packages/cli/dist/bin.js` switches on: V8 bytecode keyed by the source it was
-compiled from, under the operating system's temporary directory. It holds
-nothing of a vault and cannot change a verdict, only how long the engine
-takes to load; `NODE_DISABLE_COMPILE_CACHE=1` turns it off. The cost grows with the corpus. Parsing and reading
+the thesis excludes (`docs/architecture.md`). Nothing is kept between runs:
+Node's compile cache, which `packages/cli/dist/bin.js` switched on while the
+engine shipped for Node, left with the move to Bun only, and the timings
+below measured under Node include it. The cost grows with the corpus. Parsing and reading
 pages dominate the synthetic benchmark; applying the rules is much cheaper.
 
 `check`, the gate and `read` parse each page they read once; that is not
@@ -299,15 +294,15 @@ bundler in the path of what ships.
 
 ### Two operating systems
 
-The hook runs where the commit happens; the workflow declares the gate and the
-node runner on Linux and macOS, and has not yet been observed to run: on this
-private repository, on every push and pull request through 2026-09-11, GitHub
+The hook runs where the commit happens; the workflow declares the gate on
+Linux and macOS, and has not yet been observed to run: on this private
+repository, on every push and pull request through 2026-09-11, GitHub
 created both jobs and ended them within seconds with no step run, and the
 job's annotation names the account's billing and spending limit rather than
 anything in the tree. Until the account allows a hosted runner, or the
 repository is public, the gate's evidence is the hook and the by-hand runs on
 one machine. `sh scripts/release-matrix.sh` runs the
-gate, the node runner, a pack and the corpus verdicts in one command, by
+gate, the Bun pin, a pack and the corpus verdicts in one command, by
 hand, and nothing reaches Windows. A known Windows shape: `bun install
 <tarball>` records an absolute path in the lockfile, starting with `C:\`;
 the engine no longer reads lockfiles, but anything that classifies a
@@ -577,29 +572,21 @@ of 38,500 bytes with exit 0, and a batch read 8,428 of 80,468). The cut is
 rare and depends on the load; the file transport is not a lower rate of it
 but a channel with no prefix to return.
 
-The suite also runs the CLI under Node: `tools/run-suite.ts` sets
-`WIKIWRIGHT_CLI_RUNTIME` to the `node` on PATH, resolved to an absolute path
-so a test that runs from another directory finds it, and refuses to run when
-it finds none rather than fall back to Bun; every test that runs the CLI runs
-it under that (`packages/cli/test/fixtures/runtime.ts`). That seam
-reaches only the CLI a test spawns. The engine functions a test calls in its
-own process still run under Bun, and their git reads are covered by the
-transport above, not by the seam; `judge-property.test.ts`, which judges
-states it builds that way, asserts each state's pages before any verdict
-read from it, since an empty or short state judges clean. The shipped engine
-does not use Bun's synchronous spawn: `dist/bin.js` is a Node script.
+The engine no longer calls a synchronous spawn at all: the transport spawns
+asynchronously (`Bun.spawn`), awaited to the child's exit, at most four
+children at a time, and no file the packages ship spawns synchronously
+(`no-sync-spawn.test.ts`). The CLI a test spawns runs under Bun with its
+stdout on a file the test reads back (`runCli`,
+`packages/cli/test/fixtures/runtime.ts`), and the plugin's hook scripts read
+the envelope the same way. `judge-property.test.ts`, which judges states it
+builds in its own process, asserts each state's pages before any verdict read
+from it, since an empty or short state judges clean.
 
-Left: three readers are not converted, and none chooses a page the engine
+Left: two readers are not converted, and none chooses a page the engine
 judges. `tools/write-build-info.ts` reads git through a pipe when it stamps a
-build, where a cut could misstate the build's commit, never a verdict; the
-plugin's
-hook scripts read the CLI's envelope through a pipe, best-effort feedback
-that judges nothing; and the test files still run under Bun, so the envelope
-a test reads back from the CLI, and the test's own setup `git` calls, still
-come through Bun's piped spawn. A cut envelope does not parse and fails its test loudly; a cut
-setup read is not checked. The tests that run Bun on purpose are
-`run-suite.test.ts`, which drives the runner, and the one `vocabulary show`
-case that compares Bun's output with Node's.
+build, where a cut could misstate the build's commit, never a verdict; and
+the test files' own setup `git` calls still come through Bun's piped
+synchronous spawn, where a cut setup read is not checked.
 
 Wanted: a Bun whose synchronous spawn returns a child's whole output.
 

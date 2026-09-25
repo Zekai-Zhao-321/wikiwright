@@ -2,19 +2,18 @@
 // command's answer; `type show` renders one line per section) · docs/concepts.md §Section grammar
 // (report mode: warnings and infos, never errors) · docs/cli.md §lint (summary.by_rule).
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
 function run(cwd: string, args: string[]): { status: number; data: Record<string, unknown> } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
+  const r = runCli([CLI, ...args, "--root", "."], { cwd, encoding: "utf8" });
   const envelope = JSON.parse(r.stdout) as { data?: Record<string, unknown> };
   return { status: r.status ?? -1, data: envelope.data ?? {} };
 }

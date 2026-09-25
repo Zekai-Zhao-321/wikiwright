@@ -4,10 +4,9 @@
 // `### Timeline` is `section-depth`'s first measurement: 1 firing across 40
 // pages).
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURES = fileURLToPath(new URL("../../../fixtures/", import.meta.url));
@@ -25,7 +24,7 @@ interface Verdict {
 }
 
 function lint(fixture: string, verb: "lint" | "check" = "lint"): Verdict {
-  const r = spawnSync(CLI_RUNTIME, [CLI, verb, "--all", "--root", `${FIXTURES}${fixture}`], {
+  const r = runCli([CLI, verb, "--all", "--root", `${FIXTURES}${fixture}`], {
     encoding: "utf8",
   });
   const envelope = JSON.parse(r.stdout) as {

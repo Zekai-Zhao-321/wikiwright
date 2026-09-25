@@ -7,26 +7,25 @@ and how to send one.
 
 ## Setup from a fresh clone
 
-Bun 1.3.11 or later builds and tests the engine; Node 22.12 or later runs
-the shipped binary, and the node runner proves that it does.
+The engine runs on Bun only: the version in `.bun-version` (1.3.11), which
+every `engines.bun` pins exactly, builds it, tests it and runs it.
 
 ```sh
 git clone https://github.com/Zekai-Zhao-321/wikiwright
 cd wikiwright
 bun install
 bun run build
-node packages/cli/dist/bin.js version
+bun packages/cli/dist/bin.js version
 ```
 
-The executable is `packages/cli/dist/bin.js`, which switches on Node's
-compile cache and loads `packages/cli/dist/main.js`, the engine, which the
-suite runs directly; `version` reports the commit it
+The executable is `packages/cli/dist/bin.js`, a Bun script that loads
+`packages/cli/dist/main.js`, the engine, which the suite runs directly; `version` reports the commit it
 was built from and whether the checkout was dirty, so a stale build is never
 mistaken for the checkout. The installed pre-commit hook of a bundle looks
 for `wikiwright` on PATH, so put a one-line launcher there if you want it:
 
 ```sh
-printf '#!/bin/sh\nexec node /path/to/wikiwright/packages/cli/dist/bin.js "$@"\n' > ~/.local/bin/wikiwright
+printf '#!/bin/sh\nexec bun /path/to/wikiwright/packages/cli/dist/bin.js "$@"\n' > ~/.local/bin/wikiwright
 chmod +x ~/.local/bin/wikiwright
 ```
 
@@ -53,39 +52,35 @@ once per clone:
 git config core.hooksPath scripts/hooks
 ```
 
-The hook covers the machine that commits, under Bun. The workflow under
-`.github/workflows/check.yml` runs the same command, then the node runner,
-on every push and pull request on Linux and macOS. Before a release, run
-the node runner and the release matrix by hand:
+The hook covers the machine that commits. The workflow under
+`.github/workflows/check.yml` runs the same command, under the Bun
+`.bun-version` names, on every push and pull request on Linux and macOS.
+Before a release, run the release matrix by hand:
 
 ```sh
-bun run test:node
 sh scripts/release-matrix.sh
 ```
 
-The matrix runs the gate, the node runner, a pack of both packages, a
-cross-runtime determinism check and the corpus verdicts, and prints PASS or
-FAIL per arm. Windows is unverified; `docs/roadmap.md` says so and lists what
+The matrix runs the gate, checks that the running Bun is the pinned one,
+packs both packages, compares the source's and the build's verdict over one
+corpus, builds from nothing and checks the corpus verdicts, and prints PASS
+or FAIL per arm. Windows is unverified; `docs/roadmap.md` says so and lists what
 else is not covered.
 
-## Tests, on Bun and on Node
+## Tests
 
 - `bun run test` runs the suite after a build, through `tools/run-suite.ts`;
   `bun test ./packages/cli/test/write-verb.test.ts` runs one file. Keep the
   `./`: to `bun test` a bare path is a substring filter, and
   `packages/cli/test/staged-gate` also runs `staged-gate-reads`. A plain
-  `bun test` still runs every file, one after another, in one process. The
-  node runner is
-  `node --test "packages/core/test/*.test.ts" "packages/cli/test/*.test.ts"`,
-  which `bun run test:node` wraps after a build.
-- A test runs the CLI under `CLI_RUNTIME` from
-  `packages/cli/test/fixtures/runtime.ts`, never `process.execPath`: the
-  runtime in `WIKIWRIGHT_CLI_RUNTIME`, which `tools/run-suite.ts` sets to the
-  `node` on PATH as an absolute path, or the test's own runtime without it.
-  Under Bun the runner refuses to run when it finds no `node` and the
-  variable is unset, rather than let the CLI run under Bun. Under load Bun's
-  synchronous spawn has cut a child's output short (`docs/roadmap.md`), and
-  the engine ships for Node. A test that means Bun names `bun`.
+  `bun test` still runs every file, one after another, in one process.
+  `tools/run-suite.ts` is a bridge, deleted the day `bun test --parallel`
+  is proven on this suite.
+- A test runs the CLI with `runCli` from
+  `packages/cli/test/fixtures/runtime.ts`: under the Bun running the test,
+  with the CLI's stdout on a file the test created and read back from it,
+  never through a pipe. Under load Bun's synchronous spawn has cut a child's
+  piped output short (`docs/roadmap.md`). A new test file uses `bun:test`.
 - Every test writes under `os.tmpdir()`, never in the repository. The
   packed-install test installs under a package cache of its own there, so
   every run fetches the packed core's dependencies from the registry: the
@@ -113,13 +108,13 @@ else is not covered.
 
 ## Measuring command performance
 
-After `bun run build`, run `node tools/benchmark-check.ts` for 1,000, 5,000
+After `bun run build`, run `bun tools/benchmark-check.ts` for 1,000, 5,000
 and 10,000 synthetic pages, three fresh processes per command (`check`,
 `check --write`, `lint --staged`). The first two positional arguments
 override the comma-separated page counts and the repetition count:
 
 ```sh
-node tools/benchmark-check.ts 1000,5000 3
+bun tools/benchmark-check.ts 1000,5000 3
 ```
 
 An optional third argument names a separately built baseline CLI. The runner
@@ -127,7 +122,7 @@ alternates the two builds and requires byte-identical envelopes and generated
 files before reporting their timings. Corpus creation and initial artifact
 generation are outside the measured interval. Every process starts fresh;
 the operating system's filesystem cache is not flushed. All temporary vaults
-are removed when the run finishes. Use Bun instead of Node to measure Bun.
+are removed when the run finishes.
 
 ## Generated files have one generator each
 
@@ -178,7 +173,7 @@ documentation is invented or drawn from this repository's own `devwiki`.
 1. Branch from `main`; work in a worktree per change if you like
    (`git worktree add ../wt-<name> -b <branch>`).
 2. Keep the gate green after every commit, regenerate what your change
-   moved, and run `bun run test:node` before you push.
+   moved.
 3. Open the pull request against `main` with the why in its description:
    what was wrong or missing, what the change does about it, and what it
    does not do. A change that adds a key, a verb or a finding names its

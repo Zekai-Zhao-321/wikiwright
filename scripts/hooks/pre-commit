@@ -2,18 +2,16 @@
 # The development gate. It runs `bun run check` — biome, the build, the
 # test-project typecheck and the whole suite — before every commit, so a
 # mistake is caught on the machine that made it. The workflow under
-# .github/workflows/check.yml runs the same command, and the node runner,
-# on every push and pull request on Linux and macOS.
+# .github/workflows/check.yml runs the same command on every push and pull
+# request on Linux and macOS.
 #
 # Install once, from the repository root:
 #   git config core.hooksPath scripts/hooks
 #
 # What this hook cannot do, stated so nobody assumes otherwise: it runs on
-# one machine under one runtime, and it does not run the node runner or
-# reach Windows. Before a release, run
-#   bun run test:node
-# and `sh scripts/release-matrix.sh`, and think about the platforms nobody
-# is testing.
+# one machine and does not reach Windows. Before a release, run
+# `sh scripts/release-matrix.sh`, and think about the platforms nobody is
+# testing.
 set -e
 
 if ! command -v bun >/dev/null 2>&1; then

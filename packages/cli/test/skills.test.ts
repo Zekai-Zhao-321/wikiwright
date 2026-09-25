@@ -6,7 +6,6 @@
 // no-verbs-in-prose grep, the reverse gate, and the generator guard)
 // docs/cli.md §brief · docs/cli.md §The envelope (generated surfaces stay true).
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -18,7 +17,7 @@ import { parseInvocation } from "../src/argv.ts";
 import { WORKFLOW_SLOTS } from "../src/brief.ts";
 import { COMMANDS } from "../src/commands.ts";
 import { ROLE_RANK } from "../src/spec.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const SKILLS_DIR = fileURLToPath(new URL("../skills", import.meta.url));
 const SKILLS = ["wikiwright-consume", "wikiwright-maintain", "wikiwright-write"];
@@ -124,7 +123,7 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
       /the engine prints that same brief\s+for it from the copy or from anywhere/u,
     );
     // The engine runs from the caller's directory, never the clone's.
-    assert.match(text, /`node <clone>\/packages\/cli\/dist\/main\.js`/u);
+    assert.match(text, /`bun <clone>\/packages\/cli\/dist\/main\.js`/u);
     assert.match(text, /Never `cd` into the clone/u);
     // The one route that exists, and that no published package does.
     assert.match(text, /no published package exists yet/u);
@@ -272,7 +271,7 @@ describe("init installs the skills into the vault (docs/cli.md §brief, docs/cli
   it("copies every shipped skill under .claude/skills/, the three of them", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-skill-"));
     try {
-      const r = spawnSync(CLI_RUNTIME, [CLI, "init", "--root", tmp], { encoding: "utf8" });
+      const r = runCli([CLI, "init", "--root", tmp], { encoding: "utf8" });
       assert.equal(r.status, 0);
       for (const skill of SKILLS) {
         assert.equal(existsSync(join(tmp, `.claude/skills/${skill}/SKILL.md`)), true);

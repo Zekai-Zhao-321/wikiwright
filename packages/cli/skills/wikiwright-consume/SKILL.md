@@ -21,7 +21,7 @@ holds and which version said it are the engine's.
 Run `wikiwright version`. If the command is not found, there is one route
 today, since no published package exists yet: clone the engine's repository,
 run `bun install` and then `bun run build` in the clone, and run the engine by
-its absolute path, `node <clone>/packages/cli/dist/main.js`, in place of
+its absolute path, `bun <clone>/packages/cli/dist/main.js`, in place of
 `wikiwright` in every command below — from the directory you are working in.
 Never `cd` into the clone to run it: `--bundle` resolves from the directory
 the command runs in, and the clone is not where your bundle skills are. A bundle skill names the engine it needs ("the wikiwright engine

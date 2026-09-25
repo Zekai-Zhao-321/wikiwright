@@ -7,13 +7,12 @@
 // Both findings come from a bundle in use: the engine's
 // refusal was correct and its message was about a file the author does not have.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const CODE_STARTER = fileURLToPath(new URL("../constitutions/code", import.meta.url));
@@ -31,7 +30,7 @@ interface Envelope {
 }
 
 function run(cwd: string, args: string[]): { status: number; envelope: Envelope } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...args, "--root", "."], {
+  const r = runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env: kitEnv(),

@@ -29,13 +29,11 @@
 // and a directory in no repository (`gitTopLevel`) — and each fails
 // conservatively when that text is lost: the failure is thrown as a plumbing
 // failure, never read as a smaller answer.
-import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { closeSync, openSync, unlinkSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Readable } from "node:stream";
 
 /** stderr's bound: messages and the recognitions, never an answer's bytes. */
 const STDERR_MAX_BYTES = 8 * 1024 * 1024;
@@ -108,7 +106,7 @@ async function run(
   stdin: "ignore" | number,
   out: number,
 ): Promise<Omit<ChildAnswer, "stdout">> {
-  let child: Spawned;
+  let child: ReturnType<typeof spawnPiped>;
   try {
     child = spawnPiped(command, args, options, stdin, out);
   } catch (e) {
@@ -179,58 +177,21 @@ async function run(
   }
 }
 
-/** A spawned child as `run` reads it, whichever runtime spawned it. */
-interface Spawned {
-  exited: Promise<number | null>;
-  readonly signalCode: string | null;
-  kill(signal: NodeJS.Signals): void;
-  stderr: ReadableStream<Uint8Array>;
-}
-
 function spawnPiped(
   command: string,
   args: readonly string[],
   options: ChildOptions,
   stdin: "ignore" | number,
   out: number,
-): Spawned {
-  const env = options.env ?? process.env;
-  if (typeof Bun !== "undefined") {
-    const child = Bun.spawn({
-      cmd: [command, ...args],
-      cwd: options.cwd,
-      env,
-      stdin,
-      stdout: out,
-      stderr: "pipe",
-    });
-    return {
-      exited: child.exited,
-      get signalCode() {
-        return child.signalCode ?? null;
-      },
-      kill: (signal) => child.kill(signal),
-      stderr: child.stderr,
-    };
-  }
-  // The Node arm, while the suite still runs the CLI under Node; the Bun-only
-  // runner removes it.
-  const child = spawn(command, [...args], { cwd: options.cwd, env, stdio: [stdin, out, "pipe"] });
-  const exited = new Promise<number | null>((resolve, reject) => {
-    child.once("error", reject);
-    child.once("exit", (code) => resolve(code));
+) {
+  return Bun.spawn({
+    cmd: [command, ...args],
+    cwd: options.cwd,
+    env: options.env ?? process.env,
+    stdin,
+    stdout: out,
+    stderr: "pipe",
   });
-  if (child.stderr === null) throw new Error("the child has no stderr pipe");
-  return {
-    exited,
-    get signalCode() {
-      return child.signalCode;
-    },
-    kill: (signal) => {
-      child.kill(signal);
-    },
-    stderr: Readable.toWeb(child.stderr) as ReadableStream<Uint8Array>,
-  };
 }
 
 /**

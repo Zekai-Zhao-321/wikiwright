@@ -11,7 +11,7 @@
 // without the installer's own comparison; the installer's update is that
 // comparison, and the hook names it rather than guessing.
 //
-// Plain Node, no dependencies. It inherits the environment, so the skill
+// A Bun script with no dependencies. It inherits the environment, so the skill
 // directories and the session's role are the ones the engine would read.
 // Whatever goes wrong — stdin that is not JSON, a binary that is missing, an
 // envelope that is not one — it prints nothing and exits 0: a hook that fails

@@ -24,6 +24,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   realpathSync,
   rmSync,
   writeFileSync,
@@ -33,7 +34,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const CONFORMANCE = join(REPO, "fixtures", "conformance");
@@ -133,13 +134,13 @@ interface Envelope {
 function run(argv: readonly string[], cwd: string, env: Record<string, string> = {}): Envelope {
   assert.notEqual(CLI, undefined, "the packed CLI was installed");
   try {
-    const out = execFileSync(CLI_RUNTIME, [CLI ?? "", ...argv], {
+    const out = runCli([CLI ?? "", ...argv], {
       cwd,
       encoding: "utf8",
       env: { ...process.env, ...PINNED_CLOCK, ...env },
-      stdio: ["ignore", "pipe", "pipe"],
     });
-    return JSON.parse(out) as Envelope;
+    if (out.status !== 0) throw Object.assign(new Error(out.stderr), { stdout: out.stdout });
+    return JSON.parse(out.stdout) as Envelope;
   } catch (error) {
     const e = error as { stdout?: string };
     assert.equal(typeof e.stdout, "string", `the packed CLI printed no envelope: ${String(error)}`);
@@ -203,7 +204,7 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
   );
 
   it(
-    "the installed `wikiwright` is bin.js: it answers as main.js does and switches on the compile cache",
+    "the installed `wikiwright` is bin.js, a Bun script: it answers as main.js does",
     INSTALLS,
     () => {
       packAndInstall();
@@ -212,50 +213,16 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
       const consumer = CONSUMER ?? "";
       const link = realpathSync(join(consumer, "node_modules", ".bin", "wikiwright"));
       assert.equal(link.endsWith(join("dist", "bin.js")), true, link);
-      // Node keeps its compile cache under os.tmpdir(); a private one per run shows
-      // which entry switched it on. Node itself switches it on when
-      // NODE_COMPILE_CACHE is set, so neither run inherits that.
-      const viaBin = mkdtempSync(join(tmpdir(), "ww-cache-bin-"));
-      const viaMain = mkdtempSync(join(tmpdir(), "ww-cache-main-"));
-      const envFor = (dir: string): NodeJS.ProcessEnv => {
-        const env: NodeJS.ProcessEnv = {
-          ...process.env,
-          ...PINNED_CLOCK,
-          TMPDIR: dir,
-          TMP: dir,
-          TEMP: dir,
-        };
-        delete env["NODE_COMPILE_CACHE"];
-        delete env["NODE_DISABLE_COMPILE_CACHE"];
-        return env;
-      };
-      try {
-        // `node` by name: the cache is Node's, and the executable is run by node.
-        const fromBin = execFileSync("node", [link, "version"], {
-          cwd: consumer,
-          encoding: "utf8",
-          env: envFor(viaBin),
-        });
-        const fromMain = execFileSync("node", [CLI ?? "", "version"], {
-          cwd: consumer,
-          encoding: "utf8",
-          env: envFor(viaMain),
-        });
-        assert.equal(fromBin, fromMain, "the executable answers as the engine does");
-        assert.equal(
-          existsSync(join(viaBin, "node-compile-cache")),
-          true,
-          "bin.js switched the cache on",
-        );
-        assert.equal(
-          existsSync(join(viaMain, "node-compile-cache")),
-          false,
-          "main.js alone did not",
-        );
-      } finally {
-        rmSync(viaBin, { recursive: true, force: true });
-        rmSync(viaMain, { recursive: true, force: true });
-      }
+      assert.equal(
+        readFileSync(link, "utf8").split("\n")[0],
+        "#!/usr/bin/env bun",
+        "the executable names its runtime",
+      );
+      const env = { ...process.env, ...PINNED_CLOCK };
+      const fromBin = runCli([link, "version"], { cwd: consumer, encoding: "utf8", env });
+      const fromMain = runCli([CLI ?? "", "version"], { cwd: consumer, encoding: "utf8", env });
+      assert.equal(fromBin.status, 0, fromBin.stderr);
+      assert.equal(fromBin.stdout, fromMain.stdout, "the executable answers as the engine does");
     },
   );
 

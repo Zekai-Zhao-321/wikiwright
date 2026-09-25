@@ -8,7 +8,7 @@
 // Every scan here runs with HOME under os.tmpdir(): no test reads a skill
 // directory of the developer's.
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import {
   appendFileSync,
   cpSync,
@@ -25,7 +25,7 @@ import { dirname, join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const TEST_DIR = fileURLToPath(new URL(".", import.meta.url));
@@ -75,7 +75,7 @@ function world(): { home: string; cwd: string } {
 }
 
 function list(cwd: string, home: string, extra: NodeJS.ProcessEnv = {}): Row[] {
-  const r = spawnSync(CLI_RUNTIME, [CLI, "bundles", "list"], {
+  const r = runCli([CLI, "bundles", "list"], {
     cwd,
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK, HOME: home, WIKIWRIGHT_SKILL_DIRS: "", ...extra },
@@ -216,7 +216,7 @@ describe("bundles list is the scan (docs/cli.md §bundles)", () => {
   it("a consumer session lists, and nothing in the list is a page's words", () => {
     const { home, cwd } = world();
     install("orchard", join(home, ".claude", "skills", "orchard"));
-    const r = spawnSync(CLI_RUNTIME, [CLI, "bundles", "list"], {
+    const r = runCli([CLI, "bundles", "list"], {
       cwd,
       encoding: "utf8",
       env: { ...process.env, HOME: home, WIKIWRIGHT_SKILL_DIRS: "", WIKIWRIGHT_ROLE: "consumer" },
@@ -237,14 +237,13 @@ describe("the suite reads no system skill directory of the machine's (docs/cli.m
     writeFileSync(
       probe,
       [
-        `import { spawnSync } from "node:child_process";`,
-        `import { CLI_RUNTIME } from ${JSON.stringify(join(TEST_DIR, "fixtures", "runtime.ts"))};`,
-        `const r = spawnSync(CLI_RUNTIME, [${JSON.stringify(CLI)}, "bundles", "list"], { encoding: "utf8", env: process.env });`,
+        `import { runCli } from ${JSON.stringify(join(TEST_DIR, "fixtures", "runtime.ts"))};`,
+        `const r = runCli([${JSON.stringify(CLI)}, "bundles", "list"], { encoding: "utf8", env: process.env });`,
         "process.stdout.write(r.stdout);",
         "",
       ].join("\n"),
     );
-    const r = spawnSync(process.execPath, [probe], {
+    const r = runCli([probe], {
       cwd,
       encoding: "utf8",
       env: {
@@ -264,7 +263,7 @@ describe("a verb that loads a vault names its target or refuses (docs/cli.md §b
   it("from a directory that is no vault, with neither --root nor --bundle: registry-not-found", () => {
     const { home, cwd } = world();
     for (const argv of [["search", "pruning"], ["lint"], ["read", "pruning-roses"]]) {
-      const r = spawnSync(CLI_RUNTIME, [CLI, ...argv], {
+      const r = runCli([CLI, ...argv], {
         cwd,
         encoding: "utf8",
         env: { ...process.env, ...PINNED_CLOCK, HOME: home },

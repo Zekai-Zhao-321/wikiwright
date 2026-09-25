@@ -7,7 +7,6 @@
 // beside it, and `canonical-form` spent its whole life reporting
 // `evaluated: 0, not_applicable: 41` on a corpus where it fired 45 times.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
@@ -17,7 +16,7 @@ const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 /** Every corpus this repository ships, judged under its own constitution. */
 const CORPORA = ["fixtures/memory-synth", "devwiki", "fixtures/minimal-vault"];
@@ -38,7 +37,7 @@ interface CoverageRow {
 }
 
 function verdict(corpus: string, verb: string) {
-  const r = spawnSync(CLI_RUNTIME, [CLI, verb, "--root", ".", "--all"], {
+  const r = runCli([CLI, verb, "--root", ".", "--all"], {
     cwd: rootOf(corpus),
     encoding: "utf8",
     env: kitEnv(),

@@ -188,7 +188,7 @@ the report it always writes.
 The package root, `packages/cli`, is also a Claude Code plugin.
 `.claude-plugin/plugin.json` names it `wikiwright` at the package's version;
 its skills are the three under `skills/`; `hooks/hooks.json` runs two scripts
-with `node`, `SessionStart` with no matcher and `PostToolUse` on
+with `bun`, `SessionStart` with no matcher and `PostToolUse` on
 `Edit|Write`. Each reads the hook's JSON on stdin, runs this package's own
 binary with the session's environment (so `HOME`, the two skill-directory variables and
 `WIKIWRIGHT_ROLE` apply), prints at most one JSON
@@ -589,7 +589,7 @@ What the registry rows below do not say.
   Three skills ship, one for each way of working with a bundle, beside the
   brief that carries the verbs: `wikiwright-consume`, the runtime skill every
   bundle skill requires — how to run the engine (the one route today: clone,
-  `bun install`, `bun run build`, then `node <clone>/packages/cli/dist/main.js`
+  `bun install`, `bun run build`, then `bun <clone>/packages/cli/dist/main.js`
   by its absolute path from the caller's own directory, since `--bundle`
   resolves from where a command runs), what a
   bundle skill is and how to find one, the consumer's commands, each of which

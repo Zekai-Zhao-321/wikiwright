@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // docs/cli.md §The envelope (stdout = one envelope; stderr = UX; parseArgs
 // strict under the command registry; generated help) · JSON-only v1.
 import { resolve } from "node:path";

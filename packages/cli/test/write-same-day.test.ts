@@ -3,7 +3,6 @@
 // refused because `D→D-1` would run backwards; a date before the claim's own
 // is still refused. On a temporary gardening claims bundle.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { claimHandle } from "@wikiwright/core";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { claimsBundle } from "./fixtures/garden-claims.ts";
-import { CLI_RUNTIME } from "./fixtures/runtime.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const PAGE = "wiki/Climbing rose.md";
@@ -24,7 +23,7 @@ function run(
   argv: readonly string[],
   input = "",
 ): { status: number; envelope: Record<string, unknown> } {
-  const r = spawnSync(CLI_RUNTIME, [CLI, ...argv, "--root", root], {
+  const r = runCli([CLI, ...argv, "--root", root], {
     encoding: "utf8",
     env: { ...process.env, ...PINNED_CLOCK },
     input,
