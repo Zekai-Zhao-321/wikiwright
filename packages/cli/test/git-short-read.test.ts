@@ -377,10 +377,10 @@ describe("spawnWithStdoutFile: the child writes its answer to its own file", () 
         n.startsWith(`wikiwright-stdin-${process.pid}-`),
     );
 
-  it("returns every byte the child wrote, its status and its stderr, and removes the file", () => {
+  it("returns every byte the child wrote, its status and its stderr, and removes the file", async () => {
     if (POSIX_ONLY) return;
     const body = "Tie the canes in autumn.\n".repeat(4000);
-    const r = spawnWithStdoutFile(
+    const r = await spawnWithStdoutFile(
       "sh",
       ["-c", 'cat; printf "%s" "$BODY"; echo tail; echo warned >&2; exit 3'],
       { cwd: tmpdir(), input: "from stdin\n", env: { ...process.env, BODY: body } },
@@ -392,8 +392,8 @@ describe("spawnWithStdoutFile: the child writes its answer to its own file", () 
     assert.deepEqual(leftovers(), []);
   });
 
-  it("hands the request to the child as a file, not a pipe", () => {
-    const r = spawnWithStdoutFile(
+  it("hands the request to the child as a file, not a pipe", async () => {
+    const r = await spawnWithStdoutFile(
       process.execPath,
       ["-e", "process.exit(require('node:fs').fstatSync(0).isFile() ? 0 : 7)"],
       { cwd: tmpdir(), input: "HEAD:./wiki/Fern.md\n" },
@@ -402,22 +402,26 @@ describe("spawnWithStdoutFile: the child writes its answer to its own file", () 
     assert.deepEqual(leftovers(), []);
   });
 
-  it("a command that cannot be spawned is an error, and still leaves no file", () => {
+  it("a command that cannot be spawned is an error, and still leaves no file", async () => {
     for (const input of [undefined, "a request\n"]) {
-      const r = spawnWithStdoutFile("wikiwright-no-such-command", [], { cwd: tmpdir(), input });
+      const r = await spawnWithStdoutFile("wikiwright-no-such-command", [], {
+        cwd: tmpdir(),
+        input,
+      });
       assert.notEqual(r.error, undefined);
       assert.deepEqual(leftovers(), []);
     }
   });
 
-  it("a child stopped by the timeout is an error, and leaves no file", () => {
+  it("a child stopped by the timeout is an error, and leaves no file", async () => {
     if (POSIX_ONLY) return;
-    const r = spawnWithStdoutFile("sh", ["-c", "cat > /dev/null; sleep 5"], {
+    const r = await spawnWithStdoutFile("sh", ["-c", "cat > /dev/null; sleep 5"], {
       cwd: tmpdir(),
       input: "a request\n",
       timeout: 200,
     });
     assert.equal((r.error as NodeJS.ErrnoException | undefined)?.code, "ETIMEDOUT");
+    assert.equal(r.signal, "SIGKILL");
     assert.deepEqual(leftovers(), []);
   });
 });

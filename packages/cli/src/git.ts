@@ -9,7 +9,7 @@ import {
   parseNameStatusZ,
   type StagedChange,
 } from "@wikiwright/core";
-import { type ChildAnswer, type ChildOptions, spawnWithStdoutFile } from "./stdoutfile.ts";
+import { type ChildOptions, spawnWithStdoutFileSync } from "./stdoutfile.ts";
 
 /**
  * A git answer the engine refuses to judge from. Every catch that turns a
@@ -87,8 +87,8 @@ export function gitRun(
   cwd: string,
   args: readonly string[],
   options: Omit<ChildOptions, "cwd"> = {},
-): ChildAnswer {
-  return spawnWithStdoutFile("git", args, { ...options, cwd });
+): ReturnType<typeof spawnWithStdoutFileSync> {
+  return spawnWithStdoutFileSync("git", args, { ...options, cwd });
 }
 
 /** git's whole answer as text; a spawn failure or a non-zero exit is thrown with stderr. */
