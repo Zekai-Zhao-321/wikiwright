@@ -421,11 +421,13 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Developing
 
-- The suite reads no machine state: every scan runs with `HOME` under the
-  temporary directory and its project tier inside a temporary repository,
-  the system skill directory is overridden whatever the caller's environment
-  says, the build-info writer is tested against a temporary scaffold, and a
-  kit's install uses a package-manager cache of its own.
+- The suite reads no skill directory of the machine's, writes no build stamp
+  into the checkout and installs nothing into the caller's package cache:
+  every scan runs with `HOME` under the temporary directory and its project
+  tier inside a temporary repository, the system skill directory is
+  overridden whatever the caller's environment says, the build-info writer is tested against a temporary scaffold, and
+  every install it makes, a kit's and the packed engine's, uses a package
+  cache of its own under the temporary directory.
 - `fixtures/handbooks/orchard` and `fixtures/handbooks/allotment`: two small
   gardening handbooks, each a `procedure-page` type with a required climate
   and a `guide-page` for the page to read first, and a page with one title

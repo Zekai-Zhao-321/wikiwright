@@ -30,7 +30,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
@@ -43,11 +43,29 @@ let WORKSPACE: string | undefined;
 let CONSUMER: string | undefined;
 let CLI: string | undefined;
 
-function sh(command: string, args: readonly string[], cwd: string): string {
+function sh(
+  command: string,
+  args: readonly string[],
+  cwd: string,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
   return execFileSync(command, [...args], {
     cwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    env,
+  });
+}
+
+/**
+ * `bun install` under a package cache of this file's own, under its temporary
+ * workspace: the packed core's dependencies come from the registry, and they
+ * land in this cache rather than the caller's.
+ */
+function install(cwd: string): void {
+  sh("bun", ["install"], cwd, {
+    ...process.env,
+    BUN_INSTALL_CACHE_DIR: join(WORKSPACE ?? cwd, ".bun-install-cache"),
   });
 }
 
@@ -57,7 +75,15 @@ function tarballIn(dir: string, prefix: string): string {
   return join(dir, found ?? "");
 }
 
-before(() => {
+/**
+ * Pack the engine and the conformance module and install the engine into a
+ * throwaway consumer, once for the file, on the first case that needs it. A
+ * case rather than a hook does it, because a case can be given the time the
+ * install takes: the install fetches the packed core's dependencies into an
+ * empty cache, and a hook runs under the runner's default limit.
+ */
+function packAndInstall(): void {
+  if (CLI !== undefined) return;
   const workspace = mkdtempSync(join(tmpdir(), "ww-pack-"));
   WORKSPACE = workspace;
   // `bun run build` has already run in the gate; pack what it produced.
@@ -85,10 +111,13 @@ before(() => {
       2,
     )}\n`,
   );
-  sh("bun", ["install"], consumer);
+  install(consumer);
   CONSUMER = consumer;
   CLI = join(consumer, "node_modules", "wikiwright", "dist", "main.js");
-});
+}
+
+/** Each case may be the one that packs and installs. */
+const INSTALLS = { timeout: 60_000 };
 
 after(() => {
   if (WORKSPACE !== undefined) rmSync(WORKSPACE, { recursive: true, force: true });
@@ -119,109 +148,135 @@ function run(argv: readonly string[], cwd: string, env: Record<string, string> =
 }
 
 describe("the packed engine runs as a consumer installs it (docs/architecture.md §The gate)", () => {
-  it("the installed binary answers, and names the build it was cut from", () => {
+  it("the installed binary answers, and names the build it was cut from", INSTALLS, () => {
+    packAndInstall();
     const envelope = run(["version"], CONSUMER ?? REPO);
     assert.equal(envelope.ok, true, JSON.stringify(envelope));
     assert.equal(typeof envelope.data?.["engine"], "string");
   });
 
-  it("the tarball carries dist/, the skills, the starters and the plugin, and no source", () => {
-    const installed = join(CONSUMER ?? "", "node_modules", "wikiwright");
-    assert.equal(existsSync(join(installed, "dist", "main.js")), true, "the binary");
-    assert.equal(existsSync(join(installed, "dist", "bin.js")), true, "the executable");
-    assert.equal(existsSync(join(installed, "skills")), true, "the shipped skills");
-    assert.equal(existsSync(join(installed, "constitutions")), true, "the starters");
-    // docs/cli.md §The plugin and its hooks: the package root is the plugin root.
-    assert.equal(
-      existsSync(join(installed, ".claude-plugin", "plugin.json")),
-      true,
-      "the plugin manifest",
-    );
-    for (const file of ["hooks.json", "session-start.mjs", "post-edit.mjs"]) {
-      assert.equal(existsSync(join(installed, "hooks", file)), true, `hooks/${file}`);
-    }
-    // `files` is a closed list; a package that shipped `src/` would double the
-    // artifact and give a consumer two answers to "what is running".
-    assert.equal(existsSync(join(installed, "src")), false, "no source in the artifact");
-  });
-
-  it("the tarball holds no output of a deleted source: the build removes dist/ first", () => {
-    const dist = join(CONSUMER ?? "", "node_modules", "wikiwright", "dist");
-    for (const gone of ["trust.js", "connections.js", "storelock.js", "verbs/trust.js"]) {
-      assert.equal(existsSync(join(dist, gone)), false, `dist/${gone} was packed`);
-    }
-    // Every emitted module has its source: nothing in the artifact outlived it.
-    const src = join(REPO, "packages", "cli", "src");
-    for (const entry of readdirSync(dist, { recursive: true, encoding: "utf8" })) {
-      if (!entry.endsWith(".js")) continue;
+  it(
+    "the tarball carries dist/, the skills, the starters and the plugin, and no source",
+    INSTALLS,
+    () => {
+      packAndInstall();
+      const installed = join(CONSUMER ?? "", "node_modules", "wikiwright");
+      assert.equal(existsSync(join(installed, "dist", "main.js")), true, "the binary");
+      assert.equal(existsSync(join(installed, "dist", "bin.js")), true, "the executable");
+      assert.equal(existsSync(join(installed, "skills")), true, "the shipped skills");
+      assert.equal(existsSync(join(installed, "constitutions")), true, "the starters");
+      // docs/cli.md §The plugin and its hooks: the package root is the plugin root.
       assert.equal(
-        existsSync(join(src, entry.replace(/\.js$/u, ".ts"))),
+        existsSync(join(installed, ".claude-plugin", "plugin.json")),
         true,
-        `dist/${entry} has no source`,
+        "the plugin manifest",
       );
-    }
-  });
+      for (const file of ["hooks.json", "session-start.mjs", "post-edit.mjs"]) {
+        assert.equal(existsSync(join(installed, "hooks", file)), true, `hooks/${file}`);
+      }
+      // `files` is a closed list; a package that shipped `src/` would double the
+      // artifact and give a consumer two answers to "what is running".
+      assert.equal(existsSync(join(installed, "src")), false, "no source in the artifact");
+    },
+  );
 
-  it("the installed `wikiwright` is bin.js: it answers as main.js does and switches on the compile cache", () => {
-    // POSIX-only: the .bin entry is a link here and a shim on Windows.
-    if (process.platform === "win32") return;
-    const consumer = CONSUMER ?? "";
-    const link = realpathSync(join(consumer, "node_modules", ".bin", "wikiwright"));
-    assert.equal(link.endsWith(join("dist", "bin.js")), true, link);
-    // Node keeps its compile cache under os.tmpdir(); a private one per run shows
-    // which entry switched it on. Node itself switches it on when
-    // NODE_COMPILE_CACHE is set, so neither run inherits that.
-    const viaBin = mkdtempSync(join(tmpdir(), "ww-cache-bin-"));
-    const viaMain = mkdtempSync(join(tmpdir(), "ww-cache-main-"));
-    const envFor = (dir: string): NodeJS.ProcessEnv => {
-      const env: NodeJS.ProcessEnv = {
-        ...process.env,
-        ...PINNED_CLOCK,
-        TMPDIR: dir,
-        TMP: dir,
-        TEMP: dir,
+  it(
+    "the tarball holds no output of a deleted source: the build removes dist/ first",
+    INSTALLS,
+    () => {
+      packAndInstall();
+      const dist = join(CONSUMER ?? "", "node_modules", "wikiwright", "dist");
+      for (const gone of ["trust.js", "connections.js", "storelock.js", "verbs/trust.js"]) {
+        assert.equal(existsSync(join(dist, gone)), false, `dist/${gone} was packed`);
+      }
+      // Every emitted module has its source: nothing in the artifact outlived it.
+      const src = join(REPO, "packages", "cli", "src");
+      for (const entry of readdirSync(dist, { recursive: true, encoding: "utf8" })) {
+        if (!entry.endsWith(".js")) continue;
+        assert.equal(
+          existsSync(join(src, entry.replace(/\.js$/u, ".ts"))),
+          true,
+          `dist/${entry} has no source`,
+        );
+      }
+    },
+  );
+
+  it(
+    "the installed `wikiwright` is bin.js: it answers as main.js does and switches on the compile cache",
+    INSTALLS,
+    () => {
+      packAndInstall();
+      // POSIX-only: the .bin entry is a link here and a shim on Windows.
+      if (process.platform === "win32") return;
+      const consumer = CONSUMER ?? "";
+      const link = realpathSync(join(consumer, "node_modules", ".bin", "wikiwright"));
+      assert.equal(link.endsWith(join("dist", "bin.js")), true, link);
+      // Node keeps its compile cache under os.tmpdir(); a private one per run shows
+      // which entry switched it on. Node itself switches it on when
+      // NODE_COMPILE_CACHE is set, so neither run inherits that.
+      const viaBin = mkdtempSync(join(tmpdir(), "ww-cache-bin-"));
+      const viaMain = mkdtempSync(join(tmpdir(), "ww-cache-main-"));
+      const envFor = (dir: string): NodeJS.ProcessEnv => {
+        const env: NodeJS.ProcessEnv = {
+          ...process.env,
+          ...PINNED_CLOCK,
+          TMPDIR: dir,
+          TMP: dir,
+          TEMP: dir,
+        };
+        delete env["NODE_COMPILE_CACHE"];
+        delete env["NODE_DISABLE_COMPILE_CACHE"];
+        return env;
       };
-      delete env["NODE_COMPILE_CACHE"];
-      delete env["NODE_DISABLE_COMPILE_CACHE"];
-      return env;
-    };
-    try {
-      // `node` by name: the cache is Node's, and the executable is run by node.
-      const fromBin = execFileSync("node", [link, "version"], {
-        cwd: consumer,
-        encoding: "utf8",
-        env: envFor(viaBin),
-      });
-      const fromMain = execFileSync("node", [CLI ?? "", "version"], {
-        cwd: consumer,
-        encoding: "utf8",
-        env: envFor(viaMain),
-      });
-      assert.equal(fromBin, fromMain, "the executable answers as the engine does");
-      assert.equal(
-        existsSync(join(viaBin, "node-compile-cache")),
-        true,
-        "bin.js switched the cache on",
-      );
-      assert.equal(existsSync(join(viaMain, "node-compile-cache")), false, "main.js alone did not");
-    } finally {
-      rmSync(viaBin, { recursive: true, force: true });
-      rmSync(viaMain, { recursive: true, force: true });
-    }
-  });
+      try {
+        // `node` by name: the cache is Node's, and the executable is run by node.
+        const fromBin = execFileSync("node", [link, "version"], {
+          cwd: consumer,
+          encoding: "utf8",
+          env: envFor(viaBin),
+        });
+        const fromMain = execFileSync("node", [CLI ?? "", "version"], {
+          cwd: consumer,
+          encoding: "utf8",
+          env: envFor(viaMain),
+        });
+        assert.equal(fromBin, fromMain, "the executable answers as the engine does");
+        assert.equal(
+          existsSync(join(viaBin, "node-compile-cache")),
+          true,
+          "bin.js switched the cache on",
+        );
+        assert.equal(
+          existsSync(join(viaMain, "node-compile-cache")),
+          false,
+          "main.js alone did not",
+        );
+      } finally {
+        rmSync(viaBin, { recursive: true, force: true });
+        rmSync(viaMain, { recursive: true, force: true });
+      }
+    },
+  );
 
-  it("the packed engine judges a bundle, from a directory outside this repository", () => {
-    const bundle = join(WORKSPACE ?? "", "minimal");
-    cpSync(join(REPO, "fixtures", "minimal-vault"), bundle, { recursive: true });
-    const envelope = run(["lint", "--all", "--root", bundle], CONSUMER ?? REPO);
-    // The minimal vault ships with a known verdict (`docs/architecture.md §The invariants`); what
-    // matters here is that the PACKED engine produces one at all.
-    assert.equal(typeof envelope.data?.["summary"], "object", JSON.stringify(envelope));
-  });
+  it(
+    "the packed engine judges a bundle, from a directory outside this repository",
+    INSTALLS,
+    () => {
+      packAndInstall();
+      const bundle = join(WORKSPACE ?? "", "minimal");
+      cpSync(join(REPO, "fixtures", "minimal-vault"), bundle, { recursive: true });
+      const envelope = run(["lint", "--all", "--root", bundle], CONSUMER ?? REPO);
+      // The minimal vault ships with a known verdict (`docs/architecture.md §The invariants`); what
+      // matters here is that the PACKED engine produces one at all.
+      assert.equal(typeof envelope.data?.["summary"], "object", JSON.stringify(envelope));
+    },
+  );
 });
 
 describe("a module installs as a tarball, and governs (docs/extending.md §Declaring a module)", () => {
-  it("the packed module resolves, pins, and is judged with — with no link home", () => {
+  it("the packed module resolves, pins, and is judged with — with no link home", INSTALLS, () => {
+    packAndInstall();
     const workspace = WORKSPACE ?? "";
     const bundle = join(workspace, "tarball-bundle");
     // Copy the PAGES and the CONFIG only. A `file:` install links each of the
@@ -248,7 +303,7 @@ describe("a module installs as a tarball, and governs (docs/extending.md §Decla
         2,
       )}\n`,
     );
-    sh("bun", ["install"], bundle);
+    install(bundle);
 
     // Installed is loaded: the module is proved by its load, with no other step.
     const listed = run(["modules", "list", "--root", bundle], CONSUMER ?? REPO);
@@ -266,7 +321,8 @@ describe("a module installs as a tarball, and governs (docs/extending.md §Decla
     );
   });
 
-  it("the generated brief carries the module's own skill fragment", () => {
+  it("the generated brief carries the module's own skill fragment", INSTALLS, () => {
+    packAndInstall();
     const bundle = join(WORKSPACE ?? "", "tarball-bundle");
     const envelope = run(["brief", "--root", bundle], CONSUMER ?? REPO);
     assert.equal(envelope.ok, true, JSON.stringify(envelope));
