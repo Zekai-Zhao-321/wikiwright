@@ -28,7 +28,8 @@ them):
 - **One judge at every write path.** Working tree, staged gate, stdin, write
   draft, replay: the same `judge(state, law)`.
 - **Deterministic, byte-reproducible artifacts.** One generator per artifact;
-  never hand-edited; no locale, no clock, no Bun-only API in `packages/`.
+  never hand-edited; no locale, no clock, and no Bun-only API in
+  `packages/` outside the git transport (`packages/cli/src/stdoutfile.ts`).
 - **Every declared key has a consumer and an end-to-end test.** A key nothing
   reads is a lie the config tells its author.
 - **Routing is total.** Every error or warning finding carries exactly one of

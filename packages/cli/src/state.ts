@@ -26,7 +26,7 @@ import {
 import { readPage, type VaultReader, walkPages } from "./vaultio.ts";
 
 /** git's whole answer, read from the file git wrote (git.ts, stdoutfile.ts). */
-function git(root: string, argv: string[]): string {
+function git(root: string, argv: string[]): Promise<string> {
   return gitText(root, argv);
 }
 
@@ -57,10 +57,12 @@ export interface IndexSnapshot {
  * yet, and once for the pages under those roots — and both reads take this one
  * snapshot, so neither call is spawned again for the second.
  */
-export function indexSnapshot(root: string): IndexSnapshot {
+export async function indexSnapshot(root: string): Promise<IndexSnapshot> {
+  // The two reads are asked for together; each is its own git child.
+  const [changes, entries] = await Promise.all([gitStagedChanges(root), gitIndexEntries(root)]);
   const snapshot = {
-    changes: gitStagedChanges(root),
-    entries: gitIndexEntries(root).map((e) => ({ ...e, path: e.path.normalize("NFC") })),
+    changes,
+    entries: entries.map((e) => ({ ...e, path: e.path.normalize("NFC") })),
   };
   // The two answers describe one index. A path the staged diff says is in it —
   // added, modified, retyped, or the new name of a rename or copy — that the
@@ -90,12 +92,12 @@ const IN_INDEX: ReadonlySet<string> = new Set(["A", "M", "T", "R", "C"]);
  * content, so its diff-gated arms evaluate trivially instead of counting
  * unevaluated.
  */
-export function indexState(
+export async function indexState(
   root: string,
   roots: readonly string[],
-  snapshot: IndexSnapshot = indexSnapshot(root),
-): IndexState {
-  const { changes, entries } = snapshot;
+  given?: IndexSnapshot,
+): Promise<IndexState> {
+  const { changes, entries } = given ?? (await indexSnapshot(root));
   const indexSet = new Set(entries.map((e) => e.path));
   const reader: VaultReader = {
     exists: (rel) => indexSet.has(rel),
@@ -129,15 +131,15 @@ export function indexState(
   // spawn per changed page. A name that holds a newline cannot go on
   // `cat-file`'s line protocol; no content path can hold one, only a rename's
   // source, and that keeps its own `git show`.
-  const headBlobs = gitHeadBlobs(
+  const headBlobs = await gitHeadBlobs(
     root,
     headPaths.filter((p) => !p.includes("\n")),
   );
-  const blobs = gitReadBlobs(root, [
+  const blobs = await gitReadBlobs(root, [
     ...content.map((e) => e.blob),
     ...[...headBlobs.values()].filter((b): b is string => b !== undefined),
   ]);
-  const headText = (path: string | undefined): string | undefined => {
+  const headText = async (path: string | undefined): Promise<string | undefined> => {
     if (path === undefined) return undefined;
     if (path.includes("\n")) return gitShowHead(root, path);
     const blob = headBlobs.get(path);
@@ -159,13 +161,13 @@ export function indexState(
       base.set(path, text);
       continue;
     }
-    base.set(path, headText(headPathOf(change)) ?? null);
+    base.set(path, (await headText(headPathOf(change))) ?? null);
   }
   // A deletion is a BASE fact, so `base` carries paths the page set no
   // longer does and the gate can build the name index the base held. The page
   // loop walks `pages`, so a base-only key adds no page and no finding.
   for (const change of deletions) {
-    const head = headText(change.path);
+    const head = await headText(change.path);
     if (head !== undefined) base.set(change.path.normalize("NFC"), head);
   }
   const renames: StateRename[] = changes
@@ -211,17 +213,21 @@ export function overlayState(
 }
 
 /** The first-parent commits from `rev` to HEAD, oldest first (replay's walk). */
-export function commitPairs(root: string, since: string): { rev: string; base: string }[] {
+export async function commitPairs(
+  root: string,
+  since: string,
+): Promise<{ rev: string; base: string }[]> {
   let revs: string[];
   // Each walk is held to git's own count of its range: a walk cut at a line
   // boundary is well formed, and judged it would be a shorter history.
-  const list = (range: string): string[] => {
+  const list = async (range: string): Promise<string[]> => {
     const args = ["rev-list", "--first-parent", "--reverse", range];
-    const walked = terminated(args, git(root, args), "\n")
+    const counting = ["rev-list", "--first-parent", "--count", range];
+    const [walkedText, countText] = await Promise.all([git(root, args), git(root, counting)]);
+    const walked = terminated(args, walkedText, "\n")
       .split("\n")
       .filter((s) => s !== "");
-    const counting = ["rev-list", "--first-parent", "--count", range];
-    const count = Number.parseInt(terminated(counting, git(root, counting), "\n", true), 10);
+    const count = Number.parseInt(terminated(counting, countText, "\n", true), 10);
     if (walked.length !== count) {
       throw new GitInconsistentRead(
         [args.join(" "), counting.join(" ")],
@@ -231,28 +237,30 @@ export function commitPairs(root: string, since: string): { rev: string; base: s
     return walked;
   };
   try {
-    revs = list(`${since}^..HEAD`);
+    revs = await list(`${since}^..HEAD`);
   } catch (error) {
     // A refused answer is not a missing parent: it is refused as itself.
     if (error instanceof GitAnswerRefused) throw error;
     // `<root>^` does not exist, and a repository's first commit is exactly the
     // pair a replay most wants: its base is the empty tree, so every page in it
     // is `added` rather than a page with no arms.
-    const all = list("HEAD");
+    const all = await list("HEAD");
     const parse = ["rev-parse", since];
-    const full = terminated(parse, git(root, parse), "\n", true).trim();
+    const full = terminated(parse, await git(root, parse), "\n", true).trim();
     const at = all.indexOf(full);
     if (at < 0) throw new Error(`"${since}" is not an ancestor of HEAD`);
     revs = all.slice(at);
   }
-  return revs.map((rev) => ({ rev, base: firstParent(root, rev) }));
+  return Promise.all(revs.map(async (rev) => ({ rev, base: await firstParent(root, rev) })));
 }
 
 const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
-function firstParent(root: string, commit: string): string {
+async function firstParent(root: string, commit: string): Promise<string> {
   const args = ["rev-list", "--parents", "-n", "1", commit];
-  const parents = terminated(args, git(root, args), "\n", true).trim().split(" ");
+  const parents = terminated(args, await git(root, args), "\n", true)
+    .trim()
+    .split(" ");
   return parents[1] ?? EMPTY_TREE;
 }
 
@@ -262,10 +270,10 @@ interface TreeEntry {
   blob: string;
 }
 
-function lsTree(root: string, commit: string): TreeEntry[] {
+async function lsTree(root: string, commit: string): Promise<TreeEntry[]> {
   const entries: TreeEntry[] = [];
   const args = ["ls-tree", "-r", "-z", commit];
-  for (const record of terminated(args, git(root, args), "\0").split("\0")) {
+  for (const record of terminated(args, await git(root, args), "\0").split("\0")) {
     if (record === "") continue;
     const tab = record.indexOf("\t");
     if (tab < 0) continue;
@@ -279,8 +287,8 @@ function lsTree(root: string, commit: string): TreeEntry[] {
 }
 
 /** The constitution as it stood at a revision — `lint --since`'s reader. */
-export function revisionReader(root: string, rev: string): VaultReader {
-  const byPath = new Map(lsTree(root, rev).map((e) => [e.path, e] as const));
+export async function revisionReader(root: string, rev: string): Promise<VaultReader> {
+  const byPath = new Map((await lsTree(root, rev)).map((e) => [e.path, e] as const));
   return {
     exists: (rel) => byPath.has(rel.normalize("NFC")),
     read: (rel) => {
@@ -297,17 +305,19 @@ export function revisionReader(root: string, rev: string): VaultReader {
  * and a path absent from the parent is `null` rather than missing, so a new page
  * is a new page and not a page with no arms.
  */
-export function revisionState(
+export async function revisionState(
   root: string,
   rev: string,
-  base: string = firstParent(root, rev),
+  given?: string,
   roots: readonly string[] = ["wiki", "raw", "meta"],
-): VaultState & { renames: StateRename[] } {
-  const current = lsTree(root, rev).filter((e) => isContentPath(e.path, roots));
-  const parent = new Map(lsTree(root, base).map((e) => [e.path, e] as const));
+): Promise<VaultState & { renames: StateRename[] }> {
+  const base = given ?? (await firstParent(root, rev));
+  const [revTree, baseTree] = await Promise.all([lsTree(root, rev), lsTree(root, base)]);
+  const current = revTree.filter((e) => isContentPath(e.path, roots));
+  const parent = new Map(baseTree.map((e) => [e.path, e] as const));
   const parentContent = [...parent.values()].filter((e) => isContentPath(e.path, roots));
   // Both trees' pages in one read (git.ts `gitReadBlobs`), as the staged gate reads the index.
-  const blobs = gitReadBlobs(
+  const blobs = await gitReadBlobs(
     root,
     [...current, ...parentContent].map((e) => e.blob),
   );
@@ -331,7 +341,7 @@ export function revisionState(
     baseMap.set(entry.path, read(entry));
   }
   const diff = ["diff", "--name-status", "-z", "-M", `${base}..${rev}`];
-  const renames: StateRename[] = parseNameStatusZ(terminated(diff, git(root, diff), "\0"))
+  const renames: StateRename[] = parseNameStatusZ(terminated(diff, await git(root, diff), "\0"))
     .filter((ch) => ch.oldPath !== undefined)
     .map((ch) => ({ from: (ch.oldPath ?? "").normalize("NFC"), to: ch.path.normalize("NFC") }))
     .filter((r) => isContentPath(r.to, roots))

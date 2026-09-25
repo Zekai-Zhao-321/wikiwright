@@ -82,7 +82,7 @@ export const graphCommand: CommandSpec = {
   ],
   writes: false,
   needsVaultModules: true,
-  run: (args) => {
+  run: async (args) => {
     const kindFlag = stringFlag(args.flags["kind"]);
     const labels = listFlag(args, "label");
     const inbound = stringFlag(args.flags["inbound"]);
@@ -101,7 +101,7 @@ export const graphCommand: CommandSpec = {
     if (!Number.isInteger(limit) || limit < 0) {
       return fail("graph", "usage", "invalid-limit", "--limit must be a non-negative integer");
     }
-    const vault = loadVault("graph", args.root);
+    const vault = await loadVault("graph", args.root);
     if (!vault.ok) return vault.result;
     const registry = vault.registry;
     for (const type of [inbound, outbound]) {

@@ -31,6 +31,7 @@ import { CONSTITUTION_PATH, ENGINE_PATH, fsReader, type VaultReader } from "./va
 // module that loads a vault reads them from here as it always has.
 export {
   CONSTITUTION_PATH,
+  type DiskReader,
   ENGINE_PATH,
   fsReader,
   readPage,
@@ -78,7 +79,11 @@ export interface VaultLoadOptions {
   modules?: ModuleLoadOutcome;
 }
 
-export function loadVault(command: string, root: string, options?: VaultLoadOptions): VaultLoad {
+export async function loadVault(
+  command: string,
+  root: string,
+  options?: VaultLoadOptions,
+): Promise<VaultLoad> {
   if (!existsSync(root)) {
     return {
       ok: false,
@@ -87,7 +92,7 @@ export function loadVault(command: string, root: string, options?: VaultLoadOpti
       }),
     };
   }
-  const loaded = loadVaultVia(command, fsReader(root), { ...options, root });
+  const loaded = await loadVaultVia(command, fsReader(root), { ...options, root });
   if (!loaded.ok) return loaded;
   for (const contentRoot of loaded.engine.content_roots ?? []) {
     if (!existsSync(join(root, contentRoot))) continue;
@@ -108,11 +113,11 @@ export function loadVault(command: string, root: string, options?: VaultLoadOpti
   return loaded;
 }
 
-export function loadVaultVia(
+export async function loadVaultVia(
   command: string,
   reader: VaultReader,
   options?: VaultLoadOptions,
-): VaultLoad {
+): Promise<VaultLoad> {
   if (!reader.exists(CONSTITUTION_PATH)) {
     return {
       ok: false,
@@ -128,7 +133,7 @@ export function loadVaultVia(
   let constitutionText: string;
   let constitutionJson: unknown;
   try {
-    constitutionText = reader.read(CONSTITUTION_PATH);
+    constitutionText = await reader.read(CONSTITUTION_PATH);
     constitutionJson = JSON.parse(normalizeInput(constitutionText).text);
   } catch (e) {
     // A config linked out of the vault is refused by that name, not read as unparseable.
@@ -151,7 +156,7 @@ export function loadVaultVia(
   if (reader.exists(ENGINE_PATH)) {
     let engineJson: unknown;
     try {
-      engineText = reader.read(ENGINE_PATH);
+      engineText = await reader.read(ENGINE_PATH);
       engineJson = JSON.parse(normalizeInput(engineText).text);
     } catch (e) {
       if (e instanceof LinkedOutsideVault) throw e;
@@ -202,8 +207,8 @@ export function loadVaultVia(
   // one registry and never reconstructed differently by the judge.
   //
   // docs/extending.md §Adopting a new version: a declared module that did not load is a
-  // REFUSAL, not a quieter law. Loading is the shell's one async step and it
-  // happens at the entry point (`preloadModules`); a bundle that declares one
+  // REFUSAL, not a quieter law. Loading happens once, at the entry point
+  // (`preloadModules`); a bundle that declares one
   // and whose preload never ran is told so by name rather than judged under the
   // standard library alone.
   const declared = engine.modules ?? [];
@@ -340,7 +345,7 @@ export function loadVaultVia(
       if (label !== "example") continue;
       let exampleText: string;
       try {
-        exampleText = reader.read(declared.value);
+        exampleText = await reader.read(declared.value);
       } catch {
         missingDeclared.push({
           code: "template-path-invalid",

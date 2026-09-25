@@ -95,7 +95,7 @@ export const skillsCommand: CommandSpec = {
   writes: true,
   needsVaultModules: true,
   plan: planForSkills,
-  run: (args) => {
+  run: async (args) => {
     const [sub] = args.positionals;
     if (sub === "status" && isDryRun(args)) return ok("skills", planForSkills(args));
     if (sub === "status") {
@@ -125,7 +125,7 @@ export const skillsCommand: CommandSpec = {
     }
     const outcome = updateSkills(args.root, options);
     if (!outcome.ok) return skillModified(outcome.blocked);
-    const brief = writeBrief(args.root, args.commands);
+    const brief = await writeBrief(args.root, args.commands);
     return ok("skills", {
       engine: ENGINE_VERSION,
       commit: runningCommit(),

@@ -61,8 +61,8 @@ export const searchCommand: CommandSpec = {
   ],
   writes: false,
   needsVaultModules: true,
-  run: (args) => {
-    const vault = loadVault("search", args.root);
+  run: async (args) => {
+    const vault = await loadVault("search", args.root);
     if (!vault.ok) return vault.result;
     // An empty query string is not a query (docs/cli.md §search): `""` is a
     // substring of every string, so running the ladder on it returned every page

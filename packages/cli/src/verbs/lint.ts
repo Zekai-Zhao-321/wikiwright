@@ -61,7 +61,7 @@ export const lintCommand: CommandSpec = {
   run: async (args) => {
     if (args.flags["staged"] === true) return runStagedLint(args);
     if (typeof args.flags["since"] === "string") return runSinceLint(args);
-    const vault = loadVault("lint", args.root);
+    const vault = await loadVault("lint", args.root);
     if (!vault.ok) return vault.result;
     const roots = rootsOf(vault);
     const caps = capOptions(args);
@@ -177,11 +177,11 @@ async function runSinceLint(args: CommandArgs): Promise<CommandResult> {
   if (typeof since !== "string" || since.length === 0) {
     return fail("lint", "usage", "missing-argument", "--since requires a revision");
   }
-  const worktree = loadVault("lint", args.root);
+  const worktree = await loadVault("lint", args.root);
   if (!worktree.ok) return worktree.result;
   let pairs: { rev: string; base: string }[];
   try {
-    pairs = commitPairs(args.root, since);
+    pairs = await commitPairs(args.root, since);
   } catch (e) {
     // A cut or contradicted answer is not a revision that does not exist.
     if (e instanceof GitAnswerRefused) throw e;
@@ -202,12 +202,13 @@ async function runSinceLint(args: CommandArgs): Promise<CommandResult> {
   const excepted = new Map<string, number>();
   let unevaluated = 0;
   for (const pair of pairs) {
-    const vault = loadVaultVia("lint", revisionReader(args.root, pair.rev), { root: args.root });
+    const reader = await revisionReader(args.root, pair.rev);
+    const vault = await loadVaultVia("lint", reader, { root: args.root });
     if (!vault.ok) {
       commits.push({ rev: pair.rev, skipped: "constitution-did-not-load" });
       continue;
     }
-    const state = revisionState(args.root, pair.rev, pair.base, rootsOf(vault));
+    const state = await revisionState(args.root, pair.rev, pair.base, rootsOf(vault));
     const verdict = judge(state, lawFor(vault), { gate: true, all: true });
     totals.errors += verdict.summary.errors;
     totals.warnings += verdict.summary.warnings;

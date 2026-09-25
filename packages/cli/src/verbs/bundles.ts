@@ -8,7 +8,7 @@
 import { readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { parseDoc } from "@wikiwright/core";
-import { type Candidate, identityOf, scanAll } from "../discovery.ts";
+import { type Candidate, identityOf, scanAll, skillDirectories } from "../discovery.ts";
 import { ok } from "../envelope.ts";
 import { SKILL_PATH } from "../exports.ts";
 import type { CommandSpec } from "../spec.ts";
@@ -79,8 +79,8 @@ export const bundlesCommand: CommandSpec = {
   examples: ["wikiwright bundles list"],
   writes: false,
   needsVaultModules: false,
-  run: () => {
-    const { candidates, skipped } = scanAll();
+  run: async () => {
+    const { candidates, skipped } = scanAll(await skillDirectories());
     const shadowedBy = shadowing(candidates);
     const rows = [
       ...candidates.map((c) => ({

@@ -237,9 +237,9 @@ export const vocabularyCommand: CommandSpec = {
   ],
   writes: false,
   needsVaultModules: true,
-  run: (args) => {
+  run: async (args) => {
     const [, name] = args.positionals;
-    const vault = loadVault("vocabulary", args.root);
+    const vault = await loadVault("vocabulary", args.root);
     if (!vault.ok) return vault.result;
     const registry = vault.registry;
     // The names are the LOADED modules' registrations, never a closed set: a

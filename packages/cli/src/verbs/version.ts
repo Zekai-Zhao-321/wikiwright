@@ -18,5 +18,6 @@ export const versionCommand: CommandSpec = {
   // it under the name that says which one it is.
   writes: false,
   needsVaultModules: false,
-  run: () => ok("version", versionData(readBuildInfo(), checkoutIdentity(), ENGINE_VERSION)),
+  run: async () =>
+    ok("version", versionData(readBuildInfo(), await checkoutIdentity(), ENGINE_VERSION)),
 };

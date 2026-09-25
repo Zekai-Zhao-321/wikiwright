@@ -343,17 +343,17 @@ export function citationsIn(
 }
 
 /** Every citation the origin does not answer at the pin, with the objects read once per path. */
-function unresolvedCitations(
+async function unresolvedCitations(
   dir: string,
   pin: string,
   citations: readonly Citation[],
-): UnresolvedCitation[] {
+): Promise<UnresolvedCitation[]> {
   const types = new Map<string, string | undefined>();
   const lines = new Map<string, number>();
   const out: UnresolvedCitation[] = [];
   for (const citation of citations) {
     const spec = `${pin}:${citation.path}`;
-    if (!types.has(citation.path)) types.set(citation.path, gitObjectType(dir, spec));
+    if (!types.has(citation.path)) types.set(citation.path, await gitObjectType(dir, spec));
     const type = types.get(citation.path);
     if (type === undefined) {
       out.push({ path: citation.path, line: null, reason: "missing" });
@@ -364,7 +364,7 @@ function unresolvedCitations(
       out.push({ path: citation.path, line: citation.line, reason: "past-end" });
       continue;
     }
-    if (!lines.has(citation.path)) lines.set(citation.path, gitBlobLineCount(dir, spec));
+    if (!lines.has(citation.path)) lines.set(citation.path, await gitBlobLineCount(dir, spec));
     if (citation.line > (lines.get(citation.path) ?? 0)) {
       out.push({ path: citation.path, line: citation.line, reason: "past-end" });
     }
@@ -413,7 +413,11 @@ function warning(ruleId: string, path: string, message: string, remediation: str
  * page names are repository-root-relative wherever the vault sits. Any other
  * origin is a URL: `ls-remote` for its head, or the cache for its objects.
  */
-function measureOrigin(root: string, origin: string, options: FreshnessOptions): Measured {
+async function measureOrigin(
+  root: string,
+  origin: string,
+  options: FreshnessOptions,
+): Promise<Measured> {
   const none: Measured = {
     reachable: false,
     head: null,
@@ -424,7 +428,7 @@ function measureOrigin(root: string, origin: string, options: FreshnessOptions):
     top: false,
   };
   if (origin === ".") {
-    if (gitTopLevel(root) === undefined) {
+    if ((await gitTopLevel(root)) === undefined) {
       // A `.git` git does not recognise is the measurement breaking, not a
       // vault outside every repository: thrown, so it is `git-unavailable`.
       if (existsSync(join(root, ".git"))) {
@@ -435,10 +439,10 @@ function measureOrigin(root: string, origin: string, options: FreshnessOptions):
         unreachable: `origin "." names the repository enclosing the vault, and no repository encloses it`,
       };
     }
-    if (!gitHasHead(root)) return { ...none, reachable: true, dir: root, top: true };
+    if (!(await gitHasHead(root))) return { ...none, reachable: true, dir: root, top: true };
     return {
       reachable: true,
-      head: gitHead(root),
+      head: await gitHead(root),
       cache: null,
       dir: root,
       headRef: "HEAD",
@@ -449,15 +453,15 @@ function measureOrigin(root: string, origin: string, options: FreshnessOptions):
   if (!options.fetch) {
     if (!options.network) return none;
     try {
-      return { ...none, reachable: true, head: gitLsRemoteHead(root, origin) };
+      return { ...none, reachable: true, head: await gitLsRemoteHead(root, origin) };
     } catch (error) {
       if (error instanceof OriginUnreachable) return { ...none, unreachable: error.message };
       throw error;
     }
   }
   const dir = join(root, cacheDirOf(origin));
-  const fromCache = (unreachable?: string): Measured => {
-    const head = existsSync(join(dir, "HEAD")) ? gitRefHead(dir, CACHE_HEAD) : null;
+  const fromCache = async (unreachable?: string): Promise<Measured> => {
+    const head = existsSync(join(dir, "HEAD")) ? await gitRefHead(dir, CACHE_HEAD) : null;
     if (head === null) return { ...none, ...(unreachable === undefined ? {} : { unreachable }) };
     return {
       reachable: false,
@@ -472,7 +476,7 @@ function measureOrigin(root: string, origin: string, options: FreshnessOptions):
   };
   if (!options.network) return fromCache();
   try {
-    const fetched = gitOriginFetch(root, dir, origin);
+    const fetched = await gitOriginFetch(root, dir, origin);
     return {
       reachable: true,
       head: fetched.head,
@@ -495,12 +499,12 @@ function countPins(entries: readonly FreshnessEntry[]): Record<PinState, number>
   return counts;
 }
 
-export function computeFreshness(
+export async function computeFreshness(
   root: string,
   pages: readonly PageInput[],
   registry: FlattenedRegistry,
   options: FreshnessOptions,
-): FreshnessResult {
+): Promise<FreshnessResult> {
   const { pinned, declared } = pinnedPages(registry, pages);
   const depth = options.fetch ? "fetch" : "ls-remote";
   if (!declared) {
@@ -515,7 +519,8 @@ export function computeFreshness(
     };
   }
   const origins = [...new Set(pinned.map((p) => p.origin))].sort();
-  const measured = new Map(origins.map((origin) => [origin, measureOrigin(root, origin, options)]));
+  const measured = new Map<string, Measured>();
+  for (const origin of origins) measured.set(origin, await measureOrigin(root, origin, options));
   const entries: FreshnessEntry[] = [];
   const findings: Finding[] = [];
   const eligible: FreshnessResult["eligible"] = [];
@@ -563,7 +568,8 @@ export function computeFreshness(
     }
     if (state.dir === null || state.head === null) continue;
     const known =
-      gitCommitKnown(state.dir, page.pin) && gitIsAncestor(state.dir, page.pin, state.headRef);
+      (await gitCommitKnown(state.dir, page.pin)) &&
+      (await gitIsAncestor(state.dir, page.pin, state.headRef));
     entry.known = known;
     if (!known) {
       entry.state = "unknown";
@@ -577,18 +583,18 @@ export function computeFreshness(
       );
       continue;
     }
-    const behind = gitRevListCount(state.dir, page.pin, state.headRef);
-    const touched = gitDiffNames(state.dir, page.pin, state.headRef, page.covers, state.top);
+    const behind = await gitRevListCount(state.dir, page.pin, state.headRef);
+    const touched = await gitDiffNames(state.dir, page.pin, state.headRef, page.covers, state.top);
     entry.behind = behind;
     entry.stale = touched.length > 0;
     entry.covering_touched = touched;
     // The objects are at hand, so the page's citations are held to the pin.
-    const topLevel = new Set(gitTreeEntries(state.dir, page.pin));
+    const topLevel = new Set(await gitTreeEntries(state.dir, page.pin));
     const scan = citationsIn(page.source, topLevel, page.covers);
     // A span that reads as a citation and resolves to no path is reported as
     // itself: guessing at the file it meant would check a line nobody cited.
     const unresolved = [
-      ...unresolvedCitations(state.dir, page.pin, scan.citations),
+      ...(await unresolvedCitations(state.dir, page.pin, scan.citations)),
       ...scan.problems.map(
         (problem): UnresolvedCitation => ({
           path: problem.token,

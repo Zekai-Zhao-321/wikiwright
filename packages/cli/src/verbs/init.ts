@@ -166,7 +166,7 @@ function postCopyPages(root: string, vault: VaultOk, files: readonly InitFile[])
     .map(([path, text]) => ({ path, doc: parseDoc(text) }));
 }
 
-function inspectInit(args: CommandArgs): Inspection {
+async function inspectInit(args: CommandArgs): Promise<Inspection> {
   const name = typeof args.flags["constitution"] === "string" ? args.flags["constitution"] : "base";
   const constitutionsDir = shippedDir("constitutions");
   const validNames = readdirSync(constitutionsDir).sort(codeUnitCompare);
@@ -201,7 +201,7 @@ function inspectInit(args: CommandArgs): Inspection {
       const engine = loadEngineConfig(engineJson);
       const commitPrefixes = engine.ok && engine.config.commit_prefixes !== undefined;
       files.sort((a, b) => codeUnitCompare(a.path, b.path));
-      const inspection = inspectHook(args.root, { commitPrefixes });
+      const inspection = await inspectHook(args.root, { commitPrefixes });
       const hooks = inspection.kind === "installed" ? inspection.names : [];
       return {
         ok: true,
@@ -213,7 +213,7 @@ function inspectInit(args: CommandArgs): Inspection {
   // The law the directory will carry AFTER the copy, loaded before any byte
   // lands: the starter's files over whatever is there. A directory the copy
   // would leave unloadable is refused here, where nothing has been written yet.
-  const vault = loadVaultVia(
+  const vault = await loadVaultVia(
     "init",
     {
       exists: (rel) => planned.has(rel) || disk.exists(rel),
@@ -254,7 +254,7 @@ function inspectInit(args: CommandArgs): Inspection {
   // The hooks come from the installer's own pre-write half, so a
   // directory outside a git work tree — where `installHook` answers `no-git`
   // and writes nothing — plans no hook rather than one it cannot land.
-  const inspection = inspectHook(args.root, {
+  const inspection = await inspectHook(args.root, {
     commitPrefixes: vault.engine.commit_prefixes !== undefined,
   });
   const hooks = inspection.kind === "installed" ? inspection.names : [];
@@ -302,8 +302,8 @@ function opsOf(plan: InitPlan): PlanOp[] {
   return ops;
 }
 
-function planForInit(args: CommandArgs): Plan {
-  const inspection = inspectInit(args);
+async function planForInit(args: CommandArgs): Promise<Plan> {
+  const inspection = await inspectInit(args);
   return planOf(inspection.ok ? opsOf(inspection.plan) : []);
 }
 
@@ -329,8 +329,8 @@ export const initCommand: CommandSpec = {
   writes: true,
   needsVaultModules: true,
   plan: planForInit,
-  run: (args) => {
-    const inspection = inspectInit(args);
+  run: async (args) => {
+    const inspection = await inspectInit(args);
     if (!inspection.ok) return inspection.result;
     const { plan } = inspection;
     const conflicts = conflictsOf(plan);
@@ -379,7 +379,9 @@ export const initCommand: CommandSpec = {
       // The starter's modules are not installed: the artifacts and the brief
       // wait for the law they are rendered under, and the envelope says what
       // makes the first `check` green.
-      const hookOutcome = installHook(args.root, { commitPrefixes: plan.modules.commitPrefixes });
+      const hookOutcome = await installHook(args.root, {
+        commitPrefixes: plan.modules.commitPrefixes,
+      });
       const packages = plan.modules.declared.map((m) => m.package);
       const data: Record<string, unknown> = {
         constitution: plan.name,
@@ -416,12 +418,12 @@ export const initCommand: CommandSpec = {
     }
     // A fresh init is a green vault — generate through build's
     // one path and report what landed, so the first `check` has nothing to say.
-    const vault = loadVault("init", args.root);
+    const vault = await loadVault("init", args.root);
     if (!vault.ok) return vault.result;
     // The starter's own declarations decide which hooks it gets — a starter
     // that declares commit_prefixes must not need `hook install` afterwards to
     // get the hook its constitution asks for (docs/cli.md §hook).
-    const hookOutcome = installHook(args.root, {
+    const hookOutcome = await installHook(args.root, {
       commitPrefixes: vault.engine.commit_prefixes !== undefined,
     });
     // The artifacts and the brief, through the one generator `check --write`

@@ -264,7 +264,7 @@ export const newCommand: CommandSpec = {
   needsVaultModules: true,
   plan: planForNew,
   run: async (args) => {
-    const vault = loadVault("new", args.root);
+    const vault = await loadVault("new", args.root);
     if (!vault.ok) return vault.result;
     const [typeName, title] = args.positionals;
     if (typeName === undefined || title === undefined) {

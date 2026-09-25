@@ -1,5 +1,5 @@
-// Mechanical gates over the shipped sources: no locale-dependent comparison
-//, no Bun-specific API and no node: import inside core, and no
+// Mechanical gates over the shipped sources: no locale-dependent comparison,
+// no Bun-specific API outside the git transport, no node: import inside core, and no
 // literal NUL byte — enforcement over convention, never prose.
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
@@ -26,6 +26,9 @@ const SRC_FILES = [...files("packages/core/src", ".ts"), ...files("packages/cli/
  */
 const NAMES_THE_BANNED = "packages/core/src/modules/purity.ts";
 
+/** The git transport: the one shipped file that calls the runtime's own API. */
+const RUNTIME_SEAM = "packages/cli/src/stdoutfile.ts";
+
 describe("shipped-code gates", () => {
   it("bans locale-dependent comparison in packages/ source", () => {
     for (const file of SRC_FILES) {
@@ -51,12 +54,21 @@ describe("shipped-code gates", () => {
     assert.equal(exempt.length, 1, `the purity scan is at ${NAMES_THE_BANNED}`);
   });
 
-  it("bans Bun-specific APIs in packages/ source (node-builtins-only artifact)", () => {
+  it("bans Bun-specific APIs in packages/ source outside the one transport file", () => {
+    // The engine runs on Bun only, and the git transport spawns through
+    // `Bun.spawn` (its header says why): that one file is the runtime seam.
+    // Every other file, the kernel entire, stays on the language and node:
+    // builtins, so a runtime call cannot hide in a verdict.
     for (const file of SRC_FILES) {
+      if (file.endsWith(RUNTIME_SEAM)) continue;
       const text = readFileSync(file, "utf8");
       assert.equal(/\bBun\./.test(text), false, `${file} uses Bun.*`);
       assert.equal(text.includes('from "bun'), false, `${file} imports bun:*`);
     }
+  });
+
+  it("…and that exemption covers exactly one file, which exists", () => {
+    assert.equal(SRC_FILES.filter((f) => f.endsWith(RUNTIME_SEAM)).length, 1);
   });
 
   it("keeps core free of node: imports outside the type wall", () => {

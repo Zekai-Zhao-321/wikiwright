@@ -17,12 +17,12 @@ import { loadVault, walkPages } from "../vaultio.ts";
 const ROLES = ["consumer", "writer", "maintainer"] as const;
 
 /** The one renderer, so `init`, `skills update` and `check` cannot disagree. */
-export function briefFor(
+export async function briefFor(
   root: string,
   role: Role,
   commands: readonly CommandSpec[],
-): { ok: true; text: string } | { ok: false } {
-  const vault = loadVault("brief", root);
+): Promise<{ ok: true; text: string } | { ok: false }> {
+  const vault = await loadVault("brief", root);
   if (!vault.ok) return { ok: false };
   return {
     ok: true,
@@ -80,7 +80,7 @@ export const briefCommand: CommandSpec = {
   ],
   writes: false,
   needsVaultModules: true,
-  run: (args) => {
+  run: async (args) => {
     // docs/cli.md §brief: the flag, else the session's own role, else the
     // writer's — a bounded session that asks for its brief gets its own, not
     // one listing verbs it may not run.
@@ -96,9 +96,9 @@ export const briefCommand: CommandSpec = {
     // whatever role was asked for — the one the copy carries.
     const copy = markerAt(args.root).kind === "valid";
     const role = copy ? "consumer" : asked;
-    const rendered = briefFor(args.root, role as Role, args.commands);
+    const rendered = await briefFor(args.root, role as Role, args.commands);
     if (!rendered.ok) {
-      const vault = loadVault("brief", args.root);
+      const vault = await loadVault("brief", args.root);
       return vault.ok
         ? fail("brief", "internal", "no-brief", "the brief did not render")
         : vault.result;

@@ -94,7 +94,7 @@ by name when it breaks. Test files live under `packages/core/test` and
 | The splice law | a write differs from its input only inside the lines its ops name; BOM, line ending and trailing newline survive; fuzzed on a fixed seed | `writer-fuzz`, `writer` |
 | The Writer is the only writer | the set of modules that reach the filesystem, through `node:fs` or the staged replace, is closed, and no module but `writer.ts` writes a computed destination | `dry-run` |
 | The dry-run law | `CommandSpec` is a union, so `writes: true` without a `plan` does not compile; `--dry-run` leaves the tree byte-identical and its path set equals the real delta; a dry run and a real run agree on every refusal | `dry-run` |
-| Deterministic artifacts | build twice is byte-identical; sorts are code-unit over NFC; no locale, no clock, no Bun-only API in `packages/` | `generate`, `manifest-additions`, `names-graph`, `gates` |
+| Deterministic artifacts | build twice is byte-identical; sorts are code-unit over NFC; no locale, no clock, no Bun-only API in `packages/` outside the git transport (`stdoutfile.ts`) | `generate`, `manifest-additions`, `names-graph`, `gates` |
 | The path law | a vault path names a file inside the vault: shape in core, containment in the shell, at every read and write | `path-law` (core and cli), `provenance-path` |
 | Every declared key has a consumer | every top-level `engine.json` key names a reader that exists and has an end-to-end fixture marked `e2e:<key>`; every consumer entry names a declared key | `schema-walk`, `engine-config` |
 | The shell has one clock | the verbs that stamp a date read `today()`; a test pins `WIKIWRIGHT_TODAY` and proves the pin reaches the page | `write-verb` |

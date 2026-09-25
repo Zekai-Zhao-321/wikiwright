@@ -36,7 +36,7 @@ export async function withStagedKits<T>(
       .split("/")
       .includes("node_modules");
   });
-  const blobs = gitReadBlobBytes(
+  const blobs = await gitReadBlobBytes(
     root,
     staged.map((entry) => entry.blob),
   );

@@ -74,7 +74,7 @@ function realOf(path: string): string {
  * write, in the order it reaches them, and otherwise the plan — shared by the
  * run and the dry run, so the two cannot disagree.
  */
-function prepare(args: CommandArgs): Prepared | CommandResult {
+async function prepare(args: CommandArgs): Promise<Prepared | CommandResult> {
   const name = args.positionals[0] ?? "";
   const to = args.flags["to"];
   if (typeof to !== "string" || to.length === 0) {
@@ -83,7 +83,7 @@ function prepare(args: CommandArgs): Prepared | CommandResult {
       hint: "--to names the root of the repository the export is written into, as `<dir>/skills/<name>/`",
     });
   }
-  const vault = loadVault("export", args.root);
+  const vault = await loadVault("export", args.root);
   if (!vault.ok) return vault.result;
   const label = bundleLabel(args.root);
   const declared = exportPlans(vault, label);
@@ -233,8 +233,8 @@ function prepare(args: CommandArgs): Prepared | CommandResult {
   return { destination, plan, rendered, ops, findings };
 }
 
-function planForExport(args: CommandArgs): Plan {
-  const prepared = prepare(args);
+async function planForExport(args: CommandArgs): Promise<Plan> {
+  const prepared = await prepare(args);
   return "envelope" in prepared ? planOf([]) : planOf(prepared.ops);
 }
 
@@ -254,8 +254,8 @@ export const exportCommand: CommandSpec = {
   writes: true,
   needsVaultModules: true,
   plan: planForExport,
-  run: (args) => {
-    const prepared = prepare(args);
+  run: async (args) => {
+    const prepared = await prepare(args);
     if ("envelope" in prepared) return prepared;
     const marker = prepared.plan.marker;
     const identity = {

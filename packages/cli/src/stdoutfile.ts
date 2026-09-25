@@ -16,12 +16,11 @@
 // that git told the truth, nor that the repository held still between two
 // reads.
 //
-// The child is spawned asynchronously and awaited to its `close`, which comes
-// after it has exited and its stderr pipe has been read to the end; the
-// answer file is read only then. At most CHILD_POOL children run at once, so a
-// verb that asks for many reads together does not fork them all at once. A
-// timeout kills the child (SIGKILL) and is reported as an error with code
-// `ETIMEDOUT`. Every descriptor this call opens is closed, and every file it
+// The child is spawned asynchronously (`Bun.spawn`) and awaited to its exit
+// and to the end of its stderr pipe; the answer file is read only then. At
+// most CHILD_POOL children run at once, so a verb that asks for many reads
+// together does not fork them all at once. A timeout kills the child
+// (SIGKILL) and is reported as an error with code `ETIMEDOUT`. Every descriptor this call opens is closed, and every file it
 // creates removed, before it returns or throws.
 //
 // stderr stays a pipe, and it is read to its end, up to STDERR_MAX_BYTES; a
@@ -30,12 +29,13 @@
 // and a directory in no repository (`gitTopLevel`) — and each fails
 // conservatively when that text is lost: the failure is thrown as a plumbing
 // failure, never read as a smaller answer.
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { closeSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, openSync, unlinkSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Readable } from "node:stream";
 
 /** stderr's bound: messages and the recognitions, never an answer's bytes. */
 const STDERR_MAX_BYTES = 8 * 1024 * 1024;
@@ -48,7 +48,7 @@ export interface ChildAnswer {
   status: number | null;
   /** The signal that ended the child, or null when it exited. */
   signal: NodeJS.Signals | null;
-  /** Everything the child wrote to stdout, read from its file after it closed. */
+  /** Everything the child wrote to stdout, read from its file after it exited. */
   stdout: Buffer;
   stderr: string;
   /** Set when the child could not be spawned, was stopped by the timeout, or overran stderr's bound. */
@@ -94,10 +94,150 @@ function codedError(message: string, code: string): Error {
 }
 
 /**
+ * One child through `Bun.spawn`, awaited to its exit and, unless it was
+ * killed, to the end of its stderr. Under load, a child spawned through the
+ * `node:child_process` layer of Bun 1.3.11 could exit and be reaped with no
+ * `exit` and no end of stderr ever delivered, and the call waited forever
+ * (seen in about one test process in a hundred that spawned two children at
+ * once); the same calls through `Bun.spawn` lost none.
+ */
+async function run(
+  command: string,
+  args: readonly string[],
+  options: ChildOptions,
+  stdin: "ignore" | number,
+  out: number,
+): Promise<Omit<ChildAnswer, "stdout">> {
+  let child: Spawned;
+  try {
+    child = spawnPiped(command, args, options, stdin, out);
+  } catch (e) {
+    // A command that cannot be spawned throws here, before any child exists.
+    return {
+      status: null,
+      signal: null,
+      stderr: "",
+      error: e instanceof Error ? e : new Error(String(e)),
+    };
+  }
+  let error: Error | undefined;
+  let killed = false;
+  const kill = (): void => {
+    killed = true;
+    child.kill("SIGKILL");
+  };
+  const timer =
+    options.timeout === undefined
+      ? undefined
+      : setTimeout(() => {
+          error ??= codedError(
+            `${command} did not finish within ${String(options.timeout)} ms`,
+            "ETIMEDOUT",
+          );
+          kill();
+        }, options.timeout);
+  const reader = child.stderr.getReader();
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  const drained = (async (): Promise<void> => {
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) return;
+        bytes += value.byteLength;
+        if (bytes <= STDERR_MAX_BYTES) {
+          chunks.push(value);
+        } else if (error === undefined) {
+          error = codedError(`stderr exceeded ${STDERR_MAX_BYTES} bytes`, "ENOBUFS");
+          kill();
+        }
+      }
+    } catch (e) {
+      // stderr that could not be read to its end is not a whole answer.
+      if (!killed) error ??= e instanceof Error ? e : new Error(String(e));
+    }
+  })();
+  try {
+    const code = await child.exited.catch((e: unknown) => {
+      error ??= e instanceof Error ? e : new Error(String(e));
+      return null;
+    });
+    // A killed child's stderr may still be held open by a process it
+    // started, which would hold the call for as long as that process lives:
+    // once the killed child itself has exited, its stderr is abandoned.
+    if (killed) await reader.cancel().catch(() => undefined);
+    else await drained;
+    const signal = (child.signalCode ?? null) as NodeJS.Signals | null;
+    return {
+      status: signal === null ? code : null,
+      signal,
+      stderr: Buffer.concat(chunks).toString("utf8"),
+      error,
+    };
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+/** A spawned child as `run` reads it, whichever runtime spawned it. */
+interface Spawned {
+  exited: Promise<number | null>;
+  readonly signalCode: string | null;
+  kill(signal: NodeJS.Signals): void;
+  stderr: ReadableStream<Uint8Array>;
+}
+
+function spawnPiped(
+  command: string,
+  args: readonly string[],
+  options: ChildOptions,
+  stdin: "ignore" | number,
+  out: number,
+): Spawned {
+  const env = options.env ?? process.env;
+  if (typeof Bun !== "undefined") {
+    const child = Bun.spawn({
+      cmd: [command, ...args],
+      cwd: options.cwd,
+      env,
+      stdin,
+      stdout: out,
+      stderr: "pipe",
+    });
+    return {
+      exited: child.exited,
+      get signalCode() {
+        return child.signalCode ?? null;
+      },
+      kill: (signal) => child.kill(signal),
+      stderr: child.stderr,
+    };
+  }
+  // The Node arm, while the suite still runs the CLI under Node; the Bun-only
+  // runner removes it.
+  const child = spawn(command, [...args], { cwd: options.cwd, env, stdio: [stdin, out, "pipe"] });
+  const exited = new Promise<number | null>((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code) => resolve(code));
+  });
+  if (child.stderr === null) throw new Error("the child has no stderr pipe");
+  return {
+    exited,
+    get signalCode() {
+      return child.signalCode;
+    },
+    kill: (signal) => {
+      child.kill(signal);
+    },
+    stderr: Readable.toWeb(child.stderr) as ReadableStream<Uint8Array>,
+  };
+}
+
+/**
  * Run `command` with its stdout on a fresh file under `os.tmpdir()`, and its
  * stdin, when there is input, on another: each created exclusively, readable
  * only by this user, and removed before the call settles. Neither is a vault
- * path. The call waits for a slot in the pool, then for the child's `close`.
+ * path. The call waits for a slot in the pool, then for the child's exit.
  */
 export async function spawnWithStdoutFile(
   command: string,
@@ -127,120 +267,13 @@ export async function spawnWithStdoutFile(
       stdin = openSync(inPath, "r");
       open.push(stdin);
     }
-    const ended = await new Promise<Omit<ChildAnswer, "stdout">>((resolve) => {
-      const chunks: Buffer[] = [];
-      let bytes = 0;
-      let error: Error | undefined;
-      let settled = false;
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      const settle = (status: number | null, signal: NodeJS.Signals | null): void => {
-        if (settled) return;
-        settled = true;
-        if (timer !== undefined) clearTimeout(timer);
-        resolve({ status, signal, stderr: Buffer.concat(chunks).toString("utf8"), error });
-      };
-      const child = spawn(command, [...args], {
-        cwd: options.cwd,
-        env: options.env ?? process.env,
-        stdio: [stdin, out, "pipe"],
-      });
-      child.on("error", (e) => {
-        error ??= e;
-        // A child that never spawned has no `close` to wait for.
-        if (child.pid === undefined) settle(null, null);
-      });
-      // `close` comes after the exit and after stderr has been read to its end.
-      child.on("close", (code, signal) => settle(code, signal));
-      let killed = false;
-      // A killed child's stderr may still be held open by a process it
-      // started, which would hold `close` back for as long as that process
-      // lives: once the killed child itself has exited, its stderr is
-      // abandoned and the call settles.
-      child.on("exit", (code, signal) => {
-        if (!killed) return;
-        child.stderr?.destroy();
-        settle(code, signal);
-      });
-      const kill = (): void => {
-        killed = true;
-        child.kill("SIGKILL");
-      };
-      child.stderr?.on("data", (chunk: Buffer) => {
-        bytes += chunk.length;
-        if (bytes <= STDERR_MAX_BYTES) {
-          chunks.push(chunk);
-          return;
-        }
-        if (error === undefined) {
-          error = codedError(`stderr exceeded ${STDERR_MAX_BYTES} bytes`, "ENOBUFS");
-          kill();
-        }
-      });
-      if (options.timeout !== undefined) {
-        timer = setTimeout(() => {
-          error ??= codedError(
-            `${command} did not finish within ${String(options.timeout)} ms`,
-            "ETIMEDOUT",
-          );
-          kill();
-        }, options.timeout);
-      }
-    });
-    // The child has closed: the file holds everything it wrote.
+    const ended = await run(command, args, options, stdin, out);
+    // The child has exited: the file holds everything it wrote.
     const stdout = await readFile(outPath);
     return { ...ended, stdout };
   } finally {
     for (const fd of open) closeSync(fd);
     for (const path of created) unlinkSync(path);
     release();
-  }
-}
-
-/**
- * The synchronous form the git reads used before the asynchronous transport:
- * kept only until every caller awaits `spawnWithStdoutFile`, and removed then.
- */
-export function spawnWithStdoutFileSync(
-  command: string,
-  args: readonly string[],
-  options: ChildOptions,
-): Omit<ChildAnswer, "signal"> {
-  const outPath = scratchPath("stdout");
-  const inPath = options.input === undefined ? undefined : scratchPath("stdin");
-  const open: number[] = [];
-  const created: string[] = [];
-  try {
-    const out = openSync(outPath, "wx", 0o600);
-    open.push(out);
-    created.push(outPath);
-    let stdin: "ignore" | number = "ignore";
-    if (inPath !== undefined) {
-      const writing = openSync(inPath, "wx", 0o600);
-      created.push(inPath);
-      try {
-        writeFileSync(writing, options.input ?? "");
-      } finally {
-        closeSync(writing);
-      }
-      stdin = openSync(inPath, "r");
-      open.push(stdin);
-    }
-    const result = spawnSync(command, [...args], {
-      cwd: options.cwd,
-      env: options.env ?? process.env,
-      ...(options.timeout === undefined ? {} : { timeout: options.timeout }),
-      stdio: [stdin, out, "pipe"],
-      maxBuffer: STDERR_MAX_BYTES,
-    });
-    for (const fd of open.splice(0)) closeSync(fd);
-    return {
-      status: result.status,
-      stdout: readFileSync(outPath),
-      stderr: (result.stderr as Buffer | null | undefined)?.toString("utf8") ?? "",
-      error: result.error,
-    };
-  } finally {
-    for (const fd of open) closeSync(fd);
-    for (const path of created) unlinkSync(path);
   }
 }

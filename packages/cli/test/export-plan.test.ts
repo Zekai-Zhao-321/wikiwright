@@ -92,7 +92,7 @@ function garden(
 async function loaded(root: string): Promise<VaultOk> {
   const declarations = declaredModulesOf(root);
   if (declarations.length > 0) await preloadModules(root, declarations);
-  const vault = loadVault("check", root);
+  const vault = await loadVault("check", root);
   assert.equal(vault.ok, true, vault.ok ? "" : JSON.stringify(vault.result.envelope));
   if (!vault.ok) throw new Error("unreachable");
   return vault;

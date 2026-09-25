@@ -4,7 +4,6 @@
 // `renamed-without-alias` cannot fire after a move, and inbound links are
 // rewritten on request) · docs/concepts.md §Findings and routing · docs/architecture.md
 
-import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
@@ -18,6 +17,7 @@ import {
   routeFindings,
 } from "@wikiwright/core";
 import { fail, ok } from "../envelope.ts";
+import { gitRun } from "../git.ts";
 import { lawFor, lintOptionsFor, moveReasonsOf, rootsOf } from "../law.ts";
 import { collectPages, formerFolderTagFindings, sortFindings } from "../pages.ts";
 import { contentPathRefusal } from "../paths.ts";
@@ -83,7 +83,7 @@ export const moveCommand: CommandSpec = {
   needsVaultModules: true,
   plan: planForMove,
   run: async (args) => {
-    const vault = loadVault("move", args.root);
+    const vault = await loadVault("move", args.root);
     if (!vault.ok) return vault.result;
     const [rawFrom, rawTo] = args.positionals;
     if (rawFrom === undefined || rawTo === undefined) {
@@ -148,7 +148,13 @@ export const moveCommand: CommandSpec = {
     if (isDryRun(args)) return ok("move", planForMove(args));
     try {
       mkdirSync(dirname(join(args.root, to)), { recursive: true });
-      execFileSync("git", ["mv", from, to], { cwd: args.root });
+      // Through the one git transport, as every read is (git.ts): awaited,
+      // stderr captured and carried in the refusal.
+      const moved = await gitRun(args.root, ["mv", from, to]);
+      if (moved.error !== undefined) throw moved.error;
+      if (moved.status !== 0) {
+        throw new Error(`Command failed: git mv ${from} ${to}\n${moved.stderr}`);
+      }
     } catch (e) {
       return fail("move", "conflict", "git-unavailable", `git mv failed: ${String(e)}`, {
         hint: "move operates inside a git repository",

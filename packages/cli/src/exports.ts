@@ -866,22 +866,30 @@ export const LINK_MODE = "120000";
  * its bytes, so a tracked link is refused. A kit under `node_modules` is not in
  * the index; the plan reads it from the working tree, as the preload does.
  */
-export function indexExportSource(
+export async function indexExportSource(
   root: string,
   pages: readonly PageInput[],
   entries: readonly IndexEntry[],
-): ExportSource {
+  readsFiles: boolean,
+): Promise<ExportSource> {
   const byPath = new Map(
     entries.filter((entry) => entry.stage === 0).map((entry) => [entry.path, entry] as const),
   );
-  let blobs: Map<string, Buffer> | undefined;
+  // Only a bundle that declares an export has files to read, and the batch
+  // read is asynchronous while a source's `read` is not: the staged files are
+  // read once, here, when there is an export to read them for.
+  const blobs = readsFiles
+    ? await gitReadBlobBytes(
+        root,
+        [...byPath.values()].filter((e) => e.mode !== LINK_MODE).map((e) => e.blob),
+      )
+    : undefined;
   const read = (rel: string): Buffer => {
     const entry = byPath.get(rel);
     if (entry === undefined) throw new Error(`the index holds no "${rel}"`);
-    blobs ??= gitReadBlobBytes(
-      root,
-      [...byPath.values()].filter((e) => e.mode !== LINK_MODE).map((e) => e.blob),
-    );
+    if (blobs === undefined) {
+      throw new Error(`the index source was read for "${rel}" and no export declares a file`);
+    }
     const bytes = blobs.get(entry.blob);
     if (bytes === undefined)
       throw new Error(`the index names blob ${entry.blob} for "${rel}" and git did not return it`);

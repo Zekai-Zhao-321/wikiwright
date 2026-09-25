@@ -65,14 +65,14 @@ function helpResult(): CommandResult {
  * it resolves outside) is left off rather than half-stated; the reads that
  * refuse it are the same ones every verb makes.
  */
-function withBundle(
+async function withBundle(
   result: CommandResult,
   root: string,
   shadowed: readonly { root: string; tier: string }[],
-): CommandResult {
+): Promise<CommandResult> {
   let bundle: BundleIdentity | undefined;
   try {
-    bundle = bundleIdentity(root);
+    bundle = await bundleIdentity(root);
   } catch {
     return result;
   }
@@ -130,7 +130,7 @@ function thrown(command: string, e: unknown): CommandResult {
  * bundles answer (`bundle-ambiguous`, with each candidate). What it finds is a
  * copy, and a copy is guarded as every marked root is (`markedRootRefusal`).
  */
-function targetOf(spec: CommandSpec, args: CommandArgs): Target {
+async function targetOf(spec: CommandSpec, args: CommandArgs): Promise<Target> {
   const name = args.flags["bundle"];
   if (typeof name !== "string") return { ok: true, args, shadowed: [] };
   const root = args.flags["root"];
@@ -152,7 +152,7 @@ function targetOf(spec: CommandSpec, args: CommandArgs): Target {
       }),
     };
   }
-  const resolution = resolveBundle(name);
+  const resolution = await resolveBundle(name);
   const skipped = resolution.skipped.map(({ root: at, tier, reason }) => ({
     root: at,
     tier,
@@ -265,7 +265,7 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
   if (!parsed.ok) return parsed.result;
   let target: Target;
   try {
-    target = targetOf(spec, parsed.args);
+    target = await targetOf(spec, parsed.args);
   } catch (e) {
     return thrown(spec.name, e);
   }
@@ -275,11 +275,10 @@ async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandRes
   if (refused !== undefined) return refused;
   let result: CommandResult;
   try {
-    // docs/extending.md §Declaring a module: loading a module is the shell's one
-    // asynchronous step, and it happens HERE — once, before the verb runs —
-    // rather than making every verb's loader async for it. `loadVaultVia` reads
-    // the outcome and refuses a bundle whose declared modules did not load, so
-    // a verb that never reaches this line cannot be judged under a quieter law.
+    // docs/extending.md §Declaring a module: the declared modules load HERE —
+    // once, before the verb runs — and `loadVaultVia` reads the outcome by root
+    // and refuses a bundle whose declared modules did not load, so a verb that
+    // never reaches this line cannot be judged under a quieter law.
     // Only for a verb that reads the vault's law: `version` and `schema` answer
     // about the engine, and `bundles` about the skill directories.
     if (spec.needsVaultModules) {

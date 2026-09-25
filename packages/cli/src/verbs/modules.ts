@@ -55,8 +55,10 @@ function packageSpecOf(root: string, name: string): string | null {
 }
 
 /** Every finding this vault produces under whatever modules are preloaded for it. */
-function findingsOf(root: string): { ok: true; shapes: string[] } | { ok: false; why: string } {
-  const vault = loadVault("modules", root);
+async function findingsOf(
+  root: string,
+): Promise<{ ok: true; shapes: string[] } | { ok: false; why: string }> {
+  const vault = await loadVault("modules", root);
   if (!vault.ok) {
     return { ok: false, why: JSON.stringify(vault.result.envelope) };
   }
@@ -180,7 +182,7 @@ export const modulesCommand: CommandSpec = {
     // Current: this bundle, under the modules it has installed today.
     forgetPreloadedModules(args.root);
     await preloadModules(args.root, declarations);
-    const before = findingsOf(args.root);
+    const before = await findingsOf(args.root);
     if (!before.ok) {
       forgetPreloadedModules(args.root);
       return fail("modules", "constitution", "current-unjudgeable", before.why);
@@ -236,7 +238,7 @@ export const modulesCommand: CommandSpec = {
       loaded: [...others.loaded, candidateModule],
       issues: [],
     });
-    const after = findingsOf(args.root);
+    const after = await findingsOf(args.root);
     forgetPreloadedModules(args.root);
     if (!after.ok) {
       return fail("modules", "constitution", "candidate-unjudgeable", after.why);

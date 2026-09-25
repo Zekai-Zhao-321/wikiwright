@@ -40,8 +40,11 @@ export function briefPlan(
 }
 
 /** The writer's brief alone, through the same write loop — what `skills update` re-renders. */
-export function writeBrief(root: string, commands: readonly CommandSpec[]): string | undefined {
-  const vault = loadVault("brief", root);
+export async function writeBrief(
+  root: string,
+  commands: readonly CommandSpec[],
+): Promise<string | undefined> {
+  const vault = await loadVault("brief", root);
   if (!vault.ok) return undefined;
   const pages = collectPages(root, walkPages(root, rootsOf(vault)));
   return writeArtifacts(root, [briefPlan(root, vault, pages, commands)])[0];

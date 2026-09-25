@@ -9,7 +9,7 @@ import {
   parseNameStatusZ,
   type StagedChange,
 } from "@wikiwright/core";
-import { type ChildOptions, spawnWithStdoutFileSync } from "./stdoutfile.ts";
+import { type ChildAnswer, type ChildOptions, spawnWithStdoutFile } from "./stdoutfile.ts";
 
 /**
  * A git answer the engine refuses to judge from. Every catch that turns a
@@ -87,13 +87,18 @@ export function gitRun(
   cwd: string,
   args: readonly string[],
   options: Omit<ChildOptions, "cwd"> = {},
-): ReturnType<typeof spawnWithStdoutFileSync> {
-  return spawnWithStdoutFileSync("git", args, { ...options, cwd });
+): Promise<ChildAnswer> {
+  // `LC_ALL=C`: git's messages, which three answers are recognised from, in
+  // one language whatever the caller's locale. `GIT_OPTIONAL_LOCKS=0`: a
+  // read never takes the index lock to refresh it, so it never moves the
+  // index under a dry run or races a concurrent read.
+  const env = { ...(options.env ?? process.env), LC_ALL: "C", GIT_OPTIONAL_LOCKS: "0" };
+  return spawnWithStdoutFile("git", args, { ...options, cwd, env });
 }
 
 /** git's whole answer as text; a spawn failure or a non-zero exit is thrown with stderr. */
-export function gitText(root: string, args: readonly string[]): string {
-  const result = gitRun(root, args);
+export async function gitText(root: string, args: readonly string[]): Promise<string> {
+  const result = await gitRun(root, args);
   if (result.error !== undefined) throw result.error;
   if (result.status !== 0) {
     throw new Error(
@@ -103,19 +108,19 @@ export function gitText(root: string, args: readonly string[]): string {
   return result.stdout.toString("utf8");
 }
 
-function git(root: string, args: string[]): string {
+async function git(root: string, args: string[]): Promise<string> {
   return gitText(root, args);
 }
 
-export function gitStagedChanges(root: string): StagedChange[] {
+export async function gitStagedChanges(root: string): Promise<StagedChange[]> {
   // --relative keeps paths vault-root-relative, so a vault living in a
   // subdirectory of a code repo (the code-bundle layout) works unchanged.
   const args = ["diff", "--cached", "--name-status", "-z", "-M", "--relative"];
-  return parseNameStatusZ(terminated(args, git(root, args), "\0"));
+  return parseNameStatusZ(terminated(args, await git(root, args), "\0"));
 }
 
 /** The staged (index) content of a path (vault-root-relative via ./ pathspec). */
-export function gitShowStaged(root: string, path: string): string {
+export async function gitShowStaged(root: string, path: string): Promise<string> {
   return git(root, ["show", `:./${path}`]);
 }
 
@@ -125,9 +130,9 @@ export function gitShowStaged(root: string, path: string): string {
  * source whose name holds a newline. Every other base comes through
  * `gitHeadBlobs` and the batch read.
  */
-export function gitShowHead(root: string, path: string): string | undefined {
+export async function gitShowHead(root: string, path: string): Promise<string | undefined> {
   try {
-    return git(root, ["show", `HEAD:./${path}`]);
+    return await git(root, ["show", `HEAD:./${path}`]);
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     // Only a genuinely-absent path means "no base"; any other failure must
@@ -154,11 +159,11 @@ export interface IndexEntry {
 }
 
 /** The index's entries, for staged-state identity and the one read of its pages. */
-export function gitIndexEntries(root: string): IndexEntry[] {
+export async function gitIndexEntries(root: string): Promise<IndexEntry[]> {
   const entries: IndexEntry[] = [];
   // `<mode> <blob> <stage>\t<path>`, NUL-terminated, paths relative to the root.
   const args = ["ls-files", "-s", "-z"];
-  for (const record of terminated(args, git(root, args), "\0").split("\0")) {
+  for (const record of terminated(args, await git(root, args), "\0").split("\0")) {
     const tab = record.indexOf("\t");
     if (tab < 0) continue;
     const [mode, blob, stage] = record.slice(0, tab).split(" ");
@@ -169,9 +174,9 @@ export function gitIndexEntries(root: string): IndexEntry[] {
 }
 
 /** The current head commit. */
-export function gitHead(root: string): string {
+export async function gitHead(root: string): Promise<string> {
   const args = ["rev-parse", "HEAD"];
-  return terminated(args, git(root, args), "\n", true).trim();
+  return terminated(args, await git(root, args), "\n", true).trim();
 }
 
 /**
@@ -181,8 +186,8 @@ export function gitHead(root: string): string {
  * "not a git repository" is an answer of "none"; any other failure is the
  * plumbing breaking and is thrown as itself.
  */
-export function gitTopLevel(dir: string): string | undefined {
-  const result = gitRun(dir, ["rev-parse", "--show-toplevel"]);
+export async function gitTopLevel(dir: string): Promise<string | undefined> {
+  const result = await gitRun(dir, ["rev-parse", "--show-toplevel"]);
   if (result.error !== undefined) throw result.error;
   if (result.status === 0) {
     const out = result.stdout.toString("utf8");
@@ -202,8 +207,8 @@ export function gitTopLevel(dir: string): string | undefined {
  * repository, git missing, plumbing broken) is a real failure and is thrown, so
  * it keeps its warning instead of being silently read as "no commits yet".
  */
-export function gitHasHead(root: string): boolean {
-  const result = gitRun(root, ["rev-parse", "--verify", "--quiet", "HEAD"]);
+export async function gitHasHead(root: string): Promise<boolean> {
+  const result = await gitRun(root, ["rev-parse", "--verify", "--quiet", "HEAD"]);
   if (result.error !== undefined) throw result.error;
   const out = result.stdout.toString("utf8");
   if (result.status === 0) {
@@ -237,11 +242,11 @@ export const CACHE_HEAD = "refs/wikiwright/head";
  * origin fails instead of hanging on a credential prompt; a timeout so a dead
  * host is an answer; a non-zero exit is the origin's refusal, never a throw.
  */
-function originGit(
+async function originGit(
   cwd: string,
   args: string[],
-): { status: number | null; stdout: string; stderr: string } {
-  const result = gitRun(cwd, args, {
+): Promise<{ status: number | null; stdout: string; stderr: string }> {
+  const result = await gitRun(cwd, args, {
     timeout: ORIGIN_TIMEOUT_MS,
     env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
   });
@@ -255,8 +260,8 @@ function originGit(
 }
 
 /** The origin's HEAD, with no clone: one round trip. */
-export function gitLsRemoteHead(cwd: string, origin: string): string {
-  const r = originGit(cwd, ["ls-remote", "--quiet", origin, "HEAD"]);
+export async function gitLsRemoteHead(cwd: string, origin: string): Promise<string> {
+  const r = await originGit(cwd, ["ls-remote", "--quiet", origin, "HEAD"]);
   if (r.status !== 0) {
     throw new OriginUnreachable(r.stderr.trim() || `git ls-remote exited ${String(r.status)}`);
   }
@@ -273,12 +278,12 @@ export function gitLsRemoteHead(cwd: string, origin: string): string {
  * fetch is retried whole, and the caller is told which. `--no-tags`: a tag is
  * not a head. The cache is created on first use; git makes the directory.
  */
-export function gitOriginFetch(
+export async function gitOriginFetch(
   root: string,
   cache: string,
   origin: string,
-): { head: string; filter: "blob:none" | "none" } {
-  if (!existsSync(join(cache, "HEAD"))) git(root, ["init", "--bare", "-q", cache]);
+): Promise<{ head: string; filter: "blob:none" | "none" }> {
+  if (!existsSync(join(cache, "HEAD"))) await git(root, ["init", "--bare", "-q", cache]);
   const fetch = (filtered: boolean) =>
     originGit(cache, [
       "fetch",
@@ -288,23 +293,23 @@ export function gitOriginFetch(
       origin,
       `+HEAD:${CACHE_HEAD}`,
     ]);
-  let r = fetch(true);
+  let r = await fetch(true);
   let filter: "blob:none" | "none" = "blob:none";
   if (r.status !== 0 && /filter/iu.test(r.stderr)) {
-    r = fetch(false);
+    r = await fetch(false);
     filter = "none";
   }
   if (r.status !== 0) {
     throw new OriginUnreachable(r.stderr.trim() || `git fetch exited ${String(r.status)}`);
   }
   const head = ["rev-parse", CACHE_HEAD];
-  return { head: terminated(head, git(cache, head), "\n", true).trim(), filter };
+  return { head: terminated(head, await git(cache, head), "\n", true).trim(), filter };
 }
 
 /** A ref's commit, or null where the ref does not exist. */
-export function gitRefHead(dir: string, ref: string): string | null {
+export async function gitRefHead(dir: string, ref: string): Promise<string | null> {
   const args = ["rev-parse", "--verify", "--quiet", ref];
-  const result = gitRun(dir, args);
+  const result = await gitRun(dir, args);
   if (result.error !== undefined) throw result.error;
   if (result.status === 0) {
     return terminated(args, result.stdout.toString("utf8"), "\n", true).trim();
@@ -316,13 +321,17 @@ export function gitRefHead(dir: string, ref: string): string | null {
 }
 
 /** Whether the repository holds this commit at all. */
-export function gitCommitKnown(dir: string, sha: string): boolean {
-  return gitRefHead(dir, `${sha}^{commit}`) !== null;
+export async function gitCommitKnown(dir: string, sha: string): Promise<boolean> {
+  return (await gitRefHead(dir, `${sha}^{commit}`)) !== null;
 }
 
 /** Whether `ancestor` is on the history of `descendant`. */
-export function gitIsAncestor(dir: string, ancestor: string, descendant: string): boolean {
-  const result = gitRun(dir, ["merge-base", "--is-ancestor", ancestor, descendant]);
+export async function gitIsAncestor(
+  dir: string,
+  ancestor: string,
+  descendant: string,
+): Promise<boolean> {
+  const result = await gitRun(dir, ["merge-base", "--is-ancestor", ancestor, descendant]);
   if (result.error !== undefined) throw result.error;
   if (result.status === 0) return true;
   if (result.status === 1) return false;
@@ -337,9 +346,9 @@ export function gitIsAncestor(dir: string, ancestor: string, descendant: string)
  * subdirectory, while `<rev>:<path>` is always root-relative. What tells a
  * repository path from any other backticked token.
  */
-export function gitTreeEntries(dir: string, rev: string): string[] {
+export async function gitTreeEntries(dir: string, rev: string): Promise<string[]> {
   const args = ["ls-tree", "--full-tree", "--name-only", "-z", rev];
-  return terminated(args, git(dir, args), "\0")
+  return terminated(args, await git(dir, args), "\0")
     .split("\0")
     .filter((name) => name !== "");
 }
@@ -349,25 +358,25 @@ export function gitTreeEntries(dir: string, rev: string): string[] {
  * where the revision's tree holds no such path. A missing path is an answer,
  * not a failure; a spawn failure is thrown as itself.
  */
-export function gitObjectType(dir: string, spec: string): string | undefined {
-  const result = gitRun(dir, ["cat-file", "-t", spec]);
+export async function gitObjectType(dir: string, spec: string): Promise<string | undefined> {
+  const result = await gitRun(dir, ["cat-file", "-t", spec]);
   if (result.error !== undefined) throw result.error;
   if (result.status !== 0) return undefined;
   return terminated(["cat-file", "-t", spec], result.stdout.toString("utf8"), "\n", true).trim();
 }
 
 /** The number of lines in a blob: its newlines, plus one for an unterminated last line. */
-export function gitBlobLineCount(dir: string, spec: string): number {
-  const text = git(dir, ["cat-file", "-p", spec]);
+export async function gitBlobLineCount(dir: string, spec: string): Promise<number> {
+  const text = await git(dir, ["cat-file", "-p", spec]);
   if (text.length === 0) return 0;
   const newlines = text.split("\n").length - 1;
   return text.endsWith("\n") ? newlines : newlines + 1;
 }
 
 /** Commits between a pin and a head (pin distance). Throws on an unresolvable pin. */
-export function gitRevListCount(dir: string, from: string, to: string): number {
+export async function gitRevListCount(dir: string, from: string, to: string): Promise<number> {
   const args = ["rev-list", "--count", `${from}..${to}`];
-  return Number.parseInt(terminated(args, git(dir, args), "\n", true).trim(), 10);
+  return Number.parseInt(terminated(args, await git(dir, args), "\n", true).trim(), 10);
 }
 
 /**
@@ -378,16 +387,16 @@ export function gitRevListCount(dir: string, from: string, to: string): number {
  * repo-root-relative when the vault is embedded in a subdirectory of the
  * repository it documents.
  */
-export function gitDiffNames(
+export async function gitDiffNames(
   dir: string,
   from: string,
   to: string,
   paths: readonly string[],
   top: boolean,
-): string[] {
+): Promise<string[]> {
   const args = ["diff", "--name-only", "-z", "--no-renames", from, to];
   if (paths.length > 0) args.push("--", ...paths.map((p) => (top ? `:(top)${p}` : p)));
-  return terminated(args, git(dir, args), "\0")
+  return terminated(args, await git(dir, args), "\0")
     .split("\0")
     .filter((p) => p !== "");
 }
@@ -407,8 +416,8 @@ const BATCH_BYTES = 32 * 1024 * 1024;
  * Each batch read still holds its answer to its request, row by row: the count
  * of rows, and each row's name against the name it answers.
  */
-function gitBatch(root: string, args: string[], input: string): Buffer {
-  const result = gitRun(root, args, { input });
+async function gitBatch(root: string, args: string[], input: string): Promise<Buffer> {
+  const result = await gitRun(root, args, { input });
   if (result.error !== undefined) throw result.error;
   if (result.status !== 0) {
     throw new Error(`git ${args.join(" ")} exited ${String(result.status)}: ${result.stderr}`);
@@ -442,16 +451,16 @@ function answersInOrder(answered: readonly string[], requested: readonly string[
  * to read and four to judge (docs/roadmap.md §Every run parses the whole
  * corpus). A blob the repository does not hold is a broken repository, thrown.
  */
-export function gitReadBlobs(
+export async function gitReadBlobs(
   root: string,
   blobs: readonly string[],
   decode: (bytes: Uint8Array) => string = utf8,
-): Map<string, string> {
+): Promise<Map<string, string>> {
   const wanted = [...new Set(blobs)];
   const out = new Map<string, string>();
   if (wanted.length === 0) return out;
   const sizes = new Map<string, number>();
-  const checked = gitBatch(root, ["cat-file", "--batch-check"], `${wanted.join("\n")}\n`);
+  const checked = await gitBatch(root, ["cat-file", "--batch-check"], `${wanted.join("\n")}\n`);
   const records = parseCatFileBatchCheck(
     terminated(["cat-file", "--batch-check"], checked.toString("utf8"), "\n"),
   );
@@ -473,9 +482,9 @@ export function gitReadBlobs(
   }
   let chunk: string[] = [];
   let chunkBytes = 0;
-  const flush = (): void => {
+  const flush = async (): Promise<void> => {
     if (chunk.length === 0) return;
-    const bytes = gitBatch(root, ["cat-file", "--batch"], `${chunk.join("\n")}\n`);
+    const bytes = await gitBatch(root, ["cat-file", "--batch"], `${chunk.join("\n")}\n`);
     // Every object ends in a newline, so a stream cut between objects is caught
     // by the terminator and the count; one cut inside an object, by the parser,
     // and it is the same short read by name.
@@ -507,11 +516,11 @@ export function gitReadBlobs(
   };
   for (const blob of wanted) {
     const size = sizes.get(blob) ?? 0;
-    if (chunk.length > 0 && chunkBytes + size > BATCH_BYTES) flush();
+    if (chunk.length > 0 && chunkBytes + size > BATCH_BYTES) await flush();
     chunk.push(blob);
     chunkBytes += size;
   }
-  flush();
+  await flush();
   return out;
 }
 
@@ -520,11 +529,14 @@ export function gitReadBlobs(
  * carries files that are not text (docs/constitution.md §exports). Each blob
  * is carried through a byte-for-byte decoding and back.
  */
-export function gitReadBlobBytes(root: string, blobs: readonly string[]): Map<string, Buffer> {
+export async function gitReadBlobBytes(
+  root: string,
+  blobs: readonly string[],
+): Promise<Map<string, Buffer>> {
   const latin1 = (bytes: Uint8Array): string =>
     Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("latin1");
   const out = new Map<string, Buffer>();
-  for (const [blob, text] of gitReadBlobs(root, blobs, latin1)) {
+  for (const [blob, text] of await gitReadBlobs(root, blobs, latin1)) {
     out.set(blob, Buffer.from(text, "latin1"));
   }
   return out;
@@ -540,15 +552,15 @@ export function gitReadBlobBytes(root: string, blobs: readonly string[]): Map<st
  * path HEAD does not hold and exits non-zero for any other failure, which is
  * thrown. A path must not hold a newline: the names go one per line.
  */
-export function gitHeadBlobs(
+export async function gitHeadBlobs(
   root: string,
   paths: readonly string[],
-): Map<string, string | undefined> {
+): Promise<Map<string, string | undefined>> {
   const wanted = [...new Set(paths)];
   const out = new Map<string, string | undefined>();
   if (wanted.length === 0) return out;
   const names = wanted.map((path) => `HEAD:./${path}`);
-  const checked = gitBatch(root, ["cat-file", "--batch-check"], `${names.join("\n")}\n`);
+  const checked = await gitBatch(root, ["cat-file", "--batch-check"], `${names.join("\n")}\n`);
   const records = parseCatFileBatchCheck(
     terminated(["cat-file", "--batch-check"], checked.toString("utf8"), "\n"),
   );
@@ -600,21 +612,22 @@ export interface CheckoutState {
  * header answers `head` and any entry makes it `dirty`. Untracked files count;
  * ignored ones do not.
  *
- * A reader, never a writer: `--no-optional-locks` keeps `status` from
- * refreshing the index, which it otherwise does whenever it can take the
+ * A reader, never a writer: `--no-optional-locks` (and `GIT_OPTIONAL_LOCKS=0`,
+ * which every git call here carries) keeps `status` from refreshing the index, which it otherwise does whenever it can take the
  * lock, and which a dry run must not move. A hook's exported variables are
  * removed, so the repository is the one git discovers from the directory. Undefined when git gives no answer: no
  * repository encloses the directory, or git cannot run there.
  */
-export function gitCheckoutState(dir: string): CheckoutState | undefined {
+export async function gitCheckoutState(dir: string): Promise<CheckoutState | undefined> {
   const env = { ...process.env };
   for (const key of HOOK_VARIABLES) delete env[key];
-  const result = gitRun(
+  const result = await gitRun(
     dir,
     [
       "--no-optional-locks",
       "status",
       "--porcelain=v2",
+      "-z",
       "--branch",
       "--untracked-files=all",
       "--",
@@ -624,16 +637,18 @@ export function gitCheckoutState(dir: string): CheckoutState | undefined {
   );
   if (result.error !== undefined || result.status !== 0) return undefined;
   // A cut answer could drop the entries that make the checkout dirty: it is
-  // thrown, and the bundle block it would have fed is left off.
+  // thrown, and the bundle block it would have fed is left off. Under `-z`
+  // every header and entry ends in a NUL, and a rename's second path is one
+  // more NUL-terminated field, which reads as an entry: dirty either way.
   const out = terminated(
-    ["status", "--porcelain=v2", "--branch", "--untracked-files=all"],
+    ["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=all"],
     result.stdout.toString("utf8"),
-    "\n",
+    "\0",
     true,
   );
   let head: string | null = null;
   let dirty = false;
-  for (const line of out.split("\n")) {
+  for (const line of out.split("\0")) {
     if (line === "") continue;
     if (!line.startsWith("# ")) {
       dirty = true;

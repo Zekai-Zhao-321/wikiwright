@@ -41,9 +41,9 @@ import { briefFindings } from "./brief.ts";
  * wrong: a plan is what an agent reads to decide whether to run this command,
  * so the answer for an invocation that writes nothing is an empty plan.
  */
-function planForCheck(args: CommandArgs): Plan {
+async function planForCheck(args: CommandArgs): Promise<Plan> {
   if (args.flags["write"] !== true) return planOf([]);
-  const vault = loadVault("check", args.root);
+  const vault = await loadVault("check", args.root);
   if (!vault.ok) return planOf([]);
   return planOf(artifactOps(args.root, vault, args.commands));
 }
@@ -65,11 +65,11 @@ export const checkCommand: CommandSpec = {
   needsVaultModules: true,
   plan: planForCheck,
   run: async (args) => {
-    const vault = loadVault("check", args.root);
+    const vault = await loadVault("check", args.root);
     if (!vault.ok) return vault.result;
     // The load is the only refusal `check` reaches before `--write`'s first
     // write, so the plan is answered here.
-    if (isDryRun(args)) return ok("check", planForCheck(args));
+    if (isDryRun(args)) return ok("check", await planForCheck(args));
     // Read one snapshot and parse it once: the artifacts, the brief and the
     // judge below all take this state's pages (`parsedPages` keeps the parse
     // on the state, so the judge reads it back rather than parsing again).
@@ -132,7 +132,7 @@ export const checkCommand: CommandSpec = {
     // one that echoed the whole envelope after the summary — until it is
     // reinstalled. Machine-local state, so warning is the ceiling, and the
     // route is the reinstall, chain kept.
-    for (const hook of installedHooks(args.root, {
+    for (const hook of await installedHooks(args.root, {
       commitPrefixes: vault.engine.commit_prefixes !== undefined,
     })) {
       if (hook.current) continue;

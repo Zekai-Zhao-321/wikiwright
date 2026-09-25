@@ -89,8 +89,8 @@ export const typeCommand: CommandSpec = {
   ],
   writes: false,
   needsVaultModules: true,
-  run: (args) => {
-    const vault = loadVault("type", args.root);
+  run: async (args) => {
+    const vault = await loadVault("type", args.root);
     if (!vault.ok) return vault.result;
     const [sub, name] = args.positionals;
     if (sub === "show") {

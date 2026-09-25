@@ -978,8 +978,8 @@ describe("adopting another version reports its whole delta first (docs/extending
 // standard library at each consumer. The cases above prove it through the
 // binary with a real package; this one holds the in-process seam by identity.
 describe("the shell composes one module registry (docs/extending.md §What a module registers)", () => {
-  it("judges with the registry carried by the loaded vault", () => {
-    const vault = loadVault("lint", join(REPO, "fixtures", "minimal-vault"));
+  it("judges with the registry carried by the loaded vault", async () => {
+    const vault = await loadVault("lint", join(REPO, "fixtures", "minimal-vault"));
     assert.equal(vault.ok, true);
     if (!vault.ok) throw new Error("unreachable");
 

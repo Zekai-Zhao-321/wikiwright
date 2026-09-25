@@ -197,12 +197,12 @@ function stateName(staged: boolean): "index" | "working-tree" {
  * `--path` narrows either to one page; `--staged` alone is every page the
  * index changed; neither is every page.
  */
-function prepare(
+async function prepare(
   args: CommandArgs,
   rule: string,
   path: string | undefined,
-): { ok: true; prepared: Prepared } | { ok: false; result: CommandResult } {
-  const vault = loadVault("fix", args.root);
+): Promise<{ ok: true; prepared: Prepared } | { ok: false; result: CommandResult }> {
+  const vault = await loadVault("fix", args.root);
   if (!vault.ok) return { ok: false, result: vault.result };
   const roots = rootsOf(vault);
   if (path !== undefined) {
@@ -242,7 +242,7 @@ function prepare(
   let paths: string[] | undefined;
   if (staged) {
     try {
-      state = indexState(args.root, roots);
+      state = await indexState(args.root, roots);
     } catch (error) {
       if (error instanceof GitAnswerRefused) throw error;
       return {
@@ -302,13 +302,13 @@ function prepare(
   return { ok: true, prepared: { vault, rows, law, state, staged, paths, collected } };
 }
 
-function planForFix(args: CommandArgs): Plan {
+async function planForFix(args: CommandArgs): Promise<Plan> {
   const rule = args.flags["rule"];
   const pathRaw = args.flags["path"];
   if (typeof rule !== "string" || rule.length === 0) return planOf([]);
   const path =
     typeof pathRaw === "string" && pathRaw.length > 0 ? pathRaw.normalize("NFC") : undefined;
-  const prepared = prepare(args, rule, path);
+  const prepared = await prepare(args, rule, path);
   if (!prepared.ok) return planOf([]);
   return planOf(
     planOpsOf(
@@ -367,7 +367,7 @@ export const fixCommand: CommandSpec = {
     if (typeof expectRaw !== "string" && !propose) {
       return fail("fix", "usage", "missing-argument", "--expect <n|any> is required");
     }
-    const prepared = prepare(args, rule, path);
+    const prepared = await prepare(args, rule, path);
     if (!prepared.ok) return prepared.result;
     const { rows, law, state, staged, collected } = prepared.prepared;
     const registered = fixerFor(rows, rule);

@@ -13,18 +13,49 @@
 // Plain Node, no dependencies, and no law loaded here: it reads a copy's
 // marker to say where a change goes, and the judging is the engine's. It
 // inherits the environment. Whatever goes wrong it prints nothing and exits 0.
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { closeSync, existsSync, openSync, readFileSync, realpathSync, unlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BIN = fileURLToPath(new URL("../dist/bin.js", import.meta.url));
 
-/** One envelope from the engine, or undefined when there is none to read. */
-function wikiwright(args) {
-  const r = spawnSync(process.execPath, [BIN, ...args], { encoding: "utf8", timeout: 20_000 });
-  if (r.error !== undefined || typeof r.stdout !== "string") return undefined;
-  return JSON.parse(r.stdout);
+/**
+ * One envelope from the engine, or undefined when there is none to read. The
+ * engine writes its envelope to a file this script created, never through a
+ * pipe, and is awaited to its close; a child that does not finish within 20
+ * seconds is killed and answers nothing.
+ */
+async function wikiwright(args) {
+  const outPath = join(
+    tmpdir(),
+    `wikiwright-hook-${process.pid}-${randomBytes(12).toString("hex")}`,
+  );
+  const out = openSync(outPath, "wx", 0o600);
+  try {
+    const finished = await new Promise((settle) => {
+      const child = spawn(process.execPath, [BIN, ...args], { stdio: ["ignore", out, "ignore"] });
+      let failed = false;
+      const timer = setTimeout(() => {
+        failed = true;
+        child.kill("SIGKILL");
+      }, 20_000);
+      child.on("error", () => {
+        failed = true;
+      });
+      child.on("close", () => {
+        clearTimeout(timer);
+        settle(!failed);
+      });
+    });
+    if (!finished) return undefined;
+    return JSON.parse(readFileSync(outPath, "utf8"));
+  } finally {
+    closeSync(out);
+    unlinkSync(outPath);
+  }
 }
 
 /** JSON text as the engine reads it: a leading byte order mark is not part of it. */
@@ -117,7 +148,7 @@ function say(lines) {
   );
 }
 
-function main() {
+async function main() {
   const input = parseJson(readFileSync(0, "utf8"));
   const path = input?.tool_input?.file_path;
   if (typeof path !== "string") return;
@@ -138,7 +169,7 @@ function main() {
   }
   const rel = vaultPathOf(file, root, real).split(sep).join("/");
   if (!rel.endsWith(".md")) return;
-  const linted = wikiwright(["lint", "--page", rel, "--all", "--root", root]);
+  const linted = await wikiwright(["lint", "--page", rel, "--all", "--root", root]);
   if (linted === undefined) return;
   // A file under the root that is no page of it: outside every content root,
   // or reached through a link out of the vault. The engine says so; so does
@@ -180,7 +211,7 @@ function main() {
 }
 
 try {
-  main();
+  await main();
 } catch {
   // Nothing: an edit is never followed by a hook's own failure.
 }

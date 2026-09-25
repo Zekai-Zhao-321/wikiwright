@@ -172,7 +172,10 @@ interface CommandBase {
  * declaration to the code.
  */
 export type CommandSpec = CommandBase &
-  ({ writes: true; plan: (args: CommandArgs) => Plan } | { writes: false; plan?: never });
+  (
+    | { writes: true; plan: (args: CommandArgs) => Plan | Promise<Plan> }
+    | { writes: false; plan?: never }
+  );
 
 /**
  * docs/cli.md §The dry-run law: the dry-run flag is RENDERED from the registry, never

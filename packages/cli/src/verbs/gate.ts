@@ -69,7 +69,7 @@ export const gateCommand: CommandSpec = {
   run: async (args) => {
     const messageFile = args.flags["commit-msg"];
     if (typeof messageFile === "string" && messageFile.length > 0) {
-      return withRefusalText(runCommitMsgGate(args.root, messageFile));
+      return withRefusalText(await runCommitMsgGate(args.root, messageFile));
     }
     return withRefusalText(await runStagedLint(args, "gate"));
   },

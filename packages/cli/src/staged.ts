@@ -29,7 +29,7 @@ import { declaredModulesInText, loadDeclaredModules } from "./moduleload.ts";
 import { formerFolderTagFindings } from "./pages.ts";
 import type { CommandArgs } from "./spec.ts";
 import { withStagedKits } from "./stagedkits.ts";
-import { type IndexState, indexSnapshot, indexState } from "./state.ts";
+import { type IndexSnapshot, type IndexState, indexSnapshot, indexState } from "./state.ts";
 import {
   ENGINE_PATH,
   loadVault,
@@ -48,10 +48,10 @@ import {
  * artifacts is not judged on them here (`check` is where an untracked
  * artifact reads as missing); the coverage row says the pass did not run.
  */
-function stagedDriftFindings(
+async function stagedDriftFindings(
   state: IndexState,
   vault: VaultOk,
-): { judged: boolean; findings: Finding[] } {
+): Promise<{ judged: boolean; findings: Finding[] }> {
   const pages = parsedPages(state);
   const plans = generateArtifacts(
     vault.registry,
@@ -62,7 +62,7 @@ function stagedDriftFindings(
   if (!plans.some((plan) => state.reader.exists(plan.path))) return { judged: false, findings: [] };
   const findings: Finding[] = [];
   for (const plan of plans) {
-    const staged = state.reader.exists(plan.path) ? state.reader.read(plan.path) : undefined;
+    const staged = state.reader.exists(plan.path) ? await state.reader.read(plan.path) : undefined;
     if (staged === plan.content) continue;
     findings.push({
       ruleId: "generated-drift",
@@ -100,7 +100,7 @@ async function stagedVault(
   entries: readonly IndexEntry[],
 ): Promise<VaultLoad> {
   const declared = reader.exists(ENGINE_PATH)
-    ? declaredModulesInText(reader.read(ENGINE_PATH))
+    ? declaredModulesInText(await reader.read(ENGINE_PATH))
     : [];
   const locations = declared.flatMap((declaration) =>
     declaration.path === undefined ? [] : [declaration.path],
@@ -115,10 +115,10 @@ async function stagedVault(
 }
 
 export async function runStagedLint(args: CommandArgs, command = "lint"): Promise<CommandResult> {
-  let state: ReturnType<typeof indexState>;
-  let snapshot: ReturnType<typeof indexSnapshot>;
+  let state: IndexState;
+  let snapshot: IndexSnapshot;
   try {
-    snapshot = indexSnapshot(args.root);
+    snapshot = await indexSnapshot(args.root);
     if (snapshot.changes.some((ch) => ch.status === "U")) {
       return fail(command, "conflict", "unmerged-paths", "the index has unmerged paths", {
         hint: "resolve the merge conflicts, stage the resolutions, then rerun",
@@ -128,7 +128,7 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
     // constitution is read through this same index — so the first pass walks
     // nothing and the second walks the roots the law names, both over one
     // snapshot of the index, so its diff and its listing are read once.
-    state = indexState(args.root, [], snapshot);
+    state = await indexState(args.root, [], snapshot);
   } catch (e) {
     // A cut or contradicted answer is not a missing repository: it is refused as itself.
     if (e instanceof GitAnswerRefused) throw e;
@@ -146,7 +146,7 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
   // Compared against the LOADED roots, not against a constant the
   // engine no longer has. The first pass walked no roots, so this always rebuilds
   // when the bundle declares any.
-  if (roots.length > 0) state = indexState(args.root, roots, snapshot);
+  if (roots.length > 0) state = await indexState(args.root, roots, snapshot);
   const configChanged = state.configChanged;
 
   // The diff-driven review is a property of the RENAME, not of the page,
@@ -158,7 +158,7 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
     if (doc === undefined) continue;
     shellFindings.push(...formerFolderTagFindings(rename.from, rename.to, doc, roots));
   }
-  const drift = stagedDriftFindings(state, vault);
+  const drift = await stagedDriftFindings(state, vault);
   shellFindings.push(...drift.findings);
   // docs/cli.md §gate: the exports over the STAGED state. Pages, config,
   // templates, attachments and a kit declared by path are the index's, the
@@ -168,7 +168,13 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
   // bytes under skills/, and only when the index tracks one — as the
   // artifacts are — and each export's own findings are the staged
   // declaration's.
-  const exportSource = indexExportSource(args.root, parsedPages(state), snapshot.entries);
+  const declaresExports = (vault.engine.exports ?? []).length > 0;
+  const exportSource = await indexExportSource(
+    args.root,
+    parsedPages(state),
+    snapshot.entries,
+    declaresExports,
+  );
   const exports = repositoryExports({
     vault,
     source: exportSource,
@@ -178,7 +184,6 @@ export async function runStagedLint(args: CommandArgs, command = "lint"): Promis
   const exportsJudged = exportsTracked(exports, exportSource);
   shellFindings.push(...exports.findings);
   if (exportsJudged) shellFindings.push(...exportStaleFindings(exports, exportSource, "index"));
-  const declaresExports = (vault.engine.exports ?? []).length > 0;
   const verdict = judge(state, lawFor(vault), {
     ...capOptions(args),
     gate: true,
@@ -219,8 +224,8 @@ export function commitMsgPath(root: string, messageFile: string): string {
  * declares no prefixes is answered with `commit_prefixes: null` and judges
  * nothing.
  */
-export function runCommitMsgGate(root: string, messageFile: string): CommandResult {
-  const vault = loadVault("gate", root);
+export async function runCommitMsgGate(root: string, messageFile: string): Promise<CommandResult> {
+  const vault = await loadVault("gate", root);
   if (!vault.ok) return vault.result;
   const policy = vault.engine.commit_prefixes;
   if (policy === undefined) return ok("gate", { commit_prefixes: null });

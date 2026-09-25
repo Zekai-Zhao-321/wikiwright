@@ -848,7 +848,7 @@ export const writeCommand: CommandSpec = {
     if (!batch && (raw === undefined || raw.length === 0)) {
       return fail("write", "usage", "missing-argument", "write requires <path> or --from <dir>");
     }
-    const vault = loadVault("write", args.root);
+    const vault = await loadVault("write", args.root);
     if (!vault.ok) return vault.result;
     const roots = rootsOf(vault);
     const dateFlag = args.flags["date"];

@@ -15,7 +15,7 @@ import {
 import { type CommandResult, ENGINE_VERSION, fail } from "./envelope.ts";
 import type { loadVault } from "./vaultio.ts";
 
-export type VaultOk = Extract<ReturnType<typeof loadVault>, { ok: true }>;
+export type VaultOk = Extract<Awaited<ReturnType<typeof loadVault>>, { ok: true }>;
 
 /**
  * The one reader of engine.json's content_roots. The key is

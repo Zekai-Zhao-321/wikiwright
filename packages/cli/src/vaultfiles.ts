@@ -14,13 +14,22 @@ export const CONSTITUTION_PATH = "config/constitution.json";
 /** docs/constitution.md §config/engine.json: the bundle's policy beside its law. */
 export const ENGINE_PATH = "config/engine.json";
 
-/** How the loader reads config bytes: the working tree, or the git index (docs/cli.md §lint --staged). */
+/**
+ * How the loader reads config bytes: the working tree, or the git index or a
+ * revision (docs/cli.md §lint --staged). `exists` answers from a listing the
+ * reader already holds; `read` may go to git, so its caller awaits it.
+ */
 export interface VaultReader {
   exists(rel: string): boolean;
+  read(rel: string): string | Promise<string>;
+}
+
+/** The working tree's reader, whose reads answer at once. */
+export interface DiskReader extends VaultReader {
   read(rel: string): string;
 }
 
-export function fsReader(root: string): VaultReader {
+export function fsReader(root: string): DiskReader {
   return {
     exists: (rel) => {
       const refusal = pathRefusal(rel);

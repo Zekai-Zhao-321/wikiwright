@@ -64,14 +64,14 @@ export type HookRefusal = Exclude<HookOutcome, { kind: "installed" }>;
  * `hook install --dry-run` over a foreign pre-commit hook says `hook-exists`
  * exactly as the run does, rather than planning to overwrite it.
  */
-export function inspectHook(
+export async function inspectHook(
   root: string,
   options?: { chain?: string; commitPrefixes?: boolean },
-): HookRefusal | { kind: "installed"; hooksDir: string; names: string[] } {
+): Promise<HookRefusal | { kind: "installed"; hooksDir: string; names: string[] }> {
   // Linked worktrees have a .git FILE; resolve the hooks directory through git
   // plumbing (respects core.hooksPath too) instead of assuming a layout.
   const args = ["rev-parse", "--path-format=absolute", "--git-path", "hooks"];
-  const result = gitRun(root, args);
+  const result = await gitRun(root, args);
   // Outside a work tree git says `fatal: not a git repository`; that answer is
   // the "no-git" return below, never a line beside a green envelope
   // (docs/cli.md §The envelope).
@@ -176,11 +176,11 @@ export interface InstalledHook {
  * build wrote reads `current: false`; a foreign hook, or none, is not listed:
  * neither is this engine's to judge.
  */
-export function installedHooks(
+export async function installedHooks(
   root: string,
   options?: { commitPrefixes?: boolean },
-): InstalledHook[] {
-  const inspection = inspectHook(root, options);
+): Promise<InstalledHook[]> {
+  const inspection = await inspectHook(root, options);
   if (inspection.kind !== "installed") return [];
   const out: InstalledHook[] = [];
   for (const name of inspection.names) {
@@ -209,11 +209,11 @@ export function installedHooks(
  * `commit_prefixes`, the commit-msg hook). Never clobbers a foreign hook: every
  * refusal is `inspectHook`'s, made before this function touches anything.
  */
-export function installHook(
+export async function installHook(
   root: string,
   options?: { chain?: string; commitPrefixes?: boolean },
-): HookOutcome {
-  const inspection = inspectHook(root, options);
+): Promise<HookOutcome> {
+  const inspection = await inspectHook(root, options);
   if (inspection.kind !== "installed") return inspection;
   const { hooksDir, names } = inspection;
   mkdirSync(hooksDir, { recursive: true });

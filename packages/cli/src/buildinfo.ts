@@ -11,9 +11,9 @@ import { gitRun } from "./git.ts";
 const CLI_PACKAGE_DIR = fileURLToPath(new URL("..", import.meta.url));
 
 /** git's answer in the package's own directory, read from the file git wrote; null on any failure. */
-function gitInPackage(args: string[]): string | null {
+async function gitInPackage(args: string[]): Promise<string | null> {
   try {
-    const result = gitRun(CLI_PACKAGE_DIR, args);
+    const result = await gitRun(CLI_PACKAGE_DIR, args);
     return result.error === undefined && result.status === 0
       ? result.stdout.toString("utf8")
       : null;
@@ -33,13 +33,18 @@ export interface Identity {
  * copy under a vault's node_modules/ sits inside the VAULT's repository,
  * ignored and untracked, and must not report the vault's commit as its own.
  */
-export function checkoutIdentity(): Identity {
+export async function checkoutIdentity(): Promise<Identity> {
   const unknown: Identity = { commit: null, dirty: null };
-  if (gitInPackage(["ls-files", "--error-unmatch", "package.json"]) === null) return unknown;
-  const head = gitInPackage(["rev-parse", "--short", "HEAD"]);
-  const status = gitInPackage(["status", "--porcelain", "--untracked-files=no"]);
+  if ((await gitInPackage(["ls-files", "--error-unmatch", "package.json"])) === null) {
+    return unknown;
+  }
+  const [head, status] = await Promise.all([
+    gitInPackage(["rev-parse", "--short", "HEAD"]),
+    gitInPackage(["status", "--porcelain", "-z", "--untracked-files=no"]),
+  ]);
   if (head === null || status === null) return unknown;
-  return { commit: head.trim(), dirty: status.trim().length > 0 };
+  // Under `-z` an entry ends in a NUL; a clean checkout prints nothing.
+  return { commit: head.trim(), dirty: status.length > 0 };
 }
 
 export interface BuildInfo {

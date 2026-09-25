@@ -46,10 +46,10 @@ export interface Skipped {
 const SYSTEM_SKILL_DIR = "/etc/codex/skills";
 
 /** The project's skill directories nearest first: `.claude/skills` then `.agents/skills` at each level. */
-function projectDirectories(cwd: string): SkillDirectory[] {
+async function projectDirectories(cwd: string): Promise<SkillDirectory[]> {
   let top: string | undefined;
   try {
-    top = gitTopLevel(cwd);
+    top = await gitTopLevel(cwd);
   } catch {
     // No git to ask: the walk goes to the filesystem root, as outside a repository.
     top = undefined;
@@ -85,7 +85,7 @@ function sameDirectory(a: string, b: string): boolean {
  * empty value leaves it out), then each of `WIKIWRIGHT_SKILL_DIRS`,
  * colon-separated, in order.
  */
-export function skillDirectories(cwd: string = process.cwd()): SkillDirectory[] {
+export async function skillDirectories(cwd: string = process.cwd()): Promise<SkillDirectory[]> {
   const home = homedir();
   const extra = (process.env["WIKIWRIGHT_SKILL_DIRS"] ?? "")
     .split(":")
@@ -93,7 +93,7 @@ export function skillDirectories(cwd: string = process.cwd()): SkillDirectory[] 
     .map((dir) => ({ dir: resolve(dir), tier: "extra" as const }));
   const system = process.env["WIKIWRIGHT_SYSTEM_SKILL_DIR"] ?? SYSTEM_SKILL_DIR;
   return [
-    ...projectDirectories(cwd),
+    ...(await projectDirectories(cwd)),
     { dir: join(home, ".claude", "skills"), tier: "user" },
     { dir: join(home, ".agents", "skills"), tier: "user" },
     ...(system === "" ? [] : [{ dir: resolve(system), tier: "user" as const }]),
@@ -148,7 +148,7 @@ function inspect(
 /** One name probed in every directory, in order: the candidates, one per real path, and the skipped. */
 export function probe(
   name: string,
-  directories: readonly SkillDirectory[] = skillDirectories(),
+  directories: readonly SkillDirectory[],
 ): { searched: string[]; candidates: Candidate[]; skipped: Skipped[] } {
   const candidates: Candidate[] = [];
   const skipped: Skipped[] = [];
@@ -173,7 +173,7 @@ export function probe(
  * order — what `bundles list` prints and a failed name lists — reading one
  * directory listing per skill directory and one marker per candidate.
  */
-export function scanAll(directories: readonly SkillDirectory[] = skillDirectories()): {
+export function scanAll(directories: readonly SkillDirectory[]): {
   candidates: Candidate[];
   skipped: Skipped[];
 } {
@@ -218,10 +218,11 @@ export type Resolution =
  * candidate, the nearest chosen and the rest shadowed; or more than one
  * identity, which no order settles.
  */
-export function resolveBundle(
+export async function resolveBundle(
   name: string,
-  directories: readonly SkillDirectory[] = skillDirectories(),
-): Resolution {
+  given?: readonly SkillDirectory[],
+): Promise<Resolution> {
+  const directories = given ?? (await skillDirectories());
   const { searched, candidates, skipped } = probe(name, directories);
   const [chosen, ...rest] = candidates;
   if (chosen === undefined) {

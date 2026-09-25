@@ -143,8 +143,8 @@ function assertPages(state: VaultState, expected: readonly string[], label: stri
   );
 }
 
-function judgeAll(root: string, state: VaultState): Verdict {
-  const vault = loadVault("lint", root);
+async function judgeAll(root: string, state: VaultState): Promise<Verdict> {
+  const vault = await loadVault("lint", root);
   assert.equal(vault.ok, true, "the scratch vault loads");
   if (!vault.ok) throw new Error("unreachable");
   // `gate: false` on purpose: the property is about the findings BEFORE the
@@ -153,7 +153,7 @@ function judgeAll(root: string, state: VaultState): Verdict {
 }
 
 describe("judge(state, law): five constructors, one verdict (docs/architecture.md §The invariants)", () => {
-  it("state-arm findings are identical across all four constructors", () => {
+  it("state-arm findings are identical across all four constructors", async () => {
     const tmp = scratchVault();
     try {
       // A snapshot every constructor can describe: rename, add, delete, edit,
@@ -170,18 +170,19 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
       const disk = readFileSync(join(tmp, target), "utf8");
       const constructors: Record<string, VaultState> = {
         fsState: fs,
-        indexState: indexState(tmp, ROOTS),
+        indexState: await indexState(tmp, ROOTS),
         overlayState: overlayState(fs, tmp, [{ path: target, text: disk }]),
-        revisionState: revisionState(tmp, "HEAD", undefined, ROOTS),
+        revisionState: await revisionState(tmp, "HEAD", undefined, ROOTS),
       };
       const expected = ["wiki/Folk/Alpha Prime.md", "wiki/Folk/Beta.md", "wiki/Folk/Gamma.md"];
       for (const [name, state] of Object.entries(constructors)) {
         assertPages(state, expected, name);
         assert.equal(state.pages.get(target), disk, `${name}: the target's bytes`);
       }
-      const verdicts = Object.fromEntries(
-        Object.entries(constructors).map(([name, state]) => [name, judgeAll(tmp, state)] as const),
-      );
+      const verdicts: Record<string, Verdict> = {};
+      for (const [name, state] of Object.entries(constructors)) {
+        verdicts[name] = await judgeAll(tmp, state);
+      }
       const reference = stateKey(verdicts["fsState"] as Verdict);
       assert.equal(reference.length > 0, true, "the fixture fires state-arm findings at all");
       for (const [name, verdict] of Object.entries(verdicts)) {
@@ -198,7 +199,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
   // agree. The three that follow hold them apart, each on a case the reviewers
   // walked through: an NFD path, a working-tree-only edit, a staged rename.
 
-  it("an NFD path names the page the vault already holds, not a second one", () => {
+  it("an NFD path names the page the vault already holds, not a second one", async () => {
     const tmp = scratchVault();
     try {
       // The on-disk name stays NFC; what varies is the path the CALLER passes,
@@ -220,8 +221,8 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
         assert.equal(state.pages.size, fs.pages.size, "the page set doubled");
         assertPages(state, [...FOLK, nfc], "overlayState");
         assert.deepEqual(
-          stateKey(judgeAll(tmp, state)),
-          stateKey(judgeAll(tmp, fs)),
+          stateKey(await judgeAll(tmp, state)),
+          stateKey(await judgeAll(tmp, fs)),
           "an NFD path changed the verdict",
         );
       }
@@ -230,7 +231,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
     }
   });
 
-  it("a working-tree edit the index does not carry separates fsState from indexState", () => {
+  it("a working-tree edit the index does not carry separates fsState from indexState", async () => {
     const tmp = scratchVault();
     try {
       // Unstaged: the tree has it, the index does not. A constructor that read
@@ -245,7 +246,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
         ),
       );
       const fs = fsState(tmp, ROOTS);
-      const index = indexState(tmp, ROOTS);
+      const index = await indexState(tmp, ROOTS);
       assertPages(fs, FOLK, "fsState");
       assertPages(index, FOLK, "indexState");
       // The index holds the target, and holds it as committed: its clean
@@ -256,8 +257,12 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
         index.pages.get(target),
         "the two constructors must not be reading the same bytes here",
       );
-      const inTree = stateKey(judgeAll(tmp, fs)).filter((k) => k.includes("unknown-category"));
-      const inIndex = stateKey(judgeAll(tmp, index)).filter((k) => k.includes("unknown-category"));
+      const inTree = stateKey(await judgeAll(tmp, fs)).filter((k) =>
+        k.includes("unknown-category"),
+      );
+      const inIndex = stateKey(await judgeAll(tmp, index)).filter((k) =>
+        k.includes("unknown-category"),
+      );
       assert.equal(inTree.length, 1, "the tree carries the unstaged bullet");
       assert.equal(inIndex.length, 0, "the index does not, and says so");
     } finally {
@@ -265,12 +270,12 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
     }
   });
 
-  it("a staged, uncommitted rename is a rename to the constructor that reads the index", () => {
+  it("a staged, uncommitted rename is a rename to the constructor that reads the index", async () => {
     const tmp = scratchVault();
     try {
       git(tmp, "mv", "wiki/Folk/Alpha.md", "wiki/Folk/Alpha Prime.md");
       git(tmp, "add", "-A");
-      const index = indexState(tmp, ROOTS);
+      const index = await indexState(tmp, ROOTS);
       assertPages(
         index,
         ["wiki/Folk/Alpha Prime.md", "wiki/Folk/Beta.md", "wiki/Folk/Delta.md"],
@@ -281,7 +286,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
         [{ from: "wiki/Folk/Alpha.md", to: "wiki/Folk/Alpha Prime.md" }],
         "renames are derived from the index, not defaulted to []",
       );
-      const verdict = judgeAll(tmp, index);
+      const verdict = await judgeAll(tmp, index);
       assert.equal(
         verdict.findings.some(
           (f) => f.ruleId === "renamed-without-alias" && f.path === "wiki/Folk/Alpha Prime.md",
@@ -294,7 +299,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
     }
   });
 
-  it("transition-arm findings are identical across the constructors that carry a base", () => {
+  it("transition-arm findings are identical across the constructors that carry a base", async () => {
     const tmp = scratchVault();
     try {
       const target = "wiki/Folk/Alpha.md";
@@ -302,24 +307,24 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
       // The overlay pair: disk (= HEAD) as base, the draft as the page.
       const overlay = overlayState(fs, tmp, [{ path: target, text: ALPHA_DRAFT }]);
       assertPages(overlay, FOLK, "overlayState");
-      const overlayVerdict = judgeAll(tmp, overlay);
+      const overlayVerdict = await judgeAll(tmp, overlay);
 
       // The staged pair: the same draft, staged against the same HEAD.
       writeFileSync(join(tmp, target), ALPHA_DRAFT);
       git(tmp, "add", "-A");
-      const index = indexState(tmp, ROOTS);
+      const index = await indexState(tmp, ROOTS);
       assertPages(index, FOLK, "indexState");
       assert.equal(index.pages.get(target), ALPHA_DRAFT, "the index carries the draft");
       assert.equal(index.base?.get(target), ALPHA_BASE, "judged against HEAD's bytes");
-      const staged = judgeAll(tmp, index);
+      const staged = await judgeAll(tmp, index);
 
       // The commit pair: the same draft, committed, judged against its parent.
       git(tmp, "commit", "-q", "-m", "the edit");
-      const revision = revisionState(tmp, "HEAD", undefined, ROOTS);
+      const revision = await revisionState(tmp, "HEAD", undefined, ROOTS);
       assertPages(revision, FOLK, "revisionState");
       assert.equal(revision.pages.get(target), ALPHA_DRAFT, "the commit carries the draft");
       assert.equal(revision.base?.get(target), ALPHA_BASE, "judged against its parent's bytes");
-      const replayed = judgeAll(tmp, revision);
+      const replayed = await judgeAll(tmp, revision);
 
       const reference = transitionKey(overlayVerdict, target);
       assert.equal(reference.length > 0, true, "the draft fires a transition arm at all");
@@ -330,12 +335,12 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
     }
   });
 
-  it("a constructor with no base reports no-base coverage rather than a clean zero", () => {
+  it("a constructor with no base reports no-base coverage rather than a clean zero", async () => {
     const tmp = scratchVault();
     try {
       const fs = fsState(tmp, ROOTS);
       assertPages(fs, FOLK, "fsState");
-      const verdict = judgeAll(tmp, fs);
+      const verdict = await judgeAll(tmp, fs);
       assert.equal(verdict.coverage.passes["claims-transition"]?.reason, "no-base");
       assert.equal(verdict.coverage.passes["claims-transition"]?.evaluated, 0);
       assert.equal(verdict.summary.unevaluated > 0, true);
@@ -344,7 +349,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
     }
   });
 
-  it("the corrected disposition: a typo fix fires nothing and is counted", () => {
+  it("the corrected disposition: a typo fix fires nothing and is counted", async () => {
     const tmp = scratchVault();
     try {
       const target = "wiki/Folk/Alpha.md";
@@ -354,7 +359,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
       assertPages(state, FOLK, "overlayState");
       assert.equal(state.pages.get(target), corrected, "the overlay carries the corrected draft");
       assert.equal(state.base?.get(target), ALPHA_BASE, "judged against the disk bytes");
-      const verdict = judgeAll(tmp, state);
+      const verdict = await judgeAll(tmp, state);
       assert.equal(
         verdict.findings.some((f) => f.ruleId === "claims-transition" && f.path === target),
         false,
@@ -374,7 +379,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
     ["Alpha lives in Shangai since 2024", "Alpha never lived in Shangai", "a polarity"],
   ];
   for (const [before, after, what] of NOT_A_TYPO) {
-    it(`a changed ${what} is a supersession, never a correction`, () => {
+    it(`a changed ${what} is a supersession, never a correction`, async () => {
       const tmp = scratchVault();
       try {
         const target = "wiki/Folk/Alpha.md";
@@ -383,7 +388,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
         const state = overlayState(fsState(tmp, ROOTS), tmp, [{ path: target, text: changed }]);
         assertPages(state, FOLK, "overlayState");
         assert.equal(state.pages.get(target), changed, "the overlay carries the changed draft");
-        const verdict = judgeAll(tmp, state);
+        const verdict = await judgeAll(tmp, state);
         assert.equal(verdict.dispositions[target]?.corrected, 0, "not laundered as a typo fix");
         assert.equal(
           verdict.findings.some((f) => f.ruleId === "claims-transition" && f.path === target),
@@ -396,7 +401,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
     });
   }
 
-  it("a reworded core is a supersession, exactly as before", () => {
+  it("a reworded core is a supersession, exactly as before", async () => {
     const tmp = scratchVault();
     try {
       const target = "wiki/Folk/Alpha.md";
@@ -407,7 +412,7 @@ describe("judge(state, law): five constructors, one verdict (docs/architecture.m
       const state = overlayState(fsState(tmp, ROOTS), tmp, [{ path: target, text: reworded }]);
       assertPages(state, FOLK, "overlayState");
       assert.equal(state.pages.get(target), reworded, "the overlay carries the reworded draft");
-      const verdict = judgeAll(tmp, state);
+      const verdict = await judgeAll(tmp, state);
       assert.equal(
         verdict.findings.some((f) => f.ruleId === "claims-transition" && f.path === target),
         true,

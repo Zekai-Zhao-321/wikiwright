@@ -215,7 +215,7 @@ function budgetOf(args: CommandArgs): { ok: true; budget: number | null } | { ok
   return Number.isSafeInteger(budget) ? { ok: true, budget } : { ok: false };
 }
 
-function run(args: CommandArgs): CommandResult {
+async function run(args: CommandArgs): Promise<CommandResult> {
   const [wanted] = args.positionals;
   if (wanted === undefined || wanted === "") {
     return fail(
@@ -234,7 +234,7 @@ function run(args: CommandArgs): CommandResult {
       details: { flag: "budget", value: args.flags["budget"] },
     });
   }
-  const vault = loadVault("read", args.root);
+  const vault = await loadVault("read", args.root);
   if (!vault.ok) return vault.result;
 
   const fieldSources = generateOptionsFor(vault)?.fieldSources;

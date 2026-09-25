@@ -46,7 +46,12 @@ function externalOrigins(vault: VaultOk, root: string): string[] {
   return [...new Set(pinned.map((p) => p.origin).filter((o) => o !== "."))].sort();
 }
 
-function measure(vault: VaultOk, root: string, fetch: boolean, network: boolean): FreshnessResult {
+async function measure(
+  vault: VaultOk,
+  root: string,
+  fetch: boolean,
+  network: boolean,
+): Promise<FreshnessResult> {
   const pages = collectPages(root, walkPages(root, rootsOf(vault)));
   const edges = graphOf(
     vault.registry,
@@ -69,9 +74,9 @@ function measure(vault: VaultOk, root: string, fetch: boolean, network: boolean)
  * thrown, and the dry run answers it with the refusal the run gives: a plan
  * that left the advances out would read as a vault with none to make.
  */
-function planForFreshness(args: CommandArgs): Plan {
+async function planForFreshness(args: CommandArgs): Promise<Plan> {
   const ops: PlanOp[] = [{ kind: "write", path: REPORT, summary: "the freshness report" }];
-  const vault = loadVault("freshness", args.root);
+  const vault = await loadVault("freshness", args.root);
   if (!vault.ok) return planOf(ops);
   const fetch = args.flags["fetch"] === true;
   const fastForward = args.flags["fast-forward"] === true;
@@ -93,7 +98,7 @@ function planForFreshness(args: CommandArgs): Plan {
     });
   }
   if (!fastForward) return planOf(ops);
-  const result = measure(vault, args.root, true, false);
+  const result = await measure(vault, args.root, true, false);
   // docs/architecture.md §How a verdict is produced: a pin advance is a page write, so it goes through the Writer.
   for (const candidate of result.eligible) {
     ops.push(
@@ -146,7 +151,7 @@ export const freshnessCommand: CommandSpec = {
   writes: true,
   needsVaultModules: true,
   plan: planForFreshness,
-  run: (args) => {
+  run: async (args) => {
     const fetch = args.flags["fetch"] === true;
     const fastForward = args.flags["fast-forward"] === true;
     if (fastForward && !fetch) {
@@ -158,13 +163,13 @@ export const freshnessCommand: CommandSpec = {
         { hint: "pass --fetch with --fast-forward" },
       );
     }
-    const vault = loadVault("freshness", args.root);
+    const vault = await loadVault("freshness", args.root);
     if (!vault.ok) return vault.result;
     // After the load and the usage refusal, and before the first write — the
     // cache, the advanced pins, then the report.
     if (isDryRun(args)) {
       try {
-        return ok("freshness", planForFreshness(args));
+        return ok("freshness", await planForFreshness(args));
       } catch (e) {
         return measurementRefused(e);
       }
@@ -179,7 +184,7 @@ export const freshnessCommand: CommandSpec = {
     }
     let result: FreshnessResult;
     try {
-      result = measure(vault, args.root, fetch, true);
+      result = await measure(vault, args.root, fetch, true);
     } catch (e) {
       return measurementRefused(e);
     }
@@ -219,7 +224,7 @@ export const freshnessCommand: CommandSpec = {
       }
       // The report reflects the post-advance state, against the cache the run
       // just brought current: no second round trip.
-      if (advanced.length > 0) result = measure(vault, args.root, true, false);
+      if (advanced.length > 0) result = await measure(vault, args.root, true, false);
     }
     mkdirSync(join(args.root, "generated"), { recursive: true });
     replaceFile(join(args.root, REPORT), freshnessReportJson(result));

@@ -616,10 +616,8 @@ export async function loadDeclaredModules(
 // the preload cache (docs/extending.md §Declaring a module)
 
 /**
- * Loading a module is the shell's ONE asynchronous step — `import` is async and
- * `loadVault` is not. Rather than making every verb async for one step, the CLI
- * entry point performs it once, before dispatch, and stores the outcome here
- * keyed by the resolved vault root: an outcome is a bundle's declarations
+ * Loading a module is done once per process, by the CLI entry point before
+ * dispatch, and the outcome stored here keyed by the resolved vault root: an outcome is a bundle's declarations
  * loaded, which `loadVaultVia` looks up by the root it reads. The proofs inside
  * it are cached by digest, beside the loader.
  *

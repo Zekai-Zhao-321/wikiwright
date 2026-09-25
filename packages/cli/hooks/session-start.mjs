@@ -16,17 +16,49 @@
 // Whatever goes wrong — stdin that is not JSON, a binary that is missing, an
 // envelope that is not one — it prints nothing and exits 0: a hook that fails
 // must not stand between a session and its start.
-import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { closeSync, openSync, readFileSync, unlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BIN = fileURLToPath(new URL("../dist/bin.js", import.meta.url));
 
-/** One envelope from the engine, or undefined when there is none to read. */
-function wikiwright(args) {
-  const r = spawnSync(process.execPath, [BIN, ...args], { encoding: "utf8", timeout: 20_000 });
-  if (r.error !== undefined || typeof r.stdout !== "string") return undefined;
-  return JSON.parse(r.stdout);
+/**
+ * One envelope from the engine, or undefined when there is none to read. The
+ * engine writes its envelope to a file this script created, never through a
+ * pipe, and is awaited to its close; a child that does not finish within 20
+ * seconds is killed and answers nothing.
+ */
+async function wikiwright(args) {
+  const outPath = join(
+    tmpdir(),
+    `wikiwright-hook-${process.pid}-${randomBytes(12).toString("hex")}`,
+  );
+  const out = openSync(outPath, "wx", 0o600);
+  try {
+    const finished = await new Promise((settle) => {
+      const child = spawn(process.execPath, [BIN, ...args], { stdio: ["ignore", out, "ignore"] });
+      let failed = false;
+      const timer = setTimeout(() => {
+        failed = true;
+        child.kill("SIGKILL");
+      }, 20_000);
+      child.on("error", () => {
+        failed = true;
+      });
+      child.on("close", () => {
+        clearTimeout(timer);
+        settle(!failed);
+      });
+    });
+    if (!finished) return undefined;
+    return JSON.parse(readFileSync(outPath, "utf8"));
+  } finally {
+    closeSync(out);
+    unlinkSync(outPath);
+  }
 }
 
 /** A value that names a repository: a URL, or an `owner/repository` pair. */
@@ -61,11 +93,11 @@ function describe(row) {
   return `- ${row.name}: the bundle ${row.bundle}, ${row.tier} tier; ${actionOf(row)}${shadowed}`;
 }
 
-function main() {
+async function main() {
   const input = JSON.parse(readFileSync(0, "utf8"));
   // The documented input is one JSON object; anything else is not a session start.
   if (input === null || typeof input !== "object" || Array.isArray(input)) return;
-  const listed = wikiwright(["bundles", "list"]);
+  const listed = await wikiwright(["bundles", "list"]);
   if (listed?.ok !== true) return;
   const rows = listed.data?.bundles ?? [];
   if (rows.length === 0) return;
@@ -86,7 +118,7 @@ function main() {
 }
 
 try {
-  main();
+  await main();
 } catch {
   // Nothing: a start is never blocked by its context.
 }

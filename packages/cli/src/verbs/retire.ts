@@ -51,8 +51,8 @@ export const retireCommand: CommandSpec = {
   writes: true,
   needsVaultModules: true,
   plan: planForRetire,
-  run: (args) => {
-    const vault = loadVault("retire", args.root);
+  run: async (args) => {
+    const vault = await loadVault("retire", args.root);
     if (!vault.ok) return vault.result;
     const [pagePath] = args.positionals;
     if (pagePath === undefined) {

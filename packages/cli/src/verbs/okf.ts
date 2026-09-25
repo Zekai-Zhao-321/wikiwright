@@ -19,8 +19,8 @@ export const okfCommand: CommandSpec = {
   examples: ["wikiwright okf check"],
   writes: false,
   needsVaultModules: true,
-  run: (args) => {
-    const vault = loadVault("okf", args.root);
+  run: async (args) => {
+    const vault = await loadVault("okf", args.root);
     if (!vault.ok) return vault.result;
     const pages = collectPages(args.root, walkPages(args.root, rootsOf(vault)));
     const findings = sortFindings(checkOkfCore(pages));

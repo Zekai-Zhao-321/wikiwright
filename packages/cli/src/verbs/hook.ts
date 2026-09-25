@@ -46,8 +46,10 @@ function hookFailure(outcome: HookRefusal | { kind: "installed" }): CommandResul
 }
 
 /** The options `installHook` takes, read once from the argv and the bundle. */
-function hookOptions(args: CommandArgs): { chain?: string; commitPrefixes: boolean } {
-  const vault = loadVault("hook", args.root);
+async function hookOptions(
+  args: CommandArgs,
+): Promise<{ chain?: string; commitPrefixes: boolean }> {
+  const vault = await loadVault("hook", args.root);
   const options: { chain?: string; commitPrefixes: boolean } = {
     commitPrefixes: vault.ok && vault.engine.commit_prefixes !== undefined,
   };
@@ -68,11 +70,11 @@ function hookOptions(args: CommandArgs): { chain?: string; commitPrefixes: boole
  * the machine-readable `kind`/`path` said it would write; `docs/cli.md §The envelope`
  * says prose is never load-bearing.
  */
-function planForHook(args: CommandArgs): Plan {
+async function planForHook(args: CommandArgs): Promise<Plan> {
   const [sub] = args.positionals;
   if (sub !== "install") return planOf([]);
-  const options = hookOptions(args);
-  const inspection = inspectHook(args.root, options);
+  const options = await hookOptions(args);
+  const inspection = await inspectHook(args.root, options);
   if (inspection.kind !== "installed") return planOf([]);
   const chained = options.chain === undefined ? "" : `, chaining ${options.chain}`;
   const ops: PlanOp[] = inspection.names.map((name) => ({
@@ -103,17 +105,17 @@ export const hookCommand: CommandSpec = {
   writes: true,
   needsVaultModules: true,
   plan: planForHook,
-  run: (args) => {
-    const vault = loadVault("hook", args.root);
+  run: async (args) => {
+    const vault = await loadVault("hook", args.root);
     if (!vault.ok) return vault.result;
-    const options = hookOptions(args);
+    const options = await hookOptions(args);
     const chain = options.chain;
     // After the subcommand vocabulary and every refusal the installer makes
     // before it writes, and before the write itself.
-    const refusal = hookFailure(inspectHook(args.root, options));
+    const refusal = hookFailure(await inspectHook(args.root, options));
     if (refusal !== undefined) return refusal;
-    if (isDryRun(args)) return ok("hook", planForHook(args));
-    const outcome = installHook(args.root, options);
+    if (isDryRun(args)) return ok("hook", await planForHook(args));
+    const outcome = await installHook(args.root, options);
     const failure = hookFailure(outcome);
     if (failure !== undefined) return failure;
     const data: Record<string, unknown> = {

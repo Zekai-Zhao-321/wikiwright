@@ -153,7 +153,7 @@ export function bundleLabel(root: string): string {
  * digests are recomputed as for any bundle, so a copy whose law or pages
  * changed after export says so (`export.intact: false`).
  */
-export function bundleIdentity(root: string): BundleIdentity | undefined {
+export async function bundleIdentity(root: string): Promise<BundleIdentity | undefined> {
   if (!existsSync(join(root, CONSTITUTION_PATH))) return undefined;
   const marker = markerAt(root);
   if (marker.kind === "invalid") throw new Error(`the marker is not one: ${marker.reason}`);
@@ -190,7 +190,7 @@ export function bundleIdentity(root: string): BundleIdentity | undefined {
       export: exported,
     };
   }
-  const checkout = gitCheckoutState(real);
+  const checkout = await gitCheckoutState(real);
   return {
     label: bundleLabel(root),
     root: real,
