@@ -258,8 +258,10 @@ What the registry rows below do not say.
   renders every `output: skills` export into `skills/<name>/` under the root
   (docs/constitution.md §exports), and the plugin manifests when `plugin` is
   declared: every planned file is replaced and every file under an export's
-  own `skills/<name>/` that the plan no longer holds is removed, and nothing
-  else is touched; an ordinary file stays in place until its replacement is
+  own `skills/<name>/` that the plan no longer holds is removed — the
+  directory is owned whole, so a name under it such as `.git` or `.obsidian`
+  is listed and removed like any other — and nothing else is touched; an
+  ordinary file stays in place until its replacement is
   renamed over it, so a render that fails leaves the previous bytes. `check`
   compares each rendered copy with a fresh render:
   `export-stale` (error, fixed by `check --write`) names the first ten files
@@ -284,7 +286,8 @@ What the registry rows below do not say.
   `<dir>/.claude-plugin/plugin.json` when `plugin` is declared. It owns what
   it writes as `check --write` owns an in-repository export: every planned file
   is replaced, every file under `<dir>/skills/<name>/` the plan no longer holds
-  is removed, and nothing else under `<dir>` is touched, `.git` included. It
+  is removed, a `.git` or `.obsidian` name under it included, and nothing
+  else under `<dir>` is touched, `<dir>/.git` included. It
   refuses a name the config does not declare (`export-not-declared`, exit 2,
   the declared names in `details.valid_values`), an `output: skills` export
   (`export-output-skills`, exit 2: `check --write` renders those), a `<dir>`

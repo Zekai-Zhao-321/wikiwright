@@ -616,6 +616,30 @@ describe("a copy carries the kit its law covers (docs/constitution.md §exports)
     assert.equal(envelope.metadata.bundle?.export?.intact, undefined);
   });
 
+  it("a file removed from the kit's .git leaves the copy too, and the copy stays intact", () => {
+    const root = carrying((kit) => {
+      mkdirSync(join(kit, ".git"));
+      writeFileSync(join(kit, ".git", "HEAD"), "ref: refs/heads/main\n");
+      writeFileSync(join(kit, ".git", "description"), "The garden kit.\n");
+    });
+    renderAndRead(root);
+    const copied = join(root, "skills", "garden", "kit", "garden", ".git");
+    assert.equal(existsSync(join(copied, "HEAD")), true);
+    // The export's directory is owned whole: a render removes what the plan
+    // no longer holds, a `.git` name included.
+    rmSync(join(root, "kit", "garden", ".git", "HEAD"));
+    const envelope = renderAndRead(root);
+    assert.equal(existsSync(join(copied, "HEAD")), false);
+    assert.equal(existsSync(join(copied, "description")), true);
+    assert.equal(envelope.metadata.bundle?.law, lawOf(root));
+    assert.equal(envelope.metadata.bundle?.export?.intact, undefined);
+    const checked = run(root, ["check"]);
+    assert.deepEqual(
+      findings(checked.envelope).filter((f) => f.ruleId === "export-stale"),
+      [],
+    );
+  });
+
   it("the staged gate takes a path kit's law from the index: an unstaged kit edit is no export-stale", () => {
     const root = carrying(() => undefined);
     assert.equal(run(root, ["check", "--write"]).status, 0);

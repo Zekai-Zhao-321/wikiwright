@@ -184,13 +184,17 @@ export interface ExportSource {
   list(dir: string): string[];
   /**
    * Every file and link under a vault-relative directory as it stands, a link
-   * listed and never followed: what a rendered copy holds, compared with its
-   * plan.
+   * listed and never followed, and nothing skipped: what a rendered copy
+   * holds, compared with its plan. An export's directory is owned whole, so a
+   * `.git` or `.obsidian` under it is its own like any other name.
    */
   present(dir: string): string[];
 }
 
-/** The names a listing never descends into: a repository's own state and an editor's. */
+/**
+ * The names a listing of the source never descends into: a repository's own
+ * state and an editor's. A listing of what a copy holds skips nothing.
+ */
 const SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set([".git", ".obsidian"]);
 
 /** docs/constitution.md §exports: the working tree at `root`, its pages already parsed. */
@@ -219,7 +223,7 @@ export function fsExportSource(root: string, pages: readonly PageInput[]): Expor
     return false;
   };
   const walker =
-    (follow: boolean) =>
+    (follow: boolean, skip: boolean) =>
     (dir: string): string[] => {
       const out: string[] = [];
       // A linked directory is walked once: a link back to a directory above it
@@ -236,7 +240,7 @@ export function fsExportSource(root: string, pages: readonly PageInput[]): Expor
           return;
         }
         for (const entry of entries) {
-          if (SKIPPED_DIRECTORIES.has(entry.name)) continue;
+          if (skip && SKIPPED_DIRECTORIES.has(entry.name)) continue;
           const path = `${rel}/${entry.name.normalize("NFC")}`;
           if (entry.isDirectory()) {
             walk(path);
@@ -270,8 +274,8 @@ export function fsExportSource(root: string, pages: readonly PageInput[]): Expor
     exists: (rel) => existsSync(join(root, rel)),
     isLink,
     refusesLink: () => false,
-    list: walker(true),
-    present: walker(false),
+    list: walker(true, true),
+    present: walker(false, false),
   };
 }
 
@@ -884,10 +888,9 @@ export function indexExportSource(
     return bytes;
   };
   const isLink = (rel: string): boolean => byPath.get(rel)?.mode === LINK_MODE;
-  const list = (dir: string): string[] =>
-    [...byPath.keys()]
-      .filter((path) => path.startsWith(`${dir}/`) && !skippedPath(path))
-      .sort(codeUnitCompare);
+  const under = (dir: string): string[] =>
+    [...byPath.keys()].filter((path) => path.startsWith(`${dir}/`)).sort(codeUnitCompare);
+  const list = (dir: string): string[] => under(dir).filter((path) => !skippedPath(path));
   return {
     root,
     pages,
@@ -903,7 +906,7 @@ export function indexExportSource(
     isLink,
     refusesLink: isLink,
     list,
-    present: list,
+    present: under,
   };
 }
 
