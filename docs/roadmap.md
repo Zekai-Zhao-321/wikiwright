@@ -30,10 +30,10 @@ own `devwiki`.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
-test file is written to `bun:test`. The suite is 1,699 tests across 123
+test file is written to `bun:test`. The suite is 1,890 tests across 133
 files, and the gate, `bun run check`, passed all of them three times in a
-row on 2026-09-26, after the fixes that followed the review of the v2
-runtime and transport slice. It judges five corpora (`devwiki`, `fixtures/memory-synth`,
+row on 2026-09-26, at the end of the v2 delivery's second step, the
+type-document loader (§The v2 loader is read by no verb yet). It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
 the module ladder end to end twice: with a neutral module fixture under
@@ -704,6 +704,54 @@ No verb refuses a large envelope and no verb takes `--out`; the v2 contracts
 bound an envelope at 1 MiB with an `envelope-too-large` refusal, and the pipe
 probes cover a default, a 70,000-byte and an error envelope until that
 refusal exists to probe.
+
+### The v2 loader is read by no verb yet
+
+The second step of the v2 delivery built the type-document loader beside the
+old one: `config/engine.json` schema version 4 and its libraries, the type,
+fragment and vocabulary documents under `constitution/` and each library,
+shapes compiled by Ajv with RE2, the fixed grammar's records, the page
+interface, rules in CEL under the profile and its static bound, and the
+digests (`packages/core/src/law/`, `schema/`, `records/`, `interface/`,
+`rules/`, `digest/`; the adapters in `packages/cli/src/lawfiles.ts`). Every
+verb, every corpus and the gate still load `config/constitution.json`
+through the old loader; the new one is exercised by its tests alone, over a
+synthetic gardening bundle and library under the temporary directory. What
+that leaves, until the judge (step 3) and the verbs (step 4) are rewritten
+over it:
+
+- Five v4 keys are validated and carried with no consumer: `label`,
+  `engine`, `commit_prefixes`, `folder_tags` and `folder_tag_aliases`
+  (`ENGINE_V4_CONSUMERS` names each as `null`). Their readers are verbs.
+- The grammar parameters (`provenance`, `categories`, `require`,
+  `history`, `lifecycle`), `instances`, `abstract`, `examples` and the
+  rule tests are declared, loaded and digested, and nothing enforces or
+  runs them: that is the judge's.
+- The static bound refuses two of the feasibility spike's six rules as the
+  spike wrote them: `relations-required` nests the section's items inside a
+  config list (1,000 × 5,000) and `relation-range` nests a facts list inside
+  them (5,000 × 10,000), both over 200,000. Their tests evaluate admitted
+  forms — one `require` row per rule, and the range as one RE2 match over
+  the joined ancestry — and hold the nested forms to `cost-bound`. The same
+  bound stands in the way of a claims transition over handles and of
+  `relation-removed` over `before`; `docs/v2-dispositions.md` marks both for
+  the navigator.
+- `Intl` is in the bundle: `@bufbuild/cel` calls `Intl.DateTimeFormat` for
+  a `get*` time method given a time zone, and `Intl.NumberFormat` for
+  `format`'s fixed-point clause. Neither is reachable from an admitted rule
+  (the profile refuses every such call, and `format` is not registered);
+  `rules-profile.test.ts` greps the CLI's bundle for exactly those two
+  sites and proves the calls refused. It builds that bundle with `bun build`
+  in a child process, because `Bun.build` inside a `bun test` process fails
+  to read its inputs on Bun 1.3.11.
+- The loader reads regular files only: a symbolic link under a law
+  directory is `law-foreign-file` from the tree and from the index alike,
+  and a library directory that is a link out of the repository is
+  `library-outside-repository`. A bundle in no repository is its own top
+  level: its library paths are read from the bundle root.
+- A library's `library.yaml` has its own line in the law digest, beside
+  the five law directories the contracts list, because it can change the
+  library's id and with it every qualified name.
 
 ## Next work
 

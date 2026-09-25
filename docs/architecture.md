@@ -33,6 +33,12 @@ packages/core/src/
   paths/       the path law: pathRefusal, isContentPath
   prefixes/    the commit-prefix verdict
   version/     the engine range grammar
+  law/         v2, beside registry/: engine.json v4, libraries, the type, fragment and vocabulary documents, their composition, the skeleton
+  schema/      v2: the one Ajv 2020 factory (strict, RE2 patterns, three formats, the engine keywords), the reserved keys, the effective shapes
+  records/     v2: the fixed grammar's three records and their JSON Schemas
+  interface/   v2: a page read from its bytes, and the page interface a rule is bound to
+  rules/       v2: the CEL profile, its static bound, rule evaluation
+  digest/      v2: the bytes, content, page and law digests
 packages/cli/src/
   main.ts      dispatch, the role bound, --help, the module preload, the bundle block, one stderr writer
   commands.ts  the COMMANDS array and nothing else
@@ -50,6 +56,7 @@ packages/cli/src/
   exports.ts   the export planner, the plugin manifests, the in-repository renders and their comparison
   artifacts.ts the one generation path: the artifacts, the writer's brief and the rendered exports, written and planned
   law.ts       the loaded vault to a Law; the engine.json consumers
+  lawfiles.ts  v2: the working-tree and index adapters that snapshot a bundle's law and its libraries for law/
   writer.ts    the shell half of the Writer: prove, then temp-and-rename
   atomicwrite.ts   the one staged replace every non-page write lands through
   moduleload.ts, modulefixture.ts   the module ladder: resolve, digest, scan, load, prove
@@ -68,7 +75,7 @@ fixtures/handbooks/           two small gardening handbooks the two-bundle tests
 fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories)
 fixtures/minimal-vault/       the smallest bundle that loads
 fixtures/okf-upstream/        the OKF pin: repository, commit, grounding line
-tools/                        write-build-info, build-binary, render-playbook, generate-casefold, uncovered, run-suite, benchmark-check
+tools/                        write-build-info, build-binary, render-playbook, dispositions, generate-casefold, uncovered, run-suite, benchmark-check
 test/                         the tests of the built CLI as a whole: the pipe probes and the compiled binary
 scripts/hooks/pre-commit      the development gate
 docs/                         this documentation; render-cli.ts renders docs/cli.md's verb block
@@ -99,6 +106,8 @@ by name when it breaks. Test files live under `packages/core/test`,
 | The path law | a vault path names a file inside the vault: shape in core, containment in the shell, at every read and write | `path-law` (core and cli), `provenance-path` |
 | Every declared key has a consumer | every top-level `engine.json` key names a reader that exists and has an end-to-end fixture marked `e2e:<key>`; every consumer entry names a declared key | `schema-walk`, `engine-config` |
 | The engine spawns no child synchronously | every git read goes through the asynchronous transport, file-backed, at most four children at once, each under a timeout (`WIKIWRIGHT_GIT_TIMEOUT_MS`) that kills a child still running and refuses the verb as `git-timeout`, and none held past its exit by a process holding its stderr; no file the packages ship names a synchronous spawn; a test runs the CLI with its stdout on a file, and the pipe probes read the CLI's envelope and the binary's through a shell's pipe on purpose, a reader starting late, and hold it to the filed one, the probe itself proven to fail a CLI that exits with its envelope half written | `git-transport`, `git-timeout`, `git-short-read`, `no-sync-spawn`, `pipe-boundary` |
+| The v2 law is one function of its bytes | the working tree and the index snapshot a bundle and its libraries into the same bytes, and `loadTypeLaw` reads nothing else; the law digest is byte-stable across loads and equal under both adapters, for a bundle at the top level and one in a subdirectory; every load-time code the contracts name is raised by a gardening fixture under `os.tmpdir()` | `law-libraries`, `law-types`, `law-shapes`, `law-digests` |
+| A rule is bounded before it runs | a CEL rule is admitted by an AST walk or refused with the limit named; every comprehension ranges over a direct interface path under a declared bound, and a worst case over 200,000 iterations is refused at load; `Intl` sits in the bundle only behind calls the profile refuses | `rules-profile`, `law-rules` |
 | One pinned runtime | `.bun-version` is the running Bun and every `engines.bun` pins it exactly; no tool, hook, workflow or test spawns `node`, and `docs/cli.md`'s verb block renders, and matches, with nothing on PATH; the compiled binary (`bun run binary`) answers `--help` and `check` byte for byte as `bun dist/main.js` does | `bun-pin`, `binary` |
 | The shell has one clock | the verbs that stamp a date read `today()`; a test pins `WIKIWRIGHT_TODAY` and proves the pin reaches the page | `write-verb` |
 | One code per meaning | every `fail(` in the CLI uses a kebab-case code mapped to exactly one exit type | `exit-taxonomy` |
