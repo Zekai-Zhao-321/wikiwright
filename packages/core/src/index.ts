@@ -74,6 +74,8 @@ export {
   routeFindings,
   sortFindings as sortJudgedFindings,
 } from "./judge/index.ts";
+// v2 contracts §2, §3: the type-document loader, beside the old registry.
+export * from "./law/index.ts";
 export type {
   Finding,
   LinkResolver,
