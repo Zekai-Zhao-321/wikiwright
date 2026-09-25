@@ -2,6 +2,8 @@
 // refusal on a bundle-edited file, skills-stale / skills-missing) (skills
 // are versioned with the engine) · docs/concepts.md §Findings and routing (both arms are
 // machine-local state, so warning is the ceiling).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import {
@@ -15,7 +17,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

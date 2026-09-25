@@ -25,12 +25,13 @@
 // hold each mechanism; this holds the scenario. Everything runs on temporary
 // copies of the two handbooks, never the shipped fixtures, with HOME under the
 // temporary directory.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
@@ -116,7 +117,7 @@ function checkout(name: string): string {
 }
 
 describe("two handbooks from an unrelated directory, end to end (docs/cli.md §bundles)", () => {
-  before(() => {
+  beforeAll(() => {
     tmp = mkdtempSync(join(tmpdir(), "ww-multi-bundle-"));
     elsewhere = join(tmp, "elsewhere");
     mkdirSync(elsewhere, { recursive: true });
@@ -136,7 +137,7 @@ describe("two handbooks from an unrelated directory, end to end (docs/cli.md §b
     });
     env = { HOME: home, WIKIWRIGHT_SKILL_DIRS: "" };
   });
-  after(() => {
+  afterAll(() => {
     rmSync(tmp, { recursive: true, force: true });
   });
 

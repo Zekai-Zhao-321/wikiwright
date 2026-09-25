@@ -4,12 +4,13 @@
 // docs/cli.md §gate · docs/cli.md §fix (the finding's argv is the command that
 // fixes it) · docs/concepts.md §Findings and routing (the cap never hides the
 // finding the gate blocks on)
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { MEMORY_LAW } from "./fixtures/memory-law.ts";
 import { runCli } from "./fixtures/runtime.ts";
@@ -404,7 +405,7 @@ describe("the cap never hides the finding it blocks on (docs/concepts.md §Findi
   // page through `git show`, and sixty spawns outran the runner's default
   // timeout on the Windows CI host (killed process, empty stdout). Two pages
   // hit the cap just as well and keep the case about the cap, not the clock.
-  it("gate prints the error even when it sorts past the default limit", { timeout: 60_000 }, () => {
+  it("gate prints the error even when it sorts past the default limit", () => {
     const tmp = lawVault();
     try {
       // Many warnings on one page sorting before the one page with an error.
@@ -443,5 +444,5 @@ describe("the cap never hides the finding it blocks on (docs/concepts.md §Findi
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
-  });
+  }, 60_000);
 });

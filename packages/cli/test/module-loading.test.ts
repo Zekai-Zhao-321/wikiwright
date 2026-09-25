@@ -9,10 +9,11 @@
 // recognizer sees — a named, default or namespace import, a re-export, a bare
 // import for its side effects, a dynamic import of a literal — and a loader
 // call spelled out. A specifier or a call built at runtime is outside it.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { runtimeImports } from "./fixtures/imports.ts";

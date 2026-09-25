@@ -2,11 +2,12 @@
 // source page and never said what — a count with no key is a number nobody can
 // act on. The envelope names the pass and the reason, in `write` and in every
 // judging verb, and `summary.unevaluated` stays the scalar every reader sums).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

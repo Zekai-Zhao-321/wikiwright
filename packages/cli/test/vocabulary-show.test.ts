@@ -8,11 +8,12 @@
 // A bundle author could declare a `range` and had no way to ask what it
 // admits — the widest possible range and a range naming a type nobody extends
 // read identically in the file.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { installKit, kitEnv } from "./fixtures/kit-code.ts";

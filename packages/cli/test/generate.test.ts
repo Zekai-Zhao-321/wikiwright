@@ -2,6 +2,8 @@
 // lint + generated rebuild comparison; derived-only --write) · docs/cli.md §brief
 // (generated files: one generator, deletable, byte-reproducible) · docs/architecture.md §Directories (canonical
 // writer, atomic all-or-nothing) · docs/concepts.md (generated drift = error).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import {
   cpSync,
@@ -14,7 +16,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { runCli } from "./fixtures/runtime.ts";

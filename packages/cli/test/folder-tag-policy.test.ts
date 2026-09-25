@@ -1,11 +1,12 @@
 // Folder-tag alignment is bundle policy: off by default, `validate` reports a
 // missing segment tag, `materialize-add-only` lets the folder-tags fixer add
 // and never remove. Type and tag namespaces are independent.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { runCli } from "./fixtures/runtime.ts";

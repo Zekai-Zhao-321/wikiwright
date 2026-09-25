@@ -2,12 +2,13 @@
 // the page's own lines verbatim with its address; the page's digest over its
 // raw bytes; a budget that returns sections in page order while they fit and
 // lists the rest by address; the envelope's bundle block as the attribution.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { type ParsedDoc, parseDoc } from "@wikiwright/core";
 import { pageNamed } from "../src/verbs/read.ts";
@@ -46,10 +47,10 @@ interface Envelope {
 }
 
 let tmp = "";
-before(() => {
+beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "ww-read-"));
 });
-after(() => {
+afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 

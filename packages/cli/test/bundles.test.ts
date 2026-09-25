@@ -7,6 +7,8 @@
 //
 // Every scan here runs with HOME under os.tmpdir(): no test reads a skill
 // directory of the developer's.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
@@ -22,7 +24,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
@@ -56,10 +57,10 @@ interface Row {
 
 let tmp = "";
 let serial = 0;
-before(() => {
+beforeAll(() => {
   tmp = realpathSync(mkdtempSync(join(tmpdir(), "ww-bundles-")));
 });
-after(() => rmSync(tmp, { recursive: true, force: true }));
+afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 /** A fresh home and an unrelated working directory: every case scans only what it installs. */
 function world(): { home: string; cwd: string } {

@@ -4,6 +4,8 @@
 // wikilinks; a title is rendered literally; folder tags are seeded at new, and
 // folder-tag aliases seed the governing tag) · docs/cli.md §init (every
 // shipped code type is creatable)
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import {
   cpSync,
@@ -16,7 +18,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
@@ -122,13 +123,13 @@ describe("every shipped code type is creatable (docs/cli.md §init)", () => {
     ["testing-guide", "wiki/testing.md", [...ANCHOR, ...PART]],
   ];
   let tmp = "";
-  before(() => {
+  beforeAll(() => {
     tmp = mkdtempSync(join(tmpdir(), "ww-rf-code-"));
     const init = runKit(tmp, ["init", "--constitution", "code"]);
     assert.equal(init.status, 0, JSON.stringify(init.envelope));
     installKit(tmp);
   });
-  after(() => rmSync(tmp, { recursive: true, force: true }));
+  afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
   for (const [type, dest, extra] of CASES) {
     it(`new ${type} succeeds — the kit's template satisfies the type's headings`, () => {

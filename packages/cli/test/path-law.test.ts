@@ -8,6 +8,8 @@
 // loudly if the guard is removed — it asserts the escape file does not exist on
 // disk, not merely that the envelope said no. A guard that refused and wrote
 // anyway would pass the weaker assertion.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
@@ -25,7 +27,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { commitWrite } from "../src/writer.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
@@ -34,7 +35,7 @@ import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-path-law-"));
-after(() => rmSync(SCRATCH, { recursive: true, force: true }));
+afterAll(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 interface Run {
   status: number;
@@ -119,10 +120,10 @@ const ESCAPES = [
 
 describe("docs/architecture.md §Directories — no verb writes outside the vault", () => {
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = vault("verbs");
   });
-  after(() => {
+  afterAll(() => {
     rmSync(join(SCRATCH, "verbs"), { recursive: true, force: true });
   });
 
@@ -177,9 +178,7 @@ describe("docs/architecture.md §Directories — no verb writes outside the vaul
     assert.equal(lint.error["code"], "invalid-path", JSON.stringify(lint.error));
   });
 
-  it("`move` refuses both endpoints through the same path-law matrix before side effects", {
-    timeout: 60_000,
-  }, () => {
+  it("`move` refuses both endpoints through the same path-law matrix before side effects", () => {
     const badEndpoints = [
       "wiki/../../Chen Jing.md",
       "wiki/a/../../../Chen Jing.md",
@@ -223,7 +222,7 @@ describe("docs/architecture.md §Directories — no verb writes outside the vaul
       );
       assert.equal(existsSync(join(dir, "wiki", "craft", "Chen Jing.md")), false);
     }
-  });
+  }, 60_000);
 
   it("a legal path still writes — the guard refuses shapes, not pages", () => {
     const r = run(dir, ["write", "wiki/Bo Lin.md", "--date", "2026-09-04"], PERSON);
@@ -239,10 +238,10 @@ describe("docs/architecture.md §Directories — no verb writes outside the vaul
 
 describe("docs/architecture.md §Directories — the walk and the index agree", () => {
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = vault("walk");
   });
-  after(() => {
+  afterAll(() => {
     rmSync(join(SCRATCH, "walk"), { recursive: true, force: true });
   });
 
@@ -276,10 +275,10 @@ describe("docs/architecture.md §Directories — the walk and the index agree", 
 
 describe("docs/architecture.md §Directories — a declared root is a vault path", () => {
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = vault("roots");
   });
-  after(() => {
+  afterAll(() => {
     rmSync(join(SCRATCH, "roots"), { recursive: true, force: true });
   });
 
@@ -332,10 +331,10 @@ describe("docs/architecture.md §Directories — a declared root is a vault path
 
 describe("docs/architecture.md §Directories — containment is resolved, not spelled", () => {
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = vault("symlink");
   });
-  after(() => {
+  afterAll(() => {
     rmSync(join(SCRATCH, "symlink"), { recursive: true, force: true });
   });
 

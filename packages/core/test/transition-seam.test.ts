@@ -8,8 +8,9 @@
 // transition verdict. While the kernel carried the claims transition itself,
 // every case below passed unchanged with the manifest swapped, which is the
 // definition of a vacuous test.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { emptyDispositions } from "../src/grammar/index.ts";
 import { lintPage } from "../src/lint/index.ts";
 import {

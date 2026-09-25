@@ -3,8 +3,9 @@
 // correction guards), .23 (the base name index), .24 (a mode-disabled fixer),
 // .26 (illegality is the table's), .27 (the cap fills error-first), .31 (one
 // waiver, N occurrences), .32 (an info row may not be excepted).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import {
   boundedLevenshtein,
   evidenceDigestFor,

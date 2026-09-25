@@ -6,10 +6,11 @@
 // keeps them apart. Nothing checked the block against the findings sitting
 // beside it, and `canonical-form` spent its whole life reporting
 // `evaluated: 0, not_applicable: 41` on a corpus where it fired 45 times.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -24,7 +25,7 @@ const CORPORA = ["fixtures/memory-synth", "devwiki", "fixtures/minimal-vault"];
 // devwiki is a bundle over the code kit: judged from an installed copy under
 // os.tmpdir(), never from the shipped tree (docs/extending.md §The code kit).
 const DEVWIKI_COPY = installedCopy(join(REPO, "devwiki"), "coverage-devwiki");
-after(() => rmSync(DEVWIKI_COPY, { recursive: true, force: true }));
+afterAll(() => rmSync(DEVWIKI_COPY, { recursive: true, force: true }));
 
 const rootOf = (corpus: string): string =>
   corpus === "devwiki" ? DEVWIKI_COPY : join(REPO, corpus);

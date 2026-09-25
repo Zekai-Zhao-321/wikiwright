@@ -1,8 +1,9 @@
 // docs/constitution.md §Sections (grammar declaration, its parameters, and the combination
 // law: add a grammar where there is none, tighten a parameter, never change or
 // relax)
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { type Json, loadOf } from "./helpers/constitution.ts";
 
 /** Every vocabulary a section below may bind, counted rather than refused. */

@@ -6,6 +6,8 @@
 //
 // Every copy is a gardening bundle's rendered export under os.tmpdir(), and
 // every scan runs with HOME there.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -22,7 +24,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
@@ -39,14 +40,14 @@ interface Envelope {
 let tmp = "";
 let home = "";
 let serial = 0;
-before(() => {
+beforeAll(() => {
   tmp = realpathSync(mkdtempSync(join(tmpdir(), "ww-copy-readonly-")));
   home = join(tmp, "home");
   mkdirSync(home);
   // Every scan's project tier stops at the top of this repository.
   execFileSync("git", ["init", "-q"], { cwd: tmp });
 });
-after(() => rmSync(tmp, { recursive: true, force: true }));
+afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 function run(
   cwd: string,

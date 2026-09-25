@@ -497,6 +497,11 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Developing
 
+- Every test file is written to `bun:test` (the v2 contracts, section 0):
+  114 files moved off `node:test`, `before` and `after` becoming
+  `beforeAll` and `afterAll` and a timeout moving to `it`'s last argument;
+  `node:assert` stays. The suite runs the same 1,699 tests, and
+  `bun-pin.test.ts` refuses a `node:test` import.
 - `docs/render-cli.ts`, the one generator of `docs/cli.md`'s verb block, ran
   the CLI under `node`, so on a machine with only Bun the block could not be
   rendered. It runs the CLI under the Bun running it and reads the schema

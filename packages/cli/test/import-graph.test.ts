@@ -6,10 +6,11 @@
 // registry to the invocation instead of importing it back.
 //
 // A type-only import is erased before anything runs and is not an edge.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runtimeImports } from "./fixtures/imports.ts";
 

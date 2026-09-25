@@ -1,8 +1,9 @@
 // docs/architecture.md (git via spawned plumbing with -z output parsed in pure core)
 // docs/architecture.md §Directories (core/gitplan: pure parsers) · docs/constitution.md (rename detection feeds
 // the former-folder-tags review) · docs/concepts.md (the staged gate's inputs).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { parseNameStatusZ } from "../src/gitplan/index.ts";
 
 describe("parseNameStatusZ — `git diff --cached --name-status -z -M` parser", () => {

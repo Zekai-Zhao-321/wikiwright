@@ -5,12 +5,13 @@
 //  (body-append-only compares the staged text to the base
 // revision) · identity vault-wide at the gate (the rule
 // meets the writer at write time) · claim transitions at the gate.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { runCli } from "./fixtures/runtime.ts";
@@ -212,9 +213,7 @@ describe("lint --staged — the pre-commit gate (docs/cli.md §lint)", () => {
 });
 
 describe("the staged gate judges the complete virtual vault (docs/cli.md §lint)", () => {
-  it("a staged source-root move preserving the basename needs no self-alias", {
-    timeout: 15_000,
-  }, () => {
+  it("a staged source-root move preserving the basename needs no self-alias", () => {
     const tmp = repo();
     try {
       mkdirSync(join(tmp, "sources"));
@@ -240,7 +239,7 @@ describe("the staged gate judges the complete virtual vault (docs/cli.md §lint)
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
-  });
+  }, 15_000);
 
   it("a staged title duplicating an UNCHANGED page fails at the gate", () => {
     const tmp = repo();

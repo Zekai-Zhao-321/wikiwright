@@ -10,6 +10,7 @@
 // clock through `WIKIWRIGHT_TODAY`, and the argvs pin `--date` where a case's
 // dates carry meaning.
 
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
@@ -23,7 +24,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK, TODAY } from "./fixtures/clock.ts";
 import { installKit, kitEnv } from "./fixtures/kit-code.ts";
@@ -112,10 +112,10 @@ function handleOf(dir: string, category: string): string {
 
 describe("docs/cli.md §write — the whole-page form", () => {
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = vault("whole");
   });
-  after(() => {
+  afterAll(() => {
     rmSync(SCRATCH, { recursive: true, force: true });
   });
 
@@ -213,10 +213,10 @@ describe("docs/cli.md §write — the whole-page form", () => {
 
 describe("docs/cli.md §write — the section forms", () => {
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = vault("sections");
   });
-  after(() => {
+  afterAll(() => {
     rmSync(SCRATCH, { recursive: true, force: true });
   });
 
@@ -594,13 +594,13 @@ describe("docs/cli.md §write — the section forms", () => {
 
 describe("docs/cli.md §write — --append on a prose section", () => {
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = vault("prose");
     const withNotes = `${PERSON.replace(/Chen Jing/g, "Li Wei").replace("## History\n", "## Notes\n\nMet at the studio.\n\n## History\n")}`;
     const r = run(dir, ["write", "wiki/Li Wei.md", "--date", "2026-09-01"], withNotes);
     assert.equal(r.ok, true, JSON.stringify(r.error));
   });
-  after(() => {
+  afterAll(() => {
     rmSync(SCRATCH, { recursive: true, force: true });
   });
 
@@ -645,10 +645,10 @@ describe("docs/cli.md §write — --append on a prose section", () => {
 
 describe("docs/cli.md §brief — the writer bound", () => {
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = vault("roles");
   });
-  after(() => {
+  afterAll(() => {
     rmSync(SCRATCH, { recursive: true, force: true });
   });
 
@@ -702,7 +702,7 @@ describe("docs/cli.md §new — the alias for a skeleton write", () => {
   // The code starter is a bundle over the code kit, installed in the scratch
   // vault.
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = join(SCRATCH, "code");
     rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir, { recursive: true });
@@ -713,7 +713,7 @@ describe("docs/cli.md §new — the alias for a skeleton write", () => {
     assert.equal(init.ok, true, JSON.stringify(init.error));
     installKit(dir);
   });
-  after(() => {
+  afterAll(() => {
     rmSync(SCRATCH, { recursive: true, force: true });
   });
 
@@ -803,7 +803,7 @@ describe("docs/cli.md §move — re-based on the Writer", () => {
     execFileSync("git", ["commit", "-qm", "seed"], { cwd: dir });
     return dir;
   }
-  after(() => rmSync(SCRATCH2, { recursive: true, force: true }));
+  afterAll(() => rmSync(SCRATCH2, { recursive: true, force: true }));
 
   it("a rename appends the old basename to aliases, so the law cannot fire after it", () => {
     const dir = moveVault("rename");
@@ -895,10 +895,10 @@ describe("docs/cli.md §write — near stays advisory", () => {
 
 describe("a draft whose frontmatter does not parse is refused with one finding", () => {
   let dir = "";
-  before(() => {
+  beforeAll(() => {
     dir = vault("malformed");
   });
-  after(() => {
+  afterAll(() => {
     rmSync(SCRATCH, { recursive: true, force: true });
   });
 
@@ -953,7 +953,7 @@ describe("docs/cli.md §write --from — a set of drafts lands together or not a
       writeFileSync(join(dir, DRAFTS, rel), text);
     }
   }
-  before(() => {
+  beforeAll(() => {
     dir = vault("batch");
     // A program wiki's shape: the Relations section is ratcheted to error, so
     // a relation to a page that does not exist yet blocks the write.
@@ -970,7 +970,7 @@ describe("docs/cli.md §write --from — a set of drafts lands together or not a
     execFileSync("git", ["add", "-A"], { cwd: dir });
     execFileSync("git", ["commit", "-qm", "ratchet relations"], { cwd: dir });
   });
-  after(() => {
+  afterAll(() => {
     rmSync(SCRATCH, { recursive: true, force: true });
   });
 

@@ -2,11 +2,12 @@
 // stops being an unbounded shadow schema — and templates and golden examples
 // as contracts evaluated continuously: declared files exist, examples lint
 // clean against their own type, placeholders are known, orphans are surfaced.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { runCli } from "./fixtures/runtime.ts";

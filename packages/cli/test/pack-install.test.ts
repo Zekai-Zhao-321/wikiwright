@@ -16,6 +16,8 @@
 //
 // Nothing here publishes and nothing reaches a registry for a wikiwright-owned
 // package. The tarballs are built locally and installed by path.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
@@ -31,7 +33,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
@@ -117,10 +118,10 @@ function packAndInstall(): void {
   CLI = join(consumer, "node_modules", "wikiwright", "dist", "main.js");
 }
 
-/** Each case may be the one that packs and installs. */
-const INSTALLS = { timeout: 60_000 };
+/** Each case may be the one that packs and installs: its timeout, in milliseconds. */
+const INSTALLS = 60_000;
 
-after(() => {
+afterAll(() => {
   if (WORKSPACE !== undefined) rmSync(WORKSPACE, { recursive: true, force: true });
 });
 
@@ -149,16 +150,19 @@ function run(argv: readonly string[], cwd: string, env: Record<string, string> =
 }
 
 describe("the packed engine runs as a consumer installs it (docs/architecture.md §The gate)", () => {
-  it("the installed binary answers, and names the build it was cut from", INSTALLS, () => {
-    packAndInstall();
-    const envelope = run(["version"], CONSUMER ?? REPO);
-    assert.equal(envelope.ok, true, JSON.stringify(envelope));
-    assert.equal(typeof envelope.data?.["engine"], "string");
-  });
+  it(
+    "the installed binary answers, and names the build it was cut from",
+    () => {
+      packAndInstall();
+      const envelope = run(["version"], CONSUMER ?? REPO);
+      assert.equal(envelope.ok, true, JSON.stringify(envelope));
+      assert.equal(typeof envelope.data?.["engine"], "string");
+    },
+    INSTALLS,
+  );
 
   it(
     "the tarball carries dist/, the skills, the starters and the plugin, and no source",
-    INSTALLS,
     () => {
       packAndInstall();
       const installed = join(CONSUMER ?? "", "node_modules", "wikiwright");
@@ -179,11 +183,11 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
       // artifact and give a consumer two answers to "what is running".
       assert.equal(existsSync(join(installed, "src")), false, "no source in the artifact");
     },
+    INSTALLS,
   );
 
   it(
     "the tarball holds no output of a deleted source: the build removes dist/ first",
-    INSTALLS,
     () => {
       packAndInstall();
       const dist = join(CONSUMER ?? "", "node_modules", "wikiwright", "dist");
@@ -201,11 +205,11 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
         );
       }
     },
+    INSTALLS,
   );
 
   it(
     "the installed `wikiwright` is bin.js, a Bun script: it answers as main.js does",
-    INSTALLS,
     () => {
       packAndInstall();
       // POSIX-only: the .bin entry is a link here and a shim on Windows.
@@ -224,11 +228,11 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
       assert.equal(fromBin.status, 0, fromBin.stderr);
       assert.equal(fromBin.stdout, fromMain.stdout, "the executable answers as the engine does");
     },
+    INSTALLS,
   );
 
   it(
     "the packed engine judges a bundle, from a directory outside this repository",
-    INSTALLS,
     () => {
       packAndInstall();
       const bundle = join(WORKSPACE ?? "", "minimal");
@@ -238,64 +242,73 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
       // matters here is that the PACKED engine produces one at all.
       assert.equal(typeof envelope.data?.["summary"], "object", JSON.stringify(envelope));
     },
+    INSTALLS,
   );
 });
 
 describe("a module installs as a tarball, and governs (docs/extending.md §Declaring a module)", () => {
-  it("the packed module resolves, pins, and is judged with — with no link home", INSTALLS, () => {
-    packAndInstall();
-    const workspace = WORKSPACE ?? "";
-    const bundle = join(workspace, "tarball-bundle");
-    // Copy the PAGES and the CONFIG only. A `file:` install links each of the
-    // module's files back into this repository at an absolute path, and a copy
-    // that carried those links would let this case write through to the shipped
-    // fixture — which is exactly what happened the first time.
-    cpSync(join(CONFORMANCE, "bundle-a", "wiki"), join(bundle, "wiki"), { recursive: true });
-    cpSync(join(CONFORMANCE, "bundle-a", "config"), join(bundle, "config"), { recursive: true });
-    // The third local shape: a packed tarball, whose bytes are COPIED. A
-    // workspace link or a `file:` directory could resolve back into this
-    // repository; this cannot.
-    writeFileSync(
-      join(bundle, "package.json"),
-      `${JSON.stringify(
-        {
-          name: "wikiwright-tarball-bundle",
-          private: true,
-          version: "0.0.0",
-          dependencies: {
-            "@wikiwright-fixture/probe": `file:${tarballIn(workspace, "wikiwright-fixture-probe-")}`,
+  it(
+    "the packed module resolves, pins, and is judged with — with no link home",
+    () => {
+      packAndInstall();
+      const workspace = WORKSPACE ?? "";
+      const bundle = join(workspace, "tarball-bundle");
+      // Copy the PAGES and the CONFIG only. A `file:` install links each of the
+      // module's files back into this repository at an absolute path, and a copy
+      // that carried those links would let this case write through to the shipped
+      // fixture — which is exactly what happened the first time.
+      cpSync(join(CONFORMANCE, "bundle-a", "wiki"), join(bundle, "wiki"), { recursive: true });
+      cpSync(join(CONFORMANCE, "bundle-a", "config"), join(bundle, "config"), { recursive: true });
+      // The third local shape: a packed tarball, whose bytes are COPIED. A
+      // workspace link or a `file:` directory could resolve back into this
+      // repository; this cannot.
+      writeFileSync(
+        join(bundle, "package.json"),
+        `${JSON.stringify(
+          {
+            name: "wikiwright-tarball-bundle",
+            private: true,
+            version: "0.0.0",
+            dependencies: {
+              "@wikiwright-fixture/probe": `file:${tarballIn(workspace, "wikiwright-fixture-probe-")}`,
+            },
           },
-        },
-        null,
-        2,
-      )}\n`,
-    );
-    install(bundle);
+          null,
+          2,
+        )}\n`,
+      );
+      install(bundle);
 
-    // Installed is loaded: the module is proved by its load, with no other step.
-    const listed = run(["modules", "list", "--root", bundle], CONSUMER ?? REPO);
-    const loaded = (listed.data?.["loaded"] ?? []) as Record<string, unknown>[];
-    assert.equal(loaded.length, 1, JSON.stringify(listed));
-    assert.equal(loaded[0]?.["version"], "1.0.0");
+      // Installed is loaded: the module is proved by its load, with no other step.
+      const listed = run(["modules", "list", "--root", bundle], CONSUMER ?? REPO);
+      const loaded = (listed.data?.["loaded"] ?? []) as Record<string, unknown>[];
+      assert.equal(loaded.length, 1, JSON.stringify(listed));
+      assert.equal(loaded[0]?.["version"], "1.0.0");
 
-    const linted = run(["lint", "--all", "--root", bundle], CONSUMER ?? REPO);
-    assert.equal(linted.ok, true, JSON.stringify(linted));
-    const found = (linted.data?.["findings"] ?? []) as { ruleId: string }[];
-    assert.equal(
-      found.some((f) => f.ruleId === "@wikiwright-fixture/probe/measured"),
-      true,
-      "the tarball-installed module governed the vault",
-    );
-  });
+      const linted = run(["lint", "--all", "--root", bundle], CONSUMER ?? REPO);
+      assert.equal(linted.ok, true, JSON.stringify(linted));
+      const found = (linted.data?.["findings"] ?? []) as { ruleId: string }[];
+      assert.equal(
+        found.some((f) => f.ruleId === "@wikiwright-fixture/probe/measured"),
+        true,
+        "the tarball-installed module governed the vault",
+      );
+    },
+    INSTALLS,
+  );
 
-  it("the generated brief carries the module's own skill fragment", INSTALLS, () => {
-    packAndInstall();
-    const bundle = join(WORKSPACE ?? "", "tarball-bundle");
-    const envelope = run(["brief", "--root", bundle], CONSUMER ?? REPO);
-    assert.equal(envelope.ok, true, JSON.stringify(envelope));
-    const text = String(envelope.data?.["brief"] ?? "");
-    assert.match(text, /## What the loaded modules add/u);
-    assert.match(text, /### Measures \(`@wikiwright-fixture\/probe`\)/u);
-    assert.match(text, /A `Measures` item is/u);
-  });
+  it(
+    "the generated brief carries the module's own skill fragment",
+    () => {
+      packAndInstall();
+      const bundle = join(WORKSPACE ?? "", "tarball-bundle");
+      const envelope = run(["brief", "--root", bundle], CONSUMER ?? REPO);
+      assert.equal(envelope.ok, true, JSON.stringify(envelope));
+      const text = String(envelope.data?.["brief"] ?? "");
+      assert.match(text, /## What the loaded modules add/u);
+      assert.match(text, /### Measures \(`@wikiwright-fixture\/probe`\)/u);
+      assert.match(text, /A `Measures` item is/u);
+    },
+    INSTALLS,
+  );
 });

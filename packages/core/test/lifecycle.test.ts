@@ -4,8 +4,9 @@
 //
 // The arms are scoped to the section a type declares, so the pages below carry
 // the `## Facts` / `## History` sections the law names.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { type ModuleManifest, standardLibrary } from "../src/index.ts";
 import { lintPage } from "../src/lint/index.ts";
 import { parseDoc } from "../src/parse/index.ts";

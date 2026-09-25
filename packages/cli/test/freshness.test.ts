@@ -2,12 +2,13 @@
 // against the local repository — origin "." is the repository enclosing the
 // vault — and a pin naming any other origin is reported unmeasured, with no
 // contact: remote freshness was removed. Hermetic: nothing here needs the network.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

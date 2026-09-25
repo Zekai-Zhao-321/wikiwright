@@ -6,12 +6,13 @@
 // docs/architecture.md §How a verdict is produced (a path is NFC at every
 // constructor; lint sees the full effective configuration; identity sees
 // resolved titles).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { MEMORY_LAW } from "./fixtures/memory-law.ts";

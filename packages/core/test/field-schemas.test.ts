@@ -1,8 +1,9 @@
 // Frontmatter fields carry value shapes: typed pages get typed metadata; a
 // fragment adds the fields it validates; shapes inherit
 // union-error-on-collision and are meta-validated at load.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { buildNameIndex, lintPage, loadConstitution, loadModules } from "../src/index.ts";
 import { parseDoc } from "../src/parse/index.ts";
 import { STANDARD_LIBRARY } from "../src/stdlib/index.ts";

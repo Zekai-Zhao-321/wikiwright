@@ -7,8 +7,9 @@
 // predicate (so `admits` and `relation-range` cannot disagree) and ONE default
 // severity for a `declared` arm (so `bound_by` cannot report a severity the
 // emit site does not apply).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { armDefault, armRows, DECLARED_ARM_DEFAULT } from "../src/grammar/index.ts";
 import { observeVocabulary } from "../src/lint/index.ts";
 import { KERNEL_OWNED_ARMS } from "../src/modules/index.ts";

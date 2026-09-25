@@ -6,10 +6,11 @@
 // kernel's plus every loaded module's arms and checks, so these cases read the
 // composed table under the standard library and hold the kernel's own table to
 // carrying none of a module's rows.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
   ENGINE_CONFIG_SCHEMA,

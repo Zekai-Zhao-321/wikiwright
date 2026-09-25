@@ -2,11 +2,12 @@
 // omitted directory is not walked — not linted, not in the identity namespace;
 // `field_sources` end to end; summaries count unevaluated diff-gated rules) ·
 // docs/cli.md
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { runCli } from "./fixtures/runtime.ts";

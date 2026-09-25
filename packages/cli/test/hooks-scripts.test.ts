@@ -10,6 +10,8 @@
 // "command"` whose command may name `${CLAUDE_PLUGIN_ROOT}`. These tests hold
 // the scripts to that documented shape. They do not verify what a host does
 // with it: no host runs here.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
@@ -27,7 +29,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { BUN, runCli } from "./fixtures/runtime.ts";
 
@@ -106,7 +107,7 @@ function edited(path: string): string {
 }
 
 describe("the plugin's two hooks, against the documented shape (docs/cli.md §The plugin and its hooks)", () => {
-  before(() => {
+  beforeAll(() => {
     tmp = mkdtempSync(join(tmpdir(), "ww-hooks-"));
     // The session-start scan's project tier stops at the top of this repository.
     git(tmp, "init", "-q");
@@ -118,7 +119,7 @@ describe("the plugin's two hooks, against the documented shape (docs/cli.md §Th
     mkdirSync(home);
     env = { HOME: home, WIKIWRIGHT_SKILL_DIRS: "" };
   });
-  after(() => {
+  afterAll(() => {
     rmSync(tmp, { recursive: true, force: true });
   });
 

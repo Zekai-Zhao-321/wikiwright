@@ -1,10 +1,11 @@
 // Mechanical gates over the shipped sources: no locale-dependent comparison,
 // no Bun-specific API outside the git transport, no node: import inside core, and no
 // literal NUL byte — enforcement over convention, never prose.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const REPO = fileURLToPath(new URL("../../..", import.meta.url));

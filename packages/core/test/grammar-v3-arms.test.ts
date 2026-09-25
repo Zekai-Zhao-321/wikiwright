@@ -7,8 +7,9 @@
 //
 // Every row below is a pass with a PASS_TABLE entry and a documented row; this file
 // is the "red fixture per row" the routing law asks for.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import {
   buildNameIndex,
   type Finding,

@@ -2,8 +2,9 @@
 // form; header identity binds before depth — `section-depth`; entries carry
 // `aliases` compared by normalizeIdentity; sections are union-append-only; an
 // inherited alias may not be dropped).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import type { EffectiveType } from "../src/index.ts";
 import { grammarBindings, lintPage } from "../src/lint/index.ts";
 import { parseDoc } from "../src/parse/index.ts";

@@ -2,8 +2,9 @@
 // docs/cli.md §skills (WIKIWRIGHT_ROLE=consumer refuses a maintainer verb
 // with role-forbidden and a role-filtered valid_commands; an unrecognised value
 // is a usage error, never a silent maintainer)
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { runCli } from "./fixtures/runtime.ts";

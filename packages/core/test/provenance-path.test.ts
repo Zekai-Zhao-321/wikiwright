@@ -2,8 +2,9 @@
 // that is exactly one path-shaped token under a declared source root is `inferred`
 // provenance with that ref, counted at info as provenance-path-only)
 // docs/constitution.md §config/engine.json (source_roots is the key that exists; undeclared means off).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import {
   checkGrammar,
   parseSections,

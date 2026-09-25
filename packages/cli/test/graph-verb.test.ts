@@ -2,11 +2,12 @@
 // --missing; exit 0 for any well-formed query, 3 with `nearest` for an unknown
 // type, kind or label; answered from the working tree, never from the artifact)
 // docs/concepts.md §Generated artifacts The bundle's five real questions, one line each.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

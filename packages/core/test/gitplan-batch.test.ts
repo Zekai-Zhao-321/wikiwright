@@ -2,8 +2,9 @@
 // docs/roadmap.md §Every run parses the whole corpus (the staged gate and the
 // replay read a state's pages through `cat-file --batch`, in a number of git
 // processes bounded by the bytes, never one per page).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import {
   BatchStreamTruncated,
   parseCatFileBatch,

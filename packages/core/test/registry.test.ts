@@ -3,8 +3,9 @@
 // docs/architecture.md §The invariants (flatten at load; nothing walks a chain
 // downstream; optional→required promotion is a monotonic tightening; the
 // grace field).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { type Doc, loadOf } from "./helpers/constitution.ts";
 
 /**

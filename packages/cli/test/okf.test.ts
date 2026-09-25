@@ -1,11 +1,12 @@
 // docs/concepts.md (base-OKF conformance as its own layered verdict —
 // "OKF-clean even where our own bar fails" is a computable sentence; layers never
 // rescue each other) · docs/cli.md
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

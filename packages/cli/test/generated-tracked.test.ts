@@ -5,6 +5,8 @@
 // vocabularies, and the graph risk of moving a fragment's registry path. A
 // vault that renders exports into its own `skills/` tracks them too
 // (docs/constitution.md §exports), and they are rebuilt from nothing the same way.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import {
   cpSync,
@@ -17,7 +19,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { runCli } from "./fixtures/runtime.ts";

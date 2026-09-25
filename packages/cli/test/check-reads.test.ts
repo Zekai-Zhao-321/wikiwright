@@ -3,11 +3,12 @@
 // bundle block reads each page's bytes once more, unparsed, for the content
 // digest (docs/cli.md §The envelope), so a page is read exactly twice: a third
 // read is the verb reading the tree again. Count reads, not wall time.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { runCli } from "./fixtures/runtime.ts";

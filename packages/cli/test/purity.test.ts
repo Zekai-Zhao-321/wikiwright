@@ -5,11 +5,12 @@
 //
 // One probe per rule the scan names, each written into a copy of the neutral
 // gardening kit under os.tmpdir() and loaded as a bundle loads it.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PURITY_REASONS } from "@wikiwright/core";
 import { loadDeclaredModules, moduleDigest } from "../src/moduleload.ts";
@@ -17,7 +18,7 @@ import { loadDeclaredModules, moduleDigest } from "../src/moduleload.ts";
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const KIT_GARDEN = fileURLToPath(new URL("./fixtures/kit-garden", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-purity-"));
-after(() => rmSync(SCRATCH, { recursive: true, force: true }));
+afterAll(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 /** Each rule's reason, and a line that reaches for what it refuses. */
 const PROBES: readonly (readonly [reason: string, line: string])[] = [

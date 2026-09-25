@@ -1,6 +1,8 @@
 // docs/roadmap.md §Every run parses the whole corpus: the staged gate and the
 // replay read a state's pages in a number of git processes bounded by the
 // bytes, never one per page, and the bytes they read are the index's exactly.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
@@ -14,7 +16,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { runCli } from "./fixtures/runtime.ts";

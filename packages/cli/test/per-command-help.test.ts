@@ -1,8 +1,9 @@
 // docs/cli.md §The envelope (`<verb> --help` is rendered from the same
 // registry as `schema`, exit 0; --help is intercepted before parsing; an unknown
 // verb still exits 2) · every verb declares its role
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { flagsOf } from "../src/spec.ts";
@@ -32,7 +33,7 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
   // One subprocess per verb, and the verb list grows: the budget is the WORK,
   // not the runner's five-second default. Nothing about the assertion changes —
   // a verb that fails to answer still fails, on any machine.
-  it("every registered verb answers --help with ok and its own spec", { timeout: 120_000 }, () => {
+  it("every registered verb answers --help with ok and its own spec", () => {
     for (const command of COMMANDS) {
       const r = run([command.name, "--help"]);
       assert.equal(r.status, 0, `${command.name} --help: ${JSON.stringify(r.envelope)}`);
@@ -50,7 +51,7 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
       assert.deepEqual(data["examples"], command.examples);
       assert.equal(Array.isArray(data["global_flags"]), true, "the flags every verb accepts");
     }
-  });
+  }, 120_000);
 
   it("--help never becomes a usage error, even beside flags the verb rejects", () => {
     const r = run(["lint", "--help", "--no-such-flag"]);

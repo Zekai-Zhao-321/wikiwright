@@ -2,11 +2,12 @@
 // with a zero-length interval, `valid D→D, superseded D`, where it used to be
 // refused because `D→D-1` would run backwards; a date before the claim's own
 // is still refused. On a temporary gardening claims bundle.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { claimHandle } from "@wikiwright/core";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
@@ -40,10 +41,10 @@ function replace(root: string, date: string, claim: string) {
 }
 
 let tmp = "";
-before(() => {
+beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "ww-same-day-"));
 });
-after(() => {
+afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 

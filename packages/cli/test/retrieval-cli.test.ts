@@ -1,11 +1,12 @@
 // docs/cli.md §search (--near, the banded result fields, the coverage block)
 // docs/concepts.md §Generated artifacts (bigram-capable
 // CJK search, day one)
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

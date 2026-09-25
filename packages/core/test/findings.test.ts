@@ -2,8 +2,9 @@
 // headings, hint from registry prose, registryPath, evidenceDigest on
 // judgment-class findings) (the evidence
 // key a queued finding carries).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { lintPage } from "../src/lint/index.ts";
 import { parseDoc } from "../src/parse/index.ts";
 import { constitutionOf } from "./helpers/constitution.ts";

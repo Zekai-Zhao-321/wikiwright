@@ -9,6 +9,8 @@
 // Every scan here runs with HOME under os.tmpdir(), and the project tier
 // inside a `git init` repository there: no test reads a real skill directory
 // of the developer's.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
@@ -23,7 +25,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
@@ -41,10 +42,10 @@ interface Envelope {
 let tmp = "";
 let serial = 0;
 
-before(() => {
+beforeAll(() => {
   tmp = realpathSync(mkdtempSync(join(tmpdir(), "ww-discovery-")));
 });
-after(() => rmSync(tmp, { recursive: true, force: true }));
+afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 function write(root: string, files: Record<string, string>): void {
   for (const [path, text] of Object.entries(files)) {

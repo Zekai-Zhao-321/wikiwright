@@ -9,12 +9,13 @@
 // Each constructor reads its bytes through its own path — the disk, the git
 // index, git's objects — so agreement across them is a claim about the
 // constructors, not about one read.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { judge, type VaultState, type Verdict } from "@wikiwright/core";
 import { lawFor } from "../src/law.ts";
 import { fsState, indexState, overlayState, revisionState } from "../src/state.ts";

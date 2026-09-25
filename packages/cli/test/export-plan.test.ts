@@ -4,6 +4,8 @@
 //
 // In process, over gardening bundles and copies of the orchard handbook under
 // os.tmpdir().
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import {
   cpSync,
@@ -16,7 +18,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parsedPages } from "@wikiwright/core";
 import { contentDigestOf, lawDigest } from "../src/bundle.ts";
@@ -39,7 +40,7 @@ const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
 const KIT_GARDEN = fileURLToPath(new URL("./fixtures/kit-garden", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-export-plan-"));
-after(() => rmSync(SCRATCH, { recursive: true, force: true }));
+afterAll(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 /** A one-pixel PNG, the bytes of an image a page embeds. */
 const PNG = Buffer.from(

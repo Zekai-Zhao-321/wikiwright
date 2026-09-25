@@ -11,6 +11,8 @@
 // is read from source is only the closed set of direct writers — a module that
 // imports a `node:fs` write API or spawns a writing `git` subcommand — and that
 // no module but the Writer computes a page path to write.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -27,7 +29,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
@@ -168,7 +169,7 @@ function vault(engine: Record<string, unknown> = FOLDER_MODE): string {
  * none of the developer's.
  */
 const HOME = mkdtempSync(join(tmpdir(), "ww-dryrun-home-"));
-after(() => {
+afterAll(() => {
   rmSync(HOME, { recursive: true, force: true });
 });
 
@@ -426,7 +427,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   });
 
   // One subprocess per verb; the budget is the WORK, not the runner's default.
-  it("every writing verb advertises --dry-run in its own --help", { timeout: 120_000 }, () => {
+  it("every writing verb advertises --dry-run in its own --help", () => {
     const tmp = vault();
     try {
       for (const command of COMMANDS) {
@@ -443,7 +444,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
-  });
+  }, 120_000);
 });
 
 // docs/cli.md §The dry-run law law 5: a dry run answers a VALID invocation.

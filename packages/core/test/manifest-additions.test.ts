@@ -1,8 +1,9 @@
 // docs/concepts.md §Generated artifacts (derived relation counts as the
 // baseline on the relation axis; depth-1 inbound/outbound adjacency so jq
 // covers the common graph asks)
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { generateArtifacts } from "../src/generate/index.ts";
 import { standardLibrary } from "../src/index.ts";
 import { buildNameIndex } from "../src/names/index.ts";

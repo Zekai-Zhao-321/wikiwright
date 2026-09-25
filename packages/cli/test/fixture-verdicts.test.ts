@@ -3,8 +3,9 @@
 // nothing checks is indistinguishable from rot) · docs/constitution.md §Sections (the planted
 // `### Timeline` is `section-depth`'s first measurement: 1 firing across 40
 // pages).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

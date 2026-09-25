@@ -4,6 +4,8 @@
 // resolved through git plumbing, so a linked worktree installs too) · 07
 // docs/cli.md (the gate is for agents) (install never destroys or
 // disarms) · the staged gate.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
@@ -19,7 +21,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { BUN, runCli } from "./fixtures/runtime.ts";

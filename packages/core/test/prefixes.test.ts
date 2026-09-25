@@ -1,7 +1,8 @@
 // docs/cli.md §gate (the commit-msg arm reads the Conventional Commits opening)
 // · docs/constitution.md (`commit_prefixes` names prefixes, never scopes).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { commitPrefixOf, commitPrefixOpening, commitPrefixVerdict } from "../src/prefixes/index.ts";
 
 describe("commitPrefixOf reads the word the first line opens with", () => {

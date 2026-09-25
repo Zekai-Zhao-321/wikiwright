@@ -10,10 +10,11 @@
 // "fields that are wired", which is the shape that fails silently. A field the
 // scan cannot find is either dead or read somewhere this test does not look, and
 // either way somebody must look — which is what a failure here asks for.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const CORE_SRC = fileURLToPath(new URL("../src/", import.meta.url));

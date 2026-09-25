@@ -1,8 +1,9 @@
 // docs/concepts.md §Section grammar (the state arms, report mode: every type-declared row
 // ships at warning, the census rows at info) · docs/concepts.md §Findings and routing (every row
 // names a queue lane, none names a fixer in this slice)
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { type Finding, lintPage } from "../src/lint/index.ts";
 import { parseDoc } from "../src/parse/index.ts";
 import { constitutionOf } from "./helpers/constitution.ts";

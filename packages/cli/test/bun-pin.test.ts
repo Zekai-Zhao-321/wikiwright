@@ -82,6 +82,21 @@ describe("one pinned Bun", () => {
     expect(offenders.filter((f) => !f.endsWith("bun-pin.test.ts"))).toEqual([]);
   });
 
+  it("every test file runs on bun:test, none on node:test", () => {
+    // The contracts' section 0: tests use bun:test. The suite runs under Bun
+    // either way; the import says which runner's semantics a file is written to.
+    const offenders: string[] = [];
+    for (const dir of ["packages/cli/test", "packages/core/test", "test"]) {
+      for (const file of walk(join(REPO, dir))) {
+        if (!file.endsWith(".ts")) continue;
+        if (/from\s+["']node:test["']/u.test(readFileSync(file, "utf8"))) {
+          offenders.push(relative(REPO, file));
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it("the CLI reference renders with no node on PATH", () => {
     // docs/cli.md's verb block has one generator; it must run where only Bun
     // is installed, and the block it renders must be the committed one.

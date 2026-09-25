@@ -3,11 +3,12 @@
 // section, kind, grammar and the grammar's own fields. Run on the two gardening
 // handbooks, whose sections declare no grammar, and on a temporary bundle of
 // gardening claims.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { claimsBundle, itemLinesOf, lineSearch, RECALL_QUERIES } from "./fixtures/garden-claims.ts";
@@ -61,13 +62,13 @@ function items(root: string, argv: readonly string[]): ItemData {
 let tmp = "";
 let garden = "";
 let orchard = "";
-before(() => {
+beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "ww-items-"));
   garden = claimsBundle(tmp);
   orchard = join(tmp, "orchard");
   cpSync(join(HANDBOOKS, "orchard"), orchard, { recursive: true });
 });
-after(() => {
+afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 

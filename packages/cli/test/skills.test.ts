@@ -5,11 +5,12 @@
 // generated from PASS_TABLE and the fixer registry) · docs/architecture.md §The invariants (the
 // no-verbs-in-prose grep, the reverse gate, and the generator guard)
 // docs/cli.md §brief · docs/cli.md §The envelope (generated surfaces stay true).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PASS_TABLE } from "@wikiwright/core";
 import { renderPlaybook } from "../../../tools/render-playbook.ts";

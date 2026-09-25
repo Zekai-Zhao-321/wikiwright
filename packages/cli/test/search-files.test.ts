@@ -1,11 +1,12 @@
 // docs/cli.md §search (`--files`: every page with a match, unranked and
 // uncapped; `--band`: one band of the ranked results). Run on the two gardening
 // handbooks and on a temporary bundle of gardening claims.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { claimsBundle, lineSearch, RECALL_QUERIES } from "./fixtures/garden-claims.ts";
@@ -48,11 +49,11 @@ function data<T>(root: string, argv: readonly string[]): T {
 
 let tmp = "";
 let garden = "";
-before(() => {
+beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "ww-files-"));
   garden = claimsBundle(tmp);
 });
-after(() => {
+afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 

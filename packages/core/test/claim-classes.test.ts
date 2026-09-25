@@ -5,8 +5,9 @@
 //
 // The law is one `categories` vocabulary whose entries carry a class, read by
 // a `claims` section with a `history` and by the history section it names.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { lintPage } from "../src/lint/index.ts";
 import { parseDoc } from "../src/parse/index.ts";
 import { constitutionOf, type Json, loadOf } from "./helpers/constitution.ts";

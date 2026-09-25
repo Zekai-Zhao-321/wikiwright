@@ -9,11 +9,12 @@
 // (docs/extending.md §The code kit): every copy judged here installs the kit
 // from the shipped package. The shipped devwiki is never installed into from a
 // test.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ModuleManifest } from "@wikiwright/core";
 import {
@@ -94,7 +95,7 @@ function starterBundle(): string {
 }
 
 const SCRATCH: string[] = [];
-after(() => {
+afterAll(() => {
   for (const dir of SCRATCH) rmSync(dir, { recursive: true, force: true });
 });
 
@@ -114,9 +115,7 @@ describe("every shipped starter is a CI fixture", () => {
     }
   });
 
-  it("the code starter's error delta on its bundled corpus, devwiki, is 0", {
-    timeout: 60_000,
-  }, () => {
+  it("the code starter's error delta on its bundled corpus, devwiki, is 0", () => {
     const own = installedCopy(DEVWIKI, "starter-own");
     const under = devwikiUnderStarter();
     SCRATCH.push(own, under);
@@ -135,7 +134,7 @@ describe("every shipped starter is a CI fixture", () => {
         .filter((k) => !ownErrors.includes(k))
         .join(", ")}\n  removed: ${ownErrors.filter((k) => !starterErrors.includes(k)).join(", ")}`,
     );
-  });
+  }, 60_000);
 });
 
 // docs/constitution.md · docs/constitution.md §Vocabularies
@@ -231,9 +230,7 @@ describe("the code starter is the reference registered relations vocabulary", ()
     }
   });
 
-  it("`type show` renders the require and the vocabulary the section reads, on an initialised starter", {
-    timeout: 60_000,
-  }, () => {
+  it("`type show` renders the require and the vocabulary the section reads, on an initialised starter", () => {
     // docs/cli.md §type: the contract an agent reads before writing IS the contract
     // the parser enforces — so the example has to be legible from the CLI, not
     // only from the JSON.
@@ -262,7 +259,7 @@ describe("the code starter is the reference registered relations vocabulary", ()
       },
       "`type show` names the mode and the size of the vocabulary the section reads — the kit's labels",
     );
-  });
+  }, 60_000);
 });
 
 describe("the code starter's relations arms fire on the devwiki", () => {

@@ -2,8 +2,9 @@
 // (nodes: pages + tags only; edges wikilink/tagged/supersedes; deterministic)
 //  (alias-targeted wikilinks are a lint
 // error; canonical-name links only) · docs/concepts.md · byte stability.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { generateArtifacts } from "../src/generate/index.ts";
 import { lintPage } from "../src/lint/index.ts";
 import { buildNameIndex, checkVaultIdentity } from "../src/names/index.ts";

@@ -1,7 +1,8 @@
 // One bounded shape vocabulary for frontmatter field schemas:
 // inspectable data, validated at load, never executable; unknown kinds and malformed shapes are load errors.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { checkValue, pinFieldOf, validateShape } from "../src/shapes/index.ts";
 
 describe("shape meta-validation", () => {

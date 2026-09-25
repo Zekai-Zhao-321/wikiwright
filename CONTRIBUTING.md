@@ -82,7 +82,11 @@ else is not covered.
   `packages/cli/test/fixtures/runtime.ts`: under the Bun running the test,
   with the CLI's stdout on a file the test created and read back from it,
   never through a pipe. Under load Bun's synchronous spawn has cut a child's
-  piped output short (`docs/roadmap.md`). A new test file uses `bun:test`.
+  piped output short (`docs/roadmap.md`).
+- Every test file uses `bun:test` for its structure (`describe`, `it`,
+  `beforeAll`, `afterAll`, a timeout as `it`'s last argument); `node:assert`
+  stays where a file asserts with it. `bun-pin.test.ts` refuses a
+  `node:test` import.
 - A test of the built CLI as a whole goes under `test/`: the pipe probes
   (`test/pipe-boundary.test.ts`), the one place a test reads the CLI's
   envelope through a pipe, on purpose — a shell's pipe, since Bun's spawned

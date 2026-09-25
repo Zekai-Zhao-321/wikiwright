@@ -1,10 +1,11 @@
 // docs/constitution.md §config/constitution.json (the one document a bundle carries;
 // type show renders it) · docs/cli.md
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

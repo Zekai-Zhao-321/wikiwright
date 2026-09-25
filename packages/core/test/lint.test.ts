@@ -5,8 +5,9 @@
 // derivation satisfies the closure; scalar tags are a loud error; checker
 // evidence roots from configuration; tag aliases are real lookup inputs) ·
 // docs/architecture.md §The invariants · ordering.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { generateArtifacts } from "../src/generate/index.ts";
 import { lintPage } from "../src/lint/index.ts";
 import { parseDoc } from "../src/parse/index.ts";

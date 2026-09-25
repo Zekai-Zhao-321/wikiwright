@@ -5,8 +5,9 @@
 // role's loop opens on one principle line, after which the writer's is the five
 // steps it has always been and the maintainer's is the writer's five and two
 // more; the writer and the maintainer read one Findings paragraph.
+
+import { beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { ROLE_RANK } from "../src/spec.ts";
@@ -90,7 +91,7 @@ function listedVerbs(text: string): string[] {
 
 describe("every role prints its own brief (docs/cli.md §brief)", () => {
   let consumer = { status: -1, text: "" };
-  before(() => {
+  beforeAll(() => {
     consumer = briefOf("consumer");
   });
 

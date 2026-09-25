@@ -4,12 +4,13 @@
 // (`external-origin`), and "the measurement broke" (`freshness-unavailable`,
 // exit 4 from the verb) — and none of them is a silent zero
 // docs/cli.md §init (a fresh init passes check with zero findings).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

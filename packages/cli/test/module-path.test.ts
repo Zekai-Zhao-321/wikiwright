@@ -9,6 +9,8 @@
 // The kit is `fixtures/kit-garden`, a neutral gardening kit: one type, one
 // fragment, one template, one check and the lane the check routes to. Every
 // bundle here is a copy under os.tmpdir().
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -24,7 +26,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
@@ -32,7 +33,7 @@ import { runCli } from "./fixtures/runtime.ts";
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const KIT = fileURLToPath(new URL("./fixtures/kit-garden", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-module-path-"));
-after(() => rmSync(SCRATCH, { recursive: true, force: true }));
+afterAll(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 interface Envelope {
   ok: boolean;

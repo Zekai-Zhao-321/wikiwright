@@ -3,8 +3,9 @@
 // effective severities; a section's `sources` list is validated at load;
 // fragment-collision over a set; the unknown-key scan recurses) ·
 // docs/constitution.md §Fragments.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import {
   type FlattenedRegistry,
   loadConstitution,

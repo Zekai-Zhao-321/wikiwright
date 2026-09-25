@@ -2,6 +2,8 @@
 // in an exclusive temp file beside the target and are renamed into place, every
 // file of a batch staged before the first rename — so an interrupted write
 // leaves the old bytes and no debris beside them.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import {
   chmodSync,
@@ -14,7 +16,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { replaceFile, replaceFiles } from "../src/atomicwrite.ts";
 
 function scratch(): string {

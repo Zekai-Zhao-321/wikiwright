@@ -8,6 +8,8 @@
 //
 // Every bundle is a gardening bundle under os.tmpdir(), and the CLI runs under
 // Bun.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
@@ -24,7 +26,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { installedCopy } from "./fixtures/kit-code.ts";
@@ -36,7 +37,7 @@ const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
 const CODE_STARTER = join(REPO, "packages", "cli", "constitutions", "code");
 const KIT_GARDEN = fileURLToPath(new URL("./fixtures/kit-garden", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-export-copy-"));
-after(() => rmSync(SCRATCH, { recursive: true, force: true }));
+afterAll(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 interface Finding {
   ruleId: string;

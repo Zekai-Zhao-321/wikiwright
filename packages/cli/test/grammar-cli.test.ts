@@ -1,11 +1,12 @@
 // docs/constitution.md §Sections (a grammar declaration travels from bytes in config/ to a
 // command's answer; `type show` renders one line per section) · docs/concepts.md §Section grammar
 // (report mode: warnings and infos, never errors) · docs/cli.md §lint (summary.by_rule).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { runCli } from "./fixtures/runtime.ts";

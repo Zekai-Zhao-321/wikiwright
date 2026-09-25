@@ -1,6 +1,8 @@
 // docs/cli.md §version (`commit` names the BUILD, read from
 // dist/build-info.json written by the build script; the call-time git lookup is
 // demoted to checkout_commit) · docs/architecture.md §Directories / no timestamps in build artifacts.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
@@ -14,7 +16,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { versionData } from "../src/buildinfo.ts";
 import { runCli } from "./fixtures/runtime.ts";

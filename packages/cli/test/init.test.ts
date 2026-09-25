@@ -4,6 +4,8 @@
 // vault from a starter constitution; hook when git; non-destructive; validates
 // its input) · docs/cli.md §brief (the code starter's types are the fix for
 // measured drift).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -20,7 +22,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { installKit, KIT_PACKAGE, runKit } from "./fixtures/kit-code.ts";
@@ -87,9 +88,7 @@ describe("init lands a starter that declares modules, and names what makes it gr
   // create, so init lands the files and the hook, renders no artifact and no
   // brief, and the envelope names the install, the first load that proves the
   // kit, and `check --write`.
-  it("the envelope names the steps; the plan is the files; check refuses by name until they are done", {
-    timeout: 60_000,
-  }, () => {
+  it("the envelope names the steps; the plan is the files; check refuses by name until they are done", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-init-code-"));
     try {
       const planned = runKit(tmp, ["init", "--constitution", "code", "--dry-run"]);
@@ -149,7 +148,7 @@ describe("init lands a starter that declares modules, and names what makes it gr
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
-  });
+  }, 60_000);
 });
 
 describe("init leaves a green vault (docs/cli.md §init)", () => {

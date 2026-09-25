@@ -2,8 +2,9 @@
 // (micromark/mdast behind the ParsedDoc seam; yaml strict frontmatter)
 // docs/concepts.md §Findings and routing (headings, fences and wikilinks are the checker inputs)
 //  (wikilink forms).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { normalizeInput, parseDoc } from "../src/parse/index.ts";
 
 const LF_DOC = `---

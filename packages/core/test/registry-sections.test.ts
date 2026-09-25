@@ -5,8 +5,9 @@
 //
 // The load-side sections law. What the matcher does with an effective list is
 // sections.test.ts; this file is about what list a type ends up with.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { codesOf, constitutionOf, type Json, loadOf } from "./helpers/constitution.ts";
 
 const concept = (extra: Json): Json => ({ extends: "concept", description: "x.", ...extra });

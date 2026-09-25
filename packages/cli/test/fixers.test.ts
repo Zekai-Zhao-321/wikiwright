@@ -7,12 +7,13 @@
 // Each fixer carries three things here: a red fixture where it fires and the fix
 // applies, a case where it must REFUSE rather than guess, and — through
 // `writer-fuzz` — coverage of the splice its ops ride on.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
   FIXER_REGISTRY,
@@ -102,7 +103,7 @@ const PERSON = (body: string): string =>
     "",
   ].join("\n");
 
-after(() => rmSync(SCRATCH, { recursive: true, force: true }));
+afterAll(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 /** The memory law as a git vault, with two persons who know each other. */
 function lawVault(name: string): string {

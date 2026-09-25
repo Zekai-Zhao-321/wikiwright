@@ -4,11 +4,12 @@
 // derives the title from the basename; `vocabulary show` names its entries in
 // one sorted list. On copies
 // of the orchard handbook and a temporary gardening claims bundle.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { claimsBundle } from "./fixtures/garden-claims.ts";
@@ -30,10 +31,10 @@ function run(
 }
 
 let tmp = "";
-before(() => {
+beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "ww-agent-reads-"));
 });
-after(() => {
+afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 

@@ -3,11 +3,12 @@
 // rationale line a reader can use: the reason first, then the two newest open
 // claims it stands beside and a count of the rest. On a temporary gardening
 // claims bundle.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { claimsBundle, PAGES } from "./fixtures/garden-claims.ts";
@@ -35,10 +36,10 @@ function run(
 }
 
 let tmp = "";
-before(() => {
+beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "ww-write-envelope-"));
 });
-after(() => {
+afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 

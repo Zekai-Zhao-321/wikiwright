@@ -3,8 +3,9 @@
 // reasons; tiers_executed, fusion, tokenization; bigram-capable CJK lexical
 // search — a day-one test surface; locale-free, byte-identical across runs and
 // engines; type chains: retired demoted, never removed).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { normalizeIdentity } from "../src/identity/index.ts";
 import type { NamedPage } from "../src/names/index.ts";
 import { parseDoc } from "../src/parse/index.ts";

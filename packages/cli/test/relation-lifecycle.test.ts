@@ -4,12 +4,13 @@
 // counts `evaluated` only where the arm ran, and the finding reaches every
 // write path — the stdin overlay, the write draft, the staged index and the
 // commit replay — or the pass is green hiding a gap).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

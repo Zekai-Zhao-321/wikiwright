@@ -1,8 +1,9 @@
 // (normalized-identity contract) · docs/constitution.md §Types (NFC +
 // casefold with day-one CJK tests) · vendored generated casefold table
 // locale-free code-unit ordering
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { codeUnitCompare, foldCase, normalizeIdentity } from "../src/identity/index.ts";
 
 describe("normalizeIdentity — canonical equivalence (NFC)", () => {

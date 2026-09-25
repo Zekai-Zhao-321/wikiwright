@@ -10,10 +10,11 @@
 // each as one case. They are not about any one refusal: they are the
 // properties a rewrite of the registry can silently lose while every
 // per-code test stays green.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadModules, type ModuleManifest } from "../src/modules/index.ts";
 import { loadConstitution } from "../src/registry/index.ts";

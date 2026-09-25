@@ -2,8 +2,9 @@
 // parsed once per text — `check` renders its artifacts, the brief and the
 // verdict from one parse, the gate its drift pass and its verdict — and a page
 // whose text moved after the parse is parsed again, never judged stale.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { parsedPages, type VaultState } from "../src/judge/index.ts";
 
 const page = (title: string): string => `---\ntype: note\ntitle: ${title}\n---\n\n# ${title}\n`;

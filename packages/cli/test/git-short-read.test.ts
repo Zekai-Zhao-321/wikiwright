@@ -3,12 +3,13 @@
 // load a runtime's synchronous spawn has handed back a child's stdout cut short
 // with exit 0; these tests put a `git` on PATH that does the same to one
 // command, and hold every verb that reads it to the refusal.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { GitShortRead, terminated } from "../src/git.ts";
@@ -165,12 +166,12 @@ function assertShortRead(r: Run, command: string): void {
 describe("a cut git answer is refused as git-short-read (docs/roadmap.md)", () => {
   let tmp = "";
   let PATH = "";
-  before(() => {
+  beforeAll(() => {
     if (POSIX_ONLY) return;
     tmp = repo();
     PATH = cuttingGit(tmp);
   });
-  after(() => {
+  afterAll(() => {
     if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
   });
 
@@ -239,12 +240,12 @@ describe("a cut git answer is refused as git-short-read (docs/roadmap.md)", () =
 describe("a batch stream cut inside an object is a short read by name (docs/roadmap.md)", () => {
   let tmp = "";
   let PATH = "";
-  before(() => {
+  beforeAll(() => {
     if (POSIX_ONLY) return;
     tmp = repo();
     PATH = cuttingGit(tmp);
   });
-  after(() => {
+  afterAll(() => {
     if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
   });
 
@@ -296,12 +297,12 @@ function addedRepo(): string {
 describe("two git answers that disagree are git-inconsistent-read (docs/roadmap.md)", () => {
   let tmp = "";
   let PATH = "";
-  before(() => {
+  beforeAll(() => {
     if (POSIX_ONLY) return;
     tmp = addedRepo();
     PATH = cuttingGit(tmp);
   });
-  after(() => {
+  afterAll(() => {
     if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
   });
 
@@ -512,12 +513,12 @@ describe("freshness --fast-forward --dry-run refuses what the run refuses (docs/
   let tmp = "";
   let PATH = "";
   const argv = ["freshness", "--fast-forward"];
-  before(() => {
+  beforeAll(() => {
     if (POSIX_ONLY) return;
     tmp = pinnedRepo();
     PATH = cuttingGit(tmp);
   });
-  after(() => {
+  afterAll(() => {
     if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
   });
 

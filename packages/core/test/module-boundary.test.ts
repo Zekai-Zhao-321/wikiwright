@@ -7,8 +7,9 @@
 // and omitting the registry silently ran no module arm at all.
 //
 // The theme is one sentence: a public seam is defined by its refusals.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { armRows, checkGrammar, parseSections, sectionBinding } from "../src/grammar/index.ts";
 import {
   KERNEL_OWNED_ARMS,

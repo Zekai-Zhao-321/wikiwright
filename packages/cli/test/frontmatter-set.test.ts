@@ -4,11 +4,12 @@
 // invariant, fuzzed on a fixed seed so the failing case is reproducible from
 // the test name alone, and then driven through the binary on every YAML style
 // the folder-tags fixer meets.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { appendToFrontmatterList, parseDoc } from "@wikiwright/core";
 import { documentOf } from "../../core/test/helpers/constitution.ts";

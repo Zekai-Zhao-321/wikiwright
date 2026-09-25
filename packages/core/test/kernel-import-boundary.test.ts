@@ -7,10 +7,11 @@
 // importing file and the module it reached for, because the failure this
 // prevents is exactly the one a reader cannot see: a `type` import compiles
 // away, and a kernel that names `ClaimItem` reads as generic until you look.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const CORE_SRC = fileURLToPath(new URL("../src/", import.meta.url));

@@ -12,6 +12,8 @@
 // model, not a recommended shape and not a product kit: it exists so this suite
 // can prove that an EXTERNAL package reaches every extension surface through the
 // public API, and nothing else.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
@@ -27,7 +29,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { loadModules } from "@wikiwright/core";
 import { lawFor } from "../src/law.ts";
@@ -51,7 +52,7 @@ const FIXTURE_BEFORE = FIXTURE_FILES.map((f) =>
   readFileSync(join(CONFORMANCE, "module-fixture", f), "utf8"),
 );
 
-after(() => {
+afterAll(() => {
   rmSync(BUNDLE_A, { recursive: true, force: true });
   rmSync(BUNDLE_B, { recursive: true, force: true });
   FIXTURE_FILES.forEach((file, i) => {

@@ -3,12 +3,13 @@
 // edits) · docs/cli.md (retire: status +
 // banner + successor; refuses a frontmatter-less page; keeps CRLF) (CJK
 // exact lookup) · deterministic output.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

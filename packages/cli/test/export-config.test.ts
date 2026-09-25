@@ -9,11 +9,12 @@
 // repository, and a contribution that lacks what its mode needs.
 //
 // Every bundle here is a small gardening bundle under os.tmpdir().
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { exportNameOf, loadEngineConfig } from "@wikiwright/core";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
@@ -21,7 +22,7 @@ import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-export-config-"));
-after(() => rmSync(SCRATCH, { recursive: true, force: true }));
+afterAll(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 interface Envelope {
   ok: boolean;

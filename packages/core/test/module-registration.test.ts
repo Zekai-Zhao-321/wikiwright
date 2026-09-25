@@ -5,8 +5,9 @@
 //
 // The theme, again: every declaration has a live consumer, and one that cannot
 // be consumed is refused rather than accepted-and-inert.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { z } from "zod";
 import { judge } from "../src/judge/index.ts";
 import { lintPage } from "../src/lint/index.ts";

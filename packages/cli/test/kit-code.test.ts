@@ -5,11 +5,12 @@
 // installs from the bundle's own node_modules, is proved by its fixture at the
 // load, and then governs the bundle — its labels range, its `require` rows fire, its
 // templates render, and a bundle's subtype tightens what the kit left open.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, describe, it } from "node:test";
 import { pathToFileURL } from "node:url";
 import { loadModules, type ModuleManifest, STANDARD_LIBRARY } from "@wikiwright/core";
 import { installKit, KIT_CODE, KIT_PACKAGE, runKit } from "./fixtures/kit-code.ts";
@@ -71,7 +72,7 @@ function fixtureBundle(): string {
 }
 
 const BUNDLE = fixtureBundle();
-after(() => rmSync(BUNDLE, { recursive: true, force: true }));
+afterAll(() => rmSync(BUNDLE, { recursive: true, force: true }));
 
 const shape = (f: { ruleId: string; path: string; line?: number; severity: string }): string =>
   `${f.ruleId}|${f.path}|${f.line ?? 0}|${f.severity}`;
@@ -179,9 +180,7 @@ describe("the code kit registers declarations only (docs/extending.md §The code
 });
 
 describe("a bundle over the code kit: install, load, judge (docs/extending.md §Declaring a module)", () => {
-  it("installed, the kit loads with no approval step, proved by its fixture, and judges under its law", {
-    timeout: 60_000,
-  }, () => {
+  it("installed, the kit loads with no approval step, proved by its fixture, and judges under its law", () => {
     const listed = runKit(BUNDLE, ["modules", "list"]);
     assert.equal(listed.status, 0, JSON.stringify(listed.envelope));
     const row = ((listed.envelope.data?.["loaded"] ?? []) as Record<string, unknown>[])[0];
@@ -196,7 +195,7 @@ describe("a bundle over the code kit: install, load, judge (docs/extending.md §
     const linted = runKit(BUNDLE, ["lint", "--all"]);
     const findings = (linted.envelope.data?.["findings"] ?? []) as Parameters<typeof shape>[0][];
     assert.deepEqual(findings.map(shape).sort(), [...FIXTURE.expected].sort());
-  });
+  }, 60_000);
 
   it("new renders the kit's template — the title, the sections in the template's order, the seeded origin", () => {
     const pin = "0123456789abcdef0123456789abcdef01234567";
@@ -251,9 +250,7 @@ describe("a bundle over the code kit: install, load, judge (docs/extending.md §
     );
   });
 
-  it("a subtype tightens origin to the enclosing repository; re-pasting the fragment its parent carries is refused", {
-    timeout: 60_000,
-  }, () => {
+  it("a subtype tightens origin to the enclosing repository; re-pasting the fragment its parent carries is refused", () => {
     const constitution = join(BUNDLE, "config", "constitution.json");
     const before = readFileSync(constitution, "utf8");
     try {
@@ -300,5 +297,5 @@ describe("a bundle over the code kit: install, load, judge (docs/extending.md §
       rmSync(join(BUNDLE, "wiki", "Here.md"), { force: true });
       rmSync(join(BUNDLE, "wiki", "Far.md"), { force: true });
     }
-  });
+  }, 60_000);
 });

@@ -8,6 +8,8 @@
 // `skills/<name>/` that holds no marker, and a symbolic link where it writes.
 //
 // Every bundle is a gardening bundle under os.tmpdir().
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import {
   existsSync,
@@ -21,14 +23,13 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-export-verb-"));
-after(() => rmSync(SCRATCH, { recursive: true, force: true }));
+afterAll(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 interface Envelope {
   ok: boolean;

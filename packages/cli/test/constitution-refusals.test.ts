@@ -6,10 +6,11 @@
 //
 // Both findings come from a bundle in use: the engine's
 // refusal was correct and its message was about a file the author does not have.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { runCli } from "./fixtures/runtime.ts";

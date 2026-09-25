@@ -5,6 +5,8 @@
 // The one-code-one-meaning scan reads LITERAL sites, `fail(<command>,
 // "<type>", "<code>", …)` spelled out in the shell's sources. A code handed to
 // `fail` at runtime — a module issue's — is outside it.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import {
   mkdirSync,
@@ -17,7 +19,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";

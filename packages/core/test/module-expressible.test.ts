@@ -13,8 +13,9 @@
 // standard-library manifests declare. A disagreement is the API failing to
 // express something the engine does — which is the signal to redesign it, never
 // to special-case the first-party module.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { z } from "zod";
 import { graphOf } from "../src/generate/index.ts";
 import { checkGrammar, parseSections, sectionBinding } from "../src/grammar/index.ts";

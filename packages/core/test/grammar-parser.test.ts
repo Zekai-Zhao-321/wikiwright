@@ -1,9 +1,10 @@
 // docs/concepts.md §Section grammar (the item EBNF; "a marker is a complete clause"; the
 // rationale rule; the two History item kinds) · docs/constitution.md §Sections (grammar
 // declaration and its parameters)
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { describe, it } from "node:test";
 import {
   type GrammarItem,
   parseSections,

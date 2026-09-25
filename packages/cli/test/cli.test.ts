@@ -4,11 +4,12 @@
 // usage 2 · not_found 3 · conflict 4 · findings 5; JSON-only v1; extra positionals
 // are usage) · docs/architecture.md §Directories (byte-deterministic output; byte-entry normalization — a BOM
 // on a registry, a backslash in a filename).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parseInvocation } from "../src/argv.ts";
 import { COMMANDS } from "../src/commands.ts";

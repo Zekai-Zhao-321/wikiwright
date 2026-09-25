@@ -6,8 +6,9 @@
 // the base body's lines, trailing empty lines trimmed, must be a PREFIX of the
 // draft's, and the first differing line is the finding's line. Every case below
 // was a `packages/core/test/lint.test.ts` case against that checker.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import {
   type Finding,
   type FlattenedRegistry,

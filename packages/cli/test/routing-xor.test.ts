@@ -4,6 +4,8 @@
 // envelope without a `ruleId:` literal at the emit site: the frontmatter parse
 // codes and the vault passes. A finding that
 // reaches the envelope carrying neither `fix` nor `queue` is a class-B hole.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
@@ -17,7 +19,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { passRows, standardLibrary } from "@wikiwright/core";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
@@ -79,7 +80,7 @@ function assertRouted(findings: readonly Finding[], where: string): number {
 // devwiki is a bundle over the code kit: judged from an installed copy under
 // os.tmpdir(), never from the shipped tree (docs/extending.md §The code kit).
 const DEVWIKI_COPY = installedCopy(join(REPO, "devwiki"), "xor-devwiki");
-after(() => rmSync(DEVWIKI_COPY, { recursive: true, force: true }));
+afterAll(() => rmSync(DEVWIKI_COPY, { recursive: true, force: true }));
 
 const CORPORA: Record<string, string> = {
   "memory-synth": join(REPO, "fixtures/memory-synth"),

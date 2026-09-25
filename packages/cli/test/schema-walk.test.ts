@@ -2,10 +2,11 @@
 // consumer that exists and carries an `e2e:<key>` fixture going from bytes on
 // disk to a command result; the residual vector is closed by test discipline)
 // · docs/constitution.md §config/engine.json (the keys this test walks).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as core from "@wikiwright/core";
 import * as commands from "../src/commands.ts";

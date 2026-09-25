@@ -2,11 +2,12 @@
 // provenance; type list carries provenance for archetypes and bundle types)
 // docs/constitution.md §Types (the charter's use_when names the file; one map,
 // `required` inside the shape, `contributedBy` beside it).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 

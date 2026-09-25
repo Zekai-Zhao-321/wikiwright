@@ -4,6 +4,8 @@
 // content — on an ok envelope and a refusal alike; the verbs that answer about
 // the engine name none. docs/cli.md §brief: the brief's header prints the same
 // law digest.
+
+import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -21,7 +23,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
@@ -113,10 +114,10 @@ function lawFormula(root: string, moduleLines: readonly string[]): string {
 
 describe("every envelope over a vault names the bundle it read (docs/cli.md §The envelope)", () => {
   let tmp = "";
-  before(() => {
+  beforeAll(() => {
     tmp = mkdtempSync(join(tmpdir(), "ww-bundle-"));
   });
-  after(() => {
+  afterAll(() => {
     rmSync(tmp, { recursive: true, force: true });
   });
 
@@ -294,7 +295,7 @@ describe("the law digest names every installed module (docs/cli.md §The envelop
   let tmp = "";
   let root = "";
   const installed = (): string => join(root, "node_modules", ...PROBE.split("/"));
-  before(() => {
+  beforeAll(() => {
     // The neutral module fixture, placed in the bundle's own node_modules by copy.
     tmp = mkdtempSync(join(tmpdir(), "ww-bundle-module-"));
     root = join(tmp, "bundle-a");
@@ -303,7 +304,7 @@ describe("the law digest names every installed module (docs/cli.md §The envelop
     }
     cpSync(join(CONFORMANCE, "module-fixture"), installed(), { recursive: true });
   });
-  after(() => {
+  afterAll(() => {
     rmSync(tmp, { recursive: true, force: true });
   });
 
@@ -368,7 +369,7 @@ describe("a copy names the export it is (docs/cli.md §The envelope)", () => {
   let tmp = "";
   let source = "";
   let sourceLaw = "";
-  before(() => {
+  beforeAll(() => {
     tmp = mkdtempSync(join(tmpdir(), "ww-bundle-copy-"));
     source = layBundle(join(tmp, "source"), "orchard");
     writeFileSync(
@@ -384,7 +385,7 @@ describe("a copy names the export it is (docs/cli.md §The envelope)", () => {
     git(source, "commit", "-q", "-m", "baseline");
     sourceLaw = bundleOf(source, ["type", "list", "--root", "."]).law;
   });
-  after(() => {
+  afterAll(() => {
     rmSync(tmp, { recursive: true, force: true });
   });
 

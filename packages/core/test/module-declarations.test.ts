@@ -11,8 +11,9 @@
 // Each case here is a kit — not the standard library — getting the check by
 // declaring it, and the last block is the standard library declaring the same
 // things through the same fields.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { z } from "zod";
 import { loadModules, type ModuleManifest } from "../src/modules/index.ts";
 import { loadConstitution } from "../src/registry/index.ts";
