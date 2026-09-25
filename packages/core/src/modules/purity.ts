@@ -25,7 +25,7 @@
  * passed are scanned again under the newer ones rather than served a verdict
  * the rules that gave it no longer give.
  */
-export const PURITY_SCAN_VERSION = 2;
+export const PURITY_SCAN_VERSION = 3;
 
 export interface PurityViolation {
   /** The construct that was found, as this scan names it. */
@@ -82,12 +82,12 @@ const BANNED: readonly { readonly reason: string; readonly pattern: RegExp }[] =
   // `import(` and a `require(`: each brings in code the scan never read.
   {
     reason: "imports a module (an import declaration)",
-    pattern: /(?<=^|;)[ \t]*import\b\s*(?=[\w$*{"'])/gmu,
+    pattern: /(?<=^|[;}])[ \t]*import\b\s*(?=[\w$*{"'])/gmu,
   },
   {
     reason: "re-exports a module (export … from)",
     pattern:
-      /(?<=^|;)[ \t]*export\s*(?:type\s+)?(?:\*\s*(?:as\s+[\w$]+\s*)?|\{[^}]*\}\s*)from\s*["']/gmu,
+      /(?<=^|[;}])[ \t]*export\s*(?:type\s+)?(?:\*\s*(?:as\s+[\w$]+\s*)?|\{[^}]*\}\s*)from\s*["']/gmu,
   },
   { reason: "imports a module at runtime (import())", pattern: /\bimport\s*\(/gu },
   { reason: "requires a module (require)", pattern: /\brequire\s*\(/gu },
@@ -131,6 +131,133 @@ const IMPORT_SPECIFIERS: readonly RegExp[] = [
   /\b(?:import|require)\s*\(\s*["']([^"']+)["']\s*\)/gu,
 ];
 
+/** The characters after which a `/` opens a regular expression rather than dividing. */
+const BEFORE_REGEX = new Set([..."(,=:[!&|?{};+-*%<>~^"]);
+
+/** The keywords after which a `/` opens a regular expression. */
+const REGEX_KEYWORDS = new Set([
+  "return",
+  "typeof",
+  "instanceof",
+  "in",
+  "of",
+  "new",
+  "delete",
+  "void",
+  "throw",
+  "case",
+  "do",
+  "else",
+  "yield",
+  "await",
+]);
+
+/**
+ * docs/extending.md §The purity scan: the source with every comment read
+ * through — each `/* … *\/` and `// …` outside a string, a template literal
+ * or a regular expression replaced by spaces, its newlines kept, so every
+ * offset and line number still holds. A comment can no longer stand between a
+ * banned word and the token that makes it a construct (`import/* c *\/ {`),
+ * and a comment that merely mentions one is not a construct at all. A string
+ * holding `/*` opens no comment, and a `${ … }` inside a template literal is
+ * code again.
+ */
+export function stripComments(source: string): string {
+  const out = source.split("");
+  const blank = (from: number, to: number): void => {
+    for (let k = from; k < to; k += 1) if (out[k] !== "\n") out[k] = " ";
+  };
+  // One frame per open template literal: the brace depth of its `${ … }` code.
+  const templates: number[] = [];
+  let depth = 0;
+  let last = "";
+  let word = "";
+  let i = 0;
+  const n = source.length;
+  const regexAllowed = (): boolean =>
+    last === "" || BEFORE_REGEX.has(last) || REGEX_KEYWORDS.has(word);
+  while (i < n) {
+    const c = source[i] as string;
+    const next = source[i + 1];
+    if (c === "/" && next === "/") {
+      const end = source.indexOf("\n", i);
+      const stop = end < 0 ? n : end;
+      blank(i, stop);
+      i = stop;
+      continue;
+    }
+    if (c === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+      const stop = end < 0 ? n : end + 2;
+      blank(i, stop);
+      i = stop;
+      continue;
+    }
+    if (c === "'" || c === '"') {
+      i += 1;
+      while (i < n && source[i] !== c && source[i] !== "\n") i += source[i] === "\\" ? 2 : 1;
+      i += 1;
+      last = c;
+      word = "";
+      continue;
+    }
+    if (c === "`" || (c === "}" && templates.length > 0 && depth === templates.at(-1))) {
+      if (c === "}") {
+        templates.pop();
+        depth -= 1;
+      }
+      // Inside a template literal until its closing backtick or a `${`.
+      i += 1;
+      while (i < n && source[i] !== "`" && !(source[i] === "$" && source[i + 1] === "{")) {
+        i += source[i] === "\\" ? 2 : 1;
+      }
+      if (i < n && source[i] === "$") {
+        depth += 1;
+        templates.push(depth);
+        i += 2;
+        last = "{";
+      } else {
+        i += 1;
+        last = "`";
+      }
+      word = "";
+      continue;
+    }
+    if (c === "/" && regexAllowed()) {
+      // A regular expression literal: to its closing slash, a class read whole.
+      i += 1;
+      let inClass = false;
+      while (i < n && source[i] !== "\n") {
+        const r = source[i];
+        if (r === "\\") {
+          i += 2;
+          continue;
+        }
+        if (r === "[") inClass = true;
+        else if (r === "]") inClass = false;
+        else if (r === "/" && !inClass) break;
+        i += 1;
+      }
+      i += 1;
+      last = "/";
+      word = "";
+      continue;
+    }
+    if (c === "{") depth += 1;
+    else if (c === "}") depth -= 1;
+    if (/[\w$]/u.test(c)) {
+      // A word continues only across adjacent characters: `return x` is two.
+      word = i > 0 && /[\w$]/u.test(source[i - 1] as string) ? word + c : c;
+      last = c;
+    } else if (!/\s/u.test(c)) {
+      last = c;
+      word = "";
+    }
+    i += 1;
+  }
+  return out.join("");
+}
+
 /** Where in the file a match at `at` sits, 1-based, and the line's own text. */
 function locate(source: string, at: number): { line: number; evidence: string } {
   let line = 1;
@@ -154,16 +281,19 @@ function locate(source: string, at: number): { line: number; evidence: string } 
  */
 export function scanPurity(source: string): PurityViolation[] {
   const found: PurityViolation[] = [];
+  // The patterns read the code with its comments read through; the evidence
+  // is the original line, at the same offset.
+  const code = stripComments(source);
   for (const { reason, pattern } of BANNED) {
     pattern.lastIndex = 0;
-    for (const match of source.matchAll(pattern)) {
+    for (const match of code.matchAll(pattern)) {
       const at = match.index ?? 0;
       found.push({ reason, ...locate(source, at) });
     }
   }
   for (const re of IMPORT_SPECIFIERS) {
     re.lastIndex = 0;
-    for (const match of source.matchAll(re)) {
+    for (const match of code.matchAll(re)) {
       const specifier = match[1];
       if (specifier === undefined) continue;
       for (const { reason, test } of BANNED_IMPORTS) {

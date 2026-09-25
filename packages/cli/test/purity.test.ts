@@ -65,6 +65,77 @@ function carrying(source: string, name: string): string {
   return root;
 }
 
+/** Load the gardening kit with `probe` as one more of its files; the module-impure issue, if any. */
+async function loadWithProbe(probe: string): Promise<{
+  loaded: number;
+  violations: { file: string; line: number; reason: string }[];
+}> {
+  const root = carrying(KIT_GARDEN, "garden");
+  writeFileSync(join(root, "kit", "garden", "probe.js"), probe);
+  const outcome = await loadDeclaredModules(root, [{ package: "kit-garden", path: "kit/garden" }]);
+  const issue = outcome.issues.find((i) => i.code === "module-impure");
+  return {
+    loaded: outcome.loaded.length,
+    violations: (issue?.details?.["violations"] ?? []) as {
+      file: string;
+      line: number;
+      reason: string;
+    }[],
+  };
+}
+
+describe("the purity scan reads through comments (docs/extending.md §The purity scan)", () => {
+  // A comment between a banned word and the token that makes it a construct
+  // hid the construct from the patterns: a kit could import a helper from
+  // outside itself, whose bytes no digest covers, and change a verdict under
+  // an unchanged law.
+  for (const [reason, line] of [
+    [
+      "imports a module (an import declaration)",
+      'import/* shared helper */ { beds } from "../../garden-beds.mjs";',
+    ],
+    ["re-exports a module (export … from)", 'export/* c */ * from "./beds.js";'],
+    [
+      "imports a module at runtime (import())",
+      'export const beds = () => import/* c */("./beds.js");',
+    ],
+    ["requires a module (require)", 'const beds = require/* c */("./beds.cjs");'],
+    [
+      "reaches a banned global by computed access (Date, Math, performance, Intl or process)",
+      'export const sownAt = Date/* c */["now"]();',
+    ],
+  ] as const) {
+    it(`${reason}, a comment between its tokens: refused at load, naming line 2`, async () => {
+      const { loaded, violations } = await loadWithProbe(`// A probe.\n${line}\n`);
+      assert.equal(loaded, 0, "the kit loaded");
+      assert.ok(
+        violations.some((v) => v.file === "probe.js" && v.line === 2 && v.reason === reason),
+        JSON.stringify(violations),
+      );
+    });
+  }
+
+  it("a comment that only mentions import is not a construct", async () => {
+    const { loaded, violations } = await loadWithProbe(
+      '// We import nothing: see import("x") in the docs.\n/* import { beds } from "./beds.js"; */\nexport const note = 1;\n',
+    );
+    assert.deepEqual(violations, []);
+    assert.equal(loaded, 1);
+  });
+
+  it("a string holding /* opens no comment: what follows is still read", async () => {
+    const { violations } = await loadWithProbe(
+      'export const s = "/* not a comment";\nimport { beds } from "./beds.js"; // */\n',
+    );
+    assert.ok(
+      violations.some(
+        (v) => v.line === 2 && v.reason === "imports a module (an import declaration)",
+      ),
+      JSON.stringify(violations),
+    );
+  });
+});
+
 describe("the purity scan refuses by file and line (docs/extending.md §The purity scan)", () => {
   for (const [reason, line] of PROBES) {
     it(`${reason}: refused at load, naming the file and the line`, async () => {

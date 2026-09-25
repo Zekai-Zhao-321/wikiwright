@@ -384,19 +384,30 @@ without `node:`, is one of these; the specifier follows the reason:
 
 A line is reported once per rule it matches.
 
-The rules read lines, not JavaScript, and that has a cost the scan accepts
-rather than parse the language. The declaration and re-export rules match a
-line that opens with `import`, or with `export … from`, or does so after a
-`;`, whatever surrounds it: a line inside a template string or a block
-comment that opens with `import`, and a string holding `; import`, are
-refused as imports though nothing is imported. The `import(` and `require(`
-rules match those words anywhere, in a comment or a string too. A module
-that says either in its text rewords it; the refusal names the file and the
-line, so the false positive is found where it stands.
+Comments are read through. Before the rules run, every `/* … */` and `// …`
+outside a string, a template literal or a regular expression is replaced by
+spaces, its newlines kept, so each line number still holds: a comment
+between a banned word and the token that makes it a construct —
+`import/* … */ { … } from`, `export/* … */ * from`, `import/* … */(`,
+`require/* … */(`, `Date/* … */["now"]` — no longer hides it, and a comment
+that only mentions `import` is not a construct. A string holding `/*` opens
+no comment, and the `${ … }` of a template literal is read as code. Whether a
+`/` opens a regular expression is decided from the token before it, as a
+tokenizer decides it without parsing.
+
+The rules otherwise read text, not a parsed program, and that has a cost the
+scan accepts rather than parse the language. The declaration and re-export
+rules match a line that opens with `import`, or with `export … from`, or
+does so after a `;` or a `}`, whatever surrounds it: a line inside a
+template string that opens with `import`, and a string holding `; import`,
+are refused as imports though nothing is imported. The `import(` and
+`require(` rules match those words anywhere outside a comment, in a string
+too. A module that says either in its text rewords it; the refusal names the
+file and the line, so the false positive is found where it stands.
 
 The scan's result is kept for the process by the digest of the package's
 bytes and the scan's version, a number in `packages/core/src/modules/purity.ts`
-raised whenever a rule changes, so two bundles that install the same bytes
+raised whenever a rule changes (3 since comments are read through), so two bundles that install the same bytes
 are scanned once, and no result outlives the process.
 
 What the scan does not do is stated here rather than implied. It narrows; it
