@@ -108,6 +108,8 @@ function edited(path: string): string {
 describe("the plugin's two hooks, against the documented shape (docs/cli.md §The plugin and its hooks)", () => {
   before(() => {
     tmp = mkdtempSync(join(tmpdir(), "ww-hooks-"));
+    // The session-start scan's project tier stops at the top of this repository.
+    git(tmp, "init", "-q");
     orchard = join(tmp, "orchard");
     cpSync(join(HANDBOOKS, "orchard"), orchard, { recursive: true });
     // A home of the test's own: the scan reads no skill directory of the

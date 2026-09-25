@@ -7,7 +7,7 @@
 // Every copy is a gardening bundle's rendered export under os.tmpdir(), and
 // every scan runs with HOME there.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   cpSync,
@@ -43,6 +43,8 @@ before(() => {
   tmp = realpathSync(mkdtempSync(join(tmpdir(), "ww-copy-readonly-")));
   home = join(tmp, "home");
   mkdirSync(home);
+  // Every scan's project tier stops at the top of this repository.
+  execFileSync("git", ["init", "-q"], { cwd: tmp });
 });
 after(() => rmSync(tmp, { recursive: true, force: true }));
 

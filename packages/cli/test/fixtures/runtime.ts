@@ -13,7 +13,8 @@ import { join } from "node:path";
 // to run the CLI under Bun names `bun` itself.
 export const CLI_RUNTIME = process.env["WIKIWRIGHT_CLI_RUNTIME"] ?? process.execPath;
 
-// No test probes a real machine's system skill directory: unless the caller
-// named one, the CLI a test spawns reads a directory under os.tmpdir() that
-// nothing creates. Every spawn inherits it through process.env.
-process.env["WIKIWRIGHT_SYSTEM_SKILL_DIR"] ??= join(tmpdir(), "ww-no-system-skills");
+// No test probes a real machine's system skill directory: whatever the
+// caller's environment names, the CLI a test spawns reads a directory under
+// os.tmpdir() that nothing creates. Every spawn inherits it through
+// process.env; a case that means another passes it in its own spawn.
+process.env["WIKIWRIGHT_SYSTEM_SKILL_DIR"] = join(tmpdir(), "ww-no-system-skills");

@@ -179,7 +179,7 @@ the report it always writes.
 | `WIKIWRIGHT_ROLE` | the shell, before parsing; `brief`, as its default `--role` | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
 | `WIKIWRIGHT_TODAY` | `write`, `new`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
-| `WIKIWRIGHT_SYSTEM_SKILL_DIR` | `--bundle`, `bundles list` | the machine's skill directory, probed after the user's two; `/etc/codex/skills` when unset, and none when empty. The suite sets it to a directory under the temporary directory, so no test probes a real machine's |
+| `WIKIWRIGHT_SYSTEM_SKILL_DIR` | `--bundle`, `bundles list` | the machine's skill directory, probed after the user's two; `/etc/codex/skills` when unset, and none when empty. The suite sets it, over any value it inherits, to a directory under the temporary directory, and runs every scan with `HOME` there and its project tier inside a temporary repository, so no test probes a real machine's skill directories |
 | `WIKIWRIGHT_SKILL_DIRS` | `--bundle`, `bundles list` | more skill directories to probe after the project's, the user's and the system's, colon-separated, in order |
 
 ## The plugin and its hooks

@@ -8,7 +8,7 @@
 // Every scan here runs with HOME under os.tmpdir(): no test reads a skill
 // directory of the developer's.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   appendFileSync,
   cpSync,
@@ -28,6 +28,7 @@ import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { CLI_RUNTIME } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
+const TEST_DIR = fileURLToPath(new URL(".", import.meta.url));
 const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
 
 interface Envelope {
@@ -67,6 +68,9 @@ function world(): { home: string; cwd: string } {
   const cwd = join(base, "elsewhere");
   mkdirSync(home, { recursive: true });
   mkdirSync(cwd, { recursive: true });
+  // The project tier stops at the top of this repository, under the
+  // temporary directory: no scan walks up into the machine's.
+  execFileSync("git", ["init", "-q"], { cwd });
   return { home, cwd };
 }
 
@@ -219,6 +223,40 @@ describe("bundles list is the scan (docs/cli.md §bundles)", () => {
     });
     assert.equal(r.status, 0, r.stdout);
     assert.doesNotMatch(r.stdout, /outward-facing bud|How to use this handbook/u);
+  });
+});
+
+describe("the suite reads no system skill directory of the machine's (docs/cli.md §Environment)", () => {
+  it("an inherited WIKIWRIGHT_SYSTEM_SKILL_DIR holding a copy does not reach bundles list under the suite", () => {
+    const { home, cwd } = world();
+    const system = join(tmp, `system-${serial}`);
+    install("orchard", join(system, "orchard"));
+    // A process that inherits the variable, then imports the suite's runtime
+    // seam as every test file does, and lists what the scan finds.
+    const probe = join(tmp, `probe-${serial}.ts`);
+    writeFileSync(
+      probe,
+      [
+        `import { spawnSync } from "node:child_process";`,
+        `import { CLI_RUNTIME } from ${JSON.stringify(join(TEST_DIR, "fixtures", "runtime.ts"))};`,
+        `const r = spawnSync(CLI_RUNTIME, [${JSON.stringify(CLI)}, "bundles", "list"], { encoding: "utf8", env: process.env });`,
+        "process.stdout.write(r.stdout);",
+        "",
+      ].join("\n"),
+    );
+    const r = spawnSync(process.execPath, [probe], {
+      cwd,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: home,
+        WIKIWRIGHT_SKILL_DIRS: "",
+        WIKIWRIGHT_SYSTEM_SKILL_DIR: system,
+      },
+    });
+    assert.equal(r.status, 0, r.stderr);
+    const rows = ((JSON.parse(r.stdout) as Envelope).data?.["bundles"] ?? []) as Row[];
+    assert.deepEqual(rows, [], "a copy in the inherited system directory was listed");
   });
 });
 

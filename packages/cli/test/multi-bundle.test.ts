@@ -120,6 +120,8 @@ describe("two handbooks from an unrelated directory, end to end (docs/cli.md §b
     tmp = mkdtempSync(join(tmpdir(), "ww-multi-bundle-"));
     elsewhere = join(tmp, "elsewhere");
     mkdirSync(elsewhere, { recursive: true });
+    // The scan's project tier stops at the top of this repository.
+    execFileSync("git", ["init", "-q"], { cwd: elsewhere });
     orchard = checkout("orchard");
     const home = join(tmp, "home");
     const skills = join(home, ".claude", "skills");

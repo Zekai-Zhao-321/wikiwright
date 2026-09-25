@@ -3,7 +3,15 @@
 // demoted to checkout_commit) · docs/architecture.md §Directories / no timestamps in build artifacts.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
@@ -21,25 +29,59 @@ function envelopeOf(args: string[]): { data?: Record<string, unknown> } {
 }
 
 describe("the build stamps the artifact it produced (docs/cli.md §version)", () => {
-  // The writer alone, not the whole build: `bun run build` removes every
+  // The writer alone, not the whole build — `bun run build` removes every
   // dist/ before it compiles, and a rebuild inside the suite would take the
-  // binary away from the tests running beside this one. That the build runs
-  // the writer is the next case.
-  it("the build-info writer writes dist/build-info.json, and the bytes are reproducible", () => {
-    const build = spawnSync("bun", ["tools/write-build-info.ts"], { cwd: REPO, encoding: "utf8" });
-    assert.equal(build.status, 0, build.stderr);
-    assert.equal(existsSync(BUILD_INFO), true, "the build wrote dist/build-info.json");
-    const first = readFileSync(BUILD_INFO, "utf8");
-    const info = JSON.parse(first) as Record<string, unknown>;
-    assert.deepEqual(Object.keys(info).sort(), ["commit", "dirty"]);
-    assert.equal(typeof info["commit"] === "string" || info["commit"] === null, true);
-    assert.equal(typeof info["dirty"] === "boolean" || info["dirty"] === null, true);
-    // A build artifact that changes when nothing changed is not
-    // reproducible, so nothing in it may come from the clock.
-    assert.equal(/\d{4}-\d{2}-\d{2}T/.test(first), false, "no timestamp");
-    const again = spawnSync("bun", ["tools/write-build-info.ts"], { cwd: REPO, encoding: "utf8" });
-    assert.equal(again.status, 0, again.stderr);
-    assert.equal(readFileSync(BUILD_INFO, "utf8"), first, "byte-identical across builds");
+  // binary away from the tests running beside this one — and against a
+  // temporary copy of its scaffold, never this checkout's dist/: the writer
+  // stamps the tree it sits in. That the build runs the writer is the next case.
+  it("the build-info writer stamps the commit it sits at, and the bytes are reproducible", () => {
+    const scaffold = mkdtempSync(join(tmpdir(), "ww-build-info-"));
+    try {
+      mkdirSync(join(scaffold, "tools"));
+      copyFileSync(
+        join(REPO, "tools", "write-build-info.ts"),
+        join(scaffold, "tools", "write-build-info.ts"),
+      );
+      const git = (...args: string[]): string =>
+        execFileSync(
+          "git",
+          [
+            "-c",
+            "user.name=T",
+            "-c",
+            "user.email=t@example.com",
+            "-c",
+            "commit.gpgsign=false",
+            ...args,
+          ],
+          { cwd: scaffold, encoding: "utf8" },
+        );
+      git("init", "-q");
+      git("add", "-A");
+      git("commit", "-q", "-m", "the scaffold");
+      const stamp = join(scaffold, "packages", "cli", "dist", "build-info.json");
+      const write = (): void => {
+        const r = spawnSync("bun", [join(scaffold, "tools", "write-build-info.ts")], {
+          cwd: scaffold,
+          encoding: "utf8",
+        });
+        assert.equal(r.status, 0, r.stderr);
+      };
+      write();
+      assert.equal(existsSync(stamp), true, "the writer wrote dist/build-info.json");
+      const first = readFileSync(stamp, "utf8");
+      const info = JSON.parse(first) as Record<string, unknown>;
+      assert.deepEqual(Object.keys(info).sort(), ["commit", "dirty"]);
+      assert.equal(info["commit"], git("rev-parse", "--short", "HEAD").trim());
+      assert.equal(info["dirty"], false);
+      // A build artifact that changes when nothing changed is not
+      // reproducible, so nothing in it may come from the clock.
+      assert.equal(/\d{4}-\d{2}-\d{2}T/.test(first), false, "no timestamp");
+      write();
+      assert.equal(readFileSync(stamp, "utf8"), first, "byte-identical across builds");
+    } finally {
+      rmSync(scaffold, { recursive: true, force: true });
+    }
   });
 
   it("the build script runs the writer — the stamp cannot depend on remembering", () => {

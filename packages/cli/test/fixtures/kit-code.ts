@@ -63,7 +63,13 @@ export function installKit(root: string): void {
   writeFileSync(manifest, `${JSON.stringify(pkg, null, 2)}\n`);
   const installed = join(root, "node_modules", ...KIT_PACKAGE.split("/"));
   rmSync(installed, { recursive: true, force: true });
-  execFileSync("bun", ["install", "--no-summary"], { cwd: root, stdio: "ignore" });
+  // The package manager's cache is the bundle's own, under the temporary
+  // directory: a `file:` install touches no cache of the caller's.
+  execFileSync("bun", ["install", "--no-summary"], {
+    cwd: root,
+    stdio: "ignore",
+    env: { ...process.env, BUN_INSTALL_CACHE_DIR: join(root, ".bun-install-cache") },
+  });
   materialize(installed);
 }
 

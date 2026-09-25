@@ -94,7 +94,11 @@ function runAny(root: string, argv: readonly string[]): { status: number; envelo
 /** Install the fixture module into a bundle, offline: it is a `file:` dependency. */
 function install(root: string): void {
   if (existsSync(join(root, "node_modules", "@wikiwright-fixture", "probe"))) return;
-  execFileSync("bun", ["install"], { cwd: root, stdio: "ignore" });
+  execFileSync("bun", ["install"], {
+    cwd: root,
+    stdio: "ignore",
+    env: { ...process.env, BUN_INSTALL_CACHE_DIR: join(root, ".bun-install-cache") },
+  });
 }
 
 /**
