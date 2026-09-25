@@ -143,7 +143,7 @@ const TypeSchema = z.strictObject({
   replaced_by: z.array(z.string().min(1)).optional(),
 });
 
-const ConstitutionSchema = z.strictObject({
+export const ConstitutionSchema = z.strictObject({
   schema: z.literal("wikiwright/constitution"),
   schema_version: z.literal(3),
   vocabularies: z.record(z.string().min(1), VocabularySchema),

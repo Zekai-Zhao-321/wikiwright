@@ -69,7 +69,8 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
   under `skills/`, from
   `wikiwright check --write --root fixtures/handbooks/<name>`; the playbook from
   `bun tools/render-playbook.ts`; `docs/cli.md`'s verb block from
-  `bun docs/render-cli.ts --write`.
+  `bun docs/render-cli.ts --write`; `docs/v2-dispositions.md` from
+  `bun tools/dispositions.ts`.
 - **Describe what exists.** A document, a help string or a skill line names
   behaviour the binary has. When unsure, run the binary and quote the
   envelope.
@@ -117,9 +118,9 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
 - `fixtures/conformance`: the neutral module fixture and the two bundles that
   consume it. Test infrastructure, not a domain model.
 - `tools/`: the build-info writer, the binary builder (`bun run binary`), the
-  playbook renderer, the case-fold table generator, the uncovered-directory
-  lister, the suite runner the gate uses, and the benchmark of `check` and
-  `lint --staged`.
+  playbook renderer, the v2 disposition-table generator, the case-fold table
+  generator, the uncovered-directory lister, the suite runner the gate uses,
+  and the benchmark of `check` and `lint --staged`.
 - `test/`: the tests of the built CLI as a whole — the pipe probes and the
   compiled binary.
 - `docs/`: the documentation, and the CLI reference renderer.

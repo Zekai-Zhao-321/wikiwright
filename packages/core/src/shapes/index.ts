@@ -25,9 +25,9 @@ export interface ShapeCheckContext {
 // docs/extending.md §A check: `checks` is universal — a registered check may be
 // attached to a field of any kind, because what it validates is the field's
 // VALUE and the kind is what the shape already says about it.
-const UNIVERSAL_KEYS: readonly string[] = ["required", "requires", "checks"];
+export const UNIVERSAL_KEYS: readonly string[] = ["required", "requires", "checks"];
 
-const KIND_KEYS: Record<string, ReadonlySet<string>> = {
+export const KIND_KEYS: Record<string, ReadonlySet<string>> = {
   // The identity shape. v3 requires every declared field to BE a shape,
   // and a v2 field declared without one must not acquire a constraint it never
   // had at the format bump — `any` is what "declared, unshaped" is called.
