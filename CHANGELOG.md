@@ -50,7 +50,9 @@ version` prints the engine version and the commit a binary was built from.
     each, parsed into records validated by the engine's `item-claim`,
     `item-relation` and `item-entry` schemas, each with its raw line, its
     rationale and its location as a line and a UTF-8 byte span; a top-level
-    item that does not parse is `item-unparsed`. The claim lifecycle clause
+    item that does not parse is `item-unparsed`. Items are read as CommonMark
+    reads the section: a list line inside a fence, an HTML block (a comment
+    among them) or a thematic break (`* * *`) is no item. The claim lifecycle clause
     is today's, kept as the one canonical form, spelled exactly as `write`
     renders it: a trailing `(retracted YYYY-MM-DD)`, or `(valid
     YYYY-MM-DD→YYYY-MM-DD, superseded YYYY-MM-DD)` with the first date

@@ -72,10 +72,22 @@ export interface Wikilink {
   raw: string;
 }
 
+/** A block that is not prose and holds no list item: raw HTML, a thematic break. */
+export interface OpaqueBlock {
+  kind: "html" | "thematic-break";
+  line: number;
+  endLine: number;
+}
+
 export interface ParsedDoc {
   frontmatter: Frontmatter;
   headings: Heading[];
   fences: Fence[];
+  /**
+   * The top-level HTML blocks (a comment among them) and thematic breaks, by
+   * line: the v2 grammar reads no list item inside one (contracts §4).
+   */
+  opaque: OpaqueBlock[];
   wikilinks: Wikilink[];
   /** The normalized (BOM-stripped, LF) source — the text every checker sees. */
   source: string;
@@ -206,7 +218,13 @@ export function parseDoc(raw: string): ParsedDoc {
 
   const headings: Heading[] = [];
   const fences: Fence[] = [];
+  const opaque: OpaqueBlock[] = [];
   const excluded: Array<[number, number]> = [];
+  const block = (kind: OpaqueBlock["kind"], node: MdNode, parent: MdNode | undefined): void => {
+    if (parent !== tree) return;
+    const line = node.position?.start.line ?? 1;
+    opaque.push({ kind, line, endLine: node.position?.end.line ?? line });
+  };
 
   const exclude = (node: MdNode): void => {
     const start = node.position?.start.offset;
@@ -214,7 +232,7 @@ export function parseDoc(raw: string): ParsedDoc {
     if (start !== undefined && end !== undefined) excluded.push([start, end]);
   };
 
-  const visit = (node: MdNode): void => {
+  const visit = (node: MdNode, parent?: MdNode): void => {
     switch (node.type) {
       case "yaml":
         exclude(node);
@@ -237,14 +255,20 @@ export function parseDoc(raw: string): ParsedDoc {
         exclude(node);
         return;
       }
-      case "inlineCode":
       case "html":
+        block("html", node, parent);
         exclude(node);
+        return;
+      case "inlineCode":
+        exclude(node);
+        return;
+      case "thematicBreak":
+        block("thematic-break", node, parent);
         return;
       default:
         break;
     }
-    for (const child of node.children ?? []) visit(child);
+    for (const child of node.children ?? []) visit(child, node);
   };
   visit(tree);
   const wikilinks = scanWikilinks(text, excluded);
@@ -253,6 +277,7 @@ export function parseDoc(raw: string): ParsedDoc {
     frontmatter: parseFrontmatterNode(tree.children?.[0]),
     headings,
     fences,
+    opaque,
     wikilinks,
     source: text,
     input: { hadBom, hadCrlf },

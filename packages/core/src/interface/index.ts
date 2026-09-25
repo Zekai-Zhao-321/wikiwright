@@ -217,12 +217,13 @@ export function parsePage(
   const type = typeof typeName === "string" ? law.types.get(typeName) : undefined;
   const sections = type?.sections ?? null;
 
-  // Headings and fences as CommonMark reads them (the old parser's
-  // projection, kept: headings with their text, fenced blocks by line).
+  // Headings, fences, HTML blocks and thematic breaks as CommonMark reads
+  // them (the old parser's projection, kept and extended): a line inside a
+  // fence, an HTML block (a comment among them) or a break holds no item.
   const doc = parseDoc(text);
-  const fenced = new Set<number>();
-  for (const fence of doc.fences)
-    for (let i = fence.line; i <= fence.endLine; i += 1) fenced.add(i);
+  const opaque = new Set<number>();
+  for (const block of [...doc.fences, ...doc.opaque])
+    for (let i = block.line; i <= block.endLine; i += 1) opaque.add(i);
   const headings = doc.headings.filter((h) => h.line > bodyLine);
   // §6: `page.sections` holds one occurrence per heading, and `facts.links`
   // one entry per distinct target; both are ranges. Refused before the walk
@@ -329,7 +330,7 @@ export function parsePage(
     let items = 0;
     for (let n = contentFrom; n <= directEnd; n += 1) {
       const line = lines[n - 1];
-      if (line === undefined || fenced.has(n)) continue;
+      if (line === undefined || opaque.has(n)) continue;
       if (line.text.trim() === "") continue;
       const indented = /^[ \t]/u.test(line.text);
       if (indented) {

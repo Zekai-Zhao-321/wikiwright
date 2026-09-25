@@ -157,6 +157,7 @@ export type {
   FrontmatterKey,
   Heading,
   NormalizedInput,
+  OpaqueBlock,
   ParsedDoc,
   ParseIssue,
   Wikilink,

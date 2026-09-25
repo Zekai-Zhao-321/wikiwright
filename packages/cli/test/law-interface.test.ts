@@ -202,6 +202,42 @@ describe("a parsed page", () => {
     ]);
   });
 
+  it("reads no item inside an HTML comment or block, and no thematic break as an item", () => {
+    // As CommonMark reads them: a <div> block runs to the next blank line.
+    const page = read(
+      "wiki/commented.md",
+      `---
+type: planting
+title: Basil
+bed: herb
+sown: 2026-04-12
+---
+## Observations
+
+- [observed] Live claim.
+<!--
+- [observed] Commented out, withdrawn.
+- not a claim at all
+-->
+* * *
+- [observed] After the break.
+***
+<div>
+- [observed] Inside a block of HTML.
+</div>
+
+- [observed] Last.
+`,
+    );
+    const observations = page.occurrences.find((o) => o.heading === "Observations");
+    expect(observations?.items.map((i) => (i.kind === "claim" ? i.core : ""))).toEqual([
+      "Live claim.",
+      "After the break.",
+      "Last.",
+    ]);
+    expect(page.unparsed).toEqual([]);
+  });
+
   it("refuses a __proto__ key: no inherited member satisfies the shape, and the digest moves", () => {
     const validate = law.validators.get("bed-note");
     const digest = (text: string) => {
