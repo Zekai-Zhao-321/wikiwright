@@ -6,9 +6,10 @@
 // link that leaves it is the shell's question (packages/cli/src/lawfiles.ts).
 
 /**
- * A repository-relative path with `.` and `..` resolved, or `undefined` when it
- * is absolute, drive-qualified, carries a backslash or a control character, or
- * climbs above the top level. `""` is the top level itself.
+ * A repository-relative path with `.` and `..` resolved, in NFC as every
+ * snapshot key is, or `undefined` when it is absolute, drive-qualified,
+ * carries a backslash or a control character, or climbs above the top
+ * level. `""` is the top level itself.
  */
 export function resolveInRepository(path: string): string | undefined {
   if (path.startsWith("/") || /^[A-Za-z]:/u.test(path) || path.includes("\\")) return undefined;
@@ -24,7 +25,7 @@ export function resolveInRepository(path: string): string | undefined {
     }
     out.push(segment);
   }
-  return out.join("/");
+  return out.join("/").normalize("NFC");
 }
 
 /** `a/b` joined under `prefix` (`""` is the top level). */

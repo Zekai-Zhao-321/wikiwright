@@ -37,13 +37,26 @@ function under(prefix: string, rel: string): string {
   return prefix === "" ? rel : `${prefix}/${rel}`;
 }
 
-/** The repository's top level and the bundle's place in it, both real paths. */
-async function placeOf(bundleRoot: string): Promise<{ top: string; bundle: string } | undefined> {
+/**
+ * The repository's top level and the bundle's place in it, both real paths.
+ * `bundle` is in NFC, as every snapshot key is (the index's paths are
+ * normalised the same way); `disk` is the place as the filesystem spells
+ * it, for reading, which a normalisation-sensitive filesystem needs.
+ */
+async function placeOf(
+  bundleRoot: string,
+): Promise<{ top: string; bundle: string; disk: string } | undefined> {
   const real = realpathSync(bundleRoot);
   const top = await gitTopLevel(real);
   if (top === undefined) return undefined;
   const realTop = realpathSync(top);
-  return { top: realTop, bundle: posix(relative(realTop, real)) };
+  const disk = posix(relative(realTop, real));
+  return { top: realTop, bundle: disk.normalize("NFC"), disk };
+}
+
+/** A snapshot key: the repository-relative path in NFC. */
+function key(rel: string): string {
+  return rel.normalize("NFC");
 }
 
 const EMPTY = new Uint8Array();
@@ -89,7 +102,7 @@ function crossing(top: string, base: string, rel: string): LawFile | undefined {
 function walk(top: string, base: string, dir: string, into: Map<string, LawFile>): void {
   const foreign = crossing(top, base, dir);
   if (foreign !== undefined) {
-    into.set(dir.normalize("NFC"), foreign);
+    into.set(key(dir), foreign);
     return;
   }
   try {
@@ -102,15 +115,15 @@ function walk(top: string, base: string, dir: string, into: Map<string, LawFile>
 function list(top: string, dir: string, into: Map<string, LawFile>): void {
   for (const name of readdirSync(join(top, dir), { encoding: "utf8" }).sort(codeUnitCompare)) {
     const rel = `${dir}/${name}`;
-    const key = rel.normalize("NFC");
     const foreign = foreignAt(top, rel);
     if (foreign !== undefined) {
-      into.set(key, foreign);
+      into.set(key(rel), foreign);
       continue;
     }
     const stat = lstatSync(join(top, rel));
     if (stat.isDirectory()) list(top, rel, into);
-    else if (stat.isFile()) into.set(key, { bytes: new Uint8Array(readFileSync(join(top, rel))) });
+    else if (stat.isFile())
+      into.set(key(rel), { bytes: new Uint8Array(readFileSync(join(top, rel))) });
   }
 }
 
@@ -118,12 +131,12 @@ function list(top: string, dir: string, into: Map<string, LawFile>): void {
 function readOne(top: string, base: string, rel: string, into: Map<string, LawFile>): void {
   const foreign = crossing(top, base, rel);
   if (foreign !== undefined) {
-    into.set(rel, foreign);
+    into.set(key(rel), foreign);
     return;
   }
   try {
     if (lstatSync(join(top, rel)).isFile())
-      into.set(rel, { bytes: new Uint8Array(readFileSync(join(top, rel))) });
+      into.set(key(rel), { bytes: new Uint8Array(readFileSync(join(top, rel))) });
   } catch {
     // Absent: the loader names what it needed and did not find.
   }
@@ -138,9 +151,10 @@ export async function workingTreeLawSnapshot(bundleRoot: string): Promise<LawSna
   const placed = await placeOf(bundleRoot);
   const top = placed?.top ?? realpathSync(bundleRoot);
   const bundle = placed?.bundle ?? "";
+  const disk = placed?.disk ?? "";
   const files = new Map<string, LawFile>();
-  readOne(top, bundle, under(bundle, ENGINE_PATH), files);
-  for (const dir of BUNDLE_LAW_DIRECTORIES) walk(top, bundle, under(bundle, dir), files);
+  readOne(top, disk, under(disk, ENGINE_PATH), files);
+  for (const dir of BUNDLE_LAW_DIRECTORIES) walk(top, disk, under(disk, dir), files);
   const directories = new Set<string>();
   const engine = files.get(under(bundle, ENGINE_PATH));
   const loaded = loadEngineV4(engine?.link === true ? undefined : engine?.bytes);

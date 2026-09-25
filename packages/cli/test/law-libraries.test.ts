@@ -160,6 +160,27 @@ describe("libraries", () => {
     }
   });
 
+  it("places a bundle whose directory is spelled in NFD by its NFC name, from both adapters", async () => {
+    const nfd = "potage\u0300re";
+    const dir = tree({}, ["config/engine.json"]);
+    mkdirSync(join(dir, nfd, "config"), { recursive: true });
+    mkdirSync(join(dir, nfd, "constitution/types"), { recursive: true });
+    writeFileSync(join(dir, nfd, "config/engine.json"), engineJson());
+    writeFileSync(
+      join(dir, nfd, "constitution/types/bed.yaml"),
+      "type: bed\nrole: reference\ndescription: One bed.\n",
+    );
+    gitStageAll(dir);
+    for (const snapshot of [
+      await workingTreeLawSnapshot(join(dir, nfd)),
+      await indexLawSnapshot(join(dir, nfd)),
+    ]) {
+      expect(snapshot.bundle).toBe(nfd.normalize("NFC"));
+      const result = loadTypeLaw(snapshot);
+      expect(result.ok ? [...result.law.types.keys()] : result.issues).toEqual(["bed"]);
+    }
+  });
+
   it("takes an explicit id from library.yaml", async () => {
     const result = await load(tree({ "libraries/kit-garden/library.yaml": "id: vegetables\n" }));
     expect(result.ok && result.law.libraries[0]?.id).toBe("vegetables");
