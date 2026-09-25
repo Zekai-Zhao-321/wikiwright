@@ -16,8 +16,14 @@ import { isMapping, jsonNumbers, readYaml } from "./yaml.ts";
 
 export interface LawFile {
   bytes: Uint8Array;
-  /** A symbolic link in the tree or the index: never read as law (`law-foreign-file`). */
+  /**
+   * A symbolic link in the tree or the index, or a submodule: never read as
+   * law (`law-foreign-file`). A law directory or a library root that is one,
+   * or lies under one, is recorded as one such file in its own place.
+   */
   link?: boolean;
+  /** The link is a submodule (index mode 160000; a directory holding `.git` in the tree). */
+  submodule?: boolean;
 }
 
 export interface LawSnapshot {
@@ -25,14 +31,11 @@ export interface LawSnapshot {
   bundle: string;
   /** Every file under the law directories the shell listed, by repository-relative NFC path. */
   files: ReadonlyMap<string, LawFile>;
-  /** The library directories (repository-relative, resolved) that exist in the adapter's tree. */
-  directories: ReadonlySet<string>;
   /**
-   * Library directories that resolve inside the repository by their spelling
-   * and outside it on disk (a symbolic link that leaves it): the working-tree
-   * adapter's own finding, since only it follows links.
+   * The library directories (repository-relative, resolved) that exist in the
+   * adapter's tree, a library root recorded as a link included.
    */
-  escaped?: ReadonlySet<string>;
+  directories: ReadonlySet<string>;
 }
 
 /** The bundle's own directories the loader reads, relative to the bundle root. */
@@ -121,7 +124,7 @@ export function resolveLibraries(
   engine.libraries.forEach((declaration, index) => {
     const where = `bundle:config/engine.json`;
     const root = resolveInRepository(declaration.path);
-    if (root === undefined || root === "" || snapshot.escaped?.has(root) === true) {
+    if (root === undefined || root === "") {
       issues.push({
         code: "library-outside-repository",
         where,
@@ -216,19 +219,29 @@ export function placeLawFiles(
       placed.set(path, { owner: "bundle", path: "config/engine.json" });
       continue;
     }
-    // A library inside the bundle's tree is its own owner: the longest root wins.
+    // A library inside the bundle's tree is its own owner: the longest root
+    // wins. A library root recorded as a link is its library's own file.
     const owner = owners
-      .filter((o) => relativeUnder(o.root, path) !== undefined)
+      .filter((o) => path === o.root || relativeUnder(o.root, path) !== undefined)
       .sort((a, b) => b.root.length - a.root.length)[0];
     if (owner === undefined) continue;
-    const rel = relativeUnder(owner.root, path) ?? path;
-    const where = `${owner.owner}:${rel}`;
+    const rel = path === owner.root ? "" : (relativeUnder(owner.root, path) ?? path);
+    const where = `${owner.owner}:${rel === "" ? "." : rel}`;
     const foreign = (why: string): void => {
       issues.push({ code: "law-foreign-file", where, message: why });
     };
+    if (file.link === true) {
+      // A link or a submodule anywhere the loader reads: a law file, a law
+      // directory, a library root, or a directory on the way to one.
+      foreign(
+        file.submodule === true
+          ? "a git submodule: the loader reads the repository's own files only"
+          : "a symbolic link: the loader reads regular files only",
+      );
+      continue;
+    }
     if (owner.owner !== "bundle" && rel === LIBRARY_FILE) {
-      if (file.link === true) foreign("a symbolic link: the loader reads regular files only");
-      else placed.set(path, { owner: owner.owner, path: rel });
+      placed.set(path, { owner: owner.owner, path: rel });
       continue;
     }
     const segments = rel.split("/");
@@ -251,10 +264,6 @@ export function placeLawFiles(
           `"${rel}" is not under types/, fragments/ or vocabularies/, which is all constitution/ holds`,
         );
       }
-      continue;
-    }
-    if (file.link === true) {
-      foreign("a symbolic link: the loader reads regular files only");
       continue;
     }
     if (isTestDir) {

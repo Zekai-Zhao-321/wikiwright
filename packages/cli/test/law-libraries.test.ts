@@ -2,6 +2,7 @@
 // bundle under os.tmpdir() through both adapters — the working tree and the
 // git index — which must build the same snapshot from the same bytes.
 import { afterAll, describe, expect, it } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -42,6 +43,16 @@ async function load(dir: string, bundle = dir): Promise<TypeLawResult> {
 
 function codes(result: TypeLawResult): string[] {
   return result.ok ? [] : result.issues.map((i) => i.code);
+}
+
+/** Each adapter's issues as `code:where`, the working tree's first. */
+async function both(dir: string): Promise<string[][]> {
+  const issues = (result: TypeLawResult) =>
+    result.ok ? [] : result.issues.map((i) => `${i.code}:${i.where}`);
+  return [
+    issues(loadTypeLaw(await workingTreeLawSnapshot(dir))),
+    issues(loadTypeLaw(await indexLawSnapshot(dir))),
+  ];
 }
 
 const bytes = (text: string) => new TextEncoder().encode(text);
@@ -174,14 +185,14 @@ describe("libraries", () => {
     expect(codes(result)).toEqual(["library-outside-repository"]);
   });
 
-  it("refuses a library directory that is a link out of the repository", async () => {
+  it("refuses a library directory that is a link out of the repository, from both adapters", async () => {
     const outside = tree({}, ["config/engine.json"]);
     const dir = tree({
       "config/engine.json": engineJson({ libraries: [{ path: "libraries/kit-far" }] }),
     });
     link(dir, "libraries/kit-far", join(outside, "libraries/kit-garden"));
     gitStageAll(dir);
-    expect(codes(await load(dir))).toEqual(["library-outside-repository"]);
+    expect(await both(dir)).toEqual([["law-foreign-file:far:."], ["law-foreign-file:far:."]]);
   });
 
   it("refuses a library path that names no directory", async () => {
@@ -227,6 +238,71 @@ describe("law-foreign-file", () => {
     expect(codes(await load(dir))).toEqual(["law-foreign-file"]);
     gitStageAll(dir);
     expect(codes(loadTypeLaw(await indexLawSnapshot(dir)))).toEqual(["law-foreign-file"]);
+  });
+
+  it("refuses a constitution/ that is a link out of the repository, from both adapters", async () => {
+    const outside = tree({
+      "constitution/types/bed.yaml": "type: bed\nrole: reference\ndescription: x\n",
+    });
+    const dir = tree();
+    link(dir, "constitution", join(outside, "constitution"));
+    gitStageAll(dir);
+    expect(await both(dir)).toEqual([
+      ["law-foreign-file:bundle:constitution"],
+      ["law-foreign-file:bundle:constitution"],
+    ]);
+  });
+
+  it("refuses a library's types/ that is a link out of the repository, from both adapters", async () => {
+    const outside = tree({
+      "libraries/kit-garden/types/bed.yaml": "type: bed\nrole: reference\ndescription: x\n",
+    });
+    const dir = tree();
+    link(dir, "libraries/kit-garden/types", join(outside, "libraries/kit-garden/types"));
+    gitStageAll(dir);
+    expect(await both(dir)).toEqual([
+      ["law-foreign-file:garden:types"],
+      ["law-foreign-file:garden:types"],
+    ]);
+  });
+
+  it("refuses a library root that is a link inside the repository, from both adapters", async () => {
+    const dir = tree(
+      { "vendor/garden/types/bed.yaml": "type: bed\nrole: reference\ndescription: x\n" },
+      ["libraries/kit-garden/README.md"],
+    );
+    link(dir, "libraries/kit-garden", "../vendor/garden");
+    gitStageAll(dir);
+    expect(await both(dir)).toEqual([["law-foreign-file:garden:."], ["law-foreign-file:garden:."]]);
+  });
+
+  it("refuses a library under a linked directory, from both adapters", async () => {
+    const dir = tree(
+      { "vendor/kit-garden/types/bed.yaml": "type: bed\nrole: reference\ndescription: x\n" },
+      ["libraries/kit-garden/README.md"],
+    );
+    link(dir, "libraries", "vendor");
+    gitStageAll(dir);
+    expect(await both(dir)).toEqual([["law-foreign-file:garden:."], ["law-foreign-file:garden:."]]);
+  });
+
+  it("refuses a library that is a submodule, from both adapters", async () => {
+    const dir = tree({}, ["libraries/kit-garden/README.md"]);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    const library = join(dir, "libraries/kit-garden");
+    mkdirSync(join(library, "types"), { recursive: true });
+    writeFileSync(join(library, "types/bed.yaml"), "type: bed\nrole: reference\ndescription: x\n");
+    const git = (cwd: string, args: string[]) =>
+      execFileSync(
+        "git",
+        ["-c", "user.name=Gardener", "-c", "user.email=gardener@example.invalid", ...args],
+        { cwd, stdio: "ignore" },
+      );
+    git(library, ["init", "-q"]);
+    git(library, ["add", "-A"]);
+    git(library, ["commit", "-q", "-m", "beds"]);
+    git(dir, ["-c", "advice.addEmbeddedRepo=false", "add", "-A"]);
+    expect(await both(dir)).toEqual([["law-foreign-file:garden:."], ["law-foreign-file:garden:."]]);
   });
 
   it("does not read a library's files beside its law directories", async () => {

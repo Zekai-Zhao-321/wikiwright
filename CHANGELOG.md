@@ -21,15 +21,16 @@ version` prints the engine version and the commit a binary was built from.
   - `libraries: [{path}]`, resolved against the git top level of the
     repository holding the bundle, so a bundle at the root and one in a
     subdirectory name a library the same way; a path that leaves the
-    repository, by its spelling or through a link, is
-    `library-outside-repository`, one that names nothing is
-    `library-missing`. A library's id is its directory's basename less a
+    repository by its spelling is `library-outside-repository`, one that
+    names nothing is `library-missing`. A library's id is its directory's basename less a
     leading `kit-`, or `library.yaml`'s `id` (`library-invalid` when it is
     not a name); two libraries with one id are `constitution-collision`.
     Every file under `constitution/`, a library's `types/`, `fragments/`,
     `vocabularies/`, `rule-tests/` and `examples/`, and a bundle's own
     `rule-tests/` and `examples/`, that the loader does not read, and every
-    symbolic link there, is `law-foreign-file`.
+    symbolic link or submodule there, is `law-foreign-file`; so is a law
+    directory or a library root that is a link or a submodule, or lies
+    under one, from the working tree and from the index alike.
   - One YAML document per type, fragment and vocabulary, each held to its
     key table (`type-key-unknown`, `fragment-key-unknown`,
     `vocabulary-key-unknown`; `type-invalid`, `fragment-invalid`,

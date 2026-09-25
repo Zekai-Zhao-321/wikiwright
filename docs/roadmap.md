@@ -744,11 +744,15 @@ over it:
   sites and proves the calls refused. It builds that bundle with `bun build`
   in a child process, because `Bun.build` inside a `bun test` process fails
   to read its inputs on Bun 1.3.11.
-- The loader reads regular files only: a symbolic link under a law
-  directory is `law-foreign-file` from the tree and from the index alike,
-  and a library directory that is a link out of the repository is
-  `library-outside-repository`. A bundle in no repository is its own top
-  level: its library paths are read from the bundle root.
+- The loader reads the repository's own regular files only: a symbolic
+  link or a submodule under a law directory, a law directory or a library
+  root that is one, and a library root under a linked directory are
+  `law-foreign-file` from the tree and from the index alike, wherever the
+  link points; the index holds each as one entry (mode 120000 or 160000),
+  and the tree does not read through what the index cannot. A library
+  vendored as a submodule is therefore refused, not read. A bundle in no
+  repository is its own top level: its library paths are read from the
+  bundle root.
 - A library's `library.yaml` has its own line in the law digest, beside
   the five law directories the contracts list, because it can change the
   library's id and with it every qualified name.

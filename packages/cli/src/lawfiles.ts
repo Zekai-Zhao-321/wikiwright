@@ -9,7 +9,7 @@
 // reads twice — `config/engine.json`, whose `libraries` name the rest, then
 // every file under the law directories — and neither interprets a byte.
 // Beside the old loader (vaultio.ts); no verb reads through this yet.
-import { lstatSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import {
   BUNDLE_LAW_DIRECTORIES,
@@ -46,33 +46,84 @@ async function placeOf(bundleRoot: string): Promise<{ top: string; bundle: strin
   return { top: realTop, bundle: posix(relative(realTop, real)) };
 }
 
-/**
- * Every file under `dir` (repository-relative), without following a link: a
- * link is recorded as one file flagged `link`, file or directory alike, and
- * the loader refuses it by name.
- */
-function walk(top: string, dir: string, into: Map<string, LawFile>): void {
-  let names: string[];
+const EMPTY = new Uint8Array();
+
+/** A symbolic link, or a directory holding `.git` (a submodule or a nested repository). */
+function foreignAt(top: string, rel: string): LawFile | undefined {
+  let stat: ReturnType<typeof lstatSync>;
   try {
-    names = readdirSync(join(top, dir), { encoding: "utf8" });
+    stat = lstatSync(join(top, rel));
   } catch {
+    return undefined;
+  }
+  if (stat.isSymbolicLink()) return { bytes: EMPTY, link: true };
+  if (stat.isDirectory() && existsSync(join(top, rel, ".git")))
+    return { bytes: EMPTY, link: true, submodule: true };
+  return undefined;
+}
+
+/**
+ * The first component of `rel` below `base` that is a link or a nested
+ * repository, as the file the loader records in `rel`'s place: the index
+ * holds such a component as one entry (mode 120000 or 160000) and nothing
+ * under it, so the tree must not read through it either.
+ */
+function crossing(top: string, base: string, rel: string): LawFile | undefined {
+  const below = base === "" ? rel : rel.slice(base.length + 1);
+  let at = base;
+  for (const segment of below.split("/")) {
+    at = under(at, segment);
+    const foreign = foreignAt(top, at);
+    if (foreign !== undefined) return foreign;
+  }
+  return undefined;
+}
+
+/**
+ * Every file under the law directory `dir` (repository-relative), without
+ * following a link: a link, or a directory that is a nested repository, is
+ * recorded as one file flagged `link`, the directory itself included, and
+ * the loader refuses it by name. `base` is where the check for such a
+ * component starts (the bundle root, or the library root).
+ */
+function walk(top: string, base: string, dir: string, into: Map<string, LawFile>): void {
+  const foreign = crossing(top, base, dir);
+  if (foreign !== undefined) {
+    into.set(dir.normalize("NFC"), foreign);
     return;
   }
-  for (const name of names.sort(codeUnitCompare)) {
+  try {
+    if (lstatSync(join(top, dir)).isDirectory()) list(top, dir, into);
+  } catch {
+    // Absent: a law directory is optional.
+  }
+}
+
+function list(top: string, dir: string, into: Map<string, LawFile>): void {
+  for (const name of readdirSync(join(top, dir), { encoding: "utf8" }).sort(codeUnitCompare)) {
     const rel = `${dir}/${name}`;
-    const stat = lstatSync(join(top, rel));
     const key = rel.normalize("NFC");
-    if (stat.isSymbolicLink()) into.set(key, { bytes: new Uint8Array(), link: true });
-    else if (stat.isDirectory()) walk(top, rel, into);
+    const foreign = foreignAt(top, rel);
+    if (foreign !== undefined) {
+      into.set(key, foreign);
+      continue;
+    }
+    const stat = lstatSync(join(top, rel));
+    if (stat.isDirectory()) list(top, rel, into);
     else if (stat.isFile()) into.set(key, { bytes: new Uint8Array(readFileSync(join(top, rel))) });
   }
 }
 
-function readOne(top: string, rel: string, into: Map<string, LawFile>): void {
+/** One file at `rel`, unless it or a directory between `base` and it is a link. */
+function readOne(top: string, base: string, rel: string, into: Map<string, LawFile>): void {
+  const foreign = crossing(top, base, rel);
+  if (foreign !== undefined) {
+    into.set(rel, foreign);
+    return;
+  }
   try {
-    const stat = lstatSync(join(top, rel));
-    if (stat.isSymbolicLink()) into.set(rel, { bytes: new Uint8Array(), link: true });
-    else if (stat.isFile()) into.set(rel, { bytes: new Uint8Array(readFileSync(join(top, rel))) });
+    if (lstatSync(join(top, rel)).isFile())
+      into.set(rel, { bytes: new Uint8Array(readFileSync(join(top, rel))) });
   } catch {
     // Absent: the loader names what it needed and did not find.
   }
@@ -88,37 +139,47 @@ export async function workingTreeLawSnapshot(bundleRoot: string): Promise<LawSna
   const top = placed?.top ?? realpathSync(bundleRoot);
   const bundle = placed?.bundle ?? "";
   const files = new Map<string, LawFile>();
-  readOne(top, under(bundle, ENGINE_PATH), files);
-  for (const dir of BUNDLE_LAW_DIRECTORIES) walk(top, under(bundle, dir), files);
+  readOne(top, bundle, under(bundle, ENGINE_PATH), files);
+  for (const dir of BUNDLE_LAW_DIRECTORIES) walk(top, bundle, under(bundle, dir), files);
   const directories = new Set<string>();
-  const escaped = new Set<string>();
   const engine = files.get(under(bundle, ENGINE_PATH));
   const loaded = loadEngineV4(engine?.link === true ? undefined : engine?.bytes);
   if (loaded.ok) {
     for (const library of libraryDirectories(loaded.engine)) {
-      let real: string;
+      // A library root that is, or lies under, a link or a nested repository
+      // is recorded in its own place, as the index adapter records it.
+      const foreign = crossing(top, "", library);
+      if (foreign !== undefined) {
+        directories.add(library);
+        files.set(library, foreign);
+        continue;
+      }
       try {
-        if (!statSync(join(top, library)).isDirectory()) continue;
-        real = realpathSync(join(top, library));
+        if (!lstatSync(join(top, library)).isDirectory()) continue;
       } catch {
         continue;
       }
       directories.add(library);
-      // Inside by its spelling, outside by the link it passes through.
-      if (!real.startsWith(`${top}${sep}`)) {
-        escaped.add(library);
-        continue;
-      }
-      readOne(top, `${library}/${LIBRARY_FILE}`, files);
-      for (const dir of LIBRARY_LAW_DIRECTORIES) walk(top, `${library}/${dir}`, files);
+      readOne(top, library, `${library}/${LIBRARY_FILE}`, files);
+      for (const dir of LIBRARY_LAW_DIRECTORIES) walk(top, library, `${library}/${dir}`, files);
     }
   }
-  return { bundle, files: sorted(files), directories, escaped };
+  return { bundle, files: sorted(files), directories };
+}
+
+/** An index entry the loader never reads through: a link (120000) or a submodule (160000). */
+function foreignEntry(mode: string): LawFile | undefined {
+  if (mode === "120000") return { bytes: EMPTY, link: true };
+  if (mode === "160000") return { bytes: EMPTY, link: true, submodule: true };
+  return undefined;
 }
 
 /**
  * The index adapter: every stage-0 entry under the law directories, read by
- * blob id through the batch reader. A link is an entry of mode 120000.
+ * blob id through the batch reader. A link is an entry of mode 120000 and a
+ * submodule one of mode 160000; either, at a law directory, at a library
+ * root or on the way to one, is recorded in that place, as the working-tree
+ * adapter records it.
  */
 export async function indexLawSnapshot(bundleRoot: string): Promise<LawSnapshot> {
   const placed = await placeOf(bundleRoot);
@@ -129,16 +190,33 @@ export async function indexLawSnapshot(bundleRoot: string): Promise<LawSnapshot>
   const entries = (await gitIndexEntries(top))
     .filter((e) => e.stage === 0)
     .map((e) => ({ ...e, path: e.path.normalize("NFC") }));
+  const foreignEntries = new Map<string, LawFile>();
+  for (const entry of entries) {
+    const foreign = foreignEntry(entry.mode);
+    if (foreign !== undefined) foreignEntries.set(entry.path, foreign);
+  }
+  /** The first link or submodule entry on the way from `base` down to `rel`. */
+  const crossingEntry = (base: string, rel: string): LawFile | undefined => {
+    const below = base === "" ? rel : rel.slice(base.length + 1);
+    let at = base;
+    for (const segment of below.split("/")) {
+      at = under(at, segment);
+      const foreign = foreignEntries.get(at);
+      if (foreign !== undefined) return foreign;
+    }
+    return undefined;
+  };
   const read = async (paths: (path: string) => boolean): Promise<Map<string, LawFile>> => {
     const chosen = entries.filter((e) => paths(e.path));
     const blobs = await gitReadBlobBytes(
       top,
-      chosen.filter((e) => e.mode !== "120000").map((e) => e.blob),
+      chosen.filter((e) => foreignEntry(e.mode) === undefined).map((e) => e.blob),
     );
     const out = new Map<string, LawFile>();
     for (const entry of chosen) {
-      if (entry.mode === "120000") {
-        out.set(entry.path, { bytes: new Uint8Array(), link: true });
+      const foreign = foreignEntry(entry.mode);
+      if (foreign !== undefined) {
+        out.set(entry.path, foreign);
         continue;
       }
       const bytes = blobs.get(entry.blob);
@@ -150,19 +228,48 @@ export async function indexLawSnapshot(bundleRoot: string): Promise<LawSnapshot>
     }
     return out;
   };
+  /** Law directories whose own place is a link or a submodule, recorded there; the rest to read. */
+  const lawDirectories = (base: string, dirs: readonly string[], into: Map<string, LawFile>) =>
+    dirs.filter((dir) => {
+      const foreign = crossingEntry(base, dir);
+      if (foreign !== undefined) into.set(dir, foreign);
+      return foreign === undefined;
+    });
   const enginePath = under(bundle, ENGINE_PATH);
-  const bundleDirs = BUNDLE_LAW_DIRECTORIES.map((d) => `${under(bundle, d)}/`);
-  const files = await read((p) => p === enginePath || bundleDirs.some((d) => p.startsWith(d)));
+  const files = new Map<string, LawFile>();
+  const bundleDirs = lawDirectories(
+    bundle,
+    BUNDLE_LAW_DIRECTORIES.map((d) => under(bundle, d)),
+    files,
+  ).map((d) => `${d}/`);
+  const engineCrossing = crossingEntry(bundle, enginePath);
+  if (engineCrossing !== undefined) files.set(enginePath, engineCrossing);
+  const bundleFiles = await read(
+    (p) =>
+      (p === enginePath && engineCrossing === undefined) || bundleDirs.some((d) => p.startsWith(d)),
+  );
+  for (const [path, file] of bundleFiles) files.set(path, file);
   const engine = files.get(enginePath);
   const loaded = loadEngineV4(engine?.link === true ? undefined : engine?.bytes);
   const directories = new Set<string>();
   if (loaded.ok) {
-    const libraries = libraryDirectories(loaded.engine).filter((library) =>
-      entries.some((e) => e.path.startsWith(`${library}/`)),
-    );
-    for (const library of libraries) directories.add(library);
+    const libraries: string[] = [];
+    for (const library of libraryDirectories(loaded.engine)) {
+      const foreign = crossingEntry("", library);
+      if (foreign !== undefined) {
+        directories.add(library);
+        files.set(library, foreign);
+      } else if (entries.some((e) => e.path.startsWith(`${library}/`))) {
+        directories.add(library);
+        libraries.push(library);
+      }
+    }
     const lawDirs = libraries.flatMap((library) =>
-      LIBRARY_LAW_DIRECTORIES.map((d) => `${library}/${d}/`),
+      lawDirectories(
+        library,
+        LIBRARY_LAW_DIRECTORIES.map((d) => `${library}/${d}`),
+        files,
+      ).map((d) => `${d}/`),
     );
     const libraryFiles = new Set(libraries.map((library) => `${library}/${LIBRARY_FILE}`));
     const more = await read((p) => libraryFiles.has(p) || lawDirs.some((d) => p.startsWith(d)));
