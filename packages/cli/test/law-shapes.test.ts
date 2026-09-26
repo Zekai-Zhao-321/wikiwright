@@ -170,8 +170,8 @@ describe("load-time codes of a shape", () => {
     ],
     ["an authored additionalProperties", "  type: object\n  additionalProperties: false\n"],
     [
-      "an authored unevaluatedProperties, nested",
-      "  type: object\n  properties:\n    size: { type: object, unevaluatedProperties: false }\n",
+      "an authored unevaluatedProperties applied in place at the top",
+      "  type: object\n  allOf:\n    - { unevaluatedProperties: false }\n",
     ],
     ["an authored $id", "  $id: https://example.org/label\n  type: object\n"],
     [
@@ -203,6 +203,20 @@ describe("load-time codes of a shape", () => {
     ],
   ])("refuses %s as shape-invalid", async (_label, body) => {
     expect(codes(await load(fields(body)))).toEqual(["shape-invalid"]);
+  });
+
+  it("accepts a nested object its author closes (ruling 8)", async () => {
+    const loaded = await law(
+      fields(
+        "  type: object\n  properties:\n    size: { type: object, properties: { rows: { type: integer } }, additionalProperties: false }\n    tray: { type: object, properties: { cells: { type: integer } }, unevaluatedProperties: false }\n",
+      ),
+    );
+    const validate = loaded.validators.get("label");
+    expect(validate?.({ type: "label", title: "x", size: { rows: 3 }, tray: { cells: 6 } })).toBe(
+      true,
+    );
+    expect(validate?.({ type: "label", title: "x", size: { rows: 3, cols: 2 } })).toBe(false);
+    expect(validate?.({ type: "label", title: "x", tray: { cells: 6, lid: true } })).toBe(false);
   });
 
   it("accepts the engine keywords beside a page reference, and target_root content or a source root", async () => {

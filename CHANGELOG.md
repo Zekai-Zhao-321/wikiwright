@@ -46,6 +46,10 @@ version` prints the engine version and the commit a binary was built from.
     `unevaluatedProperties: false` at the type under `extensions.mode:
     registered`: `shape-invalid`, `shape-relaxed`, `default-conflict`, and
     `constitution-collision` for a document `$def` under a reserved name.
+    An authored `additionalProperties` or `unevaluatedProperties` is
+    `shape-invalid` where it would close the frontmatter itself (the top of
+    `fields` and the subschemas applied in place there, `allOf` among them);
+    a nested object may be closed by its author (the navigator's ruling 8).
   - The fixed grammar: claims, relations and dated entries, one spelling
     each, parsed into records validated by the engine's `item-claim`,
     `item-relation` and `item-entry` schemas, each with its raw line, its

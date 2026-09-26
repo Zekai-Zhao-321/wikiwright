@@ -3,7 +3,8 @@
 // engine's `$defs`, compiled on its own to attribute its errors to it, and
 // then composed: `allOf` of the reserved keys' schema and every document in
 // linearisation order, with one `unevaluatedProperties: false` at the
-// concrete type when `extensions.mode` is `registered`. `shape-relaxed` and
+// concrete type when `extensions.mode` is `registered` (an author may close a
+// nested object, ruling 8). `shape-relaxed` and
 // `default-conflict` compare a child's declared keywords with its ancestors'.
 import type { Ajv2020, ValidateFunction } from "ajv/dist/2020.js";
 import type { LawType } from "../law/compose.ts";
@@ -43,6 +44,17 @@ const ONE_KEYWORDS = new Set([
   "else",
   "propertyNames",
   "unevaluatedItems",
+]);
+/** Keywords whose subschemas apply to the same instance: at the top, the frontmatter itself. */
+const IN_PLACE_KEYWORDS = new Set([
+  "allOf",
+  "anyOf",
+  "oneOf",
+  "not",
+  "if",
+  "then",
+  "else",
+  "dependentSchemas",
 ]);
 /** Identifiers the engine assigns or does not admit: an authored one would re-root a document. */
 const IDENTIFIERS = ["$id", "$anchor", "$dynamicAnchor", "$dynamicRef", "$schema", "$vocabulary"];
@@ -89,14 +101,17 @@ export function authoredShapeIssues(
       details: { pointer: `/fields/$defs/${name}`, name },
     });
   }
-  const walk = (node: unknown, pointer: string): void => {
+  // Ruling 8: the closing keywords are refused where they would close the
+  // page's frontmatter itself — the top of `fields` and the subschemas
+  // applied in place there — and admitted on a nested object.
+  const walk = (node: unknown, pointer: string, top: boolean): void => {
     if (node === null || typeof node !== "object" || Array.isArray(node)) return;
     const record = node as Record<string, unknown>;
     for (const key of ["additionalProperties", "unevaluatedProperties"]) {
-      if (key in record) {
+      if (top && key in record) {
         invalid(
           `${pointer}/${key}`,
-          `an authored ${key}; the engine closes the effective shape once, under extensions.mode`,
+          `an authored ${key} on the frontmatter itself; the engine closes the effective shape once, under extensions.mode (a nested object may be closed)`,
         );
       }
     }
@@ -140,16 +155,18 @@ export function authoredShapeIssues(
       }
     }
     for (const [key, value] of Object.entries(record)) {
+      const inPlace = top && IN_PLACE_KEYWORDS.has(key);
       if (MAP_KEYWORDS.has(key) && value !== null && typeof value === "object") {
-        for (const [name, sub] of Object.entries(value)) walk(sub, `${pointer}/${key}/${name}`);
+        for (const [name, sub] of Object.entries(value))
+          walk(sub, `${pointer}/${key}/${name}`, inPlace);
       } else if (LIST_KEYWORDS.has(key) && Array.isArray(value)) {
         value.forEach((sub, i) => {
-          walk(sub, `${pointer}/${key}/${i}`);
+          walk(sub, `${pointer}/${key}/${i}`, inPlace);
         });
-      } else if (ONE_KEYWORDS.has(key)) walk(value, `${pointer}/${key}`);
+      } else if (ONE_KEYWORDS.has(key)) walk(value, `${pointer}/${key}`, inPlace);
     }
   };
-  walk(schema, "");
+  walk(schema, "", true);
   return issues;
 }
 
