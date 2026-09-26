@@ -17,7 +17,6 @@ export const versionCommand: CommandSpec = {
   // checkout the package sits in is a real but different question, kept beside
   // it under the name that says which one it is.
   writes: false,
-  needsVaultModules: false,
   run: async () =>
     ok("version", versionData(readBuildInfo(), await checkoutIdentity(), ENGINE_VERSION)),
 };

@@ -307,7 +307,6 @@ export const checkCommand: CommandSpec = {
     "wikiwright check --path wiki/Basil.md --all",
   ],
   writes: true,
-  needsVaultModules: false,
   plan: planForCheck,
   run,
 };

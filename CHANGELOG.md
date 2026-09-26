@@ -794,6 +794,20 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- The module loader (v2 contracts §1, §12 step 6): `moduleload.ts` (resolving
+  a declared module from `node_modules` or a bundle path, its digest, the
+  purity scan at load, the preload `main.ts` ran before a verb that declared
+  `needsVaultModules`, which no verb of the table did) and `modulefixture.ts`
+  (the determinism fixture every load ran), `stagedkits.ts` (a path kit the
+  old gate loaded from the index), and the old loader over the v1 registry
+  they served: `vaultio.ts`, `law.ts`, `bundle.ts` and `sha256.ts`. The spec
+  field `needsVaultModules` goes, with its meta-test
+  (`module-loading.test.ts`) and the purity probes (`purity.test.ts`, with
+  its gardening kit fixture). The registration API itself,
+  `packages/core/src/modules/`, and `fixtures/conformance` leave with the old
+  registry, which is built on them. The loss is in `docs/roadmap.md` §A
+  bundle runs no code of its own: executable library hooks are ruled out,
+  not deferred.
 - `hooks.ts`, the installer of the old `hook` verb and of `init` (v2
   contracts §1, §12 step 6): the marker pre-commit and commit-msg scripts it
   wrote into `.git/hooks`, the chained script it kept, the

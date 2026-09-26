@@ -294,6 +294,5 @@ export const readCommand: CommandSpec = {
     'wikiwright read "Herb bed" --budget 800',
   ],
   writes: false,
-  needsVaultModules: false,
   run,
 };

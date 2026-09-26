@@ -157,17 +157,6 @@ interface CommandBase {
    * one switch whose purpose is bounding. The meta-test (docs/architecture.md §The invariants) scans
    * each verb module for reachable writes and fails the build on a disagreement.
    */
-  /**
-   * docs/extending.md §Declaring a module: does this verb read the vault's own
-   * law? The entry point preloads the modules `config/engine.json` declares
-   * before a verb that does, so a bundle judged without a law it declares is
-   * refused rather than judged under a quieter one; a verb that answers about
-   * the engine rather than the vault loads no third-party code to do it.
-   * REQUIRED, like `writes`: a verb allowed to stay silent would decide by
-   * omission which law it is judged under. The meta-test holds each
-   * declaration against what the verb's own imports reach.
-   */
-  needsVaultModules: boolean;
   run: (args: CommandArgs) => CommandResult | Promise<CommandResult>;
 }
 

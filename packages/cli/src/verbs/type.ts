@@ -281,6 +281,5 @@ export const typeCommand: CommandSpec = {
     "wikiwright type list",
   ],
   writes: false,
-  needsVaultModules: false,
   run,
 };

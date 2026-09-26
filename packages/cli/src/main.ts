@@ -15,7 +15,6 @@ import {
   outPointer,
 } from "./envelope.ts";
 import { GitInconsistentRead, GitShortRead, GitTimedOut, gitTimeoutSetting } from "./git.ts";
-import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import { LinkedOutsideVault } from "./paths.ts";
 import {
   type CommandSpec,
@@ -214,24 +213,12 @@ async function runCommand(
   const parsed = parseInvocation(spec, rest, table);
   if (!parsed.ok) return parsed.result;
   const { args } = parsed;
-  let result: CommandResult;
-  try {
-    // docs/extending.md §Declaring a module: the declared modules load HERE —
-    // once, before the verb runs — and `loadVaultVia` reads the outcome by root
-    // and refuses a bundle whose declared modules did not load, so a verb that
-    // never reaches this line cannot be judged under a quieter law.
-    // Only for a verb that reads the vault's law: `version` and `schema` answer
-    // about the engine.
-    if (spec.needsVaultModules) {
-      const declarations = declaredModulesOf(args.root);
-      if (declarations.length > 0) await preloadModules(args.root, declarations);
-    }
-    result = await spec.run(args);
-  } catch (e) {
-    result = thrown(spec.name, e);
-  }
   // Each verb names the bundle it read itself, from the state it judged.
-  return result;
+  try {
+    return await spec.run(args);
+  } catch (e) {
+    return thrown(spec.name, e);
+  }
 }
 
 // The conventional spellings reach the `version` verb — one

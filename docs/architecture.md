@@ -50,16 +50,10 @@ packages/cli/src/
   clock.ts     today(): WIKIWRIGHT_TODAY or the wall clock, read once
   git.ts, stdoutfile.ts   the git plumbing: every git child spawned asynchronously (Bun.spawn), at most four at a time, awaited to its exit, its answer read from a file it writes itself
   vaultfiles.ts   the config paths, the reader, the page walk and the page reads, below the loader
-  vaultio.ts   the loader, its refusals
-  bundle.ts    the old registry's v1 law and content digests, which its loader reads
-  law.ts       the loaded vault to a Law; the engine.json consumers
   lawfiles.ts  v2: the working-tree, index and revision adapters that snapshot a bundle's law and its libraries for law/
   lawstate.ts  v2: the four states judgeTypeLaw is handed (working tree, drafts over the disk, the index over HEAD, a revision)
   writer.ts    the shell half of the Writer: prove, then temp-and-rename
   atomicwrite.ts   the one staged replace every non-page write lands through
-  moduleload.ts, modulefixture.ts   the module ladder: resolve, digest, scan, load, prove
-  sha256.ts    the shell's sha256 over bytes: a module's files, a page, a shipped skill
-  stagedkits.ts   the path kit the old staged gate loaded from the index, unreached since the old verbs left; it leaves with the modules
   verbs/<name>.ts   one CommandSpec per verb of the command table, over the type-document law
   typelaw.ts   v2: the law a state carries loaded or refused, the engine range, the bundle block
   generated.ts v2: generated/ — the brief and the kernel's four files, rendered, compared and written
@@ -95,7 +89,6 @@ by name when it breaks. Test files live under `packages/core/test`,
 | The modules import in one direction | no package's `src/` holds a runtime import cycle, however many steps around; a type-only import is erased and is not an edge | `import-graph` |
 | One registration API | the three standard-library modules load through `defineModule` and equal the registry the engine builds; every surface a module registers earns a refusal | `module-expressible`, `module-registration`, `module-boundary` |
 | Every surface of the API is consumed | every field of `ModuleManifest`, `GrammarSpec`, `ArmSpec`, `ParamSpec`, `VocabularySpec` and `CheckSpec` is read somewhere, and every exported resolver is called outside `modules/` | `module-surface-consumed` |
-| A module loads through the whole ladder | resolution, the version range, the digest, the purity scan and the determinism fixture; its end-to-end tests ran through the old verbs and left with them, and the ladder itself leaves in step 6 | `purity` (one probe per rule of the scan), `kit-code` (the v1 kit's declarations), the core module tests |
 | One judge at every write path | the same `judgeTypeLaw` is called by the working tree, the drafts over the disk, the index over HEAD and a revision; a property test judges one fixture through every constructor and asserts agreement, `unevaluated` counted as its own verdict | `judge-law-property`, `judge-states`, `judge-core`, `gate-verb` (the gate refuses what `write` refuses), `write-batch` |
 | Routing is total | every error or warning finding carries exactly one of `fix` and `queue`; every `info` carries neither; over every corpus and every emit path | `routing-xor`, `verdict-table` (no unroutable row), `pass-table` (the old table, until it leaves) |
 | Coverage is coherent | a pass reporting `evaluated: 0` never sits beside its own findings | `coverage-coherence` |

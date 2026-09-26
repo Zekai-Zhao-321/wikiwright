@@ -351,6 +351,5 @@ export const gateCommand: CommandSpec = {
   ],
   examples: ["wikiwright gate", "wikiwright gate --commit-msg .git/COMMIT_EDITMSG"],
   writes: false,
-  needsVaultModules: false,
   run,
 };

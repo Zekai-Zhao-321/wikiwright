@@ -20,8 +20,8 @@ whether it is dirty, and digests of its law and its content — and `read`
 returns a page's sections verbatim with the page's bytes digest and its
 status, under a byte budget. Step 6 is removing the old tree's mechanisms one
 commit each; until each has left, its code is in the tree and reached by no
-verb: the old registry and its standard library, the module loader and the
-v1 kit
+verb: the old registry, its standard library and its module registration
+API, and the v1 kit
 `@wikiwright/kit-code`, which `devwiki` no longer imports.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
@@ -125,55 +125,18 @@ checkout, and `init --constitution code` says so in its envelope.
 Wanted: a published package, so a bundle's `package.json` can name a
 version range and `bun install` resolves it.
 
-### A module runs because it is installed
+### A bundle runs no code of its own
 
-There is no approval step between a bundle and the law it declares: a module
-a bundle declares and has installed, or carries in its own tree by `path`,
-runs when a verb reads the bundle's law. Installing it is the consent, the
-decision every package manager asks of its user. So nothing on this machine
-asks before a module's code runs: a `git pull` that changes a kit the bundle
-carries, or the modules its `config/engine.json` declares, changes the code
-the next verb over that bundle runs, and `modules list`, which imports each
-module to report it, runs its top-level code too. What guards it is review of
-the change that brings it, as for any dependency. The `trust` verb and its
-machine-local store, which once stood there, are removed.
-
-Wanted: a `modules list` that reports a declared module — its resolution,
-its digest, its scan — without importing it, so a reader can see what a
-pulled change would run before anything runs it. Not a machine-local
-approval: that was removed on purpose.
-
-### The purity scan narrows; it does not sandbox
-
-Every load scans a module's bytes for the constructs a pure module must not
-reach — the clock, randomness, the locale, the environment, the network,
-dynamic evaluation, computed access to those globals, and an import of any
-form — and refuses by file and line (`docs/extending.md` §The purity scan).
-It reads each file as written and with its comments blanked, and refuses on
-either, so a comment between a banned word and its token hides nothing, a
-regular expression that steers the comment reader into blanking code hides
-nothing either, and a comment that holds a construct is refused as one. A
-byte scan cannot see a name bound or built at runtime: `const D = Date;
-D.now()` passes it. It narrows what a module can reach; it is not a sandbox,
-and it is not the argument for running the module, which is the install.
-
-### A module's proofs are taken once per process
-
-Every load proves a module on its installed bytes: the purity scan and the
-determinism fixture, which composes the standard library with the module and
-judges the fixture's pages twice. Both are kept for the process by the digest
-of the module's bytes and the scan's version, so two bundles installing one
-kit are proved once, and nothing is kept between processes. So every process
-that loads a module runs its fixture: measured on 2026-09-24 on one
-Apple-silicon machine under Node 22.22.0, the code kit's fixture (seven pages,
-judged twice) took a median of 32.7 ms over eleven fresh processes, measured
-alone, which every verb that reads `devwiki`'s law now pays once.
-
-Wanted: a cache kept between runs, keyed by the module's digest, the scan's
-version and the engine's version and build, since the fixture's outcome is a
-function of the engine as well as of the module. It is a second state that
-can disagree with the first (§Every run parses the whole corpus), and it is
-deferred until the fixture's cost is measured to matter.
+The module loader left in step 6 of the v2 delivery: a bundle no longer
+declares modules in `config/engine.json`, and nothing resolves a package from
+its `node_modules` or its tree, digests it, scans it for purity, runs its
+determinism fixture or imports it; `modules list` and `modules plan` left with
+the old table. A library is data — type, fragment and vocabulary documents
+with rules in CEL — read from the bundle's own repository by path. The loss:
+a domain that needs a grammar, a check or a fixer the kernel does not have
+cannot add one; it is expressed as a CEL rule over the page interface, or
+not at all. The first delivery rules out arbitrary executable library hooks
+inside this product's goal, so this is not deferred.
 
 ### Artifact writes are per-file atomic, not batch-atomic
 
@@ -450,21 +413,6 @@ bundle's pages, a proposal or a hook's context unasked.
 
 Wanted: an author-and-reader evaluation over synthetic bundles, and synthetic
 privacy-regression scenarios beside the suite.
-
-### The staged gate reads a `node_modules` kit from the working tree
-
-A kit under `node_modules` is not in the index, so the staged gate loads it
-from the working tree, as the preload loads it, and renders an export's copy
-of it from there: a commit is judged against the kit installed on the
-machine that commits, not one the commit carries. It is the one exception.
-A kit declared by `path` is in the index, and the staged gate takes it from
-there whole: the verdict over the staged pages, the copy's kit files, the
-law its marker names and its brief are all reached under the staged bytes,
-written out under the temporary directory and loaded there. So an unstaged
-edit to such a kit changes no staged verdict and makes no copy stale.
-
-Wanted: nothing while `node_modules` stays untracked; a bundle that must pin
-its kit exactly declares it by `path`.
 
 ### The suite is sensitive to machine load
 
@@ -967,11 +915,7 @@ old registry's core tests read frozen v1 copies of the corpora under
    for `code/decision`, a published kit; for installed bundles, a declared
    dependency between bundles, `references` and `outline`, a report type a
    proposal is written in, and a filter by applicability.
-3. For modules: a proof cache that outlives the process, keyed on the
-   engine version too (§A module's proofs are taken once per process), and
-   a `modules list` that reports a declared module without importing it
-   (§A module runs because it is installed).
-4. The capture verb, the connector layer, rich-content checks, publication
+3. The capture verb, the connector layer, rich-content checks, publication
    and access control are candidates, none scheduled.
 
 ## Developing against it

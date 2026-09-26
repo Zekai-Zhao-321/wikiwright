@@ -241,6 +241,5 @@ export const searchCommand: CommandSpec = {
     "wikiwright search basil --band identity",
   ],
   writes: false,
-  needsVaultModules: false,
   run,
 };

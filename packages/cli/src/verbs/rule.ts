@@ -250,6 +250,5 @@ export const ruleCommand: CommandSpec = {
     'wikiwright rule try --type planting --section History --expr "section.items.all(i, i.precision == \\"day\\")" --base HEAD',
   ],
   writes: false,
-  needsVaultModules: false,
   run,
 };

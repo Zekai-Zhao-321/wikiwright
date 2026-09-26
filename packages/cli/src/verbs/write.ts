@@ -737,7 +737,6 @@ export const writeCommand: CommandSpec = {
   ],
   examples: ["wikiwright write --from drafts --dry-run", "wikiwright write --from drafts"],
   writes: true,
-  needsVaultModules: false,
   plan: planForWrite,
   run,
 };
