@@ -1,0 +1,11 @@
+type: source-map
+role: reference
+description: Directory-to-purpose lookup for the repository layout, anchored to the paths it lists.
+use_when: Answering "where does X live" mechanically.
+avoid_when: Explaining how anything works (subsystem, concept).
+abstract: true
+fragments: [anchored]
+sections:
+  list:
+    - { heading: Layout, min: 1, max: 1 }
+examples: [examples/source-map.md]

@@ -1,0 +1,14 @@
+type: ops-reference
+role: reference
+description: "Lookup tables — commands, configuration keys, environment, exit codes — anchored to the code that defines them."
+use_when: Facts contributors look up, never read linearly.
+avoid_when: Anything needing narrative.
+abstract: true
+fragments: [anchored]
+sections:
+  list:
+    - { heading: Reference, min: 1, max: 1 }
+    - heading: Relations
+      min: 1
+      require:
+        - { labels: [part-of], min: 1 }

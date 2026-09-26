@@ -1,0 +1,31 @@
+fragment: anchored
+description: "The page is bound to the repository at a commit: its `pin` holds the commit its statements were read at, the `origin` (`.` for the repository the bundle sits in, else a git URL) and the repository-relative paths it `covers`, at least one. `check` names the page stale when a covered path changed since the pin. Relations carry the page's labelled links, and a relation that leaves the page lands in History as a dated line."
+fields:
+  type: object
+  properties:
+    pin:
+      $ref: "#/$defs/pin"
+      type: object
+      properties:
+        covers: { type: array, minItems: 1 }
+  required: [pin]
+sections:
+  list:
+    - { heading: Relations, max: 1, grammar: relations, vocabulary: relations, history: History }
+    - { heading: History, max: 1, grammar: entries, lifecycle: append-only }
+rules:
+  - id: covers-repository-path
+    expr: '!has(page.fields.pin) || !has(page.fields.pin.covers) || page.fields.pin.covers.all(p, p != "" && !p.startsWith("/") && !p.matches(r"(^|/)\.\.(/|$)"))'
+    severity: error
+    message: A covered path is repository-relative, with no leading slash and no `..` segment, as a git pathspec reads it.
+  - id: relation-range
+    section: Relations
+    expr: 'section.items.all(i, !(i.label in config.ranges) || !i.target.resolved || i.target.type == null || i.target.type in config.ranges[i.label] || (i.target.type in facts.ancestry && facts.ancestry[i.target.type].exists(t, t in config.ranges[i.label])))'
+    config:
+      ranges:
+        part-of: [code/subsystem, code/architecture-overview]
+        mapped-in: [code/source-map]
+        verified-by: [code/testing-guide, code/quickstart]
+        decided-by: [code/decision]
+    severity: warning
+    message: The relation points at a page of a type its label does not range over; point it at a page of one of the label's types, or use another label.

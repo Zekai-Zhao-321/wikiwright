@@ -28,6 +28,26 @@ interface Expected {
 }
 
 const LIBRARIES: Record<string, Expected> = {
+  "kit-code": {
+    id: "code",
+    types: [
+      "code/architecture-overview",
+      "code/concept",
+      "code/decision",
+      "code/integration",
+      "code/ops-reference",
+      "code/quickstart",
+      "code/source-map",
+      "code/subsystem",
+      "code/testing-guide",
+    ],
+    untested: {
+      // A negative page points a relation at a page of the wrong type, and a
+      // test page's links resolve against the importing vault (§8): the set
+      // lives with the consuming bundle, devwiki.
+      "relation-range": "its negative names a page of the vault that imports it",
+    },
+  },
   "kit-garden": {
     id: "garden",
     types: ["garden/bed", "garden/planting"],

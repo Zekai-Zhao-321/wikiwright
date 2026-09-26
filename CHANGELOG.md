@@ -9,6 +9,25 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- **`libraries/kit-code`, the code wiki's type library** (v2 contracts §1,
+  §12 step 5), id `code`, data only: the v1 kit `@wikiwright/kit-code`
+  re-expressed as documents. The nine page kinds are abstract types with
+  their v1 archetypes as roles, sections and `require` rows (relation labels
+  now `part-of`, `mapped-in`, `verified-by`, `decided-by`), `quickstart` at
+  most one page; the `anchored` fragment carries the engine `$def` `pin`
+  (at least one covered path) where v1 had three sibling fields, Relations
+  and an append-only History, and two rules: `covers-repository-path`
+  (error), v1's lookahead pattern on `covers` re-expressed with
+  `startsWith` and an RE2 match, and `relation-range` (warning), v1's
+  `range` entry property as the rule's `ranges` config, read through the
+  target's ancestry. `decision` carries `body-append-only`, v1's page-wide
+  `body.lifecycle`, as a transition rule. Rule tests for
+  `covers-repository-path` and `body-append-only` and examples of the three
+  kinds a page may write without a relation ship with it; `relation-range`'s
+  test set lives with its consumer, whose pages its negative names. Not
+  carried: the v1 kit's templates (the skeleton is derived) and its skill
+  fragments, which the brief no longer prints; the library's README keeps
+  them as prose. `packages/kit-code` stays until the old verbs leave.
 - **`libraries/kit-garden`, the neutral test library** (v2 contracts §1,
   §12 step 5), id `garden`, data only: the abstract `planting` type (role
   `procedure`: Observations as claims, an append-only History, Relations

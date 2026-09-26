@@ -1,0 +1,11 @@
+vocabulary: relations
+mode: registered
+entries:
+  part-of:
+    description: The subsystem this page's subject is one part of, or the architecture overview at the top of the tree.
+  mapped-in:
+    description: The source map that locates this subject's code in the repository tree.
+  verified-by:
+    description: The testing guide, or the quickstart, whose procedure runs or verifies this subject.
+  decided-by:
+    description: The decision record that shaped this subject.

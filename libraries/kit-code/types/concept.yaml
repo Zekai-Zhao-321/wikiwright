@@ -1,0 +1,15 @@
+type: concept
+role: concept
+description: A cross-cutting mechanism or idea that lives in many places, anchored to the places it names.
+use_when: "A mechanism (an invariant, a pattern, a data shape) spanning subsystems."
+avoid_when: Anything with a single home (subsystem).
+abstract: true
+fragments: [anchored]
+sections:
+  list:
+    - { heading: Mechanism, min: 1, max: 1 }
+    - { heading: Where it lives, min: 1, max: 1 }
+    - heading: Relations
+      min: 1
+      require:
+        - { labels: [part-of], min: 1 }
