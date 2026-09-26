@@ -5,6 +5,8 @@ A bundle declares its law with `config/engine.json` and YAML documents under
 loader reads one snapshot: disk for `check` and `write`, the index for
 `gate`, or a revision for `rule try --base`. A malformed law is
 `constitution-invalid` (exit 2) with named issues; no page is judged from it.
+Cyclic YAML aliases and excessive nesting are malformed input: a page gets
+`malformed-frontmatter`, and a law document is refused during loading.
 
 The smallest shape is [the minimal vault](../fixtures/minimal-vault).
 [Concepts](concepts.md) explains the terms, and [extending](extending.md)
@@ -166,8 +168,11 @@ and headings. There is no template declaration or `new` verb.
 ## The fixed grammar
 
 A grammar applies to top-level list items under its section heading.
-Other prose is allowed. An indented line below an item is rationale.
-A top-level item outside the grammar is `item-unparsed`.
+Other prose is allowed. A nested indented item below a record is rationale.
+One to three leading spaces can still make a CommonMark top-level bullet,
+but the canonical grammar requires column one; such an item is
+`item-unparsed`, not silently ignored. Any other top-level item outside
+the grammar is `item-unparsed` too.
 
 | Grammar | Canonical item | Section parameters |
 |---|---|---|

@@ -74,8 +74,10 @@ may attach one of the three fixed grammars:
 | `entries` | `- YYYY-MM-DD — text`, or month or year precision |
 
 Indented lines under an item are its rationale. Prose between items is
-allowed. A top-level list item that does not parse is `item-unparsed`;
-the engine does not silently reinterpret it.
+allowed. A top-level list item starts at column one; one to three leading
+spaces are still a CommonMark top-level item but are noncanonical here and
+reported as `item-unparsed`. An item with another spelling that does not
+parse is also reported, never silently reinterpreted.
 
 A claim's provenance is recognized only in its final parenthetical when it
 is a page link, an HTTP(S) URL, or a path below a declared source root.
@@ -130,7 +132,9 @@ The verdict includes coverage and a separate `unevaluated` count; a green
 summary does not claim that unevaluated checks passed.
 
 `check` judges the working tree. `write` proves the full proposed batch
-before landing it. `gate` judges the index, demotes eligible inherited
+under one captured law and page state, checks destinations, then rechecks
+that state before landing. `check --fix` refuses a proposed content repair
+that would leave a new error. `gate` judges the index, demotes eligible inherited
 findings on untouched lines, and refuses a commit with an error that
 remains. At commit-message time it also requires a reason for a law change
 and checks the declared commit prefixes. The published hooks invoke the

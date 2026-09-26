@@ -114,8 +114,8 @@ add the generated files they wrote and, under `--fix`, what the materializer
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
 | 3 | `not_found` | the page, type, revision, directory or bundle asked for does not exist: a root that is no directory, or a state with no `config/engine.json`, is `bundle-not-found` |
-| 4 | `conflict` | the state refuses the operation: a recorded base that is not the page's bytes (`base-mismatch`), a destination that exists, a tree that changed while it was read (`state-changed-during-read`), unmerged paths, a git read that failed (`git-unavailable`) |
-| 5 | `findings` | the tool worked and the subject failed: read `data.findings` |
+| 4 | `conflict` | the state refuses the operation: a stale recorded base (`base-mismatch`), a changed accepted write state (`state-changed-before-write`), an obstructed or linked replacement target (`replacement-target-refused`), a tree changing during capture (`state-changed-during-read`), unmerged paths, or failed Git plumbing (`git-unavailable`) |
+| 5 | `findings` | the tool worked and the subject failed: read `data.findings`; `fix-invalid` means `check --fix` refused a proposed page repair before writing |
 
 `git-short-read` and `git-inconsistent-read` are the engine refusing git's
 answer rather than judging from it. Every git read hands git a file for its
@@ -199,8 +199,11 @@ read.
   (every queued finding of a judge run with no base, and the law and
   content digests it was cut from); a file that differs from a fresh render
   is `generated-drift` (error, fix `check --write`). `--write` renders them;
-  `--fix` implies `--write` and first runs the folder-tag materializer under
-  `folder_tags.mode: materialize-add-only`, reporting `fixed`. `--dry-run`
+  `--fix` implies `--write` and proposes folder-tag materialization under
+  `folder_tags.mode: materialize-add-only`; a proposed repair that violates
+  the effective type law is `fix-invalid` and lands nothing. Generated
+  destinations are checked for links and obstructions before any page or
+  artifact write, in dry and real runs. A valid fix reports `fixed`. `--dry-run`
   plans exactly what the invocation lands, nothing without `--write` or
   `--fix`. Exit 5 on any error.
 - **`gate [--commit-msg <file>]`** judges the index with HEAD as its base
@@ -256,7 +259,11 @@ read.
   elsewhere that judging the disk alone does not give (a page the batch
   makes invalid, an identity collision reported on the page already there,
   an instance count), refuses the whole batch (`draft-invalid`, exit 5, the
-  findings and the `failing` paths in `data`). Otherwise
+  findings and the `failing` paths in `data`). The recorded bases, proposed
+  overlay and law come from one capture; a changed page or law before landing
+  is `state-changed-before-write` (exit 4). Every destination is checked in
+  dry and real runs; an obstructing directory or link is
+  `replacement-target-refused` (exit 4) before the first replacement. Otherwise
   every page is staged beside its path, then renamed into place, then each
   path a move left is removed: each file is its old or its new complete
   bytes, and the batch is not transactional. The envelope carries the plan's

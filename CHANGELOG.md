@@ -221,6 +221,15 @@ version` prints the engine version and the commit a binary was built from.
 - The built CLI, its pipe boundary, binary, law snapshots, write batches,
   rule tests and all five corpora run through the Bun gate. The synthetic
   episode tests the complete first-delivery correction loop.
+- `write` now binds base checks, proposed pages and law to one capture and
+  refuses a changed capture before landing. Dry and real writes preflight
+  every replacement target; `check --write` cannot follow a linked
+  generated directory outside the bundle. `check --fix` refuses a proposed
+  content fix that its own judge rejects before writing any page or artifact.
+- A one-to-three-space top-level CommonMark bullet is judged as
+  `item-unparsed` instead of bypassing a declared grammar. Cyclic YAML
+  aliases are malformed page or law input rather than an internal stack
+  error.
 
 ### Developing
 

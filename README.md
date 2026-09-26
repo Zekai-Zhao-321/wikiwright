@@ -157,8 +157,10 @@ Sow thinly in warm soil and water from below.
 
 `wikiwright write --from ../drafts --dry-run` answers with the plan,
 `[{"kind": "create", "path": "wiki/Basil.md"}]` and `"wrote": false`;
-without `--dry-run` the batch is judged together and lands whole, `created`
-and `updated` stamped. `check` now names the three generated files the page
+without `--dry-run` the batch is judged and every destination checked before
+the first replacement; `created` and `updated` are stamped. Each file lands
+complete, while a crash between files remains [a stated limit](docs/roadmap.md#writes-are-complete-per-file-not-transactional-as-a-set).
+`check` now names the three generated files the page
 moved (`generated-drift`, each with its fix, `check --write`).
 
 **Try a rule before declaring it.**

@@ -1,12 +1,9 @@
 // docs/architecture.md §Directories: the one way the shell replaces a file's
-// bytes. A content page (`writer.ts`), a generated artifact, a rendered export,
-// a skill's files and its stamp and the freshness report all land
-// the same way: staged in an exclusively created temp file beside the target,
-// renamed into place only once every file of the batch is complete. So a write
-// interrupted while staging leaves every old file as it was and no debris, and
-// a reader of the target never sees half of one. The rename loop itself is not
-// batch-atomic — a crash inside it can land some files and not others — and
-// that window is named here rather than hidden.
+// bytes. Content pages, generated artifacts and envelope --out files land
+// through a complete temp file beside each target. Every known destination
+// obstruction is refused before staging and checked again before the first
+// rename. A reader never sees half of one file; a crash during the rename
+// loop can still leave a mix across files, so that window is stated.
 import { randomBytes } from "node:crypto";
 import {
   closeSync,

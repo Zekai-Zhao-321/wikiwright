@@ -118,7 +118,11 @@ operating rules unless they are supplied through that host's setup.
 ### Writes are complete per file, not transactional as a set
 
 `write --from` proves the whole proposed batch, then stages complete
-file replacements. A crash between renames can leave some old and some
+file replacements. Recorded bases, the proposed overlay and law use one
+accepted capture, which is rechecked before landing. Known destination
+obstructions and generated-directory links are refused in dry and real runs
+before any replacement; `check --fix` also refuses a proposed repair that
+would leave a new page error. A crash between renames can leave some old and some
 new pages, or both names of a move before removal. `check --write` also
 replaces each generated file atomically but can leave a mix across files.
 The next generation converges artifacts; a partially landed write batch

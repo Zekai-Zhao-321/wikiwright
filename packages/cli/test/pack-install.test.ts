@@ -123,7 +123,7 @@ interface Envelope {
   error?: Record<string, unknown>;
 }
 
-/** Drive the INSTALLED binary with node, tolerating the engine's own exit codes. */
+/** Drive the installed CLI under Bun, tolerating the engine's own exit codes. */
 function run(argv: readonly string[], cwd: string, env: Record<string, string> = {}): Envelope {
   assert.notEqual(CLI, undefined, "the packed CLI was installed");
   try {
