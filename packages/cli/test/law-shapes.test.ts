@@ -173,6 +173,26 @@ describe("load-time codes of a shape", () => {
       "an authored unevaluatedProperties applied in place at the top",
       "  type: object\n  allOf:\n    - { unevaluatedProperties: false }\n",
     ],
+    [
+      "a $def applied in place at the top, by allOf, that closes the frontmatter",
+      "  type: object\n  allOf:\n    - { $ref: '#/$defs/closed' }\n  $defs:\n    closed: { type: object, properties: { size: { type: integer } }, additionalProperties: false }\n",
+    ],
+    [
+      "a $def applied in place at the top, by dependentSchemas, that closes the frontmatter",
+      "  type: object\n  dependentSchemas:\n    size: { $ref: '#/$defs/closed' }\n  $defs:\n    closed: { type: object, unevaluatedProperties: false }\n",
+    ],
+    [
+      "a $ref beside type: object at the top",
+      "  type: object\n  $ref: '#/$defs/sized'\n  $defs:\n    sized: { type: object, properties: { size: { type: integer } } }\n",
+    ],
+    [
+      "an engine $def applied in place at the top",
+      "  type: object\n  allOf:\n    - { $ref: '#/$defs/pin' }\n",
+    ],
+    [
+      "a $def whose $ref comes back to itself",
+      "  type: object\n  properties:\n    x: { $ref: '#/$defs/loop' }\n  $defs:\n    loop: { allOf: [{ $ref: '#/$defs/loop' }] }\n",
+    ],
     ["an authored $id", "  $id: https://example.org/label\n  type: object\n"],
     [
       "a remote $ref",
@@ -219,6 +239,31 @@ describe("load-time codes of a shape", () => {
     ],
   ])("refuses %s as shape-invalid", async (_label, body) => {
     expect(codes(await load(fields(body)))).toEqual(["shape-invalid"]);
+  });
+
+  it("names a $ref at the top of fields as the author's, not as the compiler's overflow", async () => {
+    const result = await load(
+      fields(
+        "  $ref: '#/$defs/sized'\n  $defs:\n    sized: { type: object, properties: { size: { type: integer } } }\n",
+      ),
+    );
+    expect(result.ok ? [] : result.issues).toMatchObject([
+      { code: "shape-invalid", details: { pointer: "/fields/$ref" } },
+    ]);
+    expect(result.ok ? "" : (result.issues[0]?.message ?? "")).not.toContain("call stack");
+  });
+
+  it("accepts a $def applied in place that closes nothing, and a $def that recurses through a value", async () => {
+    const loaded = await law(
+      fields(
+        "  type: object\n  allOf:\n    - { $ref: '#/$defs/sized' }\n  properties:\n    rows: { $ref: '#/$defs/tree' }\n  $defs:\n    sized: { type: object, properties: { size: { type: integer } } }\n    tree: { type: object, properties: { kids: { type: array, items: { $ref: '#/$defs/tree' } } } }\n",
+      ),
+    );
+    const validate = loaded.validators.get("label");
+    expect(validate?.({ type: "label", title: "x", size: 3, rows: { kids: [{ kids: [] }] } })).toBe(
+      true,
+    );
+    expect(validate?.({ type: "label", title: "x", size: "three" })).toBe(false);
   });
 
   it("accepts a nested object its author closes (ruling 8)", async () => {

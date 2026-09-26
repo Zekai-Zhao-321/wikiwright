@@ -55,8 +55,12 @@ version` prints the engine version and the commit a binary was built from.
     `constitution-collision` for a document `$def` under a reserved name.
     An authored `additionalProperties` or `unevaluatedProperties` is
     `shape-invalid` where it would close the frontmatter itself (the top of
-    `fields` and the subschemas applied in place there, `allOf` among them);
-    a nested object may be closed by its author (the navigator's ruling 8).
+    `fields`, the subschemas applied in place there, `allOf` among them, and
+    every document `$def` a `$ref` applies in place there); a nested object
+    may be closed by its author (the navigator's ruling 8). A `$ref` at the
+    top of `fields`, one to an engine `$def` applied in place there, and a
+    `$ref` that comes back to its own `$def` without describing a value are
+    `shape-invalid` too.
   - The fixed grammar: claims, relations and dated entries, one spelling
     each, parsed into records validated by the engine's `item-claim`,
     `item-relation` and `item-entry` schemas, each with its raw line, its

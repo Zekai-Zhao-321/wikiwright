@@ -110,9 +110,55 @@ export function authoredShapeIssues(
       details: { pointer: `/fields/$defs/${name}`, name },
     });
   }
+  const defOf = (name: string): unknown =>
+    ownDefs.has(name) ? (defs as Record<string, unknown>)[name] : undefined;
+  const refTarget = (ref: unknown): string | undefined =>
+    typeof ref === "string" ? /^#\/\$defs\/([^/]+)$/u.exec(ref)?.[1] : undefined;
+  // A $ref applied in place that comes back to itself — `a: {$ref: a}`, or
+  // through another def or an allOf — describes no value, and sends the
+  // compiler round without end.
+  const inPlaceRefs = (node: unknown, out: Set<string>): Set<string> => {
+    if (node === null || typeof node !== "object" || Array.isArray(node)) return out;
+    const record = node as Record<string, unknown>;
+    const target = refTarget(record["$ref"]);
+    if (target !== undefined && ownDefs.has(target)) out.add(target);
+    for (const [key, value] of Object.entries(record)) {
+      if (!IN_PLACE_KEYWORDS.has(key)) continue;
+      if (Array.isArray(value)) for (const sub of value) inPlaceRefs(sub, out);
+      else if (key === "dependentSchemas" && value !== null && typeof value === "object")
+        for (const sub of Object.values(value)) inPlaceRefs(sub, out);
+      else inPlaceRefs(value, out);
+    }
+    return out;
+  };
+  const cyclic = new Set<string>();
+  for (const start of ownDefs) {
+    const seen = new Set<string>();
+    const queue = [...inPlaceRefs(defOf(start), new Set())];
+    while (queue.length > 0) {
+      const name = queue.shift() as string;
+      if (name === start) {
+        cyclic.add(start);
+        break;
+      }
+      if (seen.has(name)) continue;
+      seen.add(name);
+      queue.push(...inPlaceRefs(defOf(name), new Set()));
+    }
+  }
+  for (const name of cyclic) {
+    invalid(
+      `/$defs/${name}`,
+      `a $ref applied in place comes back to "${name}" without describing a value on the way; the $ref cycles`,
+    );
+  }
   // Ruling 8: the closing keywords are refused where they would close the
-  // page's frontmatter itself — the top of `fields` and the subschemas
-  // applied in place there — and admitted on a nested object.
+  // page's frontmatter itself — the top of `fields`, the subschemas applied
+  // in place there, and every $def a $ref applies in place there — and
+  // admitted on a nested object. A $ref at the very top, or to an engine
+  // $def in place there, would make the frontmatter itself a value the
+  // reference describes, and is refused.
+  const topDefs = new Set<string>();
   // `property`: a direct member of the document's top-level `properties`,
   // the one place the judge reads `target_type` and `target_root` from
   // (verdict/page.ts); anywhere else they would be declared and read by
@@ -133,13 +179,25 @@ export function authoredShapeIssues(
     }
     const ref = record["$ref"];
     if (ref !== undefined) {
-      const match = typeof ref === "string" ? /^#\/\$defs\/([^/]+)$/u.exec(ref) : null;
-      const target = match?.[1];
+      const target = refTarget(ref);
       if (target === undefined || (!ownDefs.has(target) && !(target in ENGINE_DEFS))) {
         invalid(
           `${pointer}/$ref`,
           `${JSON.stringify(ref)} resolves to no $def of this document or of the engine (page-ref, page-ref-list, pin)`,
         );
+      } else if (top && pointer === "") {
+        invalid(
+          "/$ref",
+          "a $ref at the top of fields; declare the frontmatter's properties in place, and $ref a $def from a property",
+        );
+      } else if (top && !ownDefs.has(target)) {
+        invalid(
+          `${pointer}/$ref`,
+          `the engine $def ${target} describes a frontmatter value, never the frontmatter itself`,
+        );
+      } else if (top && !topDefs.has(target) && !cyclic.has(target)) {
+        topDefs.add(target);
+        walk(defOf(target), `/$defs/${target}`, true);
       }
     }
     for (const keyword of ["target_type", "target_root"]) {
@@ -213,6 +271,9 @@ export function documentResource(
 }
 
 function compileMessage(error: unknown): string {
+  // A cycle the authored checks do not name still ends here, worded as one.
+  if (error instanceof RangeError)
+    return "a $ref resolves back to itself without describing a value (the compiler did not finish)";
   return (error instanceof Error ? error.message : String(error)).split("\n")[0] ?? "";
 }
 
