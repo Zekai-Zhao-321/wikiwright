@@ -51,8 +51,9 @@ version` prints the engine version and the commit a binary was built from.
   touch to a warning (`details.demoted_from: "error"`) — never a finding
   with no line, never a transition, and a finding at a section's heading
   only when the section's raw text is unchanged — leaves out the
-  findings of an untouched page, and judges the whole vault, demoting
-  nothing, when the commit stages `config/`, `constitution/`, `rule-tests/`,
+  findings of an untouched page but those the base's names would not have
+  given (a link, a relation target, a page reference, a CEL rule), and
+  judges the whole vault, demoting nothing, when the commit stages `config/`, `constitution/`, `rule-tests/`,
   `examples/` or a library (`data.config_changed`); it exits 5 on any error
   left. `gate --commit-msg <file>` holds the message to `commit_prefixes`
   (`commit-prefix`, exit 5, one line on stderr) and every law change to a

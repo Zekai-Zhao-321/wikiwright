@@ -26,11 +26,25 @@
 // - a transition (`entry-edited`, `claims-transition`, `relation-removed`,
 //   a CEL rule that reads `before`) is the commit's change measured against
 //   the base, so it is never demoted. The old judge located a transition at
-//   no line, and so never demoted one either.
+//   no line, and so never demoted one either;
+// - "the base's names" is re-asked by judging the page again against the
+//   names the base held, for every code whose verdict reads another page's
+//   name or type (the link and relation-target codes, `page-ref-type`, the
+//   CEL rules, which read `facts.links`): a finding that judgment does not
+//   give is the commit's. The old judge re-asked only the three link codes,
+//   by their target; that left out a page reference whose target the
+//   commit retyped, on a page the commit did not touch.
+import { parsePage } from "../interface/index.ts";
 import type { TypeLaw } from "../law/load.ts";
 import { utf8Text, withoutBom } from "../law/text.ts";
 import { indexed } from "./grammar.ts";
-import type { StateRead } from "./judge.ts";
+import {
+  judgePage,
+  pageContext,
+  type ReadPage,
+  resolveRelations,
+  type StateRead,
+} from "./judge.ts";
 import { buildNames, type NamedPage, type VaultNames } from "./names.ts";
 import type { Unrouted } from "./page.ts";
 import type { JudgeState } from "./state.ts";
@@ -57,11 +71,13 @@ const TRANSITIONS: ReadonlySet<string> = new Set(
   ),
 );
 
-/** The codes whose verdict is the vault's names, with what each asserts of a target. */
-const NAME_RULES: ReadonlyMap<string, "unresolved" | "alias"> = new Map([
-  ["wikilink-unresolved", "unresolved"],
-  ["wikilink-alias-target", "alias"],
-  ["relation-target-unresolved", "unresolved"],
+/** The kernel codes whose verdict reads the vault's names (§3.1, §4). */
+const NAME_READERS: ReadonlySet<string> = new Set([
+  "wikilink-unresolved",
+  "wikilink-alias-target",
+  "relation-target-unresolved",
+  "page-ref-type",
+  "rule-error",
 ]);
 
 /** The codes that judge the vault as a whole: shown whatever the commit touched. */
@@ -110,10 +126,13 @@ function baseNames(state: JudgeState, read: StateRead): VaultNames | undefined {
   return buildNames(named);
 }
 
-function verdictOf(names: VaultNames, target: string): "ok" | "unresolved" | "alias" {
-  const entry = names.resolve(target);
-  if (entry === undefined) return "unresolved";
-  return entry.viaAlias ? "alias" : "ok";
+/** One finding as a key: its rule, its location and its details. */
+function findingKey(f: Unrouted): string {
+  const at =
+    f.location.kind === "page"
+      ? "page"
+      : `${f.location.heading}\u0000${f.location.occurrence}\u0000${f.location.line}`;
+  return `${f.rule}\u0000${at}\u0000${JSON.stringify(f.details)}`;
 }
 
 export interface GateScope {
@@ -149,11 +168,38 @@ export function gateScope(
   }
   const pages = new Map(read.pages.map((p) => [p.path, p] as const));
   const names = baseNames(state, read);
+  const ctx = names === undefined ? undefined : pageContext(state, law, names);
+  // Each page judged again against the base's names, once, and only a page
+  // that carries a finding whose verdict reads them.
+  const underBaseNames = new Map<string, Set<string>>();
+  const keysUnderBaseNames = (page: ReadPage): Set<string> => {
+    let keys = underBaseNames.get(page.path);
+    if (keys !== undefined) return keys;
+    keys = new Set();
+    underBaseNames.set(page.path, keys);
+    const bytes = state.pages.get(page.path);
+    if (ctx === undefined || names === undefined || bytes === undefined) return keys;
+    const current = parsePage(page.path, bytes, law);
+    const baseBytes = state.base?.get(page.path);
+    const base =
+      page.base === undefined
+        ? undefined
+        : page.base === null || baseBytes === undefined || baseBytes === null
+          ? null
+          : page.base === page.read
+            ? current
+            : parsePage(page.path, baseBytes, law);
+    if (current.ok) resolveRelations(current.page, names);
+    if (base?.ok === true && base !== current) resolveRelations(base.page, names);
+    for (const f of judgePage(ctx, { path: page.path, read: current, base }).findings)
+      keys.add(findingKey(f));
+    return keys;
+  };
+  const readsNames = (f: Unrouted): boolean => NAME_READERS.has(f.rule) || law.rules.has(f.rule);
   const causedByNames = (f: Unrouted): boolean => {
-    const asserts = NAME_RULES.get(f.rule);
-    const target = f.details["target"];
-    if (names === undefined || asserts === undefined || typeof target !== "string") return false;
-    return verdictOf(names, target) !== asserts;
+    const page = pages.get(f.path);
+    if (page === undefined || !readsNames(f)) return false;
+    return !keysUnderBaseNames(page).has(findingKey(f));
   };
   const isTransition = (f: Unrouted): boolean => {
     if (TRANSITIONS.has(f.rule)) return true;
@@ -198,7 +244,7 @@ export function gateScope(
     const current = state.pages.get(finding.path);
     const base = state.base.get(finding.path);
     const onPage = current !== undefined;
-    const byNames = causedByNames(finding);
+    const byNames = onPage && causedByNames(finding);
     if (onPage && !changed.has(finding.path) && !byNames && !VAULT_WIDE.has(finding.rule)) continue;
     if (!onPage || byNames || base === undefined || base === null || current === undefined) {
       out.push(finding);

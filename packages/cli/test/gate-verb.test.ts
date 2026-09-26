@@ -258,6 +258,27 @@ describe("what the commit caused is never demoted (v2 contracts §9.2)", () => {
     ).toEqual([["warning", "error"]]);
   });
 
+  it("shows a page reference the commit's retyping broke, on the page it did not touch", () => {
+    const vault = gardenVault();
+    const dir = gardenBundle({
+      "wiki/Basil.md": (vault["wiki/Basil.md"] as string).replace(
+        "bed: herb",
+        "bed: herb\norigin: Herb bed",
+      ),
+    });
+    commitAll(dir, "the garden");
+    stage(
+      dir,
+      "wiki/Herb bed.md",
+      "---\ntype: guide\ntitle: Herb bed\n---\n\n# Herb bed\n\n## Start here\n\nThe raised bed.\n",
+    );
+    const r = cli(["gate"], dir);
+    expect(r.status).toBe(5);
+    expect(
+      findingsOf(r.envelope, "page-ref-type").map((f) => [f.path, f.severity, f.details["kind"]]),
+    ).toEqual([["wiki/Basil.md", "error", "type"]]);
+  });
+
   it("agrees with write: the change write refuses, the gate refuses", () => {
     const dir = gardenBundle(DATED);
     commitAll(dir, "the garden");

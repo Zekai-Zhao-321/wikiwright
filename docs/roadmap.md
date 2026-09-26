@@ -825,8 +825,11 @@ its old self over any other root. What the rewritten verbs leave, so far:
   base occurrence's byte for byte, so an item added under an unchanged
   heading touches it. Not covered: a CEL section rule that reads `page`
   outside its own section is demoted when the commit changes only what it
-  reads there. A link verdict the base's names would not have given is the
-  commit's and is never demoted or scoped away.
+  reads there. A verdict that reads the vault's names — a wikilink, a
+  relation's target, a page reference and its `target_type` or
+  `target_root`, a CEL rule, which may read `facts.links` — is asked again
+  of the page against the names the base held; one those names would not
+  have given is the commit's and is never demoted or scoped away.
 - No finding of the new judge is fix-routed but the two whose fixers
   survive: `folder-tags-present` under `materialize-add-only` and
   `generated-drift`, whose `fix` names `check --fix` and `check --write`.
