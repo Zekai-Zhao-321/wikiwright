@@ -49,7 +49,7 @@ function realPathOf(path: string): string {
   }
 }
 
-/** The bundle holding `root`: it, or its nearest ancestor, carrying a config the engine reads. */
+/** The nearest bundle boundary: v4 engine.json, or the old constitution path for output safety. */
 function bundleHolding(root: string): string | undefined {
   let dir = realPathOf(root);
   for (;;) {

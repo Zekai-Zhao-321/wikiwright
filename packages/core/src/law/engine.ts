@@ -1,8 +1,7 @@
 // v2 contracts §2: `config/engine.json`, schema version 4. A strict JSON
 // Schema compiled by the engine's Ajv (schema/ajv.ts), then the two checks a
 // schema cannot state: an engine range this engine parses, and roots held to
-// the path law. Beside the old loader (registry/engine.ts), which still reads
-// every corpus in the repository; nothing here is wired into a verb yet.
+// the path law. Every bundle verb loads it through the selected state.
 import { pathRefusal } from "../paths/index.ts";
 import { errorLine, strictAjv } from "../schema/ajv.ts";
 import { parseEngineRange } from "../version/index.ts";

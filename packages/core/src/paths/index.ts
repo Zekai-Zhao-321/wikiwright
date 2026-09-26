@@ -1,13 +1,10 @@
 // docs/architecture.md §Directories (the path law) · docs/concepts.md §The judge and its states (a vault path names a
 // file INSIDE the vault, and one function decides that).
 //
-// "A type system is only as good as its narrowest write path" (AGENTS.md). The
-// narrowest write path takes a string from an agent — `new --dest`,
-// `write --path`, `lint --stdin`'s draft path — joins it to the vault root and
-// writes. Until the path law the only guard was `startsWith(root + "/") && endsWith(".md")`,
-// which `wiki/../../ESCAPED.md` satisfies, and `join` then resolves out of the
-// vault. This module is the whole of the answer, and it lives in core because
-// the constitution's declared roots and the shell's page paths are the same law.
+// A type system is only as good as its narrowest write path. A draft names a
+// path under a content root; `wiki/../../ESCAPED.md` must be refused before
+// the shell joins it to the bundle root. This shape law is shared by the
+// declared roots, the state constructors and the batch writer.
 //
 // The kernel decides SHAPE — what a vault path may spell — because that is
 // decidable from the string. Containment against a real directory is the
@@ -90,12 +87,11 @@ export function isVaultPath(path: string): boolean {
 }
 
 /**
- * docs/cli.md §new, docs/cli.md §write, docs/cli.md §lint: is this a page the vault's constitution governs?
+ * docs/constitution.md §Engine document: is this a page under the bundle's
+ * declared content roots?
  *
- * The `.md` test and the root test are what they always were; the shape test in
- * front of them is the path law. One definition, imported by the state constructors,
- * the page walk and every writing verb — there were two identical copies, and a
- * fix to one would have left the other open.
+ * The path shape, the `.md` suffix and the root test share one definition
+ * across the state constructors, page walk and writing verb.
  */
 export function isContentPath(path: string, roots: readonly string[]): boolean {
   if (!isVaultPath(path)) return false;

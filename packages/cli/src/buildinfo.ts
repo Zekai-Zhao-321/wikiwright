@@ -2,8 +2,7 @@
 // is null, not an error; the primary answer names the BUILD, read
 // from the artifact the build script stamped, and the call-time git lookup is
 // demoted to `checkout_commit`). The identity of the running code lives here, in
-// one module, because two verbs answer with it: `version` prints it and `skills`
-// stamps it into the install (docs/cli.md §skills).
+// one module so `version` names the build rather than guessing at a checkout.
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { gitRun } from "./git.ts";
@@ -87,16 +86,6 @@ export function readBuildInfo(): BuildInfo | undefined {
     return parseBuildInfo(readFileSync(path, "utf8"));
   }
   return undefined;
-}
-
-/**
- * The commit the running code identifies itself by — the one answer `version`
- * prints and `skills` stamps, so the two verbs cannot disagree about which
- * build an install came from. The BUILD's commit: a checkout hash pins nothing
- * during active development, which is the only time anyone asks.
- */
-export function runningCommit(): string | null {
-  return readBuildInfo()?.commit ?? null;
 }
 
 export interface VersionData {

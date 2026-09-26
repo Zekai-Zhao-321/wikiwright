@@ -1,5 +1,5 @@
-// docs/architecture.md (spawned git plumbing; no git library) · docs/cli.md §lint (--staged
-// reads index content, never the working tree).
+// docs/architecture.md (spawned git plumbing; no git library) · docs/cli.md §gate
+// (the staged state reads index content, never the working tree).
 import {
   BatchStreamTruncated,
   parseCatFileBatch,
@@ -257,7 +257,7 @@ export async function gitHead(root: string): Promise<string> {
 
 /**
  * The root of the work tree enclosing `dir`, or `undefined` when no repository
- * does (docs/constitution.md §Shapes: origin "." is the repository the vault
+ * does (docs/constitution.md §Digests: origin "." is the repository the bundle
  * lives in, whether the vault is its root or a directory inside it). Only
  * "not a git repository" is an answer of "none"; any other failure is the
  * plumbing breaking and is thrown as itself.
@@ -275,7 +275,7 @@ export async function gitTopLevel(dir: string): Promise<string | undefined> {
 }
 
 /**
- * Whether the repository has a commit yet (docs/constitution.md §Shapes). `rev-parse
+ * Whether the repository has a commit yet (docs/constitution.md §Digests). `rev-parse
  * --verify --quiet HEAD` separates the two cases that used to arrive as one
  * failure: exit 1 with no output is an unborn HEAD — a repository with nothing
  * to be fresh against, which is a coverage row — and anything else (no
@@ -471,11 +471,11 @@ function answersInOrder(answered: readonly string[], requested: readonly string[
  * The content of many blobs, by id, in a number of git processes bounded by
  * the bytes rather than by the count: one `cat-file --batch-check` for the
  * sizes, then one `cat-file --batch` per chunk of at most BATCH_BYTES. The
- * staged gate and the replay read every page of a state through this. A `git
+ * staged gate and revision reads take page blobs through this. A `git
  * show` per page made the gate's cost a process spawn per page in the vault,
  * about six milliseconds each: a five-thousand-page index took thirty seconds
- * to read and four to judge (docs/roadmap.md §Every run parses the whole
- * corpus). A blob the repository does not hold is a broken repository, thrown.
+ * to read and four to judge in a historical measurement. A blob the
+ * repository does not hold is a broken repository, thrown.
  */
 export async function gitReadBlobs(
   root: string,
@@ -551,9 +551,8 @@ export async function gitReadBlobs(
 }
 
 /**
- * The bytes of many blobs, by id, through the same batch read: an export
- * carries files that are not text (docs/constitution.md §exports). Each blob
- * is carried through a byte-for-byte decoding and back.
+ * The bytes of many blobs, by id, through the same batch read. Law files,
+ * pages and generated artifacts can be read without text decoding here.
  */
 export async function gitReadBlobBytes(
   root: string,

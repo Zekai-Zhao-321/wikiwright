@@ -73,11 +73,9 @@ export function vaultReadAbsolute(root: string, path: string): string {
  * nothing else does the join, so every content write in the engine is contained
  * (`docs/architecture.md §The invariants`).
  *
- * A throw rather than a result, because every agent-facing verb has already
- * refused the path by name through `contentPathRefusal` below: reaching this is
- * a defect in a verb, a race against a symlink planted mid-run, or a caller
- * whose path came from the vault walk and therefore cannot be wrong. None of
- * the three is something to describe politely and continue from.
+ * A throw rather than a result: a caller has already checked the path shape,
+ * but a link can still appear before the write. The verb must refuse that
+ * race rather than land bytes outside the bundle.
  */
 export function vaultAbsolute(root: string, path: string): string {
   assertShape(path, "write");

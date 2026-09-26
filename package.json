@@ -1,6 +1,6 @@
 {
   "name": "wikiwright-monorepo",
-  "description": "A typed wiki engine for LLM agents: Markdown pages in git, one JSON constitution, one judge at every write path.",
+  "description": "A typed Markdown wiki engine for agents: type documents in Git, one judge at every write path.",
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -1,5 +1,5 @@
-// docs/cli.md §lint (field_sources) · derivation produces ONE
-// effective page model — lint, manifest, graph, and search must see identical
+// docs/constitution.md §Engine document (field_sources) · derivation produces
+// one effective page model — check, manifest, graph and search see identical
 // resolved values.
 import { basenameOf } from "../names/basename.ts";
 import type { ParsedDoc } from "../parse/index.ts";

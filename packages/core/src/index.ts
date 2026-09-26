@@ -64,7 +64,7 @@ export { rankItemCandidates } from "./search/items.ts";
 export type { NearCandidate, NearIndex } from "./search/near.ts";
 export { buildNearIndex, nameFormsOf, nearCandidates, stripQualifier } from "./search/near.ts";
 export { TOKENIZATION_MODE, tokenize } from "./search/tokenize.ts";
-export { boundedLevenshtein, trigramJaccard, trigrams } from "./text/index.ts";
+export { trigramJaccard, trigrams } from "./text/index.ts";
 export * from "./verdict/index.ts";
 export type { Comparator, Semver } from "./version/index.ts";
 export { parseEngineRange, parseSemver, satisfiesEngineRange } from "./version/index.ts";

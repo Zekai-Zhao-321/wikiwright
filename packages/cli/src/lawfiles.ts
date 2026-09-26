@@ -8,9 +8,8 @@
 // tree, the index and a revision — that each build one `LawSnapshot` of the
 // same shape, which core's `loadTypeLaw` reads. Each reads twice —
 // `config/engine.json`, whose `libraries` name the rest, then every file
-// under the law directories — and none interprets a byte. Beside the old
-// loader (vaultio.ts); the v2 states (lawstate.ts) read through these, and
-// no verb does yet.
+// under the law directories — and none interprets a byte. The four states
+// in lawstate.ts read through these adapters.
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import {

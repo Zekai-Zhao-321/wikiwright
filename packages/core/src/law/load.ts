@@ -1,6 +1,5 @@
-// v2 contracts §2, §3: the type-document loader, beside the old one
-// (registry/). One function of one snapshot; issue collection is total within
-// a stage and stops between stages, as the old loader's was: a law whose
+// v2 contracts §2, §3: one loader function of one snapshot. Issue
+// collection is total within a stage and stops between stages: a law whose
 // libraries did not resolve has no documents to read.
 import type { ValidateFunction } from "ajv/dist/2020.js";
 import { lawBoundIssues } from "../rules/bounds.ts";

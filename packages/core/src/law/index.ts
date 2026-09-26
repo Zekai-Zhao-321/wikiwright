@@ -1,5 +1,4 @@
-// v2 contracts §2, §3: the type-document loader's surface. Beside the old
-// loader (registry/), which still loads every corpus in the repository.
+// v2 contracts §2, §3: the type-document loader's public surface.
 
 export {
   bytesDigest,

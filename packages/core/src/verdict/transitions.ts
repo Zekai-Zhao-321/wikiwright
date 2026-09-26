@@ -150,9 +150,8 @@ function polarityChanged(before: string, after: string): boolean {
  * Whether two strings are at most `max` edits apart, by code point: the
  * edit distance over the band of cells `max` either side of the diagonal,
  * since no cell outside it can be `max` or less. Linear in the length for a
- * fixed `max`, where the full table text/index.ts's `boundedLevenshtein`
- * fills is quadratic — two long cores a typo apart would fill all of it.
- * That one stays as the old verbs read it until they leave (§12 step 6).
+ * fixed `max`; the full edit-distance table would be quadratic for two
+ * long cores a typo apart.
  */
 function withinEdits(a: string, b: string, max: number): boolean {
   const A = [...a];
