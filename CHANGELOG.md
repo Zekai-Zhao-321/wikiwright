@@ -145,7 +145,8 @@ version` prints the engine version and the commit a binary was built from.
   - Rule tests and examples (§8): `rule-tests/<rule id>/` with
     `negative.md`, `repaired.md`, `positive/`, `before/` twins and
     `expect.json`, overlaid from outside the content roots and excluded from
-    instances and identity; `rule-untested` (a warning, an error for a rule
+    instances and identity, their own `exceptions` applying to nothing (a
+    repaired twin cannot pass by waiving the rule it tests); `rule-untested` (a warning, an error for a rule
     the gate's diff adds or changes), `rule-test-fails`, `example-fails`.
   - The law diff between HEAD's law and the index's (`lawDiff`, the revision
     adapter beside the index one), each change with `details.kind`, as

@@ -230,7 +230,8 @@ export function unevaluatedFinding(
 /**
  * Judge one read page under the context: the kernel's checks, in order. An
  * `overlaid` page is a rule test's or an example's, laid over the vault from
- * outside the content roots: it may be a page of an abstract type.
+ * outside the content roots: it may be a page of an abstract type, and its
+ * `exceptions` are not applied.
  */
 export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): PageJudgment {
   const judged = new Set<string>(["page-too-large", "page-not-utf8"]);
@@ -301,7 +302,10 @@ export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): P
   for (const id of ruled.judged) judged.add(id);
   for (const [id, why] of ruled.unjudged) unjudged.set(id, why);
   out.findings.push(...ruled.findings);
-  if (hasExceptions(parsed)) {
+  // A test page or an example shows the law as it stands: its own
+  // exceptions waive nothing, or a repaired twin could pass by waiving the
+  // rule under test.
+  if (!overlaid && hasExceptions(parsed)) {
     judged.add("exception-applied").add("exception-stale").add("exception-illegal");
     out.findings = applyExceptions(ctx.law, parsed, out.findings);
   }

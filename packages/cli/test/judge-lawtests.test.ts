@@ -111,6 +111,27 @@ describe("rule-test-fails", () => {
     ]);
   });
 
+  it("applies no exception on a test page or an example: a rule is not repaired by waiving it", async () => {
+    const waiver = "exceptions: [{ rule: known-bed, reason: a pond bed }]\n";
+    const waived = planting(`${waiver}---\n`, "garden/planting").replace("herb", "east");
+    const verdict = await judgeVault({
+      [`${KNOWN_BED}/repaired.md`]: waived,
+      [`${KNOWN_BED}/positive/east.md`]: waived,
+      "examples/east.md": planting(`${waiver}---\n`).replace("herb", "pond"),
+    });
+    expect(only(verdict, "rule-test-fails").map((f) => [f.path, f.details["kind"]])).toEqual([
+      ["garden:rule-tests/known-bed/positive/east.md", "positive"],
+      ["garden:rule-tests/known-bed/repaired.md", "repaired"],
+    ]);
+    expect(only(verdict, "rule-test-fails")[0]?.details["found"]).toMatchObject([
+      { rule: "known-bed" },
+    ]);
+    expect(only(verdict, "example-fails")).toMatchObject([
+      { path: "bundle:examples/east.md", details: { kind: "findings" } },
+    ]);
+    expect(only(verdict, "exception-applied")).toEqual([]);
+  });
+
   it.each([
     ["no expect.json", null],
     ["expect.json that is not JSON", "{ rule: known-bed"],
