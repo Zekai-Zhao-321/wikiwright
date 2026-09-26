@@ -112,9 +112,11 @@ describe("every emitted finding routes (docs/concepts.md §Findings and routing)
   // `check`: every error and warning names exactly one of a queue lane of the
   // verdict table and a fix, and an info names neither.
   const V2_LANES = new Set(VERDICT_TABLE.map((row) => row.lane).filter((l) => l !== undefined));
+  let judged = 0;
   for (const corpus of V2_CORPORA) {
     it(`check --all over ${corpus} (the v2 law)`, () => {
       const findings = cli(["check", "--all"], join(REPO, corpus)).envelope.data?.findings ?? [];
+      judged += findings.length;
       for (const f of findings) {
         const routes = (f.fix === undefined ? 0 : 1) + (f.queue === undefined ? 0 : 1);
         if (f.severity === "info") {
@@ -125,9 +127,13 @@ describe("every emitted finding routes (docs/concepts.md §Findings and routing)
         if (f.queue !== undefined) assert.equal(V2_LANES.has(f.queue), true, f.queue);
         if (f.fix !== undefined) assert.equal(f.fix.argv.length > 0, true, f.rule);
       }
-      assert.equal(findings.length > 0, true, `${corpus} produced findings to judge`);
     });
   }
+  // A clean corpus produces nothing; the law is about findings that exist,
+  // so the corpora together must produce some.
+  it("the v2 corpora produced findings to judge", () => {
+    assert.equal(judged > 0, true, `${judged} finding(s) across ${V2_CORPORA.length} corpora`);
+  });
 
   it("the parse seam's own codes route: malformed frontmatter and a duplicate key", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-xor-"));

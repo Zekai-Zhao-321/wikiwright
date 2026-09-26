@@ -37,7 +37,7 @@ import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
+const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/v1/handbooks/", import.meta.url));
 const PAGE = "wiki/pruning-roses.md";
 
 interface Section {

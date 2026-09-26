@@ -741,9 +741,9 @@ is answered by the command table (`COMMANDS`); any other root — a bundle on
 (`LEGACY_COMMANDS`), and so is every invocation naming its target by
 `--bundle`, the old skill discovery. Step 5 migrates the corpora of this
 repository onto the v2 law with `tools/migrate-spellings.ts`, one commit
-each: `minimal-vault` and `memory-synth` are migrated, and `devwiki` and
-the handbooks are still on the old constitution, judged by the old verbs
-until their turn. The old table's tests read frozen v1 copies of the
+each: `minimal-vault`, `memory-synth` and the orchard handbook are
+migrated, and `devwiki` and the allotment handbook are still on the old
+constitution, judged by the old verbs until their turn. The old table's tests read frozen v1 copies of the
 migrated corpora under `fixtures/v1/`, and step 6 deletes the old verbs
 with their table and those copies. A verb that left the
 command table answers `unknown-command` over a schema-version-4 bundle, and

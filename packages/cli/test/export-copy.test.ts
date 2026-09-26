@@ -33,7 +33,7 @@ import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
-const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
+const ORCHARD = join(REPO, "fixtures", "v1", "handbooks", "orchard");
 const CODE_STARTER = join(REPO, "packages", "cli", "constitutions", "code");
 const KIT_GARDEN = fileURLToPath(new URL("./fixtures/kit-garden", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-export-copy-"));

@@ -560,6 +560,18 @@ version` prints the engine version and the commit a binary was built from.
   planted for the v1 census, a relation with no link and a fact with no
   category — and one `page-shape-invalid`, a `status: draft` the reserved
   `status` does not admit.
+- **`fixtures/handbooks/orchard` is on the v2 law** (v2 contracts §12 step
+  5), migrated by `tools/migrate-spellings.ts`: `procedure-page` (role
+  `procedure`) and `guide-page` (role `hub`) as type documents, the `tags`
+  vocabulary. Its two `exports` leave with the v4 engine.json, which has no
+  such key, and their renders under `skills/` with them; the export
+  mechanism itself leaves in step 6. `procedure-page` gains an optional
+  `source` (`format: uri`) and the rule `source-host-allowed` (warning:
+  a source's host is one of the handbook's `hosts`), one of the spike's
+  rules kept as the example of a bundle's own rule, with its test set;
+  `thinning-apples` names its source. The handbook is clean under `check`
+  and `gate`. The old table's two-bundle tests read frozen v1 copies of
+  both handbooks under `fixtures/v1/handbooks/`.
 - Every git read is an asynchronous spawn (`Bun.spawn`) awaited to the
   child's exit, at most four children at a time, keeping the file-backed
   protocol: the answer read from a file git wrote, a batch request handed

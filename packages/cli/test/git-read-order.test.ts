@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const ORCHARD = fileURLToPath(new URL("../../../fixtures/handbooks/orchard", import.meta.url));
+const ORCHARD = fileURLToPath(new URL("../../../fixtures/v1/handbooks/orchard", import.meta.url));
 
 let dir = "";
 

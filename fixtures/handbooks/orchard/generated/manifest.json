@@ -8,49 +8,42 @@
     "tagged": 3
   },
   "by_label": {},
-  "extensions": {},
   "pages": [
     {
       "path": "wiki/pruning-roses.md",
       "type": "procedure-page",
-      "archetype": "procedure",
-      "chain": [
-        "procedure-page",
-        "procedure"
-      ],
+      "role": "procedure",
+      "ancestry": [],
       "title": "Pruning roses",
       "description": "Cut roses back in late winter so they flower on strong new wood.",
       "tags": [
         "pruning"
-      ]
+      ],
+      "status": "active"
     },
     {
       "path": "wiki/start-here.md",
       "type": "guide-page",
-      "archetype": "hub",
-      "chain": [
-        "guide-page",
-        "hub"
-      ],
+      "role": "hub",
+      "ancestry": [],
       "title": "Start here",
       "description": "How to use the orchard handbook, and what it covers.",
       "tags": [
         "orientation"
-      ]
+      ],
+      "status": "active"
     },
     {
       "path": "wiki/thinning-apples.md",
       "type": "procedure-page",
-      "archetype": "procedure",
-      "chain": [
-        "procedure-page",
-        "procedure"
-      ],
+      "role": "procedure",
+      "ancestry": [],
       "title": "Thinning apples",
       "description": "Remove surplus fruitlets in early summer so the rest grow to full size.",
       "tags": [
         "fruit"
-      ]
+      ],
+      "status": "active"
     }
   ]
 }

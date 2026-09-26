@@ -1,0 +1,21 @@
+type: procedure-page
+role: procedure
+description: "One gardening task as steps, for the climate this handbook covers."
+use_when: A task a gardener carries out from start to finish.
+avoid_when: Background about a plant with nothing to do.
+fields:
+  type: object
+  properties:
+    applies_to: { enum: [temperate] }
+    source: { type: string, format: uri }
+  required: [applies_to]
+sections:
+  list:
+    - { heading: Steps, min: 1 }
+    - { heading: Notes }
+rules:
+  - id: source-host-allowed
+    expr: '!has(page.fields.source) || !("source" in page.urls) || page.urls["source"].host in config.hosts'
+    config: { hosts: [fruit-society.example, nursery.example] }
+    severity: warning
+    message: The source is not one this handbook cites; cite the fruit society or the nursery, or add the host through review.

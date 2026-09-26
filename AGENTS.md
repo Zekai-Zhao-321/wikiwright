@@ -65,8 +65,8 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
   stamps a date sets `WIKIWRIGHT_TODAY`.
 - **Generated files have one generator.** `devwiki/generated`, the brief
   included, from `wikiwright check --write --root devwiki`; the two
-  handbooks' `generated/`, their briefs included, and their rendered exports
-  under `skills/`, from
+  handbooks' `generated/`, their briefs included, and the allotment
+  handbook's rendered exports under `skills/`, from
   `wikiwright check --write --root fixtures/handbooks/<name>`; the playbook from
   `bun tools/render-playbook.ts`; `docs/cli.md`'s verb block from
   `bun docs/render-cli.ts --write`; `docs/v2-dispositions.md` from

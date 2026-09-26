@@ -9,3 +9,7 @@ bundle the old table answers. Nothing else reads them, no generator writes
 them, and they leave with the old verbs and their tests (§12 step 6).
 
 - `minimal-vault/`: `fixtures/minimal-vault` before its migration.
+- `handbooks/orchard/`, `handbooks/allotment/`: the two handbooks before
+  theirs, each with the exports it declared rendered under `skills/`. The
+  two-bundle tests read them as a pair, so both were frozen when the first
+  of them moved.

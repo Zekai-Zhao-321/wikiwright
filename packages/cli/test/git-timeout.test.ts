@@ -23,7 +23,7 @@ import { GIT_TIMEOUT_DEFAULT_MS, GitTimedOut, gitRun, gitTimeoutSetting } from "
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const ORCHARD = fileURLToPath(new URL("../../../fixtures/handbooks/orchard", import.meta.url));
+const ORCHARD = fileURLToPath(new URL("../../../fixtures/v1/handbooks/orchard", import.meta.url));
 const POSIX = process.platform !== "win32";
 
 let dir = "";

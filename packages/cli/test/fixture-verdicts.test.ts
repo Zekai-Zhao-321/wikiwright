@@ -46,7 +46,7 @@ describe("the shipped fixtures lint to the verdict the spec records (docs/archit
   // type with a required climate and the same page under the same title. They
   // carry no defect, so a finding of any severity is rot; `check` holds their
   // tracked generated/ too.
-  for (const handbook of ["handbooks/orchard", "handbooks/allotment"]) {
+  for (const handbook of ["handbooks/allotment"]) {
     it(`${handbook}: three pages and no finding of any severity, under lint and check`, () => {
       for (const verb of ["lint", "check"] as const) {
         const v = lint(handbook, verb);
@@ -84,6 +84,9 @@ interface Expected {
 }
 
 const V2_VERDICTS: Record<string, Expected> = {
+  // A handbook carries no defect: a finding of any severity is rot. Its
+  // `source-host-allowed` rule holds the page that names a source.
+  "fixtures/handbooks/orchard": { pages: 3, findings: [], unevaluated: {} },
   // The planted `### Timeline` under `## Notes` is still `section-depth`'s
   // one firing. The migration respelled 98 relations and 52 entries and
   // left nine items no rewrite keeps whole — six undated lines of one

@@ -36,7 +36,7 @@ import { buildBinary } from "./fixtures/binary.ts";
 
 const REPO = fileURLToPath(new URL("../", import.meta.url));
 const CLI = join(REPO, "packages", "cli", "dist", "main.js");
-const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
+const ORCHARD = join(REPO, "fixtures", "v1", "handbooks", "orchard");
 const PAGE = "wiki/pruning-roses.md";
 const TARGET = 70_000;
 /** How long the reader waits for a CLI that has not exited before it starts reading. */

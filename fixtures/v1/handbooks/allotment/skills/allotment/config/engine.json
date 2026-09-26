@@ -1,0 +1,11 @@
+{
+  "content_roots": ["wiki"],
+  "exports": [
+    {
+      "name": "allotment",
+      "select": { "kind": "all" },
+      "guide": "wiki/start-here.md",
+      "contribution": { "mode": "none" }
+    }
+  ]
+}

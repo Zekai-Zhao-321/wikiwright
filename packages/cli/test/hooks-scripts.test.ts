@@ -36,7 +36,7 @@ const PACKAGE = fileURLToPath(new URL("../", import.meta.url));
 const CLI = join(PACKAGE, "dist", "main.js");
 const SESSION_START = join(PACKAGE, "hooks", "session-start.mjs");
 const POST_EDIT = join(PACKAGE, "hooks", "post-edit.mjs");
-const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
+const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/v1/handbooks/", import.meta.url));
 
 let tmp = "";
 let orchard = "";

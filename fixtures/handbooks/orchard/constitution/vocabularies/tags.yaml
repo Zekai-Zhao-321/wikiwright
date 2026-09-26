@@ -1,0 +1,6 @@
+vocabulary: tags
+mode: registered
+entries:
+  fruit: { description: Trees and bushes grown for their fruit. }
+  orientation: { description: How to find your way around this handbook. }
+  pruning: { description: Cutting growth back to shape a plant or improve its crop. }

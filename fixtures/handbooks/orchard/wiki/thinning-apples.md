@@ -4,6 +4,7 @@ title: Thinning apples
 description: Remove surplus fruitlets in early summer so the rest grow to full size.
 tags: [fruit]
 applies_to: temperate
+source: https://fruit-society.example/thinning-apples
 ---
 
 # Thinning apples

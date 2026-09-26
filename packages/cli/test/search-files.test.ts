@@ -13,7 +13,7 @@ import { claimsBundle, lineSearch, RECALL_QUERIES } from "./fixtures/garden-clai
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/handbooks/", import.meta.url));
+const HANDBOOKS = fileURLToPath(new URL("../../../fixtures/v1/handbooks/", import.meta.url));
 const ORCHARD = join(HANDBOOKS, "orchard");
 const ALLOTMENT = join(HANDBOOKS, "allotment");
 

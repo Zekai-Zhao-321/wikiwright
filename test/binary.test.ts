@@ -17,7 +17,7 @@ import { buildBinary } from "./fixtures/binary.ts";
 
 const REPO = fileURLToPath(new URL("../", import.meta.url));
 const CLI = join(REPO, "packages", "cli", "dist", "main.js");
-const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
+const ORCHARD = join(REPO, "fixtures", "v1", "handbooks", "orchard");
 
 let dir = "";
 let binary = "";

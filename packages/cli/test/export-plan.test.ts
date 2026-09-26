@@ -37,7 +37,7 @@ import { fsState } from "../src/state.ts";
 import { loadVault } from "../src/vaultio.ts";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
-const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
+const ORCHARD = join(REPO, "fixtures", "v1", "handbooks", "orchard");
 const KIT_GARDEN = fileURLToPath(new URL("./fixtures/kit-garden", import.meta.url));
 const SCRATCH = mkdtempSync(join(tmpdir(), "ww-export-plan-"));
 afterAll(() => rmSync(SCRATCH, { recursive: true, force: true }));
