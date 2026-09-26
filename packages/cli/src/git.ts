@@ -17,6 +17,24 @@ import { type ChildAnswer, type ChildOptions, spawnWithStdoutFile } from "./stdo
  */
 export abstract class GitAnswerRefused extends Error {}
 
+/** A git child could not run or exited unsuccessfully outside a recognised absent-path answer. */
+export class GitPlumbingFailed extends Error {
+  readonly command: string;
+  constructor(args: readonly string[], detail: string) {
+    const command = args.join(" ");
+    super(`git ${command} ${detail}`);
+    this.command = command;
+    this.name = "GitPlumbingFailed";
+  }
+}
+
+function plumbingFailure(args: readonly string[], result: ChildAnswer): never {
+  if (result.error instanceof GitAnswerRefused) throw result.error;
+  if (result.error !== undefined)
+    throw new GitPlumbingFailed(args, `failed: ${result.error.message}`);
+  throw new GitPlumbingFailed(args, `exited ${String(result.status)}: ${result.stderr.trim()}`);
+}
+
 /**
  * docs/cli.md §Exit codes: a git answer that ended before git finished
  * writing it. Every answer is read from a file git wrote itself, and every
@@ -162,12 +180,7 @@ export async function inArgumentOrder<T extends readonly unknown[] | []>(
 /** git's whole answer as text; a spawn failure or a non-zero exit is thrown with stderr. */
 export async function gitText(root: string, args: readonly string[]): Promise<string> {
   const result = await gitRun(root, args);
-  if (result.error !== undefined) throw result.error;
-  if (result.status !== 0) {
-    throw new Error(
-      `git ${args.join(" ")} exited ${String(result.status)}: ${result.stderr.trim()}`,
-    );
-  }
+  if (result.error !== undefined || result.status !== 0) plumbingFailure(args, result);
   return result.stdout.toString("utf8");
 }
 
@@ -250,16 +263,15 @@ export async function gitHead(root: string): Promise<string> {
  * plumbing breaking and is thrown as itself.
  */
 export async function gitTopLevel(dir: string): Promise<string | undefined> {
-  const result = await gitRun(dir, ["rev-parse", "--show-toplevel"]);
-  if (result.error !== undefined) throw result.error;
+  const args = ["rev-parse", "--show-toplevel"];
+  const result = await gitRun(dir, args);
+  if (result.error !== undefined) plumbingFailure(args, result);
   if (result.status === 0) {
     const out = result.stdout.toString("utf8");
     return terminated(["rev-parse", "--show-toplevel"], out, "\n", true).trim();
   }
   if (/not a git repository/iu.test(result.stderr)) return undefined;
-  throw new Error(
-    `git rev-parse --show-toplevel failed (exit ${String(result.status)}): ${result.stderr.trim()}`,
-  );
+  plumbingFailure(args, result);
 }
 
 /**
@@ -271,31 +283,28 @@ export async function gitTopLevel(dir: string): Promise<string | undefined> {
  * it keeps its warning instead of being silently read as "no commits yet".
  */
 export async function gitHasHead(root: string): Promise<boolean> {
-  const result = await gitRun(root, ["rev-parse", "--verify", "--quiet", "HEAD"]);
-  if (result.error !== undefined) throw result.error;
+  const args = ["rev-parse", "--verify", "--quiet", "HEAD"];
+  const result = await gitRun(root, args);
+  if (result.error !== undefined) plumbingFailure(args, result);
   const out = result.stdout.toString("utf8");
   if (result.status === 0) {
     terminated(["rev-parse", "--verify", "--quiet", "HEAD"], out, "\n", true);
     return true;
   }
   if (result.status === 1 && out.trim() === "") return false;
-  throw new Error(
-    `git rev-parse --verify HEAD failed (exit ${result.status}): ${result.stderr.trim()}`,
-  );
+  plumbingFailure(args, result);
 }
 
 /** A ref's commit, or null where the ref does not exist. */
 export async function gitRefHead(dir: string, ref: string): Promise<string | null> {
   const args = ["rev-parse", "--verify", "--quiet", ref];
   const result = await gitRun(dir, args);
-  if (result.error !== undefined) throw result.error;
+  if (result.error !== undefined) plumbingFailure(args, result);
   if (result.status === 0) {
     return terminated(args, result.stdout.toString("utf8"), "\n", true).trim();
   }
   if (result.status === 1) return null;
-  throw new Error(
-    `git rev-parse --verify ${ref} failed (exit ${String(result.status)}): ${result.stderr.trim()}`,
-  );
+  plumbingFailure(args, result);
 }
 
 /** Whether the repository holds this commit at all. */
@@ -321,13 +330,12 @@ export async function gitIsAncestor(
   ancestor: string,
   descendant: string,
 ): Promise<boolean> {
-  const result = await gitRun(dir, ["merge-base", "--is-ancestor", ancestor, descendant]);
-  if (result.error !== undefined) throw result.error;
+  const args = ["merge-base", "--is-ancestor", ancestor, descendant];
+  const result = await gitRun(dir, args);
+  if (result.error !== undefined) plumbingFailure(args, result);
   if (result.status === 0) return true;
   if (result.status === 1) return false;
-  throw new Error(
-    `git merge-base --is-ancestor failed (exit ${String(result.status)}): ${result.stderr.trim()}`,
-  );
+  plumbingFailure(args, result);
 }
 
 /**
@@ -439,10 +447,7 @@ const BATCH_BYTES = 32 * 1024 * 1024;
  */
 async function gitBatch(root: string, args: string[], input: string): Promise<Buffer> {
   const result = await gitRun(root, args, { input });
-  if (result.error !== undefined) throw result.error;
-  if (result.status !== 0) {
-    throw new Error(`git ${args.join(" ")} exited ${String(result.status)}: ${result.stderr}`);
-  }
+  if (result.error !== undefined || result.status !== 0) plumbingFailure(args, result);
   return result.stdout;
 }
 

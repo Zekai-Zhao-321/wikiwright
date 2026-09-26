@@ -14,7 +14,13 @@ import {
   ok,
   outPointer,
 } from "./envelope.ts";
-import { GitInconsistentRead, GitShortRead, GitTimedOut, gitTimeoutSetting } from "./git.ts";
+import {
+  GitInconsistentRead,
+  GitPlumbingFailed,
+  GitShortRead,
+  GitTimedOut,
+  gitTimeoutSetting,
+} from "./git.ts";
 import { LinkedOutsideVault } from "./paths.ts";
 import { type CommandSpec, commandSchema, flagsOf, GLOBAL_FLAGS, usageOf } from "./spec.ts";
 
@@ -165,6 +171,12 @@ function helpResult(json: boolean): CommandResult {
  * breaking.
  */
 function thrown(command: string, e: unknown): CommandResult {
+  if (e instanceof GitPlumbingFailed) {
+    return fail(command, "conflict", "git-unavailable", e.message, {
+      details: { command: `git ${e.command}` },
+      hint: "git plumbing failed; nothing was judged — inspect the repository and run the command again",
+    });
+  }
   // A git answer cut short, or contradicted by another, is the plumbing
   // failing, refused by name: never read as a smaller answer, and never a
   // quieter verdict (docs/roadmap.md).

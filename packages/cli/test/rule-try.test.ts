@@ -126,6 +126,13 @@ describe("rule try (v2 contracts §9.4)", () => {
     );
   });
 
+  it("reports git-unavailable when a base is requested outside a repository", () => {
+    const dir = gardenBundle();
+    const result = tried(["--type", "planting", "--expr", "true", "--base", "HEAD"], dir);
+    expect(result.status).toBe(4);
+    expect(result.code).toBe("git-unavailable");
+  });
+
   it("refuses a candidate the profile refuses, an unknown type and an undeclared section", () => {
     const dir = gardenBundle();
     expect(

@@ -24,7 +24,13 @@ import {
   libraryDirectories,
   loadEngineV4,
 } from "@wikiwright/core";
-import { gitIndexEntries, gitReadBlobBytes, gitTopLevel, gitTreeListing } from "./git.ts";
+import {
+  GitPlumbingFailed,
+  gitIndexEntries,
+  gitReadBlobBytes,
+  gitTopLevel,
+  gitTreeListing,
+} from "./git.ts";
 
 function posix(path: string): string {
   return sep === "/" ? path : path.split(sep).join("/");
@@ -305,7 +311,10 @@ export async function repositoryPlace(
 ): Promise<{ top: string; bundle: string; disk: string }> {
   const placed = await placeOf(bundleRoot);
   if (placed === undefined) {
-    throw new Error(`"${bundleRoot}" is in no git repository, so it has no index to read`);
+    throw new GitPlumbingFailed(
+      ["rev-parse", "--show-toplevel"],
+      `found "${bundleRoot}" is in no git repository, so it has no index to read`,
+    );
   }
   return placed;
 }

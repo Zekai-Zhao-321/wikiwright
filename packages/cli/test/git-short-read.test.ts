@@ -179,6 +179,13 @@ describe("a cut git answer is refused as git-short-read (docs/roadmap.md)", () =
     );
   });
 
+  it("the gate reports a failed HEAD law read as git-unavailable", () => {
+    if (POSIX_ONLY) return;
+    const failed = run(tmp, PATH, ["gate"], "ls-tree -r -z --full-tree", "fail");
+    assert.equal(failed.status, 4, said(failed));
+    assert.equal((failed.envelope["error"] as { code: string }).code, "git-unavailable");
+  });
+
   it("the gate refuses an index listing cut before its final NUL", () => {
     if (POSIX_ONLY) return;
     assertShortRead(run(tmp, PATH, ["gate"], "ls-files -s -z"), "ls-files -s -z");

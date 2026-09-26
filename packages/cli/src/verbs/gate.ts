@@ -48,7 +48,7 @@ import {
   ok,
 } from "../envelope.ts";
 import { driftFindings, GENERATED_PATHS, generatedPlans } from "../generated.ts";
-import { GitAnswerRefused, gitReadBlobBytes } from "../git.ts";
+import { GitAnswerRefused, GitPlumbingFailed, gitReadBlobBytes } from "../git.ts";
 import { lawSnapshotOfEntries, revisionEntries } from "../lawfiles.ts";
 import { type IndexRead, readIndex } from "../lawstate.ts";
 import type { CommandArgs, CommandSpec } from "../spec.ts";
@@ -89,14 +89,15 @@ async function indexOf(root: string): Promise<Read<IndexRead>> {
         }),
       };
     }
-    // Any other failure of the plumbing is git's, not the engine's: refused
-    // as the old gate refused it, with git's own message.
-    return {
-      ok: false,
-      result: fail("gate", "conflict", "git-unavailable", `git plumbing failed: ${message}`, {
-        hint: "the staged gate runs inside a git repository",
-      }),
-    };
+    if (e instanceof GitPlumbingFailed) {
+      return {
+        ok: false,
+        result: fail("gate", "conflict", "git-unavailable", message, {
+          hint: "the staged gate runs inside a git repository",
+        }),
+      };
+    }
+    throw e;
   }
 }
 
