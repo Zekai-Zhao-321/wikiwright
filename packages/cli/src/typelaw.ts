@@ -49,8 +49,37 @@ export function isTypeLawBundle(root: string): boolean {
 
 export type LawLoad = { ok: true; law: TypeLaw } | { ok: false; result: CommandResult };
 
-/** The law a state carries, loaded; a law that does not load is refused with its issues, and nothing is judged. */
+/** Where a state read its law from, for the refusal that names what it did not find. */
+const READ_FROM: Record<JudgeState["kind"], string> = {
+  "working-tree": "the directory",
+  overlay: "the directory",
+  index: "the index",
+  revision: "the revision",
+};
+
+/**
+ * The law a state carries, loaded; a law that does not load is refused with
+ * its issues, and nothing is judged. A state with no `config/engine.json` at
+ * all holds no bundle: absent is not malformed, so that is `bundle-not-found`
+ * (exit 3), as the old verbs answered a root with no constitution.
+ */
 export function lawOf(command: string, state: JudgeState): LawLoad {
+  const engine = state.law.bundle === "" ? ENGINE_PATH : `${state.law.bundle}/${ENGINE_PATH}`;
+  if (!state.law.files.has(engine)) {
+    return {
+      ok: false,
+      result: fail(
+        command,
+        "not_found",
+        "bundle-not-found",
+        `${READ_FROM[state.kind]} holds no ${ENGINE_PATH}, so there is no bundle to read`,
+        {
+          details: { path: ENGINE_PATH },
+          hint: "a bundle is a directory holding config/engine.json at schema_version 4; name one with --root",
+        },
+      ),
+    };
+  }
   const loaded = loadTypeLaw(state.law);
   if (loaded.ok) return { ok: true, law: loaded.law };
   return {

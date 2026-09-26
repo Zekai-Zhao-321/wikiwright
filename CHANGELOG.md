@@ -853,6 +853,12 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
+- A v2 verb over a state that holds no `config/engine.json` at all answers
+  `bundle-not-found` (exit 3, `not_found`): absent is not malformed, as the
+  old verbs answered a root with no constitution (`registry-not-found`). It
+  was `constitution-invalid` (exit 2) with an `engine-invalid` issue, the
+  answer for a bundle whose law is wrong. An `engine.json` that is there
+  and does not load is still `constitution-invalid`.
 - The v2 gate reads the index once: the law diff, the change-scoping and
   the staged generated files read the listing, the staged diff and HEAD's
   existence the state was made from, where each asked git again. A

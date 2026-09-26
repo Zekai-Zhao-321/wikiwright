@@ -8,6 +8,7 @@
 
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
@@ -22,6 +23,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
+import { writeNoteBundle } from "./fixtures/note-bundle.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -134,6 +136,23 @@ describe("exit 2 vs exit 5 never blur (docs/cli.md §The envelope)", () => {
       const r = run(tmp, ["lint"]);
       assert.equal(r.status, 3, JSON.stringify(r.envelope));
       assert.equal(r.envelope.error?.type, "not_found");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("a state with no engine.json holds no bundle (docs/cli.md §Exit codes)", () => {
+  it("the gate over an index that holds no config/engine.json is bundle-not-found, exit 3", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "ww-exit-"));
+    try {
+      writeNoteBundle(tmp, ["Clean"]);
+      execFileSync("git", ["init", "-q"], { cwd: tmp });
+      execFileSync("git", ["add", "wiki"], { cwd: tmp });
+      const r = run(tmp, ["gate"]);
+      assert.equal(r.status, 3, JSON.stringify(r.envelope));
+      assert.equal(r.envelope.error?.type, "not_found");
+      assert.equal(r.envelope.error?.code, "bundle-not-found");
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
