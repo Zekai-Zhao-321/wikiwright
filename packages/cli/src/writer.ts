@@ -4,6 +4,7 @@
 // law's write scan (docs/cli.md §The dry-run law) fails the build by name on a
 // page write anywhere else.
 import { createHash } from "node:crypto";
+import { rmSync } from "node:fs";
 import {
   applyWrite,
   type Finding,
@@ -154,4 +155,27 @@ export function splicePlan(
     ok: true,
     spliced: { text: result.text, ranges: result.ranges, consumed: result.consumed },
   };
+}
+
+/**
+ * v2 contracts §9.3: `write`'s batch writer. Every page's bytes are staged in
+ * an exclusive temp beside it before the first rename, then each is renamed
+ * into place, then the paths a move left are removed. The crash guarantee is
+ * per file: each page is its old or its new complete bytes, never a mix. The
+ * batch is not transactional: a crash between two renames leaves some pages
+ * new and some old, and one after the renames and before the removals leaves
+ * a moved page at both its paths.
+ */
+export function landBatch(
+  root: string,
+  pages: readonly { path: string; bytes: Uint8Array }[],
+  removed: readonly string[],
+): void {
+  replaceFiles(
+    pages.map((page) => ({
+      path: vaultAbsolute(root, page.path),
+      contents: Buffer.from(page.bytes),
+    })),
+  );
+  for (const path of removed) rmSync(vaultAbsolute(root, path), { force: true });
 }

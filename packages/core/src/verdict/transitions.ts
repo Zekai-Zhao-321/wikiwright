@@ -9,7 +9,8 @@
 //                       claims section of the page, not closed in place or
 //                       moved, not corrected, and not recorded by a new dated
 //                       entry quoting its core.
-//   relation-removed    a relation of the base that is gone from its section
+//   relation-removed    a relation of the base — its label and the page its
+//                       target names — that is gone from its section
 //                       and was not recorded by a new line of the section its
 //                       `history` parameter names, quoting `label [[Target]]`.
 //
@@ -366,9 +367,18 @@ function relationFindings(page: ParsedPage, base: ParsedPage, type: LawType): Un
       of(p, section.heading).flatMap((o) =>
         o.at.occurrence.items.filter((i): i is RelationRecord => i.kind === "relation"),
       );
+    // A relation is the same relation when its label is and its target names
+    // the same page: by the page the name resolves to, where it resolves, so
+    // a move that renames the target and rewrites the link keeps it (the
+    // base's names are the vault's, where the old name is the moved page's
+    // alias), and by the name as written otherwise.
+    const kept = (r: RelationRecord): string =>
+      r.target.path === null
+        ? relationIdentity(r.label, r.target.name)
+        : `${normalizeIdentity(r.label)}\u0000path:${r.target.path}`;
     const survivors = new Map<string, number>();
     for (const r of relations(page)) {
-      const id = relationIdentity(r.label, r.target.name);
+      const id = kept(r);
       survivors.set(id, (survivors.get(id) ?? 0) + 1);
     }
     const history = section.params.history;
@@ -381,9 +391,10 @@ function relationFindings(page: ParsedPage, base: ParsedPage, type: LawType): Un
           );
     for (const relation of relations(base)) {
       const id = relationIdentity(relation.label, relation.target.name);
-      const left = survivors.get(id) ?? 0;
+      const key = kept(relation);
+      const left = survivors.get(key) ?? 0;
       if (left > 0) {
-        survivors.set(id, left - 1);
+        survivors.set(key, left - 1);
         continue;
       }
       if (landed.some((item) => quotedRelations(item.raw).has(id))) continue;

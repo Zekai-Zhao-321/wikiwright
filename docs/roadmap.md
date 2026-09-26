@@ -754,6 +754,28 @@ its old self over any other root. What the rewritten verbs leave, so far:
   A finding `check` reads from git (the pins) or computes beside the judge
   (`generated-drift`, `okf-missing-type`) is reported live and never
   written there.
+- `write --from` absorbs `move`, `retire` and `new` (contracts §1). A batch
+  lands through the batch writer: every page staged beside its path, then
+  each renamed into place, then the paths a move left removed. Each page is
+  its old or its new complete bytes; the batch is not transactional, so a
+  crash between two renames leaves some pages new and some old, and one
+  before the removals leaves a moved page at both paths. A move renames the
+  file only: the index is the committer's to stage, where the old `move` ran
+  `git mv`. A move that changes a page's name adds the old name to its
+  `aliases` and rewrites every wikilink that names it — a body link, a
+  claim's provenance, a relation's target — and no frontmatter page
+  reference, which the alias keeps resolving; `relation-removed` now
+  matches a relation by its label and the page its target resolves to, so
+  the rewritten relation is the same relation. An operation and a draft may
+  not name one page (`draft-overlaps-op`): a supersession by a claim the
+  same batch adds is written in the draft, whose clause the grammar reads.
+  Not carried: the stdin form and `--section --append` (a draft is a
+  page), `--retract`, `--replace-core` and `--correct` (operations, or a
+  draft: a typo-sized correction passes `claims-transition`), the new-page
+  identity gate's stem tier, `--not-any-of` and the advisory `near` list
+  (an existing page a draft collides with is the judge's
+  `identity-collision`), the retirement banner, and `new`'s templates,
+  `--item` and `--set`.
 - `commit_prefixes` is validated and carried with no reader until the gate
   lands (`ENGINE_V4_CONSUMERS` names it `null`; every other key names the
   function that reads it, of core or of the shell, and a test holds the
@@ -912,10 +934,12 @@ its old self over any other root. What the rewritten verbs leave, so far:
   vendored as a submodule is therefore refused, not read. A bundle in no
   repository is its own top level: its library paths are read from the
   bundle root.
-- Date stamping returns with `write` in step 4 (the navigator's ruling 7):
-  it stamps `created` on a new page and `updated` on a changed one where the
-  effective shape declares the key, through the clock seam
-  (`WIKIWRIGHT_TODAY`). Until then nothing in the v2 path stamps either.
+- `write` stamps `created` on a page new to the vault, where the draft
+  carries none, and `updated` on every page a batch changes (the navigator's
+  ruling 7), through the clock seam (`WIKIWRIGHT_TODAY`). Both keys are
+  reserved, so every effective shape declares them and every such page is
+  stamped; a page whose frontmatter does not read, or whose type the law
+  does not declare, is not, and the judge reports it.
 - A rule id may not be a code the judge or the loader reports
   (`rule-collision`); the id `rule try` gives its candidate (`candidate`,
   contracts §9.4) is not reserved yet, and arrives with that verb.

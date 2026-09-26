@@ -37,10 +37,11 @@ import { skillsCommand } from "./legacy/skills.ts";
 import { typeCommand } from "./legacy/type.ts";
 import { versionCommand } from "./legacy/version.ts";
 import { vocabularyCommand } from "./legacy/vocabulary.ts";
-import { writeCommand } from "./legacy/write.ts";
+import { writeCommand as legacyWriteCommand } from "./legacy/write.ts";
 import type { CommandSpec } from "./spec.ts";
 import { checkCommand } from "./verbs/check.ts";
 import { gateCommand } from "./verbs/gate.ts";
+import { writeCommand } from "./verbs/write.ts";
 
 /** The command table: the verbs a schema-version-4 bundle is answered by. */
 export const COMMANDS: CommandSpec[] = [
@@ -52,10 +53,7 @@ export const COMMANDS: CommandSpec[] = [
   graphCommand,
   initCommand,
   modulesCommand,
-  moveCommand,
-  newCommand,
   readCommand,
-  retireCommand,
   schemaCommand,
   searchCommand,
   skillsCommand,
@@ -90,5 +88,5 @@ export const LEGACY_COMMANDS: CommandSpec[] = [
   typeCommand,
   versionCommand,
   vocabularyCommand,
-  writeCommand,
+  legacyWriteCommand,
 ];

@@ -5,19 +5,29 @@
 // that answers it, and what of the old one is not carried — and the old verb
 // is no verb there.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { fixCommand } from "../src/legacy/fix.ts";
 import { freshnessCommand } from "../src/legacy/freshness.ts";
 import { lintCommand } from "../src/legacy/lint.ts";
+import { moveCommand } from "../src/legacy/move.ts";
+import { newCommand } from "../src/legacy/new.ts";
 import { okfCommand } from "../src/legacy/okf.ts";
+import { retireCommand } from "../src/legacy/retire.ts";
 import type { CommandSpec } from "../src/spec.ts";
 import { cleanBundles, cli, commitAll, gardenBundle } from "./fixtures/garden-cli.ts";
 
-afterAll(cleanBundles);
+afterAll(() => {
+  cleanBundles();
+  rmSync(scratch, { recursive: true, force: true });
+});
 
 /** One documented example of an old verb, and the invocation of the §9 table that answers it. */
 interface Absorbed {
   example: string;
-  replacement: string[];
+  /** The invocation, or a function of a scratch directory that builds it. */
+  replacement: string[] | ((scratch: string) => string[]);
   /** What the old invocation did that the replacement does not, when anything. */
   loss?: string;
 }
@@ -77,6 +87,82 @@ const ABSORBED: { spec: CommandSpec; rows: Absorbed[] }[] = [
     ],
   },
   {
+    spec: newCommand,
+    rows: [
+      {
+        example: 'wikiwright new architecture-overview "Architecture" --dest wiki/architecture.md',
+        replacement: (scratch) =>
+          draftsOf(scratch, {
+            "wiki/Architecture.md":
+              "---\ntype: guide\ntitle: Architecture\n---\n\n# Architecture\n\n## Start here\n",
+          }),
+        loss: "the template: the skeleton is `type show --brief`'s, and the agent writes the draft",
+      },
+      {
+        example:
+          'wikiwright new subsystem "Parser" --dest wiki/parser.md --item "Relations: part_of [[Architecture]]"',
+        replacement: (scratch) =>
+          draftsOf(scratch, {
+            "wiki/Parser.md":
+              "---\ntype: guide\ntitle: Parser\n---\n\n# Parser\n\n## Start here\n\nSee [[Basil]].\n",
+          }),
+        loss: "--item: an item is a line of the draft",
+      },
+      {
+        example:
+          'wikiwright new code-concept "Lexing" --dest wiki/lexing.md --set description="How the lexer tokenizes."',
+        replacement: (scratch) =>
+          draftsOf(scratch, {
+            "wiki/Lexing.md":
+              "---\ntype: guide\ntitle: Lexing\ndescription: How the beds are dug.\n---\n\n# Lexing\n\n## Start here\n",
+          }),
+        loss: "--set: a key is a line of the draft's frontmatter",
+      },
+    ],
+  },
+  {
+    spec: moveCommand,
+    rows: [
+      {
+        example: "wikiwright move wiki/a/x.md wiki/b/x.md --reason activity-boundary",
+        replacement: (scratch) =>
+          draftsOf(
+            scratch,
+            {},
+            {
+              move: [
+                { from: "wiki/Start.md", to: "wiki/guides/Start.md", reason: "activity-boundary" },
+              ],
+            },
+          ),
+        loss: "`git mv`: the batch writer moves the file, and staging is the committer's",
+      },
+      {
+        example:
+          "wikiwright move wiki/a/Ana.md wiki/a/Anna.md --reason browse-misleading --rename --rewrite-links",
+        replacement: (scratch) =>
+          draftsOf(
+            scratch,
+            {},
+            {
+              move: [{ from: "wiki/Start.md", to: "wiki/Begin.md", reason: "browse-misleading" }],
+            },
+          ),
+      },
+    ],
+  },
+  {
+    spec: retireCommand,
+    rows: [
+      {
+        example: "wikiwright retire wiki/old-model.md --superseded-by new-model",
+        replacement: (scratch) =>
+          draftsOf(scratch, {}, { retire: [{ path: "wiki/Start.md", successor: "Basil" }] }),
+        loss: "the retirement banner",
+      },
+    ],
+  },
+  {
     spec: okfCommand,
     rows: [
       { example: "wikiwright okf check", replacement: ["check", "--rule", "okf-missing-type"] },
@@ -84,8 +170,21 @@ const ABSORBED: { spec: CommandSpec; rows: Absorbed[] }[] = [
   },
 ];
 
+/** `write --from <a drafts directory> --dry-run`, the directory written under `scratch`. */
+function draftsOf(scratch: string, pages: Record<string, string>, ops?: unknown): string[] {
+  const from = mkdtempSync(join(scratch, "drafts-"));
+  for (const [path, text] of Object.entries(pages)) {
+    mkdirSync(dirname(join(from, path)), { recursive: true });
+    writeFileSync(join(from, path), text);
+  }
+  if (ops !== undefined) writeFileSync(join(from, "ops.json"), JSON.stringify(ops));
+  return ["write", "--from", from, "--dry-run"];
+}
+
 let dir = "";
+let scratch = "";
 beforeAll(() => {
+  scratch = mkdtempSync(join(tmpdir(), "ww-absorbed-"));
   dir = gardenBundle();
   cli(["check", "--write"], dir);
   commitAll(dir, "the garden");
@@ -103,8 +202,9 @@ describe.each(ABSORBED)("the old $spec.name, absorbed", ({ spec, rows }) => {
   });
 
   it.each(rows)("$example is answered by its replacement", ({ replacement }) => {
-    const r = cli(replacement, dir);
-    expect(r.envelope.metadata.command).toBe(replacement[0] ?? "");
+    const argv = typeof replacement === "function" ? replacement(scratch) : replacement;
+    const r = cli(argv, dir);
+    expect(r.envelope.metadata.command).toBe(argv[0] ?? "");
     expect([0, 5]).toContain(r.status);
     expect(r.envelope.metadata.bundle?.["label"]).toBe("kitchen-garden");
   });

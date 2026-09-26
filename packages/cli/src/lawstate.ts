@@ -224,21 +224,34 @@ export interface Draft {
   bytes: Uint8Array;
 }
 
+/** A page a batch moves: the disk's page at `from`, laid at `to`. */
+export interface Move {
+  from: string;
+  to: string;
+}
+
 /**
  * Drafts over the working tree, judged together: the pages are the disk's
  * with every draft in its place, and the base is the disk — a page's bytes on
- * disk, `null` for a draft the disk does not hold. A draft outside the
+ * disk, `null` for a draft the disk does not hold. A move (`write`'s ops.json)
+ * takes the page away from `from`; the draft at `to` has the disk's bytes at
+ * `from` as its base, and the move is the state's rename. A draft outside the
  * content roots is refused: it would be judged as a page nothing reads; so is
  * a draft at or under a link or a submodule, which no state reads through.
  */
 export async function overlayState(
   root: string,
   drafts: readonly Draft[],
-  options: CaptureOptions = {},
+  options: CaptureOptions & { moves?: readonly Move[] } = {},
 ): Promise<JudgeState> {
   const disk = await consistentCapture(root, options);
   const roots = contentRootsOf(disk.law);
   const pages = new Map(disk.pages);
+  const movedFrom = new Map<string, string>();
+  for (const move of options.moves ?? []) {
+    pages.delete(move.from.normalize("NFC"));
+    movedFrom.set(move.to.normalize("NFC"), move.from.normalize("NFC"));
+  }
   for (const draft of drafts) {
     const path = draft.path.normalize("NFC");
     if (!isContentPath(path, roots)) {
@@ -255,8 +268,22 @@ export async function overlayState(
     pages.set(path, draft.bytes);
   }
   const base = new Map<string, Uint8Array | null>();
-  for (const path of pages.keys()) base.set(path, disk.pages.get(path) ?? null);
-  return { kind: "overlay", law: disk.law, pages: pageMap(pages), base, skipped: disk.skipped };
+  for (const path of pages.keys()) {
+    const from = movedFrom.get(path);
+    base.set(path, disk.pages.get(from ?? path) ?? null);
+  }
+  const renames: PageRename[] = [...movedFrom]
+    .map(([to, from]) => ({ from, to }))
+    .sort((a, b) => codeUnitCompare(a.to, b.to));
+  const state: JudgeState = {
+    kind: "overlay",
+    law: disk.law,
+    pages: pageMap(pages),
+    base,
+    skipped: disk.skipped,
+  };
+  if (renames.length > 0) state.renames = renames;
+  return state;
 }
 
 /** A tree entry that is a page: a regular file, not a link (120000) or a submodule (160000). */

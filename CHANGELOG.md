@@ -59,6 +59,29 @@ version` prints the engine version and the commit a binary was built from.
   names the index's law and content. `.pre-commit-hooks.yaml` at the
   repository root publishes `wikiwright-gate` (`pre-commit`) and
   `wikiwright-commit-msg` (`commit-msg`).
+- **`write --from <dir>` over the v2 law, with `ops.json`** (v2 contracts
+  §9.3 and the navigator's rulings 5 and 7). Over a bundle on schema version
+  4, `write` reads `<dir>/ops.json` when present — `bases` (a page's
+  expected `bytes` digest; a difference is `base-mismatch`, exit 4),
+  `move` (`from`, `to`, `reason`), `retire` (`path`, `successor`),
+  `retract` (`path`, `handle`, `date`) and `supersede` (`path`, `handle`,
+  `by`, `date`), any other shape `ops-invalid` with its JSON pointer — and
+  applies the operations in that order, then lays every `.md` draft under
+  `<dir>` at the vault path it mirrors. A move adds the page's old name to
+  its `aliases` and rewrites every wikilink naming it; a retirement sets
+  `status: retired` and `superseded_by`; a retraction appends `(retracted
+  D)` to the claim's line and a supersession `(valid →D-1, superseded D by
+  #xxxxxxxx)`, `D` the operation's date or today. `created` is stamped on a
+  new page and `updated` on every changed one, through `WIKIWRIGHT_TODAY`.
+  The batch is judged together, with the disk as its base and each move as
+  a rename, and lands whole (`draft-invalid`, exit 5, on an error on any
+  page it touches, nothing landed); `--dry-run` answers with the same
+  refusals and the plan the real run lands. Refused besides: a draft
+  outside the content roots, at a path a move leaves, or of a page an
+  operation changes; a missing page, successor or claim (exit 3); a
+  destination that exists, a claim already closed (exit 4).
+  `relation-removed` matches a relation by its label and the page its
+  target resolves to, so a move's rewritten relation is the same relation.
 - **Two command tables.** A root whose `config/engine.json` is schema
   version 4 is answered by the command table of the v2 contracts; any other
   root, and any `--bundle` invocation, by the old table whole, until the
@@ -605,6 +628,14 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- `move`, `retire` and `new` from the command table, absorbed by `write
+  --from` over a schema-version-4 bundle (a move and a retirement are
+  operations in `ops.json`; a new page is a draft written from `type show
+  --brief`'s skeleton); `write`'s stdin form, `--section --append`,
+  `--retract`, `--replace-core`, `--correct` and `--not-any-of` go with the
+  old `write`, and so do the identity gate's stem tier and `near` list, the
+  retirement banner, and `new`'s templates, `--item` and `--set`. Each
+  still answers a root not on schema version 4.
 - `hook`, from the command table: the published hook definition and the
   documented one-liners invoke `gate` instead, and nothing installs a hook
   or logs a `WIKIWRIGHT_BYPASS`; `hook-stale` goes with it. It still answers

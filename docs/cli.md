@@ -15,10 +15,10 @@ command table, whose verbs are rewritten over the type-document law one at a
 time; the reference below is that table's. Any other root — a bundle on
 `config/constitution.json`, or none — and any invocation that names its target
 by `--bundle` is answered by the old table whole, whose verbs the notes below
-still describe: `lint`, `fix`, `freshness` and `okf` answer such a root and
-are no verb over a schema-version-4 bundle, where `check` absorbs them, and
-`hook` is none there either, where the published hook definition invokes
-`gate`.
+still describe. Over a schema-version-4 bundle `check` absorbs `lint`, `fix`,
+`freshness` and `okf`; `write --from` absorbs `move`, `retire` and `new`; and
+the published hook definition, invoking `gate`, replaces `hook`: each of these
+is no verb there, and still answers any other root.
 
 Over a schema-version-4 bundle the hooks are `gate`'s two stages. The
 pre-commit framework reads `.pre-commit-hooks.yaml` at this repository's root
@@ -799,17 +799,14 @@ Global flags, accepted by every verb:
 | [`graph`](#graph) | consumer | no | Query the graph's edges by kind, label and the type on either side — or list the pages on one side that carry none (coverage, derived). |
 | [`init`](#init) | maintainer | yes | Scaffold a vault from a starter constitution — only what is missing, unless --force; installs the hook when git exists. |
 | [`modules`](#modules) | maintainer | no | List the modules this bundle declares, or plan the delta of adopting another version. |
-| [`move`](#move) | maintainer | yes | Move a page with a stated reason; surfaces tag findings, never edits tags. |
-| [`new`](#new) | writer | yes | Create a page of a registered type from its template; the typed write-path gate. |
 | [`read`](#read) | consumer | no | Return a page's sections verbatim, with its digest and the bundle it came from, under a byte budget. |
-| [`retire`](#retire) | maintainer | yes | Standard end-of-life: status retired + banner + optional successor pointer. |
 | [`schema`](#schema) | consumer | no | Print the generated command registry: names, roles, flags, examples. |
 | [`search`](#search) | consumer | no | Deterministic lexical search with match reasons and a coverage block. |
 | [`skills`](#skills) | maintainer | yes | Reinstall the shipped skills into .claude/skills/, or compare installed vs shipped. |
 | [`type`](#type) | consumer | no | Introspect the type registry: show one effective contract, or list all types. |
 | [`version`](#version) | consumer | no | Report the engine version and the commit this binary was BUILT from (--version / -v alias it). |
 | [`vocabulary`](#vocabulary) | consumer | no | Show one vocabulary: its entries and what they admit, the sections that bind it, and the vault's own census. |
-| [`write`](#write) | writer | yes | Write a page from stdin, a directory of drafts together (--from), or splice one item into a section (--section --append, any grammar); the claims forms retire, replace and correct a claim. |
+| [`write`](#write) | writer | yes | Land a directory of drafts and its ops.json (bases, move, retire, retract, supersede) as one batch, judged together with the disk as its base. |
 
 ### brief
 
@@ -967,49 +964,6 @@ wikiwright modules list
 wikiwright modules plan --package @acme/kit --candidate ../bundle-with-the-new-version
 ```
 
-### move
-
-`wikiwright move <from> <to>`
-
-Move a page with a stated reason; surfaces tag findings, never edits tags.
-
-Role: `maintainer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--reason <value>` | the stated justification for the move |
-| `--rename` | admit a basename change: the rename ritual, performed rather than reported |
-| `--rewrite-links` | rewrite inbound wikilinks through link-rewrite (default: report only) |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright move wiki/a/x.md wiki/b/x.md --reason activity-boundary
-wikiwright move wiki/a/Ana.md wiki/a/Anna.md --reason browse-misleading --rename --rewrite-links
-```
-
-### new
-
-`wikiwright new <type> <title>`
-
-Create a page of a registered type from its template; the typed write-path gate.
-
-Role: `writer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--dest <value>` | destination path (repo-relative) |
-| `--set <value>` (repeatable) | field=value into the skeleton's frontmatter (repeatable); a string-valued shape takes the text, a list, number, boolean or object shape takes JSON |
-| `--item <value>` (repeatable) | "<Section heading>: <item line>" placed under that declared section of the skeleton (repeatable); the section's grammar judges the line, and a heading the type does not declare is refused with the declared ones listed |
-| `--date <value>` | the write's date (default: today) |
-| `--not-any-of <value>` (repeatable) | an identity candidate this create ruled out (repeatable) |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright new architecture-overview "Architecture" --dest wiki/architecture.md
-wikiwright new subsystem "Parser" --dest wiki/parser.md --item "Relations: part_of [[Architecture]]"
-wikiwright new code-concept "Lexing" --dest wiki/lexing.md --set description="How the lexer tokenizes."
-```
-
 ### read
 
 `wikiwright read <page>`
@@ -1027,23 +981,6 @@ Role: `consumer`. Writes: no.
 wikiwright read wiki/pruning-roses.md
 wikiwright read pruning-roses --section Steps
 wikiwright read "Pruning roses" --budget 800
-```
-
-### retire
-
-`wikiwright retire <page>`
-
-Standard end-of-life: status retired + banner + optional successor pointer.
-
-Role: `maintainer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--superseded-by <value>` | canonical name of the successor page |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright retire wiki/old-model.md --superseded-by new-model
 ```
 
 ### schema
@@ -1159,33 +1096,20 @@ wikiwright vocabulary show tags
 
 ### write
 
-`wikiwright write [path]`
+`wikiwright write`
 
-Write a page from stdin, a directory of drafts together (--from), or splice one item into a section (--section --append, any grammar); the claims forms retire, replace and correct a claim.
+Land a directory of drafts and its ops.json (bases, move, retire, retract, supersede) as one batch, judged together with the disk as its base.
 
 Role: `writer`. Writes: yes (accepts `--dry-run`).
 
 | Flag | Meaning |
 |---|---|
-| `--from <value>` | a directory of drafts: every .md under it is a draft at the same vault-relative path, judged in one state and landed together or not at all |
-| `--section <value>` | the declared heading this op edits |
-| `--append` | splice the stdin lines at the section's tail: one item under a grammar, verbatim under prose |
-| `--date <value>` | the write's date (default: today) |
-| `--replace-core <value>` | claims: retire this claim handle and replace it with the stdin claim |
-| `--retract <value>` | claims: retire this claim handle with no replacement |
-| `--correct <value>` | claims: the claim handle whose core carries a typo |
-| `--core <value>` | claims: with --correct, the corrected core |
-| `--line <value>` | claims: name the claim by line instead of by handle |
-| `--coexist <value>` | claims: with --append, why a second open claim of the same category is deliberate |
-| `--base <value>` | compare-and-swap against this page digest |
-| `--not-any-of <value>` (repeatable) | an identity candidate this write ruled out (repeatable) |
+| `--from <value>` | the directory of drafts, mirroring the vault's paths, with an optional ops.json |
 | `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
 
 ```text
-wikiwright write wiki/parser.md --dry-run
-wikiwright write --from temp/drafts
-wikiwright write wiki/parser.md --section Relations --append
-wikiwright write wiki/parser.md --section Invariants --append --date 2026-09-03
+wikiwright write --from drafts --dry-run
+wikiwright write --from drafts
 ```
 
 <!-- generated: end -->
