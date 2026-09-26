@@ -13,9 +13,17 @@
 // (`vocabulary-entry-added`); a rule-test or example file changed or deleted
 // (`rule-test-changed`, `rule-test-deleted`, `example-changed`,
 // `example-deleted`); `content_roots` or `libraries` changed
-// (`content-roots`, `libraries`). Nothing else is a law change: a rule, a
-// type or a test added tightens the law, and a description or a message
-// changes no verdict.
+// (`content-roots`, `libraries`). Beyond the contracts' list, because a
+// passing page must never conceal the removal of its constraint (the first
+// delivery's words), four more relaxations: a vocabulary's `mode` changed
+// (`vocabulary-mode`: registered to census admits every value) or a retired
+// entry un-retired (`vocabulary-retired-removed`); a rule a type carried
+// that it no longer carries while the rule stands (`rule-attachment`: a
+// declaration moved to another type); and the engine keys that decide
+// what a page may hold, `extensions`, `source_roots` and `field_sources`
+// (`extensions`, `source-roots`, `field-sources`). Nothing else is a law
+// change: a rule, a type or a test added tightens the law, and a
+// description or a message changes no verdict.
 //
 // At `pre-commit` every change is `law-changed` (info) and never blocks. At
 // `commit-msg` it is `law-relaxed` (error) unless the message's body carries
@@ -175,9 +183,40 @@ export function lawDiff(head: TypeLaw, index: TypeLaw): LawChange[] {
       add("fragment-removed", was.where, `fragment ${name} is removed`, { fragment: name });
   }
 
-  // Vocabularies: an entry removed, or added to a registered one.
+  // A rule a type carried and carries no longer, while it stands elsewhere.
+  const standing = new Set(after.keys());
+  for (const [name, was] of head.types) {
+    const is = index.types.get(name);
+    if (is === undefined) continue;
+    const carried = new Set(is.rules.map((r) => r.id));
+    for (const rule of was.rules) {
+      if (carried.has(rule.id) || !standing.has(rule.id)) continue;
+      add("rule-attachment", is.where, `type ${name} no longer carries rule ${rule.id}`, {
+        rule: rule.id,
+        type: name,
+      });
+    }
+  }
+
+  // Vocabularies: an entry removed, or added to a registered one; the mode
+  // changed; a retired entry no longer retired.
   for (const [name, was] of head.vocabularies) {
     const is = index.vocabularies.get(name);
+    if (is !== undefined && is.mode !== was.mode)
+      add("vocabulary-mode", is.where, `${name}'s mode changed from ${was.mode} to ${is.mode}`, {
+        vocabulary: name,
+        before: was.mode,
+        after: is.mode,
+      });
+    for (const entry of was.retired.keys()) {
+      if (is?.retired.has(entry) === true) continue;
+      add(
+        "vocabulary-retired-removed",
+        is?.where ?? was.where,
+        `"${entry}" is no longer retired from ${name}`,
+        { vocabulary: name, entry },
+      );
+    }
     for (const entry of was.entries.keys()) {
       if (is?.entries.has(entry) === true) continue;
       add(
@@ -219,6 +258,18 @@ export function lawDiff(head: TypeLaw, index: TypeLaw): LawChange[] {
       before: head.engine.libraries,
       after: index.engine.libraries,
     });
+  const engineKeys: [string, keyof TypeLaw["engine"], string][] = [
+    ["extensions", "extensions", "extensions"],
+    ["source-roots", "source_roots", "source_roots"],
+    ["field-sources", "field_sources", "field_sources"],
+  ];
+  for (const [kind, key, written] of engineKeys) {
+    if (same(head.engine[key], index.engine[key])) continue;
+    add(kind, ENGINE_WHERE, `${written} changed`, {
+      before: head.engine[key] ?? null,
+      after: index.engine[key] ?? null,
+    });
+  }
 
   // Rule tests and examples: a file changed or deleted.
   const files = (law: TypeLaw) =>

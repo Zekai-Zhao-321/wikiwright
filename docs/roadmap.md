@@ -801,6 +801,11 @@ library under the temporary directory. What that leaves, until the verbs
   library that declares it, under its `examples/`; every page under an
   `examples/` directory is judged as a page of its type whether a type
   names it or not.
+- The law diff reports six kinds the contracts' §8 list does not name,
+  each a relaxation a passing page would otherwise conceal:
+  `vocabulary-mode`, `vocabulary-retired-removed`, `rule-attachment`,
+  `extensions`, `source-roots` and `field-sources`. They await the
+  navigator's word to join §8.
 - The law diff needs HEAD's law to load; what the gate reports when HEAD
   holds no loadable v4 law (a bundle's first v4 commit) is the `gate`
   verb's to decide in step 4.

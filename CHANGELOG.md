@@ -161,7 +161,12 @@ version` prints the engine version and the commit a binary was built from.
     repaired twin cannot pass by waiving the rule it tests); `rule-untested` (a warning, an error for a rule
     the gate's diff adds or changes), `rule-test-fails`, `example-fails`.
   - The law diff between HEAD's law and the index's (`lawDiff`, the revision
-    adapter beside the index one), each change with `details.kind`, as
+    adapter beside the index one), each change with `details.kind` —
+    beyond the contracts' list, a vocabulary's `mode`
+    (`vocabulary-mode`), an entry no longer retired
+    (`vocabulary-retired-removed`), a rule a type no longer carries while it
+    stands (`rule-attachment`), and the engine keys `extensions`,
+    `source_roots` and `field_sources` — as
     `law-changed` (info) at pre-commit and `law-relaxed` (an error) at
     commit-msg unless the body carries `law-change: <reason>`.
   - What changed from v1 on the way: a finding's code, as the table maps

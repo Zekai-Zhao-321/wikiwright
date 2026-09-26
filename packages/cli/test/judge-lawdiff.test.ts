@@ -290,6 +290,56 @@ describe("an entry added, a test or an example changed, the engine's keys", () =
   });
 });
 
+describe("the relaxations beyond the contracts' list", () => {
+  const RELATIONS = LIBRARY["libraries/kit-garden/vocabularies/relations.yaml"] ?? "";
+
+  it("reports a vocabulary's mode changed, and a retired entry no longer retired", async () => {
+    const changes = await diff({
+      "libraries/kit-garden/vocabularies/observations.yaml": OBSERVATIONS.replace(
+        "mode: registered",
+        "mode: census",
+      ),
+      "libraries/kit-garden/vocabularies/relations.yaml": RELATIONS.replace(
+        "retired:\n  planted-in: { since: 2026-01-01, successor: grows-in }\n",
+        "",
+      ),
+    });
+    expect(kinds(changes)).toEqual([
+      ["vocabulary-mode", "garden:vocabularies/observations.yaml"],
+      ["vocabulary-retired-removed", "garden:vocabularies/relations.yaml"],
+    ]);
+    expect(changes[0]?.details).toMatchObject({ before: "registered", after: "census" });
+    expect(changes[1]?.details).toMatchObject({
+      vocabulary: "garden/relations",
+      entry: "planted-in",
+    });
+  });
+
+  it("reports a rule a type no longer carries, its declaration moved to another type", async () => {
+    const rule = PLANTING.slice(PLANTING.indexOf("rules:"));
+    const changes = await diff({
+      "constitution/types/planting.yaml": PLANTING.slice(0, PLANTING.indexOf("rules:")),
+      "constitution/types/guide.yaml": `${GUIDE}${rule}`,
+    });
+    expect(changes).toMatchObject([
+      {
+        kind: "rule-attachment",
+        path: "bundle:constitution/types/planting.yaml",
+        details: { rule: "source-host-allowed", type: "planting" },
+      },
+    ]);
+  });
+
+  it.each([
+    ["extensions", { extensions: { mode: "open" } }],
+    ["source-roots", { source_roots: [] }],
+    ["field-sources", { field_sources: { title: "basename" } }],
+  ])("reports the engine key %s changed", async (kind, overrides) => {
+    const changes = await diff({ "config/engine.json": engineJson(overrides) });
+    expect(kinds(changes)).toEqual([[kind, "bundle:config/engine.json"]]);
+  });
+});
+
 describe("law-changed and law-relaxed", () => {
   const change = async () =>
     diff({ "libraries/kit-garden/types/planting.yaml": PLANTING_LIB.replace("warning", "error") });
