@@ -712,7 +712,11 @@ stdout (`docs/cli.md` §The bound and `--out`). There is no automatic spill, no
 preview of the refused envelope and no report directory the engine manages:
 the first delivery defers them until host limits reject ordinary results
 often enough that `--out` is a burden. The pipe probes cover the refusal
-beside a default, a 70,000-byte and an error envelope.
+beside a default, a 70,000-byte and an error envelope. `--out` refuses a
+file inside the bundle the invocation reads (`out-inside-bundle`), except
+under the old table's `--bundle`, which names an installed copy the
+discovery resolves only once the verb runs; that flag leaves with the
+discovery (step 6).
 
 ### The v2 verbs answer a bundle on schema version 4; the corpora are still on the old law
 

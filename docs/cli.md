@@ -159,7 +159,15 @@ lands by, and prints a two-line pointer on stdout: the two lines are one JSON
 object, `{"ok", "command", "exit_code", "bytes"` on the first and `"out"}`,
 the file's absolute path, on the second. The exit code is the envelope's own.
 A file that cannot be written is `out-unwritable` (exit 2) on stdout, with the
-exit code the envelope would have carried in `details.exit_code`.
+exit code the envelope would have carried in `details.exit_code`. A file
+inside the bundle the invocation reads — `--root`'s directory or the working
+directory, or the nearest ancestor of it carrying `config/engine.json` or
+`config/constitution.json`, every link resolved — is `out-inside-bundle`
+(exit 2) on stdout, the same `details.exit_code` beside `out` and `bundle`:
+the envelope never overwrites a page, a law file or a generated file, which
+no writing verb's checks and no `WIKIWRIGHT_ROLE` bound would see. Under the
+old table's `--bundle`, whose bundle is found only once the verb runs, the
+check is not made.
 
 The writing verbs judge with the same judge and answer in their own shapes.
 `write` and `new` report the page they wrote: its `path`, `findings`,

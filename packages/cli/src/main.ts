@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 // docs/cli.md §The envelope (stdout = one envelope; stderr = UX; parseArgs
 // strict under the command registry; generated help) · JSON-only v1.
-import { resolve } from "node:path";
+import { existsSync, realpathSync } from "node:fs";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { isSkillName, SKILL_NAME, SKILL_NAME_MAX } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { replaceFile } from "./atomicwrite.ts";
@@ -40,6 +41,64 @@ interface Sink {
   out?: string;
 }
 
+/** The root the invocation names (`--root`, else the working directory), read before the verb. */
+let invocationRoot: string | undefined = ".";
+
+/** A path with its deepest existing ancestor resolved through every link. */
+function realPathOf(path: string): string {
+  let existing = resolve(path);
+  const rest: string[] = [];
+  while (!existsSync(existing)) {
+    const parent = dirname(existing);
+    if (parent === existing) break;
+    rest.unshift(basename(existing));
+    existing = parent;
+  }
+  try {
+    return join(realpathSync(existing), ...rest);
+  } catch {
+    return resolve(path);
+  }
+}
+
+/** The bundle holding `root`: it, or its nearest ancestor, carrying a config the engine reads. */
+function bundleHolding(root: string): string | undefined {
+  let dir = realPathOf(root);
+  for (;;) {
+    if (
+      existsSync(join(dir, "config", "engine.json")) ||
+      existsSync(join(dir, "config", "constitution.json"))
+    )
+      return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return undefined;
+    dir = parent;
+  }
+}
+
+/**
+ * `--out` never writes inside the bundle the invocation reads: the envelope
+ * would overwrite a page, a law file or a generated file by a path no
+ * writing verb's checks or `WIKIWRIGHT_ROLE`'s bound see.
+ */
+function outInsideBundle(result: CommandResult, out: string): CommandResult | undefined {
+  if (invocationRoot === undefined) return undefined;
+  const bundle = bundleHolding(invocationRoot);
+  if (bundle === undefined) return undefined;
+  const target = realPathOf(out);
+  if (target !== bundle && !target.startsWith(`${bundle}${sep}`)) return undefined;
+  return fail(
+    result.envelope.metadata.command,
+    "usage",
+    "out-inside-bundle",
+    `--out names "${out}", inside the bundle at ${bundle}; the envelope is written only outside it`,
+    {
+      details: { out: target, bundle, exit_code: result.exit },
+      hint: "name a file outside the bundle, e.g. under the system's temporary directory",
+    },
+  );
+}
+
 function write(result: CommandResult, text: string): void {
   process.stdout.write(text);
   // docs/cli.md §The envelope: payload on stdout, UX on stderr — one writer each.
@@ -52,6 +111,11 @@ function emit(result: CommandResult, sink: Sink = {}): void {
   const bytes = Buffer.byteLength(text, "utf8");
   if (sink.out !== undefined) {
     const out = resolve(sink.out);
+    const inside = outInsideBundle(result, sink.out);
+    if (inside !== undefined) {
+      write(inside, `${JSON.stringify(inside.envelope, null, 2)}\n`);
+      return;
+    }
     try {
       replaceFile(out, text);
     } catch (e) {
@@ -448,11 +512,13 @@ function tableFor(rest: readonly string[]): readonly CommandSpec[] {
 const argv = process.argv.slice(2);
 const commandName = argv[0];
 if (commandName === undefined || commandName === "help" || commandName === "--help") {
+  invocationRoot = rootOf(argv.slice(1));
   const scan = scanInvocation(undefined, argv.slice(1));
   emit(helpResult(scan.wantsJson), scan);
 } else {
   const resolvedName = VERSION_ALIASES.has(commandName) ? "version" : commandName;
   const rest = argv.slice(1);
+  invocationRoot = rootOf(rest);
   const table = tableFor(rest);
   const spec = table.find((c) => c.name === resolvedName);
   const sink = scanInvocation(spec, rest);

@@ -142,7 +142,11 @@ version` prints the engine version and the commit a binary was built from.
   hint naming `--out <file>`; `--out`, a global flag, writes the whole
   envelope to the file and prints a two-line pointer (`ok`, `command`,
   `exit_code`, `bytes`, `out`) on stdout, exit code the envelope's own, or
-  `out-unwritable` (exit 2). `<verb> --help --json` prints the verb's
+  `out-unwritable` (exit 2); a file inside the bundle the invocation reads
+  (its root, or the nearest ancestor carrying `config/engine.json` or
+  `config/constitution.json`, links resolved) is `out-inside-bundle`
+  (exit 2), so no role writes a page, a law file or a generated file
+  through it. `<verb> --help --json` prints the verb's
   schema, the registry row `schema` prints, and `wikiwright --help --json`
   every verb's; `<verb> --help` gains a `usage` line. No automatic spill, no
   preview and no report directory: deferred until `--out` is a burden.

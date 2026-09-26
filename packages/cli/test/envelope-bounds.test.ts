@@ -5,7 +5,15 @@
 // `--help --json` prints a verb's schema, and the top-level `--help --json`
 // every verb's, in place of the `schema` verb. Every file under os.tmpdir().
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -106,6 +114,46 @@ describe("--out (v2 contracts §9)", () => {
     const envelope = JSON.parse(r.stdout) as Envelope;
     expect(envelope.error?.code).toBe("out-unwritable");
     expect(envelope.error?.details?.["exit_code"]).toBe(0);
+  });
+
+  it("never writes inside the bundle the invocation reads, whatever the role", () => {
+    const garden = gardenBundle();
+    const basil = readFileSync(join(garden, "wiki/Basil.md"), "utf8");
+    const start = readFileSync(join(garden, "wiki/Start.md"), "utf8");
+    symlinkSync(garden, join(dir, "garden-link"));
+    const cases: { args: string[]; cwd: string }[] = [
+      {
+        args: ["read", "Basil", "--root", garden, "--out", join(garden, "wiki/Basil.md")],
+        cwd: dir,
+      },
+      { args: ["write", "--from", dir, "--out", "wiki/Start.md", "--root", "."], cwd: garden },
+      { args: ["read", "Basil", "--out", "Basil.md"], cwd: join(garden, "wiki") },
+      {
+        args: ["version", "--root", garden, "--out", join(dir, "garden-link", "wiki", "x.json")],
+        cwd: dir,
+      },
+    ];
+    for (const { args, cwd } of cases) {
+      const r = runCli([CLI, ...args], {
+        cwd,
+        encoding: "utf8",
+        env: { ...process.env, WIKIWRIGHT_ROLE: "consumer" },
+      });
+      expect(r.status).toBe(2);
+      const envelope = JSON.parse(r.stdout) as Envelope;
+      expect(envelope.error?.code).toBe("out-inside-bundle");
+    }
+    expect(readFileSync(join(garden, "wiki/Basil.md"), "utf8")).toBe(basil);
+    expect(readFileSync(join(garden, "wiki/Start.md"), "utf8")).toBe(start);
+    expect(existsSync(join(garden, "wiki/x.json"))).toBe(false);
+    const outside = join(dir, "consumer-read.json");
+    const r = runCli([CLI, "read", "Basil", "--root", garden, "--out", outside], {
+      cwd: dir,
+      encoding: "utf8",
+      env: { ...process.env, WIKIWRIGHT_ROLE: "consumer" },
+    });
+    expect(r.status).toBe(0);
+    expect((JSON.parse(readFileSync(outside, "utf8")) as Envelope).ok).toBe(true);
   });
 
   it("is accepted by every verb, as a global flag", () => {
