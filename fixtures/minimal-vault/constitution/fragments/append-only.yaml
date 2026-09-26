@@ -2,6 +2,6 @@ fragment: append-only
 description: "The page is append-only as a whole: a later change adds lines after the body and never edits one above."
 rules:
   - id: body-append-only
-    expr: "!before.present || (page.body.trim() + \"\\n\").startsWith(before.page.body.trim() + \"\\n\")"
+    expr: "!before.present || before.page.body.trim() == \"\" || (page.body.replace(\"\\r\\n\", \"\\n\").trim() + \"\\n\").startsWith(before.page.body.replace(\"\\r\\n\", \"\\n\").trim() + \"\\n\")"
     severity: error
     message: "This page is append-only: its body before this change is a prefix of its body after it; record a correction as a new dated line."

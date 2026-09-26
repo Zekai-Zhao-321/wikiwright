@@ -856,6 +856,15 @@ version` prints the engine version and the commit a binary was built from.
   across owners was reported untested with an empty `details.missing` and
   the message "has no  page"; a rule is now untested exactly when
   `missing` names a page.
+- `body-append-only` admits an append to a page written with CRLF line
+  endings and to a page whose body was empty or whitespace only; both were
+  refused as edits. The rule's expression reads both bodies with `\r\n` as
+  `\n` and holds any body over an empty one. It is one expression in
+  library `code`'s `decision`, in the `append-only` fragments of
+  `fixtures/minimal-vault` and `fixtures/memory-synth`, and in the
+  constant `tools/migrate-spellings.ts` writes; memory-synth's test set
+  now appends to an empty body, minimal-vault's to a CRLF page, and
+  `body-append-only.test.ts` holds all three documents at the gate.
 - The covering diff `freshness` reads no longer depends on the caller's git
   configuration: under `diff.relative=true` a vault in a directory of its
   repository got an empty diff for a covered path outside that directory,

@@ -472,9 +472,9 @@ function sectionsDocument(sections: V1Sections, where: string, report: Report): 
 }
 
 /** §6: the page-wide append-only law of v1 (`body.lifecycle`), as a transition rule. */
-const BODY_APPEND_ONLY: JsonMap = {
+export const BODY_APPEND_ONLY: JsonMap = {
   id: "body-append-only",
-  expr: '!before.present || (page.body.trim() + "\\n").startsWith(before.page.body.trim() + "\\n")',
+  expr: '!before.present || before.page.body.trim() == "" || (page.body.replace("\\r\\n", "\\n").trim() + "\\n").startsWith(before.page.body.replace("\\r\\n", "\\n").trim() + "\\n")',
   severity: "error",
   message:
     "This page is append-only: its body before this change is a prefix of its body after it; record a correction as a new dated line.",

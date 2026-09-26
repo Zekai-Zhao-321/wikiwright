@@ -2,7 +2,7 @@
 
 Generated file — do not edit; regenerate with `wikiwright check --write`.
 
-Law digest: `53934466cc042fb11b9ea112bea154b5167bfef8949dbfc34a1ae32929108acc`
+Law digest: `2c7dc9aac302bad6c04acd55d1b773a5f879762d6d7cba6e10e2339e7aa0939a`
 
 ## The loop
 

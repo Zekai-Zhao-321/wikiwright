@@ -18,7 +18,7 @@ sections:
     - { heading: Consequences, max: 1 }
 rules:
   - id: body-append-only
-    expr: '!before.present || (page.body.trim() + "\n").startsWith(before.page.body.trim() + "\n")'
+    expr: '!before.present || before.page.body.trim() == "" || (page.body.replace("\r\n", "\n").trim() + "\n").startsWith(before.page.body.replace("\r\n", "\n").trim() + "\n")'
     severity: error
     message: "A decision record is append-only: its body before this change is a prefix of its body after it; a consequence learned later is a new dated line at the end, and a reversed decision is a new record that supersedes this one."
 examples: [examples/decision.md]
