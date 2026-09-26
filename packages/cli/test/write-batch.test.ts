@@ -17,6 +17,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { bytesDigest, claimHandle } from "@wikiwright/core";
+import { landBatch } from "../src/writer.ts";
 import { TODAY } from "./fixtures/clock.ts";
 import { cleanBundles, cli, findingsOf, gardenBundle } from "./fixtures/garden-cli.ts";
 import { removeTree } from "./fixtures/garden-law.ts";
@@ -272,6 +273,29 @@ describe("ops.json (v2 contracts §9.3)", () => {
     });
   });
 
+  it("refuses a move that changes only case, and one onto another page's case variant", () => {
+    const dir = gardenBundle();
+    const before = snapshot(dir);
+    const only = drafts(
+      {},
+      { move: [{ from: "wiki/Basil.md", to: "wiki/basil.md", reason: "lower case" }] },
+    );
+    for (const args of [["--dry-run"], []]) {
+      const r = cli(["write", "--from", only, ...args], dir);
+      expect(r.status).toBe(4);
+      expect(r.envelope.error?.code).toBe("move-case-only");
+    }
+    const onto = drafts(
+      {},
+      { move: [{ from: "wiki/Basil.md", to: "wiki/start.md", reason: "merge" }] },
+    );
+    const r = cli(["write", "--from", onto], dir);
+    expect(r.envelope.error?.code).toBe("destination-exists");
+    expect(r.envelope.error?.details?.["existing"]).toBe("wiki/Start.md");
+    expect(delta(before, snapshot(dir))).toEqual([]);
+    expect(page(dir, "wiki/Basil.md")).toContain("title: Basil");
+  });
+
   it("refuses a draft on a path a move leaves, and a draft of a page an operation changes", () => {
     const dir = gardenBundle();
     const move = { move: [{ from: "wiki/Start.md", to: "wiki/Begin.md", reason: "clearer" }] };
@@ -358,5 +382,23 @@ describe("ops.json (v2 contracts §9.3)", () => {
     );
     // The clause parses under the grammar.
     expect(findingsOf(cli(["check", "--all"], dir).envelope, "item-unparsed")).toEqual([]);
+  });
+});
+
+describe("the batch writer (v2 contracts §9.3)", () => {
+  it("never removes the path a page just landed at, whatever the filesystem folds", () => {
+    const root = mkdtempSync(join(tmpdir(), "ww-land-"));
+    scratch.push(root);
+    mkdirSync(join(root, "wiki"));
+    writeFileSync(join(root, "wiki/Basil.md"), "old\n");
+    landBatch(
+      root,
+      [{ path: "wiki/basil.md", bytes: new TextEncoder().encode("new\n") }],
+      ["wiki/Basil.md"],
+    );
+    // Case-insensitive: one file, its new bytes kept. Case-sensitive: the new
+    // path holds them and the old one is gone.
+    expect(readFileSync(join(root, "wiki/basil.md"), "utf8")).toBe("new\n");
+    expect(readdirSync(join(root, "wiki")).length).toBe(1);
   });
 });

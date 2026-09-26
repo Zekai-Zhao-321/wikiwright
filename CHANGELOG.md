@@ -85,7 +85,10 @@ version` prints the engine version and the commit a binary was built from.
   refusals and the plan the real run lands. Refused besides: a draft
   outside the content roots, at a path a move leaves, or of a page an
   operation changes; a missing page, successor or claim (exit 3); a
-  destination that exists, a claim already closed (exit 4).
+  destination that exists, compared case-folded, a move that changes only
+  case (`move-case-only`), a claim already closed (exit 4). The batch
+  writer never removes a path that is the same file as a page it just
+  landed.
   `relation-removed` matches a relation by its label and the page its
   target resolves to, so a move's rewritten relation is the same relation.
 - **`rule try`** (v2 contracts §9.4). `rule try --type <t> [--section <h>]

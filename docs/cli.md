@@ -310,7 +310,10 @@ read.
   any other shape is `ops-invalid` (exit 2) with its JSON pointer. A base
   that is not the page's current bytes digest is `base-mismatch` (exit 4).
   The operations apply in that order: a move renames the page, adds its old
-  name to `aliases` and rewrites every wikilink naming it; a retirement sets
+  name to `aliases` and rewrites every wikilink naming it (a destination
+  that exists, compared case-folded, is `destination-exists`; one that
+  differs from the page's path only in case or normalization is
+  `move-case-only`, both exit 4); a retirement sets
   `status: retired` and `superseded_by`; a retraction appends `(retracted
   D)` to the claim's line, a supersession `(valid →D-1, superseded D by
   #xxxxxxxx)`, the claim named by its handle (`claim-not-found`, exit 3;

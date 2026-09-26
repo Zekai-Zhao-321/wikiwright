@@ -189,15 +189,34 @@ function applyMoves(batch: Batch, ops: OpsFile): Step<void> {
         ),
       );
     }
-    if (batch.pages.has(move.to)) {
+    if (move.to !== move.from && normalizeIdentity(move.to) === normalizeIdentity(move.from)) {
+      // On a case-insensitive filesystem the two spellings are one file: the
+      // landing would write the page and then remove it as the path it left.
+      return refuse(
+        fail(
+          "write",
+          "conflict",
+          "move-case-only",
+          `move[${index}]: "${move.to}" differs from "${move.from}" only in case or normalization`,
+          {
+            details: { op: "move", index, from: move.from, to: move.to },
+            hint: "a page's name is compared case-folded, so the rename changes no link; rename the file with git mv",
+          },
+        ),
+      );
+    }
+    const taken = [...batch.pages.keys()].find(
+      (path) => normalizeIdentity(path) === normalizeIdentity(move.to),
+    );
+    if (taken !== undefined) {
       return refuse(
         fail(
           "write",
           "conflict",
           "destination-exists",
-          `move[${index}]: a page already exists at "${move.to}"`,
+          `move[${index}]: a page already exists at "${taken}"`,
           {
-            details: { op: "move", index, path: move.to },
+            details: { op: "move", index, path: move.to, existing: taken },
           },
         ),
       );

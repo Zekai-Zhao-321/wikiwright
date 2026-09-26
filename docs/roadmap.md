@@ -782,6 +782,10 @@ its old self over any other root. What the rewritten verbs leave, so far:
   `identity-collision`, which refuses the batch on whichever page it is
   reported), the retirement banner, and `new`'s templates,
   `--item` and `--set`.
+  A move that changes only the case or the normalization of a page's path
+  is refused (`move-case-only`): on a case-insensitive filesystem the two
+  spellings are one file, and a page's name is compared case-folded, so the
+  rename changes no link; `git mv` renames the file.
 - A page's status (`read`, and each `search` result) keeps its two reasons
   apart: `reason` says why `stale` is true or null, and `unresolved_reason`
   why `unresolved` is null (`queue-stale`, or `queue-missing` when there is

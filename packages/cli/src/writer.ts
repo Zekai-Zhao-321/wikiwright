@@ -4,7 +4,7 @@
 // law's write scan (docs/cli.md §The dry-run law) fails the build by name on a
 // page write anywhere else.
 import { createHash } from "node:crypto";
-import { rmSync } from "node:fs";
+import { lstatSync, rmSync, statSync } from "node:fs";
 import {
   applyWrite,
   type Finding,
@@ -164,7 +164,9 @@ export function splicePlan(
  * per file: each page is its old or its new complete bytes, never a mix. The
  * batch is not transactional: a crash between two renames leaves some pages
  * new and some old, and one after the renames and before the removals leaves
- * a moved page at both its paths.
+ * a moved page at both its paths. A path to remove that is the same file as a
+ * page just landed — a case variant of it on a case-insensitive filesystem —
+ * is left: removing it would remove the page.
  */
 export function landBatch(
   root: string,
@@ -177,5 +179,21 @@ export function landBatch(
       contents: Buffer.from(page.bytes),
     })),
   );
-  for (const path of removed) rmSync(vaultAbsolute(root, path), { force: true });
+  const landed = new Set(
+    pages.map((page) => {
+      const stat = statSync(vaultAbsolute(root, page.path));
+      return `${stat.dev}:${stat.ino}`;
+    }),
+  );
+  for (const path of removed) {
+    const absolute = vaultAbsolute(root, path);
+    let stat: ReturnType<typeof lstatSync> | undefined;
+    try {
+      stat = lstatSync(absolute);
+    } catch {
+      continue;
+    }
+    if (landed.has(`${stat.dev}:${stat.ino}`)) continue;
+    rmSync(absolute, { force: true });
+  }
 }
