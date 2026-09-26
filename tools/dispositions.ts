@@ -371,7 +371,7 @@ export const RULES: readonly Row[] = [
   [
     "claims-transition",
     "kernel",
-    "the judge, by id (ruling 3): an open claim of the base, matched by handle, closed, corrected or recorded by a dated entry quoting it (verdict/transitions.ts)",
+    "the judge, by id (ruling 3): an open claim of the base, matched by category and handle, closed, corrected or recorded by a dated entry quoting it (verdict/transitions.ts)",
   ],
   [
     "claim-landing",

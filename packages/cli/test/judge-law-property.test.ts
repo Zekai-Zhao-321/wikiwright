@@ -303,6 +303,7 @@ describe("the correction tolerance under the transition, ported", () => {
 
   it.each([
     ["a date", claim.replace("2025", "2026")],
+    ["a category", claim.replace("[measured]", "[advice]")],
     ["a polarity", claim.replace("Twelve fruit", "Never twelve fruit")],
     ["a reworded core", "- [measured] Eight fruit a truss this year. ([[Herb bed]])"],
   ])("%s is a new claim, and the old one left unclosed", async (_what, after) => {

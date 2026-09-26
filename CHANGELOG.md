@@ -132,7 +132,8 @@ version` prints the engine version and the commit a binary was built from.
     `identity-collision`, `instances-min` and `instances-max`.
   - The kernel transitions (ruling 3), against the base: `entry-edited`
     (`lifecycle: append-only`), `claims-transition` (an open claim, by
-    handle, closed, corrected or recorded by a dated entry quoting it) and
+    category and handle, closed, corrected or recorded by a dated entry
+    quoting it) and
     `relation-removed` (recorded in the `history` heading). CEL rules
     evaluate per page or per matching occurrence; a result that is not a
     bool is `rule-error` (`details.kind` `non-bool` or `error`). A

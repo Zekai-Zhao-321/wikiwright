@@ -761,9 +761,11 @@ library under the temporary directory. What that leaves, until the verbs
   relation target stays a warning.
 - `claims-transition` holds every open claim of a claims section: v1 held
   only the categories of class `supersede` or `accumulate`, and the classes
-  left with the v1 vocabularies. A claim is matched by its handle, so one
-  retracted or superseded in place, moved to another claims section, or
-  given another source keeps its handle and passes; a typo-sized correction
+  left with the v1 vocabularies. A claim is matched by its category and its
+  handle, as v1 matched category and core, so one retracted or superseded
+  in place, moved to another claims section, or given another source keeps
+  both and passes, and one given another category is a new claim that
+  leaves the old one unclosed; a typo-sized correction
   passes; and one that left is recorded only by a new dated entry quoting
   its core, where v1 read the section the claims `history` parameter
   named. `relation-removed` holds every relations section, as v1 did, as an

@@ -88,7 +88,7 @@ Every row of the composed pass table (`passRows(standardLibrary())`): the kernel
 | `provenance-path-only` | dropped | `provenance-path-only` removed with the provenance forms: a path under a source root is provenance of kind `path` (§4). |
 | `provenance-weak` | dropped | `provenance-weak` removed with the provenance forms (§4). |
 | `hearsay` | dropped | `hearsay` removed with the provenance forms (§4). |
-| `claims-transition` | kernel | the judge, by id (ruling 3): an open claim of the base, matched by handle, closed, corrected or recorded by a dated entry quoting it (verdict/transitions.ts) |
+| `claims-transition` | kernel | the judge, by id (ruling 3): an open claim of the base, matched by category and handle, closed, corrected or recorded by a dated entry quoting it (verdict/transitions.ts) |
 | `claim-landing` | dropped | `claim-landing` removed: a census of where closed claims land, which no rule reads. |
 | `unknown-label` | kernel | the judge: `vocabulary-unknown`, a relation's label against the section's vocabulary (§4) |
 | `relation-range` | rule | library `code`, rule `relation-range`, the ranges as its config (the spike's rule, in the admitted form); its rule test lands with the library (contracts §12 step 5) |

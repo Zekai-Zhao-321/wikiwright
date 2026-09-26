@@ -16,10 +16,12 @@
 // Ported by id from the old arms (stdlib/entries.ts `entry-mutated`,
 // stdlib/claims-transition.ts, stdlib/relations.ts `relation-removed`),
 // re-expressed over the §4 records. What changed with the grammar: a claim
-// is matched by its handle (the core's normalised identity), so a claim
-// closed in place or moved to another claims section keeps its handle and
-// passes, and so does one whose provenance alone changed (the old arm
-// called that an annotation of a `supersede` claim); the category classes
+// is matched by its category and its handle (the core's normalised
+// identity), as the old arm matched category and core, so a claim closed in
+// place or moved to another claims section keeps both and passes, and so
+// does one whose provenance alone changed (the old arm called that an
+// annotation of a `supersede` claim), while one whose category changed is a
+// new claim and the old one left unclosed; the category classes
 // are gone, so every open claim of a claims section is held, where the old
 // arm held only the `supersede` and `accumulate` classes; and the History
 // landing reads any new dated entry quoting the core, where the old one read
@@ -224,14 +226,15 @@ function landingItems(page: ParsedPage, type: LawType): { raw: string }[] {
 function claimFindings(page: ParsedPage, base: ParsedPage, type: LawType): Unrouted[] {
   const out: Unrouted[] = [];
   const current = claimsOf(page, type);
-  const handles = new Set(current.map((c) => c.claim.handle));
+  const identity = (claim: ClaimRecord): string => `${claim.category}\u0000${claim.handle}`;
+  const kept = new Set(current.map((c) => identity(c.claim)));
   const fresh = newItems(landingItems(page, type), landingItems(base, type)).map((i) =>
     normalizeIdentity(i.raw),
   );
   const corrected = new Set<ClaimRecord>();
   for (const { heading, index, claim } of claimsOf(base, type)) {
     if (claim.retracted !== null || claim.superseded !== null) continue;
-    if (handles.has(claim.handle)) continue;
+    if (kept.has(identity(claim))) continue;
     const correction = current.find(
       (c) => c.heading === heading && !corrected.has(c.claim) && isCorrection(claim, c.claim),
     );
