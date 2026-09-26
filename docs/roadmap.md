@@ -23,9 +23,9 @@ commit each; the kernel is the type-document law alone.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
-test file is written to `bun:test`. The suite is 1,506 tests across 103
+test file is written to `bun:test`. The suite is 853 tests across 69
 files, and the gate, `bun run check`, passed all of them three times in a
-row on 2026-09-26, after the old verbs left. It judges five corpora
+row on 2026-09-26, after the deletions of step 6. It judges five corpora
 (`devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`, and the two
 gardening handbooks under `fixtures/handbooks`), every one on the v2 law.
 `devwiki` is a bundle whose pages are pinned to this repository, over
@@ -468,8 +468,8 @@ writes its answer there itself and closes it before it exits; the runtime
 reads no pipe. What that proves: the file is everything git wrote, so exit 0
 and the file are the whole answer under any runtime, and no runtime can hand
 back a prefix of it. The in-process engine reads a test makes under Bun —
-`judge-property.test.ts` builds states with `indexState` and `revisionState`
-in the test process — go through the same helper. A batch read's request, the
+`judge-law-property.test.ts` builds states with `indexState` and
+`revisionState` in the test process — go through the same helper. A batch read's request, the
 object names or paths it asks for, is written to a second file first and
 handed to git as its stdin, so no request travels through a pipe the runtime
 fills either: a request cut inside its last path had made git answer
@@ -488,9 +488,10 @@ from before stay as a second line — every answer with a terminator is held to
 it, and one that ends short is `git-short-read` — and two cross-checks catch
 a listing cut at a record boundary wherever it came from: every path the
 staged diff names as added, modified, retyped, renamed or copied must be in
-the index listing, and `lint --since`'s commit walk must list as many
-commits as `rev-list --count` counts in its range. Either failing is
-`git-inconsistent-read` (exit 1, `internal`), naming both commands.
+the index listing, and a batch row must name the request it answers. Either
+failing is `git-inconsistent-read` (exit 1, `internal`), naming both
+commands. (A third, the commit walk of `lint --since` held to `rev-list
+--count`, left with the replay in step 6.)
 `git-short-read.test.ts` cuts each answer, at a byte and at a record
 boundary, with a `git` on PATH.
 
@@ -511,9 +512,9 @@ children at a time, each killed if it runs past `WIKIWRIGHT_GIT_TIMEOUT_MS`
 (`git-timeout`), and no file the packages ship spawns synchronously
 (`no-sync-spawn.test.ts`). The CLI a test spawns runs under Bun with its
 stdout on a file the test reads back (`runCli`,
-`packages/cli/test/fixtures/runtime.ts`). `judge-property.test.ts`, which judges states it
-builds in its own process, asserts each state's pages before any verdict read
-from it, since an empty or short state judges clean.
+`packages/cli/test/fixtures/runtime.ts`). `judge-law-property.test.ts`, which judges states
+it builds in its own process, asserts each state's pages before any verdict
+read from it, since an empty or short state judges clean.
 
 The asynchronous spawn goes through `Bun.spawn`, not Bun's
 `node:child_process` layer: through that layer, on 2026-09-25 under Bun
