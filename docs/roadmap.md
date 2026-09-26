@@ -35,10 +35,10 @@ own `devwiki`.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
-test file is written to `bun:test`. The suite is 2,226 tests across 152
+test file is written to `bun:test`. The suite is 2,237 tests across 153
 files, and the gate, `bun run check`, passed all of them three times in a
-row on 2026-09-26, at the end of the v2 delivery's fifth step, which moved
-every corpus onto the type-document law (§The v2 verbs answer a bundle on
+row on 2026-09-26, after the review fixes of the v2 delivery's fifth step,
+which moved every corpus onto the type-document law (§The v2 verbs answer a bundle on
 schema version 4). It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
