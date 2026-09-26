@@ -9,22 +9,33 @@
 // not an edit); a queued error on an inherited line is a warning, marked
 // `demoted_from: "error"`, unless its code is one no inherited line demotes
 // (the frontmatter's syntax, identity collisions, instance counts, an illegal
-// exception); a link verdict the base's names would not have given is the
-// commit's, whatever the holder's lines say, so it is never demoted and is
-// shown on a page the commit did not touch; every other finding on an
-// untouched page is left out. Changed: a finding's line is its section
-// occurrence's line or, on the page, the frontmatter key's line
-// (`details.line`); a finding with neither — a missing key, the page as a
-// whole — counts as touched whenever the frontmatter block changed, as the
-// step-3 judge's note on `withFrontmatterLines` set out (the old judge never
-// demoted a finding with no line).
+// exception); a finding with no line is never demoted; a verdict the base's
+// names would not have given is the commit's, whatever the holder's lines
+// say, so it is never demoted and is shown on a page the commit did not
+// touch; every other finding on an untouched page is left out.
+//
+// Changed, because a v2 finding is located at a page or a section
+// occurrence (§6), not at a line:
+// - a finding's line is its item's line, or on the page the frontmatter
+//   key's line (`details.line`); a finding at the page with neither — a
+//   missing section, a CEL page rule — has no line and is never demoted;
+// - a finding at an occurrence's heading judges the occurrence as a whole
+//   (its count, its order, a `require` row, a CEL section rule), so it is
+//   inherited when that occurrence's raw text is its base occurrence's —
+//   same heading, same index — byte for byte, and touched otherwise;
+// - a transition (`entry-edited`, `claims-transition`, `relation-removed`,
+//   a CEL rule that reads `before`) is the commit's change measured against
+//   the base, so it is never demoted. The old judge located a transition at
+//   no line, and so never demoted one either.
+import type { TypeLaw } from "../law/load.ts";
 import { utf8Text, withoutBom } from "../law/text.ts";
+import { indexed } from "./grammar.ts";
 import type { StateRead } from "./judge.ts";
 import { buildNames, type NamedPage, type VaultNames } from "./names.ts";
 import type { Unrouted } from "./page.ts";
 import type { JudgeState } from "./state.ts";
 import { sameBytes } from "./state.ts";
-import { routeVerdictFinding } from "./table.ts";
+import { routeVerdictFinding, VERDICT_TABLE } from "./table.ts";
 
 /** The codes an inherited line never demotes. */
 const NEVER_DEMOTED: ReadonlySet<string> = new Set([
@@ -38,6 +49,13 @@ const NEVER_DEMOTED: ReadonlySet<string> = new Set([
   "instances-max",
   "exception-illegal",
 ]);
+
+/** The kernel's transitions: each compares the page with its base (§4). */
+const TRANSITIONS: ReadonlySet<string> = new Set(
+  VERDICT_TABLE.filter((row) => row.needsBase === true && row.scope === "page").map(
+    (row) => row.id,
+  ),
+);
 
 /** The codes whose verdict is the vault's names, with what each asserts of a target. */
 const NAME_RULES: ReadonlyMap<string, "unresolved" | "alias"> = new Map([
@@ -71,12 +89,6 @@ export function inheritedLines(base: Uint8Array, current: Uint8Array): Set<numbe
     out.add(i + 1);
   });
   return out;
-}
-
-function lineOf(finding: Unrouted): number | undefined {
-  if (finding.location.kind === "section") return finding.location.line;
-  const line = finding.details["line"];
-  return typeof line === "number" ? line : undefined;
 }
 
 /** The names the base held: a renamed page under the path it was renamed from. */
@@ -121,6 +133,7 @@ export function gateScope(
   found: readonly Unrouted[],
   state: JudgeState,
   read: StateRead,
+  law: TypeLaw,
   configChanged: boolean,
 ): GateScope {
   const changed = new Set<string>();
@@ -134,12 +147,18 @@ export function gateScope(
   if (state.base === undefined || configChanged) {
     return { findings: [...found], changed, scoped: false };
   }
+  const pages = new Map(read.pages.map((p) => [p.path, p] as const));
   const names = baseNames(state, read);
   const causedByNames = (f: Unrouted): boolean => {
     const asserts = NAME_RULES.get(f.rule);
     const target = f.details["target"];
     if (names === undefined || asserts === undefined || typeof target !== "string") return false;
     return verdictOf(names, target) !== asserts;
+  };
+  const isTransition = (f: Unrouted): boolean => {
+    if (TRANSITIONS.has(f.rule)) return true;
+    const id = f.rule === "rule-error" ? f.details["rule"] : f.rule;
+    return typeof id === "string" && law.rules.get(id)?.transition === true;
   };
   const alignments = new Map<string, Set<number>>();
   const inheritedOn = (path: string, base: Uint8Array, current: Uint8Array): Set<number> => {
@@ -150,7 +169,30 @@ export function gateScope(
     }
     return lined;
   };
-  const pages = new Map(read.pages.map((p) => [p.path, p] as const));
+  /** Whether the commit left the finding where the base had it. */
+  const inherited = (f: Unrouted, base: Uint8Array, current: Uint8Array): boolean => {
+    if (isTransition(f)) return false;
+    if (f.location.kind === "section") {
+      const at = f.location;
+      const page = pages.get(f.path);
+      if (page === undefined || !page.read.ok) return false;
+      const now = indexed(page.read.page).find(
+        (a) => a.occurrence.heading === at.heading && a.index === at.occurrence,
+      );
+      if (now !== undefined && now.occurrence.location.line === at.line) {
+        // The occurrence as a whole: inherited when its raw text is unchanged.
+        if (page.base === undefined || page.base === null || !page.base.ok) return false;
+        const was = indexed(page.base.page).find(
+          (a) => a.occurrence.heading === at.heading && a.index === at.occurrence,
+        );
+        return was !== undefined && was.occurrence.raw === now.occurrence.raw;
+      }
+      return inheritedOn(f.path, base, current).has(at.line);
+    }
+    const line = f.details["line"];
+    if (typeof line !== "number") return false;
+    return inheritedOn(f.path, base, current).has(line);
+  };
   const out: Unrouted[] = [];
   for (const finding of found) {
     const current = state.pages.get(finding.path);
@@ -162,13 +204,11 @@ export function gateScope(
       out.push(finding);
       continue;
     }
-    const line = lineOf(finding);
-    const inherited =
-      line === undefined
-        ? sameFrontmatter(pages.get(finding.path))
-        : inheritedOn(finding.path, base, current).has(line);
-    const queued = routeVerdictFinding(finding).queue !== undefined;
-    if (inherited && finding.severity === "error" && queued && !NEVER_DEMOTED.has(finding.rule)) {
+    const demotable =
+      finding.severity === "error" &&
+      routeVerdictFinding(finding).queue !== undefined &&
+      !NEVER_DEMOTED.has(finding.rule);
+    if (demotable && inherited(finding, base, current)) {
       out.push({
         ...finding,
         severity: "warning",
@@ -177,17 +217,6 @@ export function gateScope(
     } else out.push(finding);
   }
   return { findings: out, changed, scoped: true };
-}
-
-/** Whether a page's frontmatter block is byte for byte its base's. */
-function sameFrontmatter(page: StateRead["pages"][number] | undefined): boolean {
-  if (page === undefined || !page.read.ok) return false;
-  const base = page.base;
-  if (base === undefined || base === null || !base.ok) return false;
-  const a = base.page.frontmatterBytes;
-  const b = page.read.page.frontmatterBytes;
-  if (a === null || b === null) return a === b;
-  return sameBytes(a, b);
 }
 
 /** Whether a staged path changes the law (§8): the whole vault is then judged. */

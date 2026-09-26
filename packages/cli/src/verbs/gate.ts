@@ -228,7 +228,7 @@ async function preCommit(
     ...drift,
     ...lawChangeFindings(diff.changes, { kind: "pre-commit" }),
   ];
-  const scope = gateScope(found, state, read, configChanged);
+  const scope = gateScope(found, state, read, law, configChanged);
   const verdict = verdictOfCollected(
     {
       found: scope.findings,

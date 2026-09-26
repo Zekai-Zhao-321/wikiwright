@@ -814,10 +814,19 @@ its old self over any other root. What the rewritten verbs leave, so far:
   demotion is today's: a queued error on a line the base holds unchanged is
   a warning (`details.demoted_from: "error"`), except a frontmatter that
   does not read, an identity collision, an instance count or an illegal
-  exception; a finding with no line — a missing key, the page as a whole —
-  counts as touched whenever the page's frontmatter block changed, where the
-  old gate never demoted one. A link verdict the base's names would not have
-  given is the commit's and is never demoted or scoped away.
+  exception; a finding with no line — a missing key or section, a CEL page
+  rule, the page as a whole — is never demoted, as the old gate never
+  demoted one, so such a finding a page already carried blocks the next
+  commit that touches the page until it is repaired or excepted; a
+  transition (`entry-edited`, `claims-transition`, `relation-removed`, a
+  CEL rule that reads `before`) is never demoted. A finding at a section
+  occurrence's heading — its count, order or depth, a `require` row, a CEL
+  section rule — is inherited only when the occurrence's raw text is its
+  base occurrence's byte for byte, so an item added under an unchanged
+  heading touches it. Not covered: a CEL section rule that reads `page`
+  outside its own section is demoted when the commit changes only what it
+  reads there. A link verdict the base's names would not have given is the
+  commit's and is never demoted or scoped away.
 - No finding of the new judge is fix-routed but the two whose fixers
   survive: `folder-tags-present` under `materialize-add-only` and
   `generated-drift`, whose `fix` names `check --fix` and `check --write`.

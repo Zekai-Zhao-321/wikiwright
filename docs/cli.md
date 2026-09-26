@@ -281,7 +281,9 @@ read.
   index tracks any of it (`generated-drift`, `details.state: index`); the
   law diff between HEAD's law and the index's as `law-changed` (info); a
   queued error on a line the commit did not touch demoted to a warning
-  (`details.demoted_from: "error"`), and the findings of an untouched page
+  (`details.demoted_from: "error"`) — a finding at a section's heading only
+  when the section's raw text is unchanged, and never a finding with no
+  line or a transition — and the findings of an untouched page
   left out — both suspended when the commit stages `config/`,
   `constitution/`, `rule-tests/`, `examples/` or a library
   (`data.config_changed: true`). With no HEAD the base is empty and there is

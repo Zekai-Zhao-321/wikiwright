@@ -48,7 +48,9 @@ version` prints the engine version and the commit a binary was built from.
   judges `generated/*` as staged once the index tracks it
   (`generated-drift`, `details.state: index`), reports the law diff as
   `law-changed` (info), demotes a queued error on a line the commit did not
-  touch to a warning (`details.demoted_from: "error"`), leaves out the
+  touch to a warning (`details.demoted_from: "error"`) — never a finding
+  with no line, never a transition, and a finding at a section's heading
+  only when the section's raw text is unchanged — leaves out the
   findings of an untouched page, and judges the whole vault, demoting
   nothing, when the commit stages `config/`, `constitution/`, `rule-tests/`,
   `examples/` or a library (`data.config_changed`); it exits 5 on any error

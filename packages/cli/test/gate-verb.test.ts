@@ -6,7 +6,8 @@
 // law diff at both stages, the commit prefixes — and the published hook
 // definition naming both stages.
 import { afterAll, describe, expect, it } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readYaml } from "@wikiwright/core";
@@ -20,9 +21,14 @@ import {
   gardenBundle,
   git,
 } from "./fixtures/garden-cli.ts";
-import { engineJson } from "./fixtures/garden-law.ts";
+import { gardenVault } from "./fixtures/garden-judge.ts";
+import { engineJson, LIBRARY, removeTree } from "./fixtures/garden-law.ts";
 
-afterAll(cleanBundles);
+const drafted: string[] = [];
+afterAll(() => {
+  cleanBundles();
+  for (const dir of drafted) removeTree(dir);
+});
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -157,6 +163,123 @@ describe("the pre-commit stage (v2 contracts §9.2)", () => {
     const r = cli(["gate"], loose);
     expect(r.status).toBe(4);
     expect(r.envelope.error?.code).toBe("git-unavailable");
+  });
+});
+
+describe("what the commit caused is never demoted (v2 contracts §9.2)", () => {
+  /** A committed garden, then `edit` of one page staged. */
+  function staged(
+    extra: Record<string, string>,
+    path: string,
+    edit: (text: string) => string,
+  ): string {
+    const dir = gardenBundle(extra);
+    commitAll(dir, "the garden");
+    stage(dir, path, edit(readFileSync(join(dir, path), "utf8")));
+    return dir;
+  }
+
+  /** The planting type with history-dated raised to an error. */
+  const DATED = {
+    "libraries/kit-garden/types/planting.yaml": LIBRARY[
+      "libraries/kit-garden/types/planting.yaml"
+    ]?.replace("severity: warning", "severity: error") as string,
+  };
+
+  /** The guide type with a page rule over the body: a guide links to a page. */
+  const LINKED = {
+    "constitution/types/guide.yaml": `${gardenVault()["constitution/types/guide.yaml"]}rules:\n  - id: guide-links\n    expr: page.body.contains("[[")\n    severity: error\n    message: A guide links to a page.\n`,
+  };
+
+  function refused(dir: string, rule: string): void {
+    const r = cli(["gate"], dir);
+    const found = findingsOf(r.envelope, rule);
+    expect(found.map((f) => [f.severity, f.details["demoted_from"]])).toEqual([
+      ["error", undefined],
+    ]);
+    expect(r.status).toBe(5);
+  }
+
+  it("refuses a relation removed with no History entry: a transition, at its heading", () => {
+    refused(
+      staged({}, "wiki/Basil.md", (t) => t.replace("- grows-in [[Herb bed]]\n", "")),
+      "relation-removed",
+    );
+  });
+
+  it("refuses an open claim removed, and an append-only entry removed", () => {
+    refused(
+      staged({}, "wiki/Basil.md", (t) =>
+        t.replace("- [observed] Basil bolts above thirty degrees. ([[Herb bed]])\n", ""),
+      ),
+      "claims-transition",
+    );
+    refused(
+      staged({}, "wiki/Basil.md", (t) => t.replace("- 2026-04-12 — sown\n", "")),
+      "entry-edited",
+    );
+  });
+
+  it("refuses a required section removed: a finding with no line is never demoted", () => {
+    refused(
+      staged({}, "wiki/Start.md", (t) => t.replace("## Start here\n\n", "")),
+      "section-count",
+    );
+  });
+
+  it("refuses a CEL page rule the body breaks, with the frontmatter unchanged", () => {
+    refused(
+      staged(LINKED, "wiki/Start.md", (t) => t.replace("Read [[Basil]] first.", "Read on.")),
+      "guide-links",
+    );
+  });
+
+  it("refuses a CEL section rule broken by an item added under an unchanged heading", () => {
+    refused(
+      staged(DATED, "wiki/Basil.md", (t) =>
+        t.replace("- 2026-04-12 — sown\n", "- 2026-04-12 — sown\n- 2026-05 — thinned\n"),
+      ),
+      "history-dated",
+    );
+  });
+
+  it("still demotes a section finding the base carried, in a section the commit left alone", () => {
+    const undated = (t: string) => t.replace("- 2026-04-12 — sown", "- 2026-04 — sown");
+    const dir = gardenBundle({
+      ...DATED,
+      "wiki/Basil.md": undated(gardenVault()["wiki/Basil.md"] as string),
+    });
+    commitAll(dir, "the garden");
+    stage(dir, "wiki/Basil.md", basil(dir).replace("# Basil\n", "# Basil\n\nSown by the door.\n"));
+    const r = cli(["gate"], dir);
+    expect(r.status).toBe(0);
+    expect(
+      findingsOf(r.envelope, "history-dated").map((f) => [f.severity, f.details["demoted_from"]]),
+    ).toEqual([["warning", "error"]]);
+  });
+
+  it("agrees with write: the change write refuses, the gate refuses", () => {
+    const dir = gardenBundle(DATED);
+    commitAll(dir, "the garden");
+    const text = basil(dir)
+      .replace("- 2026-04-12 — sown\n", "- 2026-04-12 — sown\n- 2026-05 — thinned\n")
+      .replace("- grows-in [[Herb bed]]\n", "");
+    const from = mkdtempSync(join(tmpdir(), "ww-gate-drafts-"));
+    drafted.push(from);
+    mkdirSync(join(from, "wiki"));
+    writeFileSync(join(from, "wiki/Basil.md"), text);
+    const write = cli(["write", "--from", from, "--dry-run"], dir);
+    expect(write.status).toBe(5);
+    stage(dir, "wiki/Basil.md", text);
+    const gate = cli(["gate"], dir);
+    expect(gate.status).toBe(5);
+    const errors = (r: typeof gate): string[] =>
+      (r.envelope.data?.findings ?? [])
+        .filter((f) => f.severity === "error")
+        .map((f) => f.rule)
+        .sort();
+    expect(errors(gate)).toEqual(["history-dated", "relation-removed"]);
+    expect(errors(write)).toEqual(["history-dated", "relation-removed"]);
   });
 });
 
