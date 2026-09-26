@@ -3,8 +3,9 @@
 // git index — which must build the same snapshot from the same bytes.
 import { afterAll, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import * as core from "@wikiwright/core";
 import {
   ENGINE_V4_CONSUMERS,
@@ -124,6 +125,20 @@ describe("engine.json v4", () => {
     expect(Object.keys(ENGINE_V4_CONSUMERS).sort()).toEqual(
       Object.keys(ENGINE_V4_SCHEMA.properties).sort(),
     );
+  });
+
+  it("holds every declared key to one end-to-end CLI fixture", () => {
+    const testDir = fileURLToPath(new URL("./", import.meta.url));
+    const counts = new Map<string, number>();
+    for (const name of readdirSync(testDir).filter((file) => file.endsWith(".test.ts"))) {
+      const source = readFileSync(join(testDir, name), "utf8");
+      for (const match of source.matchAll(/\be2e:([a-z_]+)\b/gu)) {
+        const key = match[1] ?? "";
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+    }
+    expect([...counts.keys()].sort()).toEqual(Object.keys(ENGINE_V4_SCHEMA.properties).sort());
+    expect([...counts.values()].every((count) => count === 1)).toBe(true);
   });
 
   it("names, for every key it says is read, an exported function of core or the shell that reads it", async () => {
