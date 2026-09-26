@@ -850,6 +850,12 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
+- `rule-untested` counts a rule's negative, repaired and positive pages
+  across every owner's test set of the rule (a library's and the bundle's),
+  as §8 words it, each page still judged within its own set. A set split
+  across owners was reported untested with an empty `details.missing` and
+  the message "has no  page"; a rule is now untested exactly when
+  `missing` names a page.
 - The covering diff `freshness` reads no longer depends on the caller's git
   configuration: under `diff.relative=true` a vault in a directory of its
   repository got an empty diff for a covered path outside that directory,

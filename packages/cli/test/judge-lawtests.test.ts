@@ -57,6 +57,32 @@ describe("rule-untested", () => {
     ]);
   });
 
+  it("counts a rule's pages across its owners' sets, each page judged in its own set", async () => {
+    const verdict = await judgeVault({
+      [`${KNOWN_BED}/positive/north.md`]: null,
+      "rule-tests/known-bed/positive/north.md": planting("---\n", "garden/planting").replace(
+        "bed: herb",
+        "bed: north",
+      ),
+    });
+    expect(lawFindings(verdict)).toEqual([]);
+  });
+
+  it("names, across the owners' sets, the pages a split set still lacks, never none", async () => {
+    const verdict = await judgeVault({
+      [`${KNOWN_BED}/repaired.md`]: null,
+      [`${KNOWN_BED}/positive/north.md`]: null,
+      "rule-tests/known-bed/positive/north.md": planting("---\n", "garden/planting").replace(
+        "bed: herb",
+        "bed: north",
+      ),
+    });
+    expect(only(verdict, "rule-untested")).toMatchObject([
+      { details: { rule: "known-bed", missing: ["repaired"] } },
+    ]);
+    expect(only(verdict, "rule-untested")[0]?.message).toBe("rule known-bed has no repaired page");
+  });
+
   it("names a rule with no test set at all", async () => {
     const verdict = await judgeVault({
       "constitution/types/guide.yaml":

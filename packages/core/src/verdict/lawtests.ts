@@ -15,7 +15,10 @@
 //
 // A rule with no negative, no repaired or no positive page is
 // `rule-untested`: a warning, or an error for a rule the gate's law diff adds
-// or changes. A test that does not hold is `rule-test-fails`, with what it
+// or changes. The three are counted across every owner's set of the rule —
+// a library's negative and a bundle's positive test one rule — and each
+// page is still judged within its own set, beside its own expect.json and
+// before/ twins. A test that does not hold is `rule-test-fails`, with what it
 // found. Every page under an `examples/` directory, and every path a type's
 // `examples` names (relative to the root of the bundle or library that
 // declares the type), must pass as a page of its type: `example-fails`.
@@ -72,6 +75,9 @@ function testSets(law: TypeLaw): TestSet[] {
     (a, b) => codeUnitCompare(a.owner, b.owner) || codeUnitCompare(a.id, b.id),
   );
 }
+
+/** A positive page of a test set, by its path inside `rule-tests/<id>/`. */
+const isPositive = (path: string): boolean => path.startsWith("positive/") && path.endsWith(".md");
 
 type Expected = { rule: string; location: "page" | { section: string; occurrence: number } };
 
@@ -163,7 +169,6 @@ export function lawTestFindings(
       details: { kind, ...details },
     });
   };
-  const complete = new Set<string>();
   for (const set of testSets(law)) {
     const dir = `${set.owner}:rule-tests/${set.id}`;
     if (!law.rules.has(set.id)) {
@@ -177,7 +182,7 @@ export function lawTestFindings(
     const negative = set.files.get("negative.md");
     const repaired = set.files.get("repaired.md");
     const positives = [...set.files.entries()]
-      .filter(([p]) => p.startsWith("positive/") && p.endsWith(".md"))
+      .filter(([p]) => isPositive(p))
       .sort(([a], [b]) => codeUnitCompare(a, b));
     for (const [path, file] of set.files) {
       const known =
@@ -192,9 +197,6 @@ export function lawTestFindings(
           rule: set.id,
         });
       }
-    }
-    if (negative !== undefined && repaired !== undefined && positives.length > 0) {
-      complete.add(set.id);
     }
     const base = (name: string): Uint8Array | null =>
       set.files.get(`before/${name}`)?.bytes ?? null;
@@ -250,16 +252,16 @@ export function lawTestFindings(
   const declared = declarations(law);
   const tested = new Set(testSets(law).map((s) => s.id));
   for (const id of [...law.rules.keys()].sort(codeUnitCompare)) {
-    if (complete.has(id)) continue;
+    // Counted across every owner's set, so a rule is untested exactly when
+    // `missing` names something.
     const sets = testSets(law).filter((s) => s.id === id);
     const has = (name: string) => sets.some((s) => s.files.has(name));
     const missing = [
       ...(has("negative.md") ? [] : ["negative"]),
       ...(has("repaired.md") ? [] : ["repaired"]),
-      ...(sets.some((s) => [...s.files.keys()].some((p) => p.startsWith("positive/")))
-        ? []
-        : ["positive"]),
+      ...(sets.some((s) => [...s.files.keys()].some(isPositive)) ? [] : ["positive"]),
     ];
+    if (missing.length === 0) continue;
     const changed = options.rulesChanged?.has(id) === true;
     out.push({
       rule: "rule-untested",
