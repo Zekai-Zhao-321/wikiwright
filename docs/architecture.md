@@ -39,6 +39,7 @@ packages/core/src/
   interface/   v2: a page read from its bytes, and the page interface a rule is bound to
   rules/       v2: the CEL profile, its static bound, rule evaluation
   digest/      v2: the bytes, content, page and law digests
+  verdict/     v2, beside judge/: judgeTypeLaw(state, law), its table of codes and lanes, the grammar checks, the kernel transitions, CEL evaluation, exceptions, rule tests and examples, the law diff
 packages/cli/src/
   main.ts      dispatch, the role bound, --help, the module preload, the bundle block, one stderr writer
   commands.ts  the COMMANDS array and nothing else
@@ -56,7 +57,8 @@ packages/cli/src/
   exports.ts   the export planner, the plugin manifests, the in-repository renders and their comparison
   artifacts.ts the one generation path: the artifacts, the writer's brief and the rendered exports, written and planned
   law.ts       the loaded vault to a Law; the engine.json consumers
-  lawfiles.ts  v2: the working-tree and index adapters that snapshot a bundle's law and its libraries for law/
+  lawfiles.ts  v2: the working-tree, index and revision adapters that snapshot a bundle's law and its libraries for law/
+  lawstate.ts  v2, beside state.ts: the four states judgeTypeLaw is handed (working tree, drafts over the disk, the index over HEAD, a revision)
   writer.ts    the shell half of the Writer: prove, then temp-and-rename
   atomicwrite.ts   the one staged replace every non-page write lands through
   moduleload.ts, modulefixture.ts   the module ladder: resolve, digest, scan, load, prove

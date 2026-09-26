@@ -30,10 +30,11 @@ own `devwiki`.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
-test file is written to `bun:test`. The suite is 1,890 tests across 133
+test file is written to `bun:test`. The suite is 2,033 tests across 141
 files, and the gate, `bun run check`, passed all of them three times in a
-row on 2026-09-26, at the end of the v2 delivery's second step, the
-type-document loader (§The v2 loader is read by no verb yet). It judges five corpora (`devwiki`, `fixtures/memory-synth`,
+row on 2026-09-26, at the end of the v2 delivery's third step, the judge
+over the type-document law (§The v2 loader and judge are read by no verb
+yet). It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
 the module ladder end to end twice: with a neutral module fixture under
@@ -705,7 +706,7 @@ bound an envelope at 1 MiB with an `envelope-too-large` refusal, and the pipe
 probes cover a default, a 70,000-byte and an error envelope until that
 refusal exists to probe.
 
-### The v2 loader is read by no verb yet
+### The v2 loader and judge are read by no verb yet
 
 The second step of the v2 delivery built the type-document loader beside the
 old one: `config/engine.json` schema version 4 and its libraries, the type,
@@ -713,12 +714,16 @@ fragment and vocabulary documents under `constitution/` and each library,
 shapes compiled by Ajv with RE2, the fixed grammar's records, the page
 interface, rules in CEL under the profile and its static bound, and the
 digests (`packages/core/src/law/`, `schema/`, `records/`, `interface/`,
-`rules/`, `digest/`; the adapters in `packages/cli/src/lawfiles.ts`). Every
-verb, every corpus and the gate still load `config/constitution.json`
-through the old loader; the new one is exercised by its tests alone, over a
-synthetic gardening bundle and library under the temporary directory. What
-that leaves, until the judge (step 3) and the verbs (step 4) are rewritten
-over it:
+`rules/`, `digest/`; the adapters in `packages/cli/src/lawfiles.ts`). The
+third step built the judge over it (`packages/core/src/verdict/`,
+`judgeTypeLaw`), its four states (`packages/cli/src/lawstate.ts`: the
+working tree, drafts over the disk, the index over HEAD, a revision), the
+rule tests and examples, and the law diff. Every verb, every corpus and the
+gate still load `config/constitution.json` through the old loader and judge
+through the old judge; the new ones are reached by a test-only import and
+exercised by their tests alone, over a synthetic gardening bundle and
+library under the temporary directory. What that leaves, until the verbs
+(step 4) are rewritten over them:
 
 - Five v4 keys are validated and carried with no consumer: `label`,
   `engine`, `commit_prefixes`, `folder_tags` and `folder_tag_aliases`,
@@ -728,10 +733,68 @@ over it:
   by `contentRootsOf`, where the v2 state constructors
   (`packages/cli/src/lawstate.ts`) discover the pages their own law
   governs.
-- The grammar parameters (`provenance`, `categories`, `require`,
-  `history`, `lifecycle`), `instances`, `abstract`, `examples` and the
-  rule tests are declared, loaded and digested, and nothing enforces or
-  runs them: that is the judge's.
+- The judge has no gate options yet: today's line-scoped demotion of a
+  queued error on an inherited line, and the gate's change-scoping to the
+  pages a commit touches, arrive with the `gate` verb, as the commit-message
+  stage that turns the law diff into `law-changed` or `law-relaxed` does.
+  No finding of the new judge is fix-routed: the fixers the kernel ran on a
+  page (`frontmatter-set`, `frontmatter-delete`, `tag-rename`,
+  `section-stub`, `heading-depth`, `link-rewrite`, `retype`,
+  `history-close`) leave with `fix` (contracts §1), so each code they served
+  queues to the lane it fell through to; the two fixers that survive, the
+  folder tags and the generated artifacts, are `check --fix`'s.
+- The contracts name few page-level codes; the judge's are this step's, and
+  `docs/v2-dispositions.md` maps every v1 id to the one that carries it:
+  `type-unknown` (v1 `unknown-type`), `page-shape-invalid` (the shape's
+  six v1 codes, Ajv's keyword in `details`), `page-ref-type`,
+  `vocabulary-unknown` and `vocabulary-retired` (the tag, category and label
+  codes), `section-count` and, at page level, `sections-conflict` (v1
+  `sections` and `section-depth`; the loader raises `sections-conflict` too,
+  for a law), `item-unparsed`, `require-unmet`, `claim-closed` and
+  `claim-open` (v1 `closed-claim-in-facts` and `history-marker`, now the
+  claims `closed` parameter of the navigator's ruling 4), `entry-edited`,
+  `instances-min` and `instances-max`, `rule-error`, `unevaluated`,
+  `exception-applied`, `rule-untested`, `rule-test-fails`, `example-fails`,
+  `law-changed` and `law-relaxed`. A section's own `severity` is gone, so
+  each code carries its row's: the grammar parameters an author declares
+  are errors, where v1 defaulted them to warnings, and a dangling link or
+  relation target stays a warning.
+- `claims-transition` holds every open claim of a claims section: v1 held
+  only the categories of class `supersede` or `accumulate`, and the classes
+  left with the v1 vocabularies. A claim is matched by its handle, so one
+  retracted or superseded in place, moved to another claims section, or
+  given another source keeps its handle and passes; a typo-sized correction
+  passes; and one that left is recorded only by a new dated entry quoting
+  its core, where v1 read the section the claims `history` parameter
+  named. `relation-removed` holds every relations section, as v1 did, as an
+  error. The removal of a closed claim is not a finding, as in v1.
+- An exception names a rule and a reason, no evidence digest, so it closes
+  every finding of its rule on its page; each closed finding stays visible
+  as `exception-applied`.
+- A transition the state cannot judge is `unevaluated`, an info finding on
+  the page and a count in the verdict's `unevaluated` block; beside the
+  contracts' `no-base`, its reason can be `base-unreadable`, a base whose
+  bytes do not read as a page.
+- A page that is a symbolic link is read by none of the four states: the
+  index and a revision hold a link as the text of its target's path, the
+  working tree reads through it, and the one rule all four can keep is to
+  read none. Such a page is not judged and nothing reports it.
+- A page reference in frontmatter is a bare page name (`origin: Herb
+  bed`); `[[Herb bed]]` there names no page and is `wikilink-unresolved`.
+  Only a top-level property's `target_type` and `target_root` are read.
+- `instances` counts the pages of exactly the type, not its descendants, as
+  v1 did.
+- A type's `examples` names paths relative to the root of the bundle or
+  library that declares it, under its `examples/`; every page under an
+  `examples/` directory is judged as a page of its type whether a type
+  names it or not.
+- The law diff needs HEAD's law to load; what the gate reports when HEAD
+  holds no loadable v4 law (a bundle's first v4 commit) is the `gate`
+  verb's to decide in step 4.
+- A path is keyed in NFC by every adapter; on a filesystem that keeps the
+  two normalisations apart, two files whose names differ only by them are
+  one page to the engine and two to the filesystem (the navigator's
+  ruling 9). Nothing reports it.
 - The static bound counts a config list at its actual length, after
   `configure` (the navigator's ruling 1): a rule's config is known at load,
   so `config.require.all(r, section.items…)` costs its rows times 5,000, and
@@ -775,11 +838,10 @@ over it:
   vendored as a submodule is therefore refused, not read. A bundle in no
   repository is its own top level: its library paths are read from the
   bundle root.
-- Date stamping leaves with no replacement: the v1 `date` field's `auto:
-  on-create | on-write` goes with templates and `new`, and nothing in the
-  v2 contracts sets `created` or `updated` — §3.1 reserves the keys and §9
-  `write` stamps nothing. A page's author writes both. If stamping
-  returns, its home is `write`, reading `today()` as the old verbs do.
+- Date stamping returns with `write` in step 4 (the navigator's ruling 7):
+  it stamps `created` on a new page and `updated` on a changed one where the
+  effective shape declares the key, through the clock seam
+  (`WIKIWRIGHT_TODAY`). Until then nothing in the v2 path stamps either.
 - A library's `library.yaml` has its own line in the law digest, beside
   the five law directories the contracts list, because it can change the
   library's id and with it every qualified name.

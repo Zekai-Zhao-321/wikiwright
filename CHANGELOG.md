@@ -84,8 +84,11 @@ version` prints the engine version and the commit a binary was built from.
     `nesting` (comprehensions over 2 deep), `chaining` (over 4 side by
     side), `range-not-bound` (a comprehension over anything but a direct
     interface path) and `cost-bound` (a static worst case over 200,000
-    iterations), and `config` (a rule's config list or map, or one a
-    `configure` writes, over 1,000 members). The law's own ranges are held
+    iterations, a config list counted at its length after `configure` and
+    an ancestry chain at 32, the navigator's ruling 1; a `configure` that
+    grows a rule past the bound is refused at its type), and `config` (a
+    rule's config list or map, or one a `configure` writes, over 1,000
+    members). An ancestry chain over 32 types is `law-too-large`. The law's own ranges are held
     at load: a vocabulary over 10,000 entries is `vocabulary-invalid`, a
     declared `default` list over 1,000 is `type-invalid`, and over 10,000
     types or vocabularies is `law-too-large`. A result that is not a bool
@@ -96,6 +99,63 @@ version` prints the engine version and the commit a binary was built from.
     `meta` keys removed) and `law` (every loader-read file, the interface
     and profile identities, eight dependency versions, the engine version),
     one value from the working tree and from a git index of the same bytes.
+- **The v2 judge, beside the old one** (v2 contracts §4–§6, §8, §10, step
+  3, and the navigator's rulings 2 to 5). `judgeTypeLaw(state, law)` in
+  `@wikiwright/core`, and four states in `packages/cli/src/lawstate.ts`: the
+  working tree (no base), drafts over the disk (the disk as base), the index
+  (HEAD as base) and a revision (no base), each carrying the law it read
+  from the same place as its pages; the working tree is read twice and
+  compared by digest, once more on a difference, then refused as
+  `state-changed-during-read`. No verb calls either yet; the tests import
+  them.
+  - Findings take the §6 shape — `rule`, `severity`, `path`, `location`
+    (the page, or a section occurrence and a line), `message`, `details` —
+    and every error and warning names one queue lane; a CEL rule's findings
+    queue to `rule-review`. Each v1 id the kernel keeps is carried by a
+    code of the new table (`docs/v2-dispositions.md` names which).
+  - Per page: `page-too-large`, `page-not-utf8`, `malformed-frontmatter`,
+    `duplicate-key`, `frontmatter-not-mapping` (with the line),
+    `type-unknown`, `abstract-type`, `page-shape-invalid` (one per Ajv
+    error), `page-ref-type` (`target_type`, ancestry counted, and
+    `target_root`), `vocabulary-unknown` and `vocabulary-retired` (the
+    bundle's `tags` vocabulary, a claim's category, a relation's label),
+    `wikilink-unresolved`, `wikilink-alias-target`, `renamed-without-alias`,
+    `section-count`, `sections-conflict` (order, an undeclared heading under
+    `additional: refused`, depth), `item-unparsed`, `category-not-allowed`,
+    `claim-provenance`, `claim-closed` and `claim-open` (the claims grammar
+    gains `closed: allowed | refused | required`, ruling 4),
+    `relation-target-unresolved`, `require-unmet` (ruling 2); for the vault,
+    `identity-collision`, `instances-min` and `instances-max`.
+  - The kernel transitions (ruling 3), against the base: `entry-edited`
+    (`lifecycle: append-only`), `claims-transition` (an open claim, by
+    handle, closed, corrected or recorded by a dated entry quoting it) and
+    `relation-removed` (recorded in the `history` heading). CEL rules
+    evaluate per page or per matching occurrence; a result that is not a
+    bool is `rule-error` (`details.kind` `non-bool` or `error`). A
+    transition, the kernel's or a rule reading `before`, is `unevaluated`
+    (info, reason `no-base`) where the state has no base, counted in the
+    verdict's `unevaluated` block, never passed.
+  - The reserved `exceptions` key closes every queued finding of its rule
+    on its page as `exception-applied` info; `exception-stale` and
+    `exception-illegal` as before.
+  - Rule tests and examples (§8): `rule-tests/<rule id>/` with
+    `negative.md`, `repaired.md`, `positive/`, `before/` twins and
+    `expect.json`, overlaid from outside the content roots and excluded from
+    instances and identity; `rule-untested` (a warning, an error for a rule
+    the gate's diff adds or changes), `rule-test-fails`, `example-fails`.
+  - The law diff between HEAD's law and the index's (`lawDiff`, the revision
+    adapter beside the index one), each change with `details.kind`, as
+    `law-changed` (info) at pre-commit and `law-relaxed` (an error) at
+    commit-msg unless the body carries `law-change: <reason>`.
+  - What changed from v1 on the way: a finding's code, as the table maps
+    it; the grammar parameters' severities, fixed per code (a section's
+    `severity` is gone); no page finding is fix-routed (the page fixers
+    leave with `fix`); `claims-transition` holds every open claim now that
+    the category classes are gone; an exception carries no digest and
+    closes every finding of its rule on its page. Not yet in the new judge:
+    the gate's line-scoped demotion and change-scoping, which come with the
+    `gate` verb. A page that is a symbolic link is read by no v2 state.
+    `docs/roadmap.md` states each.
 - `docs/v2-dispositions.md`, generated by `bun tools/dispositions.ts`:
   every rule id, constitution key and engine key of the v1 tree as
   `kernel`, `rule` or `dropped`, enumerated from the tree so none can be

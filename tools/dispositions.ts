@@ -21,7 +21,7 @@ import { KIND_KEYS, UNIVERSAL_KEYS } from "../packages/core/src/shapes/index.ts"
 const OUT = fileURLToPath(new URL("../docs/v2-dispositions.md", import.meta.url));
 
 type Disposition = "kernel" | "rule" | "dropped";
-type Row = readonly [key: string, disposition: Disposition, text: string];
+export type Row = readonly [key: string, disposition: Disposition, text: string];
 
 // ---------------------------------------------------------------------------
 // enumeration
@@ -111,7 +111,7 @@ function shapeKeys(): string[] {
 
 const STEP5 = "its rule test lands with the library (contracts §12 step 5)";
 
-const RULES: readonly Row[] = [
+export const RULES: readonly Row[] = [
   [
     "module-failure",
     "dropped",
@@ -120,45 +120,77 @@ const RULES: readonly Row[] = [
   [
     "malformed-frontmatter",
     "kernel",
-    "the page reader (interface/), reported by the judge (step 3)",
+    "the judge: `malformed-frontmatter`, with the line the YAML reader names (verdict/page.ts)",
   ],
-  [
-    "frontmatter-not-mapping",
-    "kernel",
-    "the page reader (interface/), reported by the judge (step 3)",
-  ],
+  ["frontmatter-not-mapping", "kernel", "the judge: `frontmatter-not-mapping` (verdict/page.ts)"],
   [
     "duplicate-key",
     "kernel",
-    "the page reader: YAML 1.2 with duplicate keys refused (law/yaml.ts)",
+    "the judge: `duplicate-key`, the page reader refusing a key written twice (law/yaml.ts)",
   ],
-  ["unknown-type", "kernel", "the judge: `type` names no type the bundle or its libraries declare"],
+  [
+    "unknown-type",
+    "kernel",
+    "the judge: `type-unknown`, `details.kind` `missing` or `unknown` (verdict/page.ts)",
+  ],
   [
     "tombstone",
     "dropped",
     "`tombstone` removed with type `status` and `replaced_by`: a type leaves by removal, which `law-changed` reports (§8).",
   ],
-  ["missing-required-field", "kernel", "the effective shape's `required` (schema/shapes.ts)"],
-  ["field-shape", "kernel", "the effective shape's keywords (schema/shapes.ts)"],
+  [
+    "missing-required-field",
+    "kernel",
+    "the judge: `page-shape-invalid`, keyword `required`, against the effective shape (verdict/page.ts)",
+  ],
+  ["field-shape", "kernel", "the judge: `page-shape-invalid`, the effective shape's keywords"],
   [
     "unknown-frontmatter-key",
     "kernel",
-    "the effective shape's `unevaluatedProperties: false` under `extensions.mode: registered`",
+    "the judge: `page-shape-invalid`, keyword `unevaluatedProperties`, under `extensions.mode: registered`",
   ],
-  ["invalid-tags-field", "kernel", "the reserved `tags` schema (schema/reserved.ts)"],
-  ["unknown-tag", "kernel", "the judge: a `tags` value outside the bundle's `tags` vocabulary"],
+  [
+    "invalid-tags-field",
+    "kernel",
+    "the judge: `page-shape-invalid` against the reserved `tags` schema (schema/reserved.ts)",
+  ],
+  [
+    "unknown-tag",
+    "kernel",
+    "the judge: `vocabulary-unknown`, a `tags` value outside the bundle's registered `tags` vocabulary",
+  ],
   ["tag-alias-target", "dropped", "`tag-alias-target` removed with vocabulary entry aliases."],
-  ["tag-retired", "kernel", "the judge: a `tags` value the vocabulary lists under `retired`"],
-  ["identity-collision", "kernel", "the judge's name index, carried by id (§10)"],
-  ["sections", "kernel", "the section grammar: `min`, `max`, `ordered`, `additional` (§3.2)"],
-  ["section-depth", "kernel", "the section grammar: `sections.depth` (§3)"],
+  [
+    "tag-retired",
+    "kernel",
+    "the judge: `vocabulary-retired`, a `tags` value the vocabulary retired, with its successor",
+  ],
+  [
+    "identity-collision",
+    "kernel",
+    "the judge: `identity-collision`, carried by id (verdict/names.ts)",
+  ],
+  [
+    "sections",
+    "kernel",
+    "the judge: `section-count` (`min`, `max`) and `sections-conflict` (`ordered`, `additional`), §3.2 (verdict/grammar.ts)",
+  ],
+  ["section-depth", "kernel", "the judge: `sections-conflict`, `details.kind: depth` (§3)"],
   [
     "max-chars",
     "dropped",
     "`max-chars` removed with `max_chars`: a size bound is a section rule over `section.raw`.",
   ],
-  ["wikilink-alias-target", "kernel", "the judge's link resolution, carried by id (§10)"],
-  ["wikilink-unresolved", "kernel", "the judge's link resolution, carried by id (§10)"],
+  [
+    "wikilink-alias-target",
+    "kernel",
+    "the judge: `wikilink-alias-target`, carried by id (verdict/page.ts)",
+  ],
+  [
+    "wikilink-unresolved",
+    "kernel",
+    "the judge: `wikilink-unresolved`, carried by id; a page reference that names no page too",
+  ],
   ["generated-drift", "kernel", "`check` and `gate` over `generated/*` (§9)"],
   ["okf-missing-type", "kernel", "the `okf-missing-type` rule inside `check` (§1, §9.1)"],
   [
@@ -189,7 +221,11 @@ const RULES: readonly Row[] = [
     "dropped",
     "`unregistered-extension` removed with `extensions.namespaces` and `extensions.fields`: under `registered` an undeclared key is refused by the effective shape.",
   ],
-  ["malformed-pin", "kernel", "the engine `$def` `pin` (schema/shapes.ts)"],
+  [
+    "malformed-pin",
+    "kernel",
+    "the judge: `page-shape-invalid` against the engine `$def` `pin` (schema/shapes.ts)",
+  ],
   ["stale-capture", "kernel", "`check`'s pin measurement, reported as `pin-stale` (§9.1)"],
   ["stale-source-cited", "kernel", "`check`, propagated over `graph.json` edges (§9.1)"],
   [
@@ -203,7 +239,7 @@ const RULES: readonly Row[] = [
     "dropped",
     "`origin-unreachable` removed with remote freshness: a remote-origin pin is `pin-unmeasured` (info).",
   ],
-  ["grammar-unparsed", "kernel", "`item-unparsed` (§4, records/)"],
+  ["grammar-unparsed", "kernel", "the judge: `item-unparsed` (§4, verdict/grammar.ts)"],
   [
     "canonical-form",
     "dropped",
@@ -212,15 +248,23 @@ const RULES: readonly Row[] = [
   [
     "abstract-type",
     "kernel",
-    "the judge: an abstract type has no pages under the content roots (§3)",
+    "the judge: `abstract-type`, a page under the content roots; a rule test or an example may be a page of an abstract type (§3, §8)",
   ],
-  ["tag-form", "kernel", "the reserved `tags` schema's name pattern (schema/reserved.ts)"],
+  [
+    "tag-form",
+    "kernel",
+    "the judge: `page-shape-invalid` against the reserved `tags` schema's name pattern",
+  ],
   [
     "tag-requires-link",
     "dropped",
     "`tag-requires-link` removed with the `requires_link` entry property: a page rule over `page.fields.tags` and `facts.links` expresses it.",
   ],
-  ["instances", "kernel", "`instances-min` and `instances-max` (§3)"],
+  [
+    "instances",
+    "kernel",
+    "the judge: `instances-min` and `instances-max`, at the type document (§3)",
+  ],
   [
     "body-append-only",
     "rule",
@@ -231,7 +275,11 @@ const RULES: readonly Row[] = [
     "dropped",
     "`vocabulary-alias-target` removed with vocabulary entry aliases.",
   ],
-  ["vocabulary-retired", "kernel", "the judge: a value the vocabulary lists under `retired`"],
+  [
+    "vocabulary-retired",
+    "kernel",
+    "the judge: `vocabulary-retired`, a value the vocabulary lists under `retired`",
+  ],
   [
     "skills-stale",
     "dropped",
@@ -265,31 +313,47 @@ const RULES: readonly Row[] = [
     "dropped",
     "`export-destination-linked` removed with exports (§1).",
   ],
-  ["renamed-without-alias", "kernel", "the gate's rename review, carried by id (§10)"],
-  ["exception-stale", "kernel", "the reserved `exceptions` key, kept (§3.1)"],
-  ["exception-illegal", "kernel", "the reserved `exceptions` key, kept (§3.1)"],
+  [
+    "renamed-without-alias",
+    "kernel",
+    "the judge: `renamed-without-alias` over the index state's staged renames (§10)",
+  ],
+  [
+    "exception-stale",
+    "kernel",
+    "the judge: `exception-stale`, an entry of the reserved `exceptions` key that closes nothing (§3.1)",
+  ],
+  [
+    "exception-illegal",
+    "kernel",
+    "the judge: `exception-illegal`, an entry naming no rule, a census or a law a page may not waive (§3.1)",
+  ],
   [
     "unknown-category",
     "kernel",
-    "the claims grammar: `[category]` against the section's vocabulary (§4)",
+    "the judge: `vocabulary-unknown`, a claim's `[category]` against the section's vocabulary (§4)",
   ],
   ["journal-only-category", "dropped", "`journal-only-category` removed with category classes."],
-  ["category-not-allowed", "kernel", "the claims grammar's `categories` parameter (§4)"],
+  [
+    "category-not-allowed",
+    "kernel",
+    "the judge: `category-not-allowed`, the claims `categories` parameter (§4)",
+  ],
   ["owned-by", "dropped", "`owned-by` removed with the `owned_by` entry property."],
   [
     "claim-provenance",
     "kernel",
-    "the claims grammar's `provenance: required | optional | none` (§4)",
+    "the judge: `claim-provenance`, the claims `provenance: required | none` (§4)",
   ],
   [
     "closed-claim-in-facts",
-    "rule",
-    `library \`garden\`, rule \`closed-claim-in-facts\`: a section rule, every claim open (\`retracted == null && superseded == null\`); ${STEP5}`,
+    "kernel",
+    "the judge: `claim-closed`, the claims grammar's `closed: refused` (ruling 4)",
   ],
   [
     "history-marker",
-    "rule",
-    `library \`garden\`, rule \`history-marker\`: a section rule on History, every claim closed; ${STEP5}`,
+    "kernel",
+    "the judge: `claim-open`, the claims grammar's `closed: required` (ruling 4)",
   ],
   [
     "marker-like",
@@ -307,7 +371,7 @@ const RULES: readonly Row[] = [
   [
     "claims-transition",
     "kernel",
-    "the judge, by id (§10): a CEL form nests the base's items around the page's, which the static bound refuses (`cost-bound`) — open for the navigator",
+    "the judge, by id (ruling 3): an open claim of the base, matched by handle, closed, corrected or recorded by a dated entry quoting it (verdict/transitions.ts)",
   ],
   [
     "claim-landing",
@@ -317,7 +381,7 @@ const RULES: readonly Row[] = [
   [
     "unknown-label",
     "kernel",
-    "the relations grammar: a label against the section's vocabulary (§4)",
+    "the judge: `vocabulary-unknown`, a relation's label against the section's vocabulary (§4)",
   ],
   [
     "relation-range",
@@ -327,24 +391,28 @@ const RULES: readonly Row[] = [
   [
     "relation-target-unresolved",
     "kernel",
-    "the relations grammar: `target.resolved` from the judge's name index (§4)",
+    "the judge: `relation-target-unresolved`, the target from the vault's names (§4)",
   ],
   [
     "relation-removed",
-    "rule",
-    `library \`code\`, rule \`relation-removed\`: a page rule over \`before\` enforcing the \`history\` parameter (§4); ${STEP5}`,
+    "kernel",
+    "the judge, by id (ruling 3): a relation that left its section, recorded in its `history` heading (verdict/transitions.ts)",
   ],
   [
     "relation-retired",
     "dropped",
     "`relation-retired` removed: a census of retired labels; a retired label in use is `vocabulary-retired`.",
   ],
-  ["relation-require", "kernel", "the relations grammar's `require` parameter (§4)"],
+  [
+    "relation-require",
+    "kernel",
+    "the judge: `require-unmet`, the relations `require` parameter (ruling 2)",
+  ],
   ["entry-date-missing", "kernel", "`item-unparsed`: an entry is dated or does not parse (§4)"],
   [
     "entry-mutated",
     "kernel",
-    "`entry-edited`, the entries grammar's `lifecycle: append-only` (§4)",
+    "the judge: `entry-edited`, the entries grammar's `lifecycle: append-only` (§4)",
   ],
 ];
 
@@ -467,12 +535,12 @@ const GRAMMAR_PARAMS: readonly Row[] = [
   [
     "claims.history",
     "dropped",
-    "claims `history` removed: a closed claim is a record with `retracted` or `superseded`; where it may sit is a rule (`closed-claim-in-facts`).",
+    "claims `history` removed: a closed claim is a record with `retracted` or `superseded`; where it may stand is the `closed` parameter (ruling 4).",
   ],
   [
     "claims.role",
     "dropped",
-    "claims `role: history` removed: a History section is an `entries` section, or claims under the `history-marker` rule.",
+    "claims `role: history` removed: a History section is an `entries` section, or a claims section with `closed: required` (ruling 4).",
   ],
   [
     "claims.categories",
@@ -490,7 +558,7 @@ const GRAMMAR_PARAMS: readonly Row[] = [
   [
     "relations.history",
     "kernel",
-    "relations `history: <heading>`, enforced by the code library's `relation-removed` rule (§4)",
+    "relations `history: <heading>`, held by the judge's `relation-removed` (ruling 3)",
   ],
   ["entries.date", "dropped", "entries `date` removed: an entry is dated or does not parse (§4)."],
   ["entries.lifecycle", "kernel", "entries `lifecycle: append-only` (`entry-edited`, §4)"],
@@ -538,8 +606,8 @@ const SHAPES: readonly Row[] = [
   ["date", "kernel", "`type: string, format: date` (engine-written validator)"],
   [
     "date.auto",
-    "dropped",
-    "`auto: on-create | on-write` removed with templates and `new`, with no replacement: `created` and `updated` stay reserved keys (§3.1), and nothing stamps them; the page's author writes both, and `write` sets neither.",
+    "kernel",
+    "`write` stamps `created` on a new page and `updated` on a changed page where the effective shape declares the key, through the clock seam (ruling 7, contracts §12 step 4)",
   ],
   ["datetime", "kernel", "`type: string, format: date-time` (engine-written validator)"],
   ["list", "kernel", "`type: array`"],
