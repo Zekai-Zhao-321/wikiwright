@@ -56,7 +56,7 @@ Every row of the composed pass table (`passRows(standardLibrary())`): the kernel
 | `abstract-type` | kernel | the judge: `abstract-type`, a page under the content roots; a rule test or an example may be a page of an abstract type (§3, §8) |
 | `tag-form` | kernel | the judge: `page-shape-invalid` against the reserved `tags` schema's name pattern |
 | `tag-requires-link` | dropped | `tag-requires-link` removed with the `requires_link` entry property: a page rule over `page.fields.tags` and `facts.links` expresses it. |
-| `instances` | kernel | the judge: `instances-min` and `instances-max`, at the type document (§3) |
+| `instances` | kernel | the judge: `instances-min` and `instances-max`, at the type document, counting the pages of the type and of every type descending from it (§3) |
 | `body-append-only` | rule | library `code`, rule `body-append-only` on `code/decision`: a transition rule over `before.page.body`, its test set under `libraries/kit-code/rule-tests/`; `tools/migrate-spellings.ts` wrote the same rule into a migrated bundle's `append-only` fragment (`fixtures/minimal-vault`, `fixtures/memory-synth`), each with its test set |
 | `vocabulary-alias-target` | dropped | `vocabulary-alias-target` removed with vocabulary entry aliases. |
 | `vocabulary-retired` | kernel | the judge: `vocabulary-retired`, a value the vocabulary lists under `retired` |

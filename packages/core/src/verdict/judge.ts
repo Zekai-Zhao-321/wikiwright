@@ -347,13 +347,19 @@ export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): P
   return out;
 }
 
-/** §3 `instances`: pages of exactly each type with a bound, against it. */
+/**
+ * §3 `instances`: each type's bound against the pages of that type and of
+ * every type that descends from it, ancestry counted as `target_type` counts
+ * it, so a bound on an abstract type (whose pages are its descendants') is
+ * met. The bound is the declaring type's own; a child does not inherit it.
+ */
 function instanceFindings(law: TypeLaw, pages: readonly ReadPage[]): Unrouted[] {
   const counts = new Map<string, number>();
   for (const page of pages) {
     if (!page.read.ok) continue;
-    const declared = page.read.page.type?.name;
-    if (declared !== undefined) counts.set(declared, (counts.get(declared) ?? 0) + 1);
+    const type = page.read.page.type;
+    if (type === undefined) continue;
+    for (const name of [type.name, ...type.ancestry]) counts.set(name, (counts.get(name) ?? 0) + 1);
   }
   const out: Unrouted[] = [];
   for (const type of [...law.types.values()].sort((a, b) => codeUnitCompare(a.name, b.name))) {
@@ -366,7 +372,7 @@ function instanceFindings(law: TypeLaw, pages: readonly ReadPage[]): Unrouted[] 
         severity: "error",
         path: type.where,
         location: PAGE_LOCATION,
-        message: `the vault holds ${count} page(s) of type ${type.name}; at least ${min} required`,
+        message: `the vault holds ${count} page(s) of type ${type.name} or a type extending it; at least ${min} required`,
         details: { type: type.name, count, min },
       });
     }
@@ -376,7 +382,7 @@ function instanceFindings(law: TypeLaw, pages: readonly ReadPage[]): Unrouted[] 
         severity: "error",
         path: type.where,
         location: PAGE_LOCATION,
-        message: `the vault holds ${count} page(s) of type ${type.name}; at most ${max} allowed`,
+        message: `the vault holds ${count} page(s) of type ${type.name} or a type extending it; at most ${max} allowed`,
         details: { type: type.name, count, max },
       });
     }

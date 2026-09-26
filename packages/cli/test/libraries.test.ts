@@ -6,15 +6,24 @@
 // rule test and example it ships holds — so a library is proved on its own,
 // not only through the corpus that imports it.
 import { afterAll, describe, expect, it } from "bun:test";
-import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { REPO } from "./fixtures/corpora.ts";
+import { corpusCopy, REPO, removeCopies } from "./fixtures/corpora.ts";
 import { cli, git } from "./fixtures/garden-cli.ts";
 
 const made: string[] = [];
 afterAll(() => {
   for (const dir of made) rmSync(dir, { recursive: true, force: true });
+  removeCopies();
 });
 
 interface Expected {
@@ -104,4 +113,21 @@ describe("every library under libraries/ holds on its own", () => {
       );
     });
   }
+});
+
+describe("library code's bounds hold over the bundle that imports it", () => {
+  it("a second quickstart page in devwiki breaks code/quickstart's one-page bound", () => {
+    const { root } = corpusCopy("devwiki");
+    const page = readFileSync(join(root, "wiki", "wikiwright-quickstart.md"), "utf8");
+    writeFileSync(
+      join(root, "wiki", "second-quickstart.md"),
+      page.replaceAll("wikiwright quickstart", "second quickstart"),
+    );
+    const judged = cli(["check", "--all"], root);
+    expect(
+      (judged.envelope.data?.findings ?? [])
+        .filter((f) => f.rule.startsWith("instances-"))
+        .map((f) => [f.rule, f.path, f.details["count"]]),
+    ).toEqual([["instances-max", "code:types/quickstart.yaml", 2]]);
+  });
 });

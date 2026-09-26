@@ -865,6 +865,12 @@ version` prints the engine version and the commit a binary was built from.
   constant `tools/migrate-spellings.ts` writes; memory-synth's test set
   now appends to an empty body, minimal-vault's to a CRLF page, and
   `body-append-only.test.ts` holds all three documents at the gate.
+- `instances` counts a page against its type and every type it descends
+  from. It counted pages of exactly the declaring type, so a bound on an
+  abstract type, which has no pages of its own, never fired: library
+  `code`'s `quickstart` (at most one page) let devwiki hold two. The bound
+  is the declaring type's own, not inherited as a declaration as v1
+  inherited it; `docs/roadmap.md` states where the two readings differ.
 - The covering diff `freshness` reads no longer depends on the caller's git
   configuration: under `diff.relative=true` a vault in a directory of its
   repository got an empty diff for a covered path outside that directory,

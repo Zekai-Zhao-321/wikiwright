@@ -289,7 +289,7 @@ export const RULES: readonly Row[] = [
   [
     "instances",
     "kernel",
-    "the judge: `instances-min` and `instances-max`, at the type document (§3)",
+    "the judge: `instances-min` and `instances-max`, at the type document, counting the pages of the type and of every type descending from it (§3)",
   ],
   [
     "body-append-only",

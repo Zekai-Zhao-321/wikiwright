@@ -907,8 +907,17 @@ its old self over any other root. What the rewritten verbs leave, so far:
   Only a top-level property's `target_type` and `target_root` are read, so
   the loader refuses either one anywhere else (`shape-invalid`): a nested
   page reference, one applied in place, one in a `$def`.
-- `instances` counts the pages of exactly the type, not its descendants, as
-  v1 did.
+- A type's `instances` bound counts the pages of that type and of every
+  type that descends from it, ancestry counted as `target_type` counts it,
+  so a bound on an abstract type holds (library `code`'s `quickstart`, at
+  most one page, is met by the pages of devwiki's `quickstart`, which
+  extends it). The bound is the declaring type's own and is not inherited
+  as a declaration; v1 inherited it into each child, which counted its own
+  pages only, and refused a child that relaxed it (`instances-relaxed`).
+  The two differ for two sibling types under one bounded type: v1 held each
+  sibling to the bound, v2 holds their pages together. A child cannot
+  relax an ancestor's bound, since the ancestor's is still counted; the
+  navigator has not ruled on this reading of §3.
 - A rule test's or an example's page resolves its links and relation
   targets against the vault that judges it, and §8 counts every warning on
   a negative, repaired or positive page. A library's test that names a

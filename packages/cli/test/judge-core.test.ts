@@ -326,6 +326,27 @@ describe("instances", () => {
       { path: "garden:types/bed.yaml", details: { type: "garden/bed", count: 1, max: 0 } },
     ]);
   });
+
+  it("counts a page against its type and every type it descends from, abstract ones too", async () => {
+    const { LIBRARY } = await import("./fixtures/garden-law.ts");
+    const abstract = LIBRARY["libraries/kit-garden/types/planting.yaml"] ?? "";
+    const verdict = await judgeVault({
+      "libraries/kit-garden/types/planting.yaml": abstract.replace(
+        "abstract: true\n",
+        "abstract: true\ninstances: { max: 1 }\n",
+      ),
+      "wiki/Chives.md": BASIL.replace("title: Basil", "title: Chives"),
+    });
+    expect(only(verdict, "instances-max")).toMatchObject([
+      {
+        path: "garden:types/planting.yaml",
+        details: { type: "garden/planting", count: 2, max: 1 },
+      },
+    ]);
+    // The bound is the declaring type's: the bundle's planting, which
+    // extends it, is not held to it a second time.
+    expect(only(verdict, "instances-max")).toHaveLength(1);
+  });
 });
 
 describe("the finding and its route (§6)", () => {
