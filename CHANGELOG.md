@@ -876,6 +876,9 @@ version` prints the engine version and the commit a binary was built from.
 - Refusal codes renamed by the v2 verbs: `engine-pin-mismatch` is
   `engine-mismatch`; `stale-base` is `base-mismatch`; `not-a-git-repo`
   is `git-unavailable`; `directory-not-found` is `bundle-not-found`.
+- A linked `config/engine.json` now answers `constitution-invalid` (exit 2),
+  with an `engine-invalid` issue naming the link, where the old path answered
+  `linked-outside-vault` (exit 4).
 
 - The old registry code the type-document loader replaced (v2 contracts §1,
   §12 step 6), from `packages/core/src`: `registry/` (loading and flattening

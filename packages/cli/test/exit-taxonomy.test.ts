@@ -230,11 +230,15 @@ describe("a config linked out of the bundle is not read (docs/cli.md §Exit code
         const r = run(tmp, argv);
         assert.equal(r.status, 2, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
         assert.equal(r.envelope.error?.code, "constitution-invalid");
-        const issues = (r.envelope.data as { issues: { code: string; where: string }[] }).issues;
+        const issues = (
+          r.envelope.data as { issues: { code: string; where: string; message: string }[] }
+        ).issues;
         assert.deepEqual(
           issues.map((i) => [i.code, i.where]),
           [["engine-invalid", "bundle:config/engine.json"]],
         );
+        assert.match(issues[0]?.message ?? "", /symbolic link/u);
+        assert.doesNotMatch(issues[0]?.message ?? "", /absent/u);
       }
     } finally {
       rmSync(tmp, { recursive: true, force: true });

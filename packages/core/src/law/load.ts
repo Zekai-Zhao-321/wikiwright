@@ -57,7 +57,17 @@ function failed(issues: readonly LawIssue[]): TypeLawResult {
 
 export function loadTypeLaw(snapshot: LawSnapshot): TypeLawResult {
   const engineFile = snapshot.files.get(joinUnder(snapshot.bundle, ENGINE_PATH));
-  const loaded = loadEngineV4(engineFile?.link === true ? undefined : engineFile?.bytes);
+  if (engineFile?.link === true) {
+    const kind = engineFile.submodule === true ? "submodule" : "symbolic link";
+    return failed([
+      {
+        code: "engine-invalid",
+        where: `bundle:${ENGINE_PATH}`,
+        message: `${ENGINE_PATH} is a ${kind}, which no state reads through`,
+      },
+    ]);
+  }
+  const loaded = loadEngineV4(engineFile?.bytes);
   if (!loaded.ok) return failed(loaded.issues);
   const engine = loaded.engine;
 
