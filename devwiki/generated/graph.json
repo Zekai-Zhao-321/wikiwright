@@ -321,7 +321,7 @@
       "from": "wiki/command-runtime.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/command-runtime.md",
@@ -332,7 +332,7 @@
       "from": "wiki/command-runtime.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/command-runtime.md",
@@ -343,7 +343,7 @@
       "from": "wiki/command-runtime.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/command-runtime.md",
@@ -354,7 +354,7 @@
       "from": "wiki/deterministic-artifacts.md",
       "to": "meta/D-001.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/deterministic-artifacts.md",
@@ -410,7 +410,7 @@
       "from": "wiki/deterministic-artifacts.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/deterministic-artifacts.md",
@@ -426,7 +426,7 @@
       "from": "wiki/envelope-and-exit-codes.md",
       "to": "wiki/command-runtime.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/envelope-and-exit-codes.md",
@@ -452,7 +452,7 @@
       "from": "wiki/envelope-and-exit-codes.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/envelope-and-exit-codes.md",
@@ -473,7 +473,7 @@
       "from": "wiki/environment-variables.md",
       "to": "wiki/command-runtime.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/environment-variables.md",
@@ -489,7 +489,7 @@
       "from": "wiki/environment-variables.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/environment-variables.md",
@@ -535,7 +535,7 @@
       "from": "wiki/exports.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/exports.md",
@@ -546,7 +546,7 @@
       "from": "wiki/exports.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/exports.md",
@@ -557,7 +557,7 @@
       "from": "wiki/exports.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/exports.md",
@@ -583,7 +583,7 @@
       "from": "wiki/fields-and-shapes.md",
       "to": "wiki/judge.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/fields-and-shapes.md",
@@ -594,7 +594,7 @@
       "from": "wiki/fields-and-shapes.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/fields-and-shapes.md",
@@ -610,7 +610,7 @@
       "from": "wiki/fields-and-shapes.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/fields-and-shapes.md",
@@ -646,7 +646,7 @@
       "from": "wiki/findings-and-routing.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/findings-and-routing.md",
@@ -672,7 +672,7 @@
       "from": "wiki/fixers.md",
       "to": "wiki/judge.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/fixers.md",
@@ -683,7 +683,7 @@
       "from": "wiki/fixers.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/fixers.md",
@@ -694,7 +694,7 @@
       "from": "wiki/fixers.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/fixers.md",
@@ -715,7 +715,7 @@
       "from": "wiki/freshness.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/freshness.md",
@@ -726,7 +726,7 @@
       "from": "wiki/freshness.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/freshness.md",
@@ -737,7 +737,7 @@
       "from": "wiki/freshness.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/freshness.md",
@@ -748,7 +748,7 @@
       "from": "wiki/generated-artifacts.md",
       "to": "meta/D-001.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/generated-artifacts.md",
@@ -759,7 +759,7 @@
       "from": "wiki/generated-artifacts.md",
       "to": "meta/D-005.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/generated-artifacts.md",
@@ -790,7 +790,7 @@
       "from": "wiki/generated-artifacts.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/generated-artifacts.md",
@@ -806,7 +806,7 @@
       "from": "wiki/generated-artifacts.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/generated-artifacts.md",
@@ -817,7 +817,7 @@
       "from": "wiki/generated-artifacts.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/generated-artifacts.md",
@@ -853,7 +853,7 @@
       "from": "wiki/git.md",
       "to": "wiki/freshness.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/git.md",
@@ -864,7 +864,7 @@
       "from": "wiki/git.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/git.md",
@@ -875,7 +875,7 @@
       "from": "wiki/git.md",
       "to": "wiki/writer-and-staged-gate.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/git.md",
@@ -891,7 +891,7 @@
       "from": "wiki/judge.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/judge.md",
@@ -902,7 +902,7 @@
       "from": "wiki/judge.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/judge.md",
@@ -913,7 +913,7 @@
       "from": "wiki/judge.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/judge.md",
@@ -929,7 +929,7 @@
       "from": "wiki/loading-a-module.md",
       "to": "meta/D-002.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/loading-a-module.md",
@@ -945,7 +945,7 @@
       "from": "wiki/loading-a-module.md",
       "to": "meta/D-007.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/loading-a-module.md",
@@ -981,7 +981,7 @@
       "from": "wiki/loading-a-module.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/loading-a-module.md",
@@ -992,7 +992,7 @@
       "from": "wiki/modules.md",
       "to": "meta/D-002.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/modules.md",
@@ -1003,7 +1003,7 @@
       "from": "wiki/modules.md",
       "to": "meta/D-003.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/modules.md",
@@ -1014,7 +1014,7 @@
       "from": "wiki/modules.md",
       "to": "meta/D-007.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/modules.md",
@@ -1045,7 +1045,7 @@
       "from": "wiki/modules.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/modules.md",
@@ -1056,7 +1056,7 @@
       "from": "wiki/modules.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/modules.md",
@@ -1067,7 +1067,7 @@
       "from": "wiki/modules.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/modules.md",
@@ -1113,7 +1113,7 @@
       "from": "wiki/one-judge-five-states.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/one-judge-five-states.md",
@@ -1144,7 +1144,7 @@
       "from": "wiki/parser-and-names.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/parser-and-names.md",
@@ -1155,7 +1155,7 @@
       "from": "wiki/parser-and-names.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/parser-and-names.md",
@@ -1166,7 +1166,7 @@
       "from": "wiki/parser-and-names.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/parser-and-names.md",
@@ -1202,7 +1202,7 @@
       "from": "wiki/registry-pipeline.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/registry-pipeline.md",
@@ -1213,7 +1213,7 @@
       "from": "wiki/registry-pipeline.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/registry-pipeline.md",
@@ -1224,7 +1224,7 @@
       "from": "wiki/registry-pipeline.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/registry-pipeline.md",
@@ -1250,7 +1250,7 @@
       "from": "wiki/repository-scripts.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/repository-scripts.md",
@@ -1261,7 +1261,7 @@
       "from": "wiki/repository-scripts.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/repository-scripts.md",
@@ -1282,7 +1282,7 @@
       "from": "wiki/search.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/search.md",
@@ -1293,7 +1293,7 @@
       "from": "wiki/search.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/search.md",
@@ -1304,7 +1304,7 @@
       "from": "wiki/search.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/search.md",
@@ -1345,7 +1345,7 @@
       "from": "wiki/section-grammars.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/section-grammars.md",
@@ -1366,7 +1366,7 @@
       "from": "wiki/skills-and-brief.md",
       "to": "wiki/command-runtime.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/skills-and-brief.md",
@@ -1377,7 +1377,7 @@
       "from": "wiki/skills-and-brief.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/skills-and-brief.md",
@@ -1388,7 +1388,7 @@
       "from": "wiki/skills-and-brief.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/skills-and-brief.md",
@@ -1409,7 +1409,7 @@
       "from": "wiki/standard-library.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/standard-library.md",
@@ -1420,7 +1420,7 @@
       "from": "wiki/standard-library.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/standard-library.md",
@@ -1431,7 +1431,7 @@
       "from": "wiki/standard-library.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/standard-library.md",
@@ -1462,7 +1462,7 @@
       "from": "wiki/testing-guide.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/testing-guide.md",
@@ -1473,7 +1473,7 @@
       "from": "wiki/wikiwright-architecture.md",
       "to": "meta/D-004.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/wikiwright-architecture.md",
@@ -1519,7 +1519,7 @@
       "from": "wiki/wikiwright-architecture.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/wikiwright-architecture.md",
@@ -1530,7 +1530,7 @@
       "from": "wiki/wikiwright-architecture.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/wikiwright-architecture.md",
@@ -1541,7 +1541,7 @@
       "from": "wiki/wikiwright-architecture.md",
       "to": "wiki/wikiwright-quickstart.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/wikiwright-architecture.md",
@@ -1552,7 +1552,7 @@
       "from": "wiki/wikiwright-quickstart.md",
       "to": "meta/D-003.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/wikiwright-quickstart.md",
@@ -1563,7 +1563,7 @@
       "from": "wiki/wikiwright-quickstart.md",
       "to": "meta/D-007.md",
       "kind": "relation",
-      "label": "decided_by"
+      "label": "decided-by"
     },
     {
       "from": "wiki/wikiwright-quickstart.md",
@@ -1584,7 +1584,7 @@
       "from": "wiki/wikiwright-quickstart.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/wikiwright-quickstart.md",
@@ -1615,7 +1615,7 @@
       "from": "wiki/writer-and-staged-gate.md",
       "to": "wiki/repository-layout.md",
       "kind": "relation",
-      "label": "mapped_in"
+      "label": "mapped-in"
     },
     {
       "from": "wiki/writer-and-staged-gate.md",
@@ -1626,7 +1626,7 @@
       "from": "wiki/writer-and-staged-gate.md",
       "to": "wiki/testing-guide.md",
       "kind": "relation",
-      "label": "verified_by"
+      "label": "verified-by"
     },
     {
       "from": "wiki/writer-and-staged-gate.md",
@@ -1637,7 +1637,7 @@
       "from": "wiki/writer-and-staged-gate.md",
       "to": "wiki/wikiwright-architecture.md",
       "kind": "relation",
-      "label": "part_of"
+      "label": "part-of"
     },
     {
       "from": "wiki/writer-and-staged-gate.md",

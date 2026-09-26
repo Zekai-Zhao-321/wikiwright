@@ -3,9 +3,10 @@ type: subsystem
 title: "The command runtime"
 description: "One spec-driven registry of 24 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the `--bundle` scan of the skill directories, the read-only guard on a marked root, the bundle every vault envelope names, the one clock, and the place a loaded vault becomes the judge's law."
 tags: [cli]
-pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
-origin: .
-covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/bundle.ts, packages/cli/src/discovery.ts, packages/cli/src/verbs/]
+pin:
+  commit: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
+  origin: .
+  covers: [packages/cli/src/bin.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts, packages/cli/src/commands.ts, packages/cli/src/envelope.ts, packages/cli/src/spec.ts, packages/cli/src/clock.ts, packages/cli/src/law.ts, packages/cli/src/pages.ts, packages/cli/src/paths.ts, packages/cli/src/buildinfo.ts, packages/cli/src/bundle.ts, packages/cli/src/discovery.ts, packages/cli/src/verbs/]
 ---
 
 # The command runtime
@@ -224,6 +225,6 @@ turns off.
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]

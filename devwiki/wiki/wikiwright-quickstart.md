@@ -3,9 +3,10 @@ type: quickstart
 title: wikiwright quickstart
 description: Install, build, and verify the engine from a fresh clone in minutes.
 tags: [repo]
-pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
-origin: .
-covers: [package.json, devwiki/package.json, scripts/hooks/]
+pin:
+  commit: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
+  origin: .
+  covers: [package.json, devwiki/package.json, scripts/hooks/]
 ---
 
 # wikiwright quickstart
@@ -52,6 +53,6 @@ as the pre-commit hook with `git config core.hooksPath scripts/hooks`.
 
 ## Relations
 
-- decided_by [[D-003]]
-- decided_by [[D-007]]
-- part_of [[wikiwright-architecture]]
+- decided-by [[D-003]]
+- decided-by [[D-007]]
+- part-of [[wikiwright-architecture]]

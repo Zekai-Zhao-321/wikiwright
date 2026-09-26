@@ -3,9 +3,10 @@ type: testing-guide
 title: "Testing the engine"
 description: "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install the code kit into a copy."
 tags: [repo]
-pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
-origin: .
-covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/discovery.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts, tools/run-suite.ts]
+pin:
+  commit: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
+  origin: .
+  covers: [package.json, scripts/, packages/cli/test/fixtures/, packages/core/test/helpers/, packages/cli/test/dry-run.test.ts, packages/cli/test/bundles.test.ts, packages/cli/test/discovery.test.ts, packages/cli/test/multi-bundle.test.ts, fixtures/handbooks/, packages/cli/test/judge-property.test.ts, packages/core/test/kernel-import-boundary.test.ts, tools/run-suite.ts]
 ---
 
 # Testing the engine
@@ -166,4 +167,4 @@ a file both `test` and `test:node` glob
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
+- part-of [[wikiwright-architecture]]

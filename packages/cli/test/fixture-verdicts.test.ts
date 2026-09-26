@@ -29,13 +29,29 @@ function rows(envelope: Envelope, severities: readonly string[]): Row[] {
 
 interface Expected {
   pages: number;
-  /** Every error and warning finding, sorted. */
+  /** Every error and warning finding, sorted, but those of `live`. */
   findings: Row[];
   /** Every rule `unevaluated` names, and how many pages it names it on. */
   unevaluated: Record<string, number>;
+  /**
+   * Warnings measured live against the repository the corpus sits in (a
+   * pin and the pages that cite a stale one): they change with every commit
+   * that touches a covered path, so their rules are held, not their count.
+   */
+  live?: string[];
 }
 
 const V2_VERDICTS: Record<string, Expected> = {
+  // The engine's own bundle carries no defect. Its pins are measured against
+  // this repository, so a covered path changed since a pin is `pin-stale`
+  // on the page and `stale-source-cited` on every page that links it, until
+  // the documentation step re-reads and re-pins them.
+  devwiki: {
+    pages: 35,
+    findings: [],
+    unevaluated: { "body-append-only": 7, "entry-edited": 27, "relation-removed": 27 },
+    live: ["pin-stale", "stale-source-cited", "pin-unknown", "citation-unresolved"],
+  },
   // A handbook carries no defect: a finding of any severity is rot. Its
   // `source-host-allowed` rule holds the page that names a source.
   "fixtures/handbooks/orchard": { pages: 3, findings: [], unevaluated: {} },
@@ -84,7 +100,12 @@ describe("the corpora on the v2 law judge to the verdict recorded here (contract
     it(`${corpus}: check --all where it stands`, () => {
       const r = cli(["check", "--all"], join(REPO, corpus));
       expect(r.envelope.data?.summary).toMatchObject({ pages: expected.pages });
-      expect(rows(r.envelope, ["error", "warning"])).toEqual(expected.findings);
+      const live = new Set(expected.live ?? []);
+      const judged = rows(r.envelope, ["error", "warning"]);
+      expect(judged.filter(([rule]) => !live.has(rule))).toEqual(expected.findings);
+      expect(judged.filter(([rule, severity]) => live.has(rule) && severity !== "warning")).toEqual(
+        [],
+      );
       const unevaluated = r.envelope.data?.["unevaluated"] as Record<string, { count: number }>;
       expect(
         Object.fromEntries(Object.entries(unevaluated).map(([rule, u]) => [rule, u.count])),

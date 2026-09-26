@@ -3,9 +3,10 @@ type: subsystem
 title: "Modules, the loader and the fixture"
 description: "The registration API every module goes through, the loader's ladder from the bundle's own node_modules or a declared bundle-relative path to the judge, the purity scan and the determinism fixture run at every load and kept once per digest in a process, and the modules verb."
 tags: [kernel, cli]
-pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
-origin: .
-covers: [packages/core/src/modules/, packages/core/src/version/, packages/cli/src/main.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/cli/src/sha256.ts, packages/cli/src/verbs/modules.ts]
+pin:
+  commit: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
+  origin: .
+  covers: [packages/core/src/modules/, packages/core/src/version/, packages/cli/src/main.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/cli/src/sha256.ts, packages/cli/src/verbs/modules.ts]
 aliases: ["modules-and-trust"]
 ---
 
@@ -159,9 +160,9 @@ loader reads and never writes. Nothing of a module is kept between processes.
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
-- decided_by [[D-002]]
-- decided_by [[D-003]]
-- decided_by [[D-007]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]
+- decided-by [[D-002]]
+- decided-by [[D-003]]
+- decided-by [[D-007]]

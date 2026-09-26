@@ -16,7 +16,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type { ModuleManifest } from "@wikiwright/core";
+import { type ModuleManifest, readYaml } from "@wikiwright/core";
 import {
   DIST_CLI,
   installedCopy,
@@ -29,7 +29,9 @@ import { runCli } from "./fixtures/runtime.ts";
 
 const STARTERS = fileURLToPath(new URL("../constitutions/", import.meta.url));
 const CODE_STARTER = join(STARTERS, "code");
-const DEVWIKI = join(REPO, "devwiki");
+// devwiki is on the v2 law; the code starter and the kit are v1, measured
+// against the frozen v1 copy of devwiki until they leave (fixtures/v1).
+const DEVWIKI = join(REPO, "fixtures", "v1", "devwiki");
 
 interface Finding {
   ruleId: string;
@@ -355,7 +357,6 @@ describe("the charter type's use_when names the file ()", () => {
   const REGISTRIES: Record<string, string> = {
     base: join(STARTERS, "base", "config", "constitution.json"),
     code: join(STARTERS, "code", "config", "constitution.json"),
-    devwiki: join(REPO, "devwiki", "config", "constitution.json"),
   };
   for (const [bundle, path] of Object.entries(REGISTRIES)) {
     it(`${bundle}: charter.use_when says meta/charter.md and disclaims the operating manual`, () => {
@@ -367,4 +368,14 @@ describe("the charter type's use_when names the file ()", () => {
       assert.match(useWhen, /Not the agent operating manual/);
     });
   }
+  // devwiki is on the v2 law: its charter is a type document.
+  it("devwiki: charter.use_when says meta/charter.md and disclaims the operating manual", () => {
+    const read = readYaml(
+      readFileSync(join(REPO, "devwiki", "constitution", "types", "charter.yaml"), "utf8"),
+    );
+    assert.equal(read.ok, true);
+    const useWhen = String((read.ok ? (read.value as Record<string, unknown>) : {})["use_when"]);
+    assert.match(useWhen, /meta\/charter\.md/);
+    assert.match(useWhen, /Not the agent operating manual/);
+  });
 });

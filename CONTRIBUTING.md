@@ -31,13 +31,14 @@ printf '#!/bin/sh\nexec bun /path/to/wikiwright/packages/cli/dist/bin.js "$@"\n'
 chmod +x ~/.local/bin/wikiwright
 ```
 
-`bun install` links `@wikiwright/kit-code` into `devwiki/node_modules`, and
-that is all `check --root devwiki` needs: the kit loads from there, and every
-load proves it — its purity scan and its determinism fixture run before it
-judges anything (`docs/extending.md` §Loading a module). Until the install,
-`check` refuses `module-unresolved`, and the hint names the install. Every
-test judges a copy under `os.tmpdir()` that installs the kit from the shipped
-package; the shipped tree is never installed into from a test.
+`devwiki` is on the v2 law and imports the type library `libraries/kit-code`
+by its path from the repository's top level, so `check --root devwiki` needs
+nothing installed: the library is data, read from the tree. The tests judge
+it where it stands and in copies under `os.tmpdir()`. The v1 kit,
+`@wikiwright/kit-code` under `packages/kit-code`, is still what the `code`
+starter and the old verbs' tests install; they read a frozen v1 copy of
+devwiki, `fixtures/v1/devwiki`, and every copy a test judges installs the
+kit from the shipped package, never into the shipped tree.
 
 ## The gate
 
@@ -105,13 +106,12 @@ else is not covered.
   `it` per verb, or state `{ timeout }` on a deliberately sequential walk.
 - `packages/core` is a pure library with no Node typings in its tsconfig, so
   a filesystem call does not typecheck there; the shell is `packages/cli`.
-- The corpora are fixtures. A change to `devwiki`'s pages or
-  constitution is judged by `starter-fixtures` (under the `code` starter's
-  types merged with devwiki's own vocabularies, the error set must equal
-  devwiki's own — a concrete type devwiki adds must exist in the starter,
-  while a tag or a label is devwiki's to register), `routing-xor` (its
-  `lint` must be clean) and `generated-tracked` (its `generated/` must be
-  what this build renders). The two handbooks under `fixtures/handbooks`
+- The corpora are fixtures, all on the v2 law. A change to `devwiki`'s pages
+  or constitution is judged by `fixture-verdicts` (no error under `check`
+  and `gate`; its warnings only the pins measured live), `routing-xor`,
+  `coverage-coherence` and `generated-tracked` (its `generated/` must be
+  what this build renders). `starter-fixtures` holds the v1 `code` starter
+  against the frozen v1 copy under `fixtures/v1/devwiki`. The two handbooks under `fixtures/handbooks`
   are held at zero findings of any severity under `check` by
   `fixture-verdicts`, their tracked `generated/` and their rendered exports
   under `skills/` by `generated-tracked`, the two-bundle scenario over
@@ -144,7 +144,7 @@ logical change is one commit).
 
 | File | Generator |
 |---|---|
-| `devwiki/generated/*`, the brief included | `wikiwright check --write --root devwiki`, after the install above |
+| `devwiki/generated/*`, the brief and the queue included | `wikiwright check --write --root devwiki` |
 | `fixtures/handbooks/*/generated/*`, the briefs included, and `fixtures/handbooks/*/skills/*`, the rendered exports | `wikiwright check --write --root fixtures/handbooks/orchard`, and the same for `allotment` |
 | `packages/cli/skills/wikiwright-maintain/lint-response.md` | `bun tools/render-playbook.ts` (`--check` verifies) |
 | the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies, and the suite runs it with nothing on PATH) |

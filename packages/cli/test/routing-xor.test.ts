@@ -5,7 +5,7 @@
 // codes and the vault passes. A finding that
 // reaches the envelope carrying neither `fix` nor `queue` is a class-B hole.
 
-import { afterAll, describe, it } from "bun:test";
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 import { passRows, standardLibrary, VERDICT_TABLE } from "@wikiwright/core";
 import { V2_CORPORA } from "./fixtures/corpora.ts";
 import { cli } from "./fixtures/garden-cli.ts";
-import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
+import { kitEnv } from "./fixtures/kit-code.ts";
 import { MEMORY_LAW } from "./fixtures/memory-law.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
@@ -79,35 +79,10 @@ function assertRouted(findings: readonly Finding[], where: string): number {
   return findings.length;
 }
 
-// devwiki is a bundle over the code kit: judged from an installed copy under
-// os.tmpdir(), never from the shipped tree (docs/extending.md §The code kit).
-const DEVWIKI_COPY = installedCopy(join(REPO, "devwiki"), "xor-devwiki");
-afterAll(() => rmSync(DEVWIKI_COPY, { recursive: true, force: true }));
-
-const CORPORA: Record<string, string> = {
-  devwiki: DEVWIKI_COPY,
-};
-
+// Every corpus of the repository is on the v2 law (contracts §12 step 5)
+// and routes under the v2 check below; the old table's routing is held by
+// the synthetic bundles after it.
 describe("every emitted finding routes (docs/concepts.md §Findings and routing)", () => {
-  for (const [name, root] of Object.entries(CORPORA)) {
-    it(`lint --all over ${name}`, () => {
-      const findings = envelopeOf(["lint", "--root", root, "--all"], root).data?.findings ?? [];
-      const n = assertRouted(findings, `lint ${name}`);
-      // devwiki is clean, so its `lint` produces nothing. The routing law is
-      // about findings that EXIST; the "produced something" guard stays on the
-      // corpora that still do, so this test cannot pass vacuously everywhere at
-      // once.
-      if (name !== "devwiki") {
-        assert.equal(n > 0, true, `${name} produced findings to judge (${n})`);
-      }
-    });
-
-    it(`check --all over ${name}`, () => {
-      const findings = envelopeOf(["check", "--root", root, "--all"], root).data?.findings ?? [];
-      assertRouted(findings, `check ${name}`);
-    });
-  }
-
   // v2 contracts §12 step 5: the corpora on the v2 law, under the v2
   // `check`: every error and warning names exactly one of a queue lane of the
   // verdict table and a fix, and an info names neither.

@@ -43,9 +43,9 @@ fourth step, the verbs over the type-document law (§The v2 verbs answer a bundl
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
 the module ladder end to end twice: with a neutral module fixture under
-`fixtures/conformance` and with the shipped kit. `devwiki` is a bundle over the kit whose pages are pinned to
-this repository: `check --root devwiki` reports zero findings and
-`freshness --root devwiki` holds every citation to its pin. The runtime and
+`fixtures/conformance` and with the shipped kit. `devwiki` is a bundle whose pages are pinned to
+this repository; since step 5 it is on the v2 law, over `libraries/kit-code`,
+and `check --root devwiki` reports no error, its warnings the pins below. The runtime and
 transport slice of the v2 delivery (the asynchronous git transport, Bun only,
 remote freshness removed, the binary) and its review fixes changed code 21
 of the 27 pinned pages cover: measured at the last of them, `freshness`
@@ -739,13 +739,13 @@ There are two tables. A root whose `config/engine.json` is schema version 4
 is answered by the command table (`COMMANDS`); any other root — a bundle on
 `config/constitution.json`, or no bundle — by the old table, whole
 (`LEGACY_COMMANDS`), and so is every invocation naming its target by
-`--bundle`, the old skill discovery. Step 5 migrates the corpora of this
+`--bundle`, the old skill discovery. Step 5 migrated every corpus of this
 repository onto the v2 law with `tools/migrate-spellings.ts`, one commit
-each: `minimal-vault`, `memory-synth` and the two handbooks are migrated,
-and `devwiki` is still on the old constitution, judged by the old verbs
-until its turn. The old table's tests read frozen v1 copies of the
-migrated corpora under `fixtures/v1/`, and step 6 deletes the old verbs
-with their table and those copies. A verb that left the
+each: `minimal-vault`, `memory-synth`, the two handbooks, and `devwiki`,
+which imports `libraries/kit-code`, the code wiki's type library, in place
+of the v1 kit. The old table's tests read frozen v1 copies of the corpora
+under `fixtures/v1/`, and step 6 deletes the old verbs with their table and
+those copies. A verb that left the
 command table answers `unknown-command` over a schema-version-4 bundle, and
 its old self over any other root. What the rewritten verbs leave, so far:
 
@@ -1022,13 +1022,12 @@ its old self over any other root. What the rewritten verbs leave, so far:
 
 ## Developing against it
 
-- **A fresh clone runs one step before `check --root devwiki` judges
-  anything:** `bun install`, which links `@wikiwright/kit-code` into
-  `devwiki/node_modules`. Until it, `check` is `module-unresolved`, and the
-  hint names the install; after it, every load proves the kit before it
-  judges anything. Every test judges a copy under `os.tmpdir()` that installs
-  the kit from the shipped package (`packages/cli/test/fixtures/kit-code.ts`),
-  never the shipped tree.
+- **`check --root devwiki` needs nothing installed.** devwiki imports
+  `libraries/kit-code` by its path from the repository's top level, and the
+  library is data read from the tree. The v1 kit is still installed by the
+  tests of the old verbs and the `code` starter, into copies under
+  `os.tmpdir()` (`packages/cli/test/fixtures/kit-code.ts`), never the
+  shipped tree.
 - **Bun's per-test budget is five seconds.** A case that installs a kit and
   drives a dozen verbs exceeds it: build the bundle in `before` and keep one
   `it` per verb, or state `{ timeout }` on a deliberately sequential walk.

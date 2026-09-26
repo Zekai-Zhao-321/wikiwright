@@ -3,9 +3,10 @@ type: subsystem
 title: Registry pipeline
 description: Loads, validates and flattens config/constitution.json and config/engine.json into the effective contracts every pass reads.
 tags: [kernel, cli]
-pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
-origin: .
-covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/verbs/read.ts, packages/cli/src/verbs/bundles.ts]
+pin:
+  commit: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
+  origin: .
+  covers: [packages/core/src/registry/, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/verbs/read.ts, packages/cli/src/verbs/bundles.ts]
 ---
 
 # Registry pipeline
@@ -113,9 +114,9 @@ before the constitution is read (`:233-250`).
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]
 
 ## History
 

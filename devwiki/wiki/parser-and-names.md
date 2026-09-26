@@ -3,9 +3,10 @@ type: subsystem
 title: "The parser and the names it binds"
 description: "Bytes become one ParsedDoc through the mdast and yaml seams; identity is one normalization; the name index resolves basenames and aliases; the path law says what a vault path may spell."
 tags: [kernel]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
-origin: .
-covers: [packages/core/src/parse/, packages/core/src/text/, packages/core/src/names/, packages/core/src/identity/, packages/core/src/paths/]
+pin:
+  commit: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+  origin: .
+  covers: [packages/core/src/parse/, packages/core/src/text/, packages/core/src/names/, packages/core/src/identity/, packages/core/src/paths/]
 ---
 
 # The parser and the names it binds
@@ -108,6 +109,6 @@ None. `casefold-data.ts` is a generated table from the vendored Unicode
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]

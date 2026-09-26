@@ -3,9 +3,10 @@ type: subsystem
 title: "Generated artifacts"
 description: "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, and the bundle's rendered exports under skills/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges."
 tags: [kernel, cli]
-pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
-origin: .
-covers: [packages/core/src/generate/, packages/core/src/hash/, packages/cli/src/artifacts.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/graph.ts]
+pin:
+  commit: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
+  origin: .
+  covers: [packages/core/src/generate/, packages/core/src/hash/, packages/cli/src/artifacts.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/graph.ts]
 ---
 
 # Generated artifacts
@@ -149,8 +150,8 @@ is held at runtime.
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
-- decided_by [[D-001]]
-- decided_by [[D-005]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]
+- decided-by [[D-001]]
+- decided-by [[D-005]]

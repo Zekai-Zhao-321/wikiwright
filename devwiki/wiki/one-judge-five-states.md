@@ -3,9 +3,10 @@ type: code-concept
 title: "One judge, five states"
 description: "Every write path — the working tree, the staged gate, a draft on stdin, a write, a replay of history — constructs a state and calls the one judge under the one law, so no verb can be told one thing at write time and another at the gate."
 tags: [kernel, cli]
-pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
-origin: .
-covers: [packages/core/src/judge/index.ts, packages/cli/src/state.ts, packages/cli/src/writer.ts, packages/cli/src/staged.ts, packages/cli/src/law.ts, packages/cli/src/verbs/lint.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/fix.ts, packages/cli/src/verbs/write.ts]
+pin:
+  commit: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
+  origin: .
+  covers: [packages/core/src/judge/index.ts, packages/cli/src/state.ts, packages/cli/src/writer.ts, packages/cli/src/staged.ts, packages/cli/src/law.ts, packages/cli/src/verbs/lint.ts, packages/cli/src/verbs/check.ts, packages/cli/src/verbs/fix.ts, packages/cli/src/verbs/write.ts]
 ---
 
 # One judge, five states
@@ -89,4 +90,4 @@ this page does.
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
+- part-of [[wikiwright-architecture]]

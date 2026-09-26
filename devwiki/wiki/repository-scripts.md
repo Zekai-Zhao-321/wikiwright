@@ -3,9 +3,10 @@ type: ops-reference
 title: "Repository scripts"
 description: "The package.json scripts, the development gate, the release matrix run by hand, the tools that generate what nothing hand-edits, and the CLI reference renderer."
 tags: [repo]
-pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
-origin: .
-covers: [package.json, scripts/, tools/, docs/render-cli.ts, tsconfig.test.json, biome.json, .github/]
+pin:
+  commit: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
+  origin: .
+  covers: [package.json, scripts/, tools/, docs/render-cli.ts, tsconfig.test.json, biome.json, .github/]
 ---
 
 # Repository scripts
@@ -47,5 +48,5 @@ Generated files and their one generator, none hand-edited:
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]

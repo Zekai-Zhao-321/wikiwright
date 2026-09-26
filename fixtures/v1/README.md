@@ -13,3 +13,6 @@ them, and they leave with the old verbs and their tests (§12 step 6).
   theirs, each with the exports it declared rendered under `skills/`. The
   two-bundle tests read them as a pair, so both were frozen when the first
   of them moved.
+- `devwiki/`: `devwiki` before its migration, without its `package.json`
+  (a copy a test judges installs the v1 kit itself). The `code` starter's
+  tests and the old registry's read it.

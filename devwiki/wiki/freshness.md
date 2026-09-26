@@ -3,9 +3,10 @@ type: subsystem
 title: "Freshness and pins"
 description: "Every pin is measured against the origin its page names — the enclosing repository for origin dot, ls-remote or a blobless cache for a URL — into one of six states, with a covering diff deciding stale from unchanged, every repository path the page cites held to the pin, and a fast-forward that advances only clean pins through the Writer."
 tags: [cli]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
-origin: .
-covers: [packages/cli/src/freshness.ts, packages/cli/src/verbs/freshness.ts]
+pin:
+  commit: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+  origin: .
+  covers: [packages/cli/src/freshness.ts, packages/cli/src/verbs/freshness.ts]
 ---
 
 # Freshness and pins
@@ -166,6 +167,6 @@ through the same xor as every verb (`:226-228`).
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]

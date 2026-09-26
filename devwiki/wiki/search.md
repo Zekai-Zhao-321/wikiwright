@@ -3,9 +3,10 @@ type: subsystem
 title: "Search"
 description: "Deterministic lexical retrieval: an identity ladder fused with BM25 by reciprocal rank fusion, a CJK-capable tokenizer over explicit code-point ranges, a per-invocation index, item search, an unranked file listing, and a coverage block on every answer."
 tags: [kernel, cli]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
-origin: .
-covers: [packages/core/src/search/, packages/cli/src/verbs/search.ts]
+pin:
+  commit: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+  origin: .
+  covers: [packages/core/src/search/, packages/cli/src/verbs/search.ts]
 ---
 
 # Search
@@ -140,6 +141,6 @@ built per invocation and passing one in is a memo, never a policy
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]

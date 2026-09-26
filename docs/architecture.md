@@ -78,7 +78,7 @@ packages/cli/hooks/           hooks.json and its two scripts, session-start.mjs 
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
 libraries/kit-code/           the code wiki's type library of the v2 law, id code: the page kinds, anchored, the relation labels, their rule tests and examples
 libraries/kit-garden/         the neutral test library of the v2 law, id garden: documents, rule tests, examples; the allotment handbook imports it
-devwiki/                      this repository's own bundle, over the kit, judged by the suite
+devwiki/                      this repository's own bundle, on the v2 law, importing libraries/kit-code, judged by the suite
 fixtures/conformance/         the neutral module fixture and two bundles consuming it
 fixtures/handbooks/           two small gardening handbooks on the v2 law, one page title in both, each with a rule of its own
 fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories), on the v2 law
@@ -200,11 +200,11 @@ invokes it. Windows has no carrier in this repository and is unverified.
   `packages/cli/dist/main.js`; `wikiwright version` reports the commit it was
   built from and whether the checkout was dirty, so a stale build is never
   mistaken for the checkout.
-- `devwiki` is a bundle over `@wikiwright/kit-code`, which `bun install` links
-  into `devwiki/node_modules`; `check --root devwiki` loads the kit from there
-  and proves it on every run. `check --root devwiki` has zero findings of any
-  severity: the brief is tracked with the artifacts, and
-  `check --write --root devwiki` regenerates all four. `freshness --root devwiki` measures every
+- `devwiki` is on the v2 law and imports `libraries/kit-code` by path (v2
+  contracts §2), read from the tree with nothing installed.
+  `check --root devwiki` has no error: its warnings are its pins, measured
+  against this repository, and `check --write --root devwiki` regenerates
+  `generated/`, the brief and the queue included. `freshness --root devwiki` measures every
   wiki page against this repository and holds its citations to the pin; `bun tools/uncovered.ts` lists the
   source directories no page covers.
 - `bun run check` is the gate. `bun test ./packages/cli/test/write-verb.test.ts`
@@ -219,7 +219,7 @@ invokes it. Windows has no carrier in this repository and is unverified.
   to `origin`.
 - Generated files have one generator and are never hand-edited:
   `devwiki/generated/*`, the brief included (`wikiwright check --write --root
-  devwiki`, after the install above),
+  devwiki`),
   `packages/cli/skills/wikiwright-maintain/lint-response.md`
   (`bun tools/render-playbook.ts`), `docs/cli.md`'s verb block
   (`bun docs/render-cli.ts --write`; the gate runs its `--check`), `packages/core/src/identity/casefold-data.ts`

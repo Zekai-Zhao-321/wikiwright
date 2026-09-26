@@ -2,8 +2,8 @@
 // judged where it stands, and copied under os.tmpdir() into a repository of
 // its own — the corpus at its repository-relative path, beside the
 // libraries it imports (§2: a library path resolves against the top level)
-// — for a verb that writes, or that reads an index. The corpora still on
-// the v1 law are judged by the old table's tests until they move.
+// — for a verb that writes, or that reads an index. Their v1 forms, frozen
+// under fixtures/v1, are the old table's tests' until the old verbs leave.
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -18,6 +18,7 @@ export const V2_CORPORA: readonly string[] = [
   "fixtures/memory-synth",
   "fixtures/handbooks/orchard",
   "fixtures/handbooks/allotment",
+  "devwiki",
 ];
 
 const copies: string[] = [];
@@ -28,7 +29,7 @@ export function removeCopies(): void {
 }
 
 /** The files git tracks under `dir` (repository-relative) in this checkout: what a clone holds. */
-function tracked(dir: string): string[] {
+export function tracked(dir: string): string[] {
   return git(REPO, "-c", "core.quotepath=off", "ls-files", "-z", "--", dir)
     .split("\0")
     .filter((path) => path !== "");

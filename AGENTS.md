@@ -107,15 +107,16 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
   contracts under `src/verbs/`, and each old verb under `src/legacy/` until
   the deletions of the v2 delivery; the starters under `constitutions/`; the
   skills under `skills/`.
-- `packages/kit-code`: `@wikiwright/kit-code`, the shipped domain kit — a
+- `packages/kit-code`: `@wikiwright/kit-code`, the v1 domain kit — a
   code wiki's types, `anchored` fragment, relation labels, templates and
-  discipline — consumed by the `code` starter and by `devwiki`. Nothing
-  code-specific enters the kernel or the CLI.
-- `devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`: the corpora
-  every change is judged against. `devwiki` is a bundle over the kit: after
-  `bun install`, `check --root devwiki` loads the kit from
-  `devwiki/node_modules` and proves it; every test judges a copy under
-  `os.tmpdir()`.
+  discipline — consumed by the `code` starter until the old verbs leave.
+  Nothing code-specific enters the kernel or the CLI.
+- `devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`,
+  `fixtures/handbooks/{orchard,allotment}`: the corpora every change is
+  judged against, all on the v2 law. `devwiki` imports `libraries/kit-code`
+  by path; the tests judge each corpus where it stands and in copies under
+  `os.tmpdir()`. `fixtures/v1` holds their frozen v1 forms, read only by the
+  old verbs' tests.
 - `libraries/`: the type libraries of the v2 law, data only — type,
   fragment and vocabulary documents with their rule tests and examples.
   `kit-code` (id `code`) is a code wiki's page kinds, the `anchored`

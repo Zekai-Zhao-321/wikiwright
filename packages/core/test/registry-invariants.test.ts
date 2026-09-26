@@ -495,10 +495,14 @@ describe("5. one `where` spelling, over every code a document can make the load 
 });
 
 describe("6. every shipped constitution loads clean (docs/cli.md §init)", () => {
-  // devwiki and the `code` starter are bundles over the code kit
+  // devwiki (its frozen v1 copy: devwiki itself is on the v2 law) and the
+  // `code` starter are bundles over the code kit
   // (docs/extending.md §The code kit); the rest load under the standard
   // library alone.
-  const OVER_KIT = [join(REPO, "devwiki"), join(REPO, "packages", "cli", "constitutions", "code")];
+  const OVER_KIT = [
+    join(REPO, "fixtures", "v1", "devwiki"),
+    join(REPO, "packages", "cli", "constitutions", "code"),
+  ];
   const STDLIB = [
     join(REPO, "fixtures", "v1", "minimal-vault"),
     ...readdirSync(join(REPO, "packages", "cli", "constitutions"))
@@ -616,7 +620,7 @@ describe("7. effective-model closure: every field of the effective model has a r
 describe("9. determinism: two loads of one document are one registry", () => {
   it("devwiki, loaded twice, serializes identically", async () => {
     const json = JSON.parse(
-      readFileSync(join(REPO, "devwiki", "config", "constitution.json"), "utf8"),
+      readFileSync(join(REPO, "fixtures", "v1", "devwiki", "config", "constitution.json"), "utf8"),
     ) as unknown;
     const kit = (await import(
       pathToFileURL(join(REPO, "packages", "kit-code", "index.js")).href

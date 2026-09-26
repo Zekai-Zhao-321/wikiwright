@@ -11,13 +11,6 @@
         "typescript": "^5.9.0",
       },
     },
-    "devwiki": {
-      "name": "wikiwright-devwiki",
-      "version": "0.0.0",
-      "dependencies": {
-        "@wikiwright/kit-code": "workspace:*",
-      },
-    },
     "packages/cli": {
       "name": "wikiwright",
       "version": "0.1.0",
@@ -191,8 +184,6 @@
     "unist-util-visit-parents": ["unist-util-visit-parents@6.0.2", "", { "dependencies": { "@types/unist": "^3.0.0", "unist-util-is": "^6.0.0" } }, "sha512-goh1s1TBrqSqukSc8wrjwWhL0hiJxgA8m4kFxGlQ+8FYQ3C/m11FcTs4YYem7V664AhHVvgoQLk890Ssdsr2IQ=="],
 
     "wikiwright": ["wikiwright@workspace:packages/cli"],
-
-    "wikiwright-devwiki": ["wikiwright-devwiki@workspace:devwiki"],
 
     "yaml": ["yaml@2.9.0", "", { "bin": { "yaml": "bin.mjs" } }, "sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA=="],
 

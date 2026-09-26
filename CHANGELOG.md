@@ -610,6 +610,24 @@ version` prints the engine version and the commit a binary was built from.
   spike's other example of a bundle's own rule, with its test set;
   `watering-beans` carries a History. The handbook is clean under `check`
   and `gate`.
+- **`devwiki` is on the v2 law, importing `libraries/kit-code`** (v2
+  contracts §2, §12 step 5), migrated by `tools/migrate-spellings.ts`:
+  engine.json names `libraries: [{"path": "libraries/kit-code"}]`, resolved
+  against the repository's top level, where it declared the module
+  `@wikiwright/kit-code`; its ten types extend the library's (`charter`
+  takes the role `hub`), their `origin` pattern now a constraint on the
+  pin's own `origin`; its empty `relations` vocabulary is the library's
+  `code/relations`. The 27 anchored pages fold `pin`, `origin` and `covers`
+  into one pin object, and 72 relation labels take hyphens. The library's
+  `relation-range` gets its test set here, since its negative names a page
+  of this vault. `devwiki/package.json` and the `devwiki` workspace leave:
+  nothing is installed for it. `check --root devwiki` reports no error; its
+  warnings are its pins, stale since the v2 work changed the code they
+  cover, until the documentation step re-reads and re-pins them.
+  `tools/uncovered.ts` reads the covered paths inside the pin. The old
+  verbs' tests read a frozen v1 copy, `fixtures/v1/devwiki`; the old
+  `lint`'s routing and coverage over the corpora are no longer measured,
+  their v2 forms are.
 - Every git read is an asynchronous spawn (`Bun.spawn`) awaited to the
   child's exit, at most four children at a time, keeping the file-backed
   protocol: the answer read from a file git wrote, a batch request handed

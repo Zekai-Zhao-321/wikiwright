@@ -3,9 +3,10 @@ type: subsystem
 title: "Skills and the brief"
 description: "The three shipped skills copied into a vault under a stamp the engine can audit, the per-role brief rendered from the verb registry and the loaded constitution under its law digest, and the machine-local findings that say when either is behind the binary."
 tags: [cli]
-pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
-origin: .
-covers: [packages/cli/src/skills.ts, packages/cli/src/brief.ts, packages/cli/src/shipped.ts, packages/cli/src/verbs/skills.ts, packages/cli/src/verbs/brief.ts, packages/cli/src/artifacts.ts, packages/cli/skills/]
+pin:
+  commit: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
+  origin: .
+  covers: [packages/cli/src/skills.ts, packages/cli/src/brief.ts, packages/cli/src/shipped.ts, packages/cli/src/verbs/skills.ts, packages/cli/src/verbs/brief.ts, packages/cli/src/artifacts.ts, packages/cli/skills/]
 ---
 
 # Skills and the brief
@@ -120,6 +121,6 @@ first `check --write` to render.
 
 ## Relations
 
-- part_of [[command-runtime]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[command-runtime]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]

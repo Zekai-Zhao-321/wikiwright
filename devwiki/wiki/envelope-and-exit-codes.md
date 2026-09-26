@@ -3,9 +3,10 @@ type: ops-reference
 title: "The envelope and exit codes"
 description: "Every verb prints one JSON envelope on stdout, and a vault verb's names the bundle it read; the exit code is one of seven, each mapped to one error type; lint, check and gate share one verdict block, and the writing verbs report the pages they wrote."
 tags: [cli]
-pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
-origin: .
-covers: [packages/cli/src/envelope.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts]
+pin:
+  commit: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
+  origin: .
+  covers: [packages/cli/src/envelope.ts, packages/cli/src/main.ts, packages/cli/src/argv.ts]
 ---
 
 # The envelope and exit codes
@@ -89,5 +90,5 @@ subcommands, flags, examples, global flags — as an `ok` envelope
 
 ## Relations
 
-- part_of [[command-runtime]]
-- mapped_in [[repository-layout]]
+- part-of [[command-runtime]]
+- mapped-in [[repository-layout]]

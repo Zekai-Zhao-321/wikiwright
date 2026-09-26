@@ -3,9 +3,10 @@ type: subsystem
 title: "The Writer and the staged gate"
 description: "The splice-only Writer in core, the shell that proves a splice with a second judge and lands it temp-then-rename, the four state constructors, and the staged gate the hooks run."
 tags: [kernel, cli]
-pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
-origin: .
-covers: [packages/core/src/writer/, packages/core/src/gitplan/, packages/core/src/prefixes/, packages/cli/src/writer.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/staged.ts, packages/cli/src/stagedkits.ts, packages/cli/src/state.ts, packages/cli/src/hooks.ts, packages/cli/src/verbs/write.ts, packages/cli/src/verbs/gate.ts]
+pin:
+  commit: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
+  origin: .
+  covers: [packages/core/src/writer/, packages/core/src/gitplan/, packages/core/src/prefixes/, packages/cli/src/writer.ts, packages/cli/src/atomicwrite.ts, packages/cli/src/staged.ts, packages/cli/src/stagedkits.ts, packages/cli/src/state.ts, packages/cli/src/hooks.ts, packages/cli/src/verbs/write.ts, packages/cli/src/verbs/gate.ts]
 ---
 
 # The Writer and the staged gate
@@ -188,6 +189,6 @@ in the directory `git rev-parse --git-path hooks` names.
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]

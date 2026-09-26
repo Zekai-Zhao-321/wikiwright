@@ -3,9 +3,10 @@ type: subsystem
 title: "The judge and its passes"
 description: "One pure function turns a vault state and a law into a verdict: the per-page passes, the vault passes, the grammar arms, routing, exceptions, the gate rule, the coverage block and the cap."
 tags: [kernel]
-pin: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
-origin: .
-covers: [packages/core/src/judge/, packages/core/src/passes/, packages/core/src/lint/, packages/core/src/grammar/]
+pin:
+  commit: bb5c81cb574ea4115c6f384967ab4878cd52a9eb
+  origin: .
+  covers: [packages/core/src/judge/, packages/core/src/passes/, packages/core/src/lint/, packages/core/src/grammar/]
 ---
 
 # The judge and its passes
@@ -133,6 +134,6 @@ demotion rule (`:583-592`). The parses it reads are the state's, filled by
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]

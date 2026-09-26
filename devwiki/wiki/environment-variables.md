@@ -3,9 +3,10 @@ type: ops-reference
 title: "Environment variables"
 description: "The five WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes."
 tags: [cli]
-pin: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
-origin: .
-covers: [packages/cli/src/clock.ts, packages/cli/src/main.ts, packages/cli/src/spec.ts, packages/cli/src/discovery.ts, packages/cli/src/hooks.ts, packages/cli/src/git.ts]
+pin:
+  commit: 3d81407b9af92945288e7c9ab27ed671aa49e0a4
+  origin: .
+  covers: [packages/cli/src/clock.ts, packages/cli/src/main.ts, packages/cli/src/spec.ts, packages/cli/src/discovery.ts, packages/cli/src/hooks.ts, packages/cli/src/git.ts]
 ---
 
 # Environment variables
@@ -46,5 +47,5 @@ briefly live (`packages/cli/src/stdoutfile.ts`; see [[git]]).
 
 ## Relations
 
-- part_of [[command-runtime]]
-- mapped_in [[repository-layout]]
+- part-of [[command-runtime]]
+- mapped-in [[repository-layout]]

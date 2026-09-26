@@ -3,9 +3,10 @@ type: integration
 title: "Git"
 description: "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a vault's checkout state, remote heads and blobless origin caches; never a library, never a prompt, and every answer read from a file git wrote itself."
 tags: [cli]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
-origin: .
-covers: [packages/cli/src/git.ts, packages/cli/src/stdoutfile.ts, packages/cli/src/state.ts, packages/cli/src/buildinfo.ts, packages/core/src/gitplan/]
+pin:
+  commit: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+  origin: .
+  covers: [packages/cli/src/git.ts, packages/cli/src/stdoutfile.ts, packages/cli/src/state.ts, packages/cli/src/buildinfo.ts, packages/core/src/gitplan/]
 ---
 
 # Git
@@ -163,6 +164,6 @@ and which the runtime answers as `git-short-read` or
 
 ## Relations
 
-- part_of [[writer-and-staged-gate]]
-- part_of [[freshness]]
-- mapped_in [[repository-layout]]
+- part-of [[writer-and-staged-gate]]
+- part-of [[freshness]]
+- mapped-in [[repository-layout]]

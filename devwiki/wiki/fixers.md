@@ -3,9 +3,10 @@ type: subsystem
 title: "Fixers and routing"
 description: "The closed registry of fixers a finding's fix argv can name, the pure derivations from a finding's details to write ops, and the fix verb that applies, proves and lands them."
 tags: [kernel, cli]
-pin: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
-origin: .
-covers: [packages/core/src/fixers/, packages/cli/src/verbs/fix.ts]
+pin:
+  commit: e61cee334e0a045f2b5fb6fa607ae7aff7e34411
+  origin: .
+  covers: [packages/core/src/fixers/, packages/cli/src/verbs/fix.ts]
 ---
 
 # Fixers and routing
@@ -98,6 +99,6 @@ and the page's current bytes and nothing else
 
 ## Relations
 
-- part_of [[judge]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[judge]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]

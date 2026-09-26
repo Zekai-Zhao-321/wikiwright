@@ -1,0 +1,10 @@
+type: testing-guide
+extends: code/testing-guide
+description: "How the engine's tests are organized, run, and written: the two runners, temp copies, the kit-code helper."
+fields:
+  type: object
+  properties:
+    pin:
+      type: object
+      properties:
+        origin: { type: string, pattern: "^\\.$" }

@@ -29,7 +29,8 @@ of what is in them.
 
 The gate is `bun run check`: biome, the build, a test-project typecheck and
 the whole suite, on Bun, the one runtime the engine runs on. This repository documents itself in
-`devwiki/`, a bundle over the shipped code kit, judged by that same gate.
+`devwiki/`, a bundle over the code wiki's type library, `libraries/kit-code`,
+judged by that same gate.
 `docs/roadmap.md` states what is missing, deferred or unverified.
 
 ## The four layers
@@ -48,8 +49,9 @@ nothing from them. The shipped example of a kit is `@wikiwright/kit-code`
 under `packages/kit-code`: the domain kit for the wiki of a code repository —
 the page kinds, the `anchored` fragment that pins a page to a commit and the
 paths it covers, the relation labels between the kinds, their templates and
-the reading discipline — consumed by the `code` starter and by this
-repository's own `devwiki` (`docs/extending.md`, "The code kit").
+the reading discipline — consumed by the `code` starter; this repository's
+own `devwiki` imports its v2 form, the type library `libraries/kit-code`
+(`docs/extending.md`, "The code kit").
 
 ## Install
 

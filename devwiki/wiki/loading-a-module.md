@@ -3,9 +3,10 @@ type: code-concept
 title: "Loading a module"
 description: "Module code runs inside the judge, and installing a module is the consent to run it; what the engine adds is proof over the installed bytes at every load — the digest the law names, a purity scan that refuses by file and line, and the module's own determinism fixture — once per digest in a process; a stranger's bug is one attributed finding, never a crash."
 tags: [cli, kit]
-pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
-origin: .
-covers: [packages/core/src/modules/purity.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/kit-code/, packages/core/src/grammar/index.ts, packages/core/src/lint/index.ts]
+pin:
+  commit: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
+  origin: .
+  covers: [packages/core/src/modules/purity.ts, packages/cli/src/moduleload.ts, packages/cli/src/modulefixture.ts, packages/kit-code/, packages/core/src/grammar/index.ts, packages/core/src/lint/index.ts]
 aliases: ["trust-law"]
 ---
 
@@ -97,6 +98,6 @@ proofs are taken once per process").
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- decided_by [[D-002]]
-- decided_by [[D-007]]
+- part-of [[wikiwright-architecture]]
+- decided-by [[D-002]]
+- decided-by [[D-007]]

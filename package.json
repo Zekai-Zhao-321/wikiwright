@@ -9,8 +9,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*",
-    "devwiki"
+    "packages/*"
   ],
   "engines": {
     "bun": "1.3.11"

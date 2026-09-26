@@ -3,9 +3,10 @@ type: architecture-overview
 title: wikiwright architecture
 description: The four-layer shape of the engine and how a page's obligations flow through it.
 tags: [kernel, stdlib, cli, kit]
-pin: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
-origin: .
-covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/discovery.ts, packages/cli/src/law.ts, packages/kit-code/]
+pin:
+  commit: ee2b6fbbab3479b768b67601d3ccb86a041f25c4
+  origin: .
+  covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/vaultfiles.ts, packages/cli/src/discovery.ts, packages/cli/src/law.ts, packages/kit-code/]
 ---
 
 # wikiwright architecture
@@ -66,7 +67,7 @@ The repository layout behind these layers is mapped in [[repository-layout]].
 
 ## Relations
 
-- mapped_in [[repository-layout]]
-- verified_by [[wikiwright-quickstart]]
-- decided_by [[D-004]]
-- verified_by [[testing-guide]]
+- mapped-in [[repository-layout]]
+- verified-by [[wikiwright-quickstart]]
+- decided-by [[D-004]]
+- verified-by [[testing-guide]]

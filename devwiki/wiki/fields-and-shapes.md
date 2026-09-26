@@ -3,9 +3,10 @@ type: subsystem
 title: "Fields and shapes"
 description: "The closed shape vocabulary a frontmatter field is declared in, the value check every field runs, the one pin shape, and the derivation of a title or description from the page."
 tags: [kernel]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
-origin: .
-covers: [packages/core/src/fields/, packages/core/src/shapes/]
+pin:
+  commit: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+  origin: .
+  covers: [packages/core/src/fields/, packages/core/src/shapes/]
 ---
 
 # Fields and shapes
@@ -87,6 +88,6 @@ None; every function is pure over the shape and the value it is handed.
 
 ## Relations
 
-- part_of [[judge]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[judge]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]

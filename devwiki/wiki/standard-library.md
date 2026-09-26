@@ -3,9 +3,10 @@ type: subsystem
 title: "The standard library"
 description: "Three first-party modules — claims, relations, entries — registered through the same API a domain kit uses, composed by standardLibrary(), and never imported by the kernel."
 tags: [stdlib]
-pin: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
-origin: .
-covers: [packages/core/src/stdlib/]
+pin:
+  commit: 29dbfb9c8b6bf1679bca419d1f3a7479c3f00532
+  origin: .
+  covers: [packages/core/src/stdlib/]
 ---
 
 # The standard library
@@ -112,6 +113,6 @@ hands it and speaks only through `emit` and `count`
 
 ## Relations
 
-- part_of [[wikiwright-architecture]]
-- mapped_in [[repository-layout]]
-- verified_by [[testing-guide]]
+- part-of [[wikiwright-architecture]]
+- mapped-in [[repository-layout]]
+- verified-by [[testing-guide]]
