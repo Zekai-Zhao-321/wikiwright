@@ -167,7 +167,7 @@ Every parameter the standard library's three grammars declare, `<grammar>.<param
 | `claims.items` | dropped | claims `items` removed: a section holds one record kind (§4). |
 | `claims.inferred_ref` | dropped | claims `inferred_ref` removed with the `inferred` provenance form (§4). |
 | `relations.require` | kernel | relations `require: [{labels, min}]` (§4) |
-| `relations.history` | kernel | relations `history: <heading>`, held by the judge's `relation-removed` (ruling 3) |
+| `relations.history` | kernel | relations `history: <heading>`, an `entries` section's heading, held by the judge's `relation-removed` (ruling 3) |
 | `entries.date` | dropped | entries `date` removed: an entry is dated or does not parse (§4). |
 | `entries.lifecycle` | kernel | entries `lifecycle: append-only` (`entry-edited`, §4) |
 

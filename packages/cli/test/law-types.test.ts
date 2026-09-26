@@ -414,6 +414,20 @@ describe("load-time codes of the type documents", () => {
     expect([...found].sort()).toEqual([...LAW_ISSUE_CODES].sort());
   });
 
+  it.each([
+    ["a claims section", "history: History", "history: Observations"],
+    ["a prose section", "history: History", "history: Notes }\n    - { heading: Notes"],
+  ])("refuses a relations history that names %s, not an entries one", async (_what, from, to) => {
+    const result = await load(edit(LIB_PLANTING, from, to));
+    const issues = result.ok ? [] : result.issues;
+    expect(issues.map((i) => [i.code, i.where])).toContainEqual([
+      "type-invalid",
+      "garden:types/planting.yaml",
+    ]);
+    expect(issues.every((i) => i.code === "type-invalid")).toBe(true);
+    expect(issues[0]?.message).toContain("in an entries section");
+  });
+
   it("refuses a section rule on a heading the effective sections do not declare", async () => {
     const result = await load(
       edit(

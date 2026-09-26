@@ -621,10 +621,18 @@ function mergeSections(
         }
       }
     }
+    // §4: a relation that leaves lands in `history` as a dated entry, so the
+    // heading is an entries section: a prose section holds no record, and a
+    // claims section would take a claim line for the entry.
     const history = section.params.history;
-    if (history !== undefined && !merged.has(history)) {
+    const landing = history === undefined ? undefined : merged.get(history);
+    if (history !== undefined && landing === undefined) {
       invalid(
         `lands relations that leave it in "${history}", which this type declares no section for`,
+      );
+    } else if (history !== undefined && landing?.grammar !== "entries") {
+      invalid(
+        `lands relations that leave it in "${history}", a ${landing?.grammar ?? "prose"} section; a relation that leaves is recorded as a dated entry, in an entries section`,
       );
     }
   }

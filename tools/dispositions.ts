@@ -558,7 +558,7 @@ const GRAMMAR_PARAMS: readonly Row[] = [
   [
     "relations.history",
     "kernel",
-    "relations `history: <heading>`, held by the judge's `relation-removed` (ruling 3)",
+    "relations `history: <heading>`, an `entries` section's heading, held by the judge's `relation-removed` (ruling 3)",
   ],
   ["entries.date", "dropped", "entries `date` removed: an entry is dated or does not parse (§4)."],
   ["entries.lifecycle", "kernel", "entries `lifecycle: append-only` (`entry-edited`, §4)"],

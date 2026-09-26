@@ -134,7 +134,9 @@ version` prints the engine version and the commit a binary was built from.
     (`lifecycle: append-only`), `claims-transition` (an open claim, by
     category and handle, closed, corrected or recorded by a dated entry
     quoting it) and
-    `relation-removed` (recorded in the `history` heading). CEL rules
+    `relation-removed` (recorded by a dated entry in the `history` heading,
+    which the loader holds to an `entries` section, `type-invalid`
+    otherwise). CEL rules
     evaluate per page or per matching occurrence; a result that is not a
     bool is `rule-error` (`details.kind` `non-bool` or `error`). A
     transition, the kernel's or a rule reading `before`, is `unevaluated`
