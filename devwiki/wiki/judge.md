@@ -4,16 +4,17 @@ title: "The judge and its passes"
 description: "The one v2 judge over page shape, grammar, rules, transitions and law tests."
 tags: [kernel]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: 103376a247d7df103132abded5c579a7e432459d
   origin: .
   covers: ["packages/core/src/verdict/judge.ts", "packages/core/src/verdict/grammar.ts", "packages/core/src/verdict/rules.ts", "packages/core/src/verdict/lawtests.ts"]
+updated: 2026-09-26
 ---
 
 # The judge and its passes
 
 ## Responsibilities
 
-JudgeTypeLaw reads pages under the type-document law, checks frontmatter shape, sections, fixed records, vocabularies, references and CEL rules, and reports coverage and routes.
+JudgeTypeLaw reads pages under the type-document law, checks frontmatter shape, declared section scope, fixed records, vocabularies, references and CEL rules, and reports coverage and routes. A governed H3 or H4 body is judged under its effective policy, with its items owned by that physical heading once.
 
 ## Entry points
 

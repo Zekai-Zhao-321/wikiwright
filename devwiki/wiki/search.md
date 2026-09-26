@@ -4,16 +4,17 @@ title: "Search"
 description: "Deterministic page, record and file retrieval with per-result evidence status."
 tags: [kernel, cli]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: 103376a247d7df103132abded5c579a7e432459d
   origin: .
   covers: ["packages/core/src/search/index.ts", "packages/core/src/search/bm25.ts", "packages/core/src/search/tokenize.ts", "packages/cli/src/verbs/search.ts"]
+updated: 2026-09-26
 ---
 
 # Search
 
 ## Responsibilities
 
-Search combines identity matches with lexical BM25 ranking and Unicode-aware, CJK-capable tokens. It can return pages, parsed grammar items or file matches, with reasons and coverage.
+Search combines identity matches with lexical BM25 ranking and Unicode-aware, CJK-capable tokens. It can return pages, parsed grammar items or file matches, with reasons and coverage. Item search includes records from governed child headings once; prose and unbound bullets are not inferred records.
 
 ## Entry points
 

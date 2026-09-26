@@ -4,9 +4,10 @@ title: "The Writer and the staged gate"
 description: "The judged draft writer and staged Git acceptance boundary."
 tags: [kernel, cli]
 pin:
-  commit: 672de1a70a408e4ca09f00602e5496d27244a3c8
+  commit: 103376a247d7df103132abded5c579a7e432459d
   origin: .
   covers: ["packages/cli/src/verbs/write.ts", "packages/cli/src/verbs/gate.ts", "packages/cli/src/lawstate.ts", "packages/cli/src/writer.ts", "packages/cli/src/ops.ts"]
+updated: 2026-09-26
 ---
 
 # The Writer and the staged gate
@@ -21,7 +22,7 @@ Current source at this pin: `packages/cli/src/verbs/write.ts`, `packages/cli/src
 
 ## State
 
-The writer stages complete file replacements, then renames them into place. Gate uses object-id reads, cross-checks the staged diff against index and HEAD listings, demotes eligible inherited findings and requires a reason for a law change at commit-message time.
+The writer stages complete file replacements, then renames them into place. Gate uses object-id reads, so a staged section scope and the staged pages are judged together even when the working-tree law differs. It cross-checks the staged diff against index and HEAD listings, demotes eligible inherited findings and requires a reason for a law change at commit-message time.
 
 ## Invariants
 

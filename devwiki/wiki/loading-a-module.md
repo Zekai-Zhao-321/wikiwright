@@ -6,9 +6,10 @@ tags: [cli, kit]
 aliases: ["trust-law"]
 status: retired
 pin:
-  commit: 9d54ace7339b76c54caee757cd82f4991836ebff
+  commit: 103376a247d7df103132abded5c579a7e432459d
   origin: .
   covers: ["CHANGELOG.md", "docs/roadmap.md"]
+updated: 2026-09-26
 ---
 
 # Loading a module

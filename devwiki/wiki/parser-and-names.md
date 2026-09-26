@@ -4,16 +4,17 @@ title: "The parser and the names it binds"
 description: "Markdown and YAML parsing, Unicode page identity and name resolution."
 tags: [kernel]
 pin:
-  commit: 672de1a70a408e4ca09f00602e5496d27244a3c8
+  commit: 103376a247d7df103132abded5c579a7e432459d
   origin: .
   covers: ["packages/core/src/parse/index.ts", "packages/core/src/names/index.ts", "packages/core/src/identity/index.ts", "packages/core/src/interface/index.ts"]
+updated: 2026-09-26
 ---
 
 # The parser and the names it binds
 
 ## Responsibilities
 
-The parser reads YAML frontmatter, CommonMark headings and wikilinks into a line map. The page interface parses declared grammar items and exposes their raw text and locations.
+The parser reads YAML frontmatter, document-level CommonMark headings and wikilinks into a line map. Headings inside quotes or lists remain block content. The page interface keeps each heading's raw subtree separate from its direct content, and parses grammar items only in that direct region.
 
 ## Entry points
 
