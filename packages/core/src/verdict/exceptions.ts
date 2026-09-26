@@ -30,6 +30,9 @@ export const NEVER_WAIVED: ReadonlySet<string> = new Set([
   "rule-error",
   "exception-stale",
   "exception-illegal",
+  "rule-untested",
+  "rule-test-fails",
+  "example-fails",
 ]);
 
 interface Exception {

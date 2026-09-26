@@ -18,6 +18,7 @@ import { lawFacts, type PageRead, type ParsedPage, parsePage } from "../interfac
 import type { TypeLaw } from "../law/load.ts";
 import { applyExceptions, hasExceptions } from "./exceptions.ts";
 import { grammarRows, itemFindings, sectionFindings } from "./grammar.ts";
+import { type JudgeOverlaid, type LawTestOptions, lawTestFindings } from "./lawtests.ts";
 import { buildNames, identityCollisions, type NamedPage, type VaultNames } from "./names.ts";
 import {
   linkFindings,
@@ -44,6 +45,10 @@ export interface TypeLawJudgeOptions {
   rule?: string;
   /** Only this page's findings. */
   path?: string;
+  /** §8: run the law's rule tests and examples (default true: `check` and `gate` do). */
+  lawTests?: boolean;
+  /** §8: rule ids the gate's law diff adds or changes; each one untested is an error. */
+  rulesChanged?: ReadonlySet<string>;
 }
 
 export interface CoverageCell {
@@ -219,8 +224,12 @@ export function unevaluatedFinding(
   };
 }
 
-/** Judge one read page under the context: the kernel's checks, in order. */
-export function judgePage(ctx: PageContext, page: ReadPage): PageJudgment {
+/**
+ * Judge one read page under the context: the kernel's checks, in order. An
+ * `overlaid` page is a rule test's or an example's, laid over the vault from
+ * outside the content roots: it may be a page of an abstract type.
+ */
+export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): PageJudgment {
   const judged = new Set<string>(["page-too-large", "page-not-utf8"]);
   const unjudged = new Map<string, UnevaluatedReason>();
   const out: PageJudgment = { findings: [], judged, unjudged };
@@ -246,8 +255,8 @@ export function judgePage(ctx: PageContext, page: ReadPage): PageJudgment {
   }
   const type = parsed.type;
   if (type === undefined) return out;
-  judged.add("abstract-type");
-  if (type.abstract) {
+  if (!overlaid) judged.add("abstract-type");
+  if (type.abstract && !overlaid) {
     out.findings.push({
       rule: "abstract-type",
       severity: "error",
@@ -446,5 +455,19 @@ export function judgeTypeLaw(
     });
   }
   found.push(...instanceFindings(law, pages));
+  if (options.lawTests !== false) {
+    const overlaid: JudgeOverlaid = (path, bytes, base) => {
+      const read = parsePage(path, bytes, law);
+      const was = base === null ? null : parsePage(path, base, law);
+      if (read.ok) resolveRelations(read.page, names);
+      if (was?.ok === true) resolveRelations(was.page, names);
+      const judged = judgePage(ctx, { path, read, base: was }, true);
+      const declared = read.ok ? read.page.frontmatter["type"] : undefined;
+      return { findings: judged.findings, type: typeof declared === "string" ? declared : null };
+    };
+    const tests: LawTestOptions =
+      options.rulesChanged === undefined ? {} : { rulesChanged: options.rulesChanged };
+    found.push(...lawTestFindings(law, overlaid, tests));
+  }
   return verdictOf(found, coverage, pages.length, options);
 }

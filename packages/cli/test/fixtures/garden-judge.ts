@@ -51,14 +51,52 @@ title: Start
 Read [[Basil]] first.
 `;
 
+const planting = (type: string, rest: string) =>
+  `---\ntype: ${type}\ntitle: Basil\nbed: herb\nsown: 2026-04-12\n${rest}`;
+
 /**
- * The gardening constitution and three pages that judge clean under it. A
- * page's name is its file's basename, as Obsidian names it: `[[Herb bed]]`
- * is `wiki/Herb bed.md`.
+ * The test sets garden-law.ts leaves incomplete, completed (contracts §8): a
+ * negative page and its expect.json, a repaired twin and a positive page for
+ * each of the law's three rules, so the gardening vault judges clean.
+ */
+export const RULE_TESTS: Tree = {
+  "libraries/kit-garden/rule-tests/known-bed/repaired.md": planting("garden/planting", "---\n"),
+  "libraries/kit-garden/rule-tests/known-bed/positive/north.md": planting(
+    "garden/planting",
+    "---\n",
+  ).replace("bed: herb", "bed: north"),
+  "libraries/kit-garden/rule-tests/history-dated/negative.md": planting(
+    "garden/planting",
+    "---\n\n## History\n\n- 2026-05 — thinned\n",
+  ),
+  "libraries/kit-garden/rule-tests/history-dated/repaired.md": planting(
+    "garden/planting",
+    "---\n\n## History\n\n- 2026-05-02 — thinned\n",
+  ),
+  "libraries/kit-garden/rule-tests/history-dated/positive/two-entries.md": planting(
+    "garden/planting",
+    "---\n\n## History\n\n- 2026-04-12 — sown\n- 2026-05-02 — thinned\n",
+  ),
+  "libraries/kit-garden/rule-tests/history-dated/expect.json":
+    '{"rule": "history-dated", "location": {"section": "History", "occurrence": 0}}\n',
+  "rule-tests/source-host-allowed/expect.json":
+    '{"rule": "source-host-allowed", "location": "page"}\n',
+  "rule-tests/source-host-allowed/repaired.md": planting(
+    "planting",
+    "source: https://seeds.example/basil\n---\n",
+  ),
+  "rule-tests/source-host-allowed/positive/no-source.md": planting("planting", "---\n"),
+};
+
+/**
+ * The gardening constitution, its rule tests completed, and three pages that
+ * judge clean under it. A page's name is its file's basename, as Obsidian
+ * names it: `[[Herb bed]]` is `wiki/Herb bed.md`.
  */
 export function gardenVault(extra: Tree = {}): Tree {
   return {
     ...gardenTree(),
+    ...RULE_TESTS,
     "wiki/Herb bed.md": HERB_BED,
     "wiki/Basil.md": BASIL,
     "wiki/Start.md": START,
