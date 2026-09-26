@@ -49,7 +49,7 @@ import {
 } from "../envelope.ts";
 import { driftFindings, GENERATED_PATHS, generatedPlans } from "../generated.ts";
 import { GitAnswerRefused, GitPlumbingFailed, gitReadBlobBytes } from "../git.ts";
-import { lawSnapshotOfEntries, revisionEntries } from "../lawfiles.ts";
+import { lawSnapshotOfEntries } from "../lawfiles.ts";
 import { type IndexRead, readIndex } from "../lawstate.ts";
 import type { CommandArgs, CommandSpec } from "../spec.ts";
 import {
@@ -104,9 +104,7 @@ async function indexOf(root: string): Promise<Read<IndexRead>> {
 /** §8: HEAD's law as it loaded, or null with no HEAD. */
 async function headLaw(index: IndexRead): Promise<TypeLawResult | null> {
   if (!index.hasHead) return null;
-  return loadTypeLaw(
-    await lawSnapshotOfEntries(index.top, index.bundle, await revisionEntries(index.top, "HEAD")),
-  );
+  return loadTypeLaw(await lawSnapshotOfEntries(index.top, index.bundle, index.headEntries));
 }
 
 /**

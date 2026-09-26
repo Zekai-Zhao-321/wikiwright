@@ -110,7 +110,7 @@ add the generated files they wrote and, under `--fix`, what the materializer
 | Exit | `error.type` | Meaning |
 |---|---|---|
 | 0 | | ok |
-| 1 | `internal` | the engine broke; `unexpected-error` carries the message, `git-short-read` names a git answer that ended before its terminator, `git-inconsistent-read` two git answers about one state that disagree — the staged diff and the index listing, or a commit walk and its count — and `git-timeout` a git child killed for running past `WIKIWRIGHT_GIT_TIMEOUT_MS`, each refused rather than judged |
+| 1 | `internal` | the engine broke; `unexpected-error` carries the message, `git-short-read` names a git answer that ended before its terminator, `git-inconsistent-read` contradictory staged diff, index and HEAD listings or a batch row that names another request, and `git-timeout` a git child killed for running past `WIKIWRIGHT_GIT_TIMEOUT_MS`, each refused rather than judged |
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
 | 3 | `not_found` | the page, type, revision, directory or bundle asked for does not exist: a root that is no directory, or a state with no `config/engine.json`, is `bundle-not-found` |
@@ -121,11 +121,12 @@ add the generated files they wrote and, under `--fix`, what the materializer
 answer rather than judging from it. Every git read hands git a file for its
 stdout, and a batch read hands git its request as a file too, so the answer
 and the request are whole by construction under any runtime; the
-terminators, the counts, each batch row's name against its request, and the
-two cross-checks stay as a second line. stderr is still a pipe, and it is
-read for two recognitions — a path HEAD does not hold, a directory in no
-repository — each of which, with its text lost, fails as `git-unavailable`
-rather than giving a smaller answer. Every git child is spawned
+terminators, the counts, and each batch row's name against its request
+remain as a second line. The gate also compares the index and HEAD object
+listings in both directions with the staged diff, so a diff cut after a
+complete change cannot silently omit that page. stderr is still a pipe;
+its "not a git repository" recognition is used only for that explicit
+answer, and an unrecognised failure is `git-unavailable`. Every git child is spawned
 asynchronously, awaited to its exit, at most four at a time, with `LC_ALL=C`
 and `GIT_OPTIONAL_LOCKS=0` in its environment. Each may run for
 `WIKIWRIGHT_GIT_TIMEOUT_MS` (60,000 ms when unset); one still running then is

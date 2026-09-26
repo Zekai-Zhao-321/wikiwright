@@ -205,8 +205,10 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
-- The staged gate checks a complete staged diff against its index listing
-  even before a repository's first commit; a missing or non-directory root
+- The staged gate compares its diff with index and HEAD object listings in
+  both directions, even before a repository's first commit. A diff cut
+  after a complete status/path pair can no longer omit a changed page from
+  judgment. A missing or non-directory root
   is `bundle-not-found`. Git-child failures are typed as
   `git-unavailable` without masking engine errors.
 - Folder segments named `constructor` or `__proto__` are literal unless

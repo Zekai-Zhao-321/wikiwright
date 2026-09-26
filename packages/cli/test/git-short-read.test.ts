@@ -52,9 +52,11 @@ function repo(): string {
  * byte as `byte` does, but only of the command whose whole argv is WW_CUT, so
  * `cat-file --batch` is cut and `cat-file --batch-check` is not. The cuts that
  * leave a well-formed, shorter answer — the ones no terminator can see — are
- * `record` (without its last NUL-terminated record), `lastline` (without its
+ * `record` (without its last NUL-terminated field), `change` (without the
+ * last complete status/path pair), `lastline` (without its
  * last line) and `empty` (nothing at all). `request` cuts the other way: git
- * gets its request without the last four bytes. Every other command passes
+ * gets its last object-id request below the minimum abbreviation length.
+ * Every other command passes
  * through untouched. The engine hands git a file for its stdout, so what the shim
  * prints is exactly what the engine reads.
  */
@@ -75,7 +77,7 @@ function cuttingGit(tmp: string): string {
       '      if [ "$WW_CUT_MODE" = request ]; then',
       `        cat > "${heldIn}"`,
       `        size=$(wc -c < "${heldIn}" | tr -d ' ')`,
-      `        head -c $((size - 4)) "${heldIn}" | "${real}" "$@"`,
+      `        head -c $((size - 38)) "${heldIn}" | "${real}" "$@"`,
       "        exit $?",
       "      fi",
       '      if [ "$WW_CUT_MODE" = fail ]; then',
@@ -93,6 +95,10 @@ function cuttingGit(tmp: string): string {
       '      elif [ "$WW_CUT_MODE" = record ]; then',
       `        size=$(wc -c < "${held}" | tr -d ' ')`,
       `        last=$(tr '\\000' '\\n' < "${held}" | tail -n 1 | wc -c | tr -d ' ')`,
+      `        head -c $((size - last)) "${held}"`,
+      '      elif [ "$WW_CUT_MODE" = change ]; then',
+      `        size=$(wc -c < "${held}" | tr -d ' ')`,
+      `        last=$(tr '\\000' '\\n' < "${held}" | tail -n 2 | wc -c | tr -d ' ')`,
       `        head -c $((size - last)) "${held}"`,
       "      else",
       `        size=$(wc -c < "${held}" | tr -d ' ')`,
@@ -268,6 +274,13 @@ describe("the index cross-check before the first commit", () => {
     assert.equal(cut.status, 1, said(cut));
     assert.equal((cut.envelope["error"] as { code: string }).code, "git-inconsistent-read");
   });
+
+  it("refuses a staged diff cut after a complete change before the first commit", () => {
+    if (POSIX_ONLY) return;
+    const cut = run(tmp, PATH, ["gate"], "diff --cached --name-status", "change");
+    assert.equal(cut.status, 1, said(cut));
+    assert.equal((cut.envelope["error"] as { code: string }).code, "git-inconsistent-read");
+  });
 });
 
 describe("two git answers that disagree are git-inconsistent-read (docs/roadmap.md)", () => {
@@ -321,14 +334,47 @@ describe("two git answers that disagree are git-inconsistent-read (docs/roadmap.
     assertInconsistent(run(tmp, PATH, ["gate"], "ls-files -s -z", "empty"), "ls-files");
   });
 
-  it("a batch request cut inside its last path is refused, not read as a page HEAD never held", () => {
+  it("a staged diff cut after a complete earlier change is refused", () => {
     if (POSIX_ONLY) return;
-    // git answers the shortened path `missing` and exits 0; by position that
-    // row would be the whole path's, a base of nothing.
+    // Yarrow is the last staged change and the only page with an unknown
+    // type. Losing its whole status/path pair must not make the gate green.
+    assertInconsistent(
+      run(tmp, PATH, ["gate"], "diff --cached --name-status", "change"),
+      "diff --cached --name-status",
+    );
+  });
+
+  it("a batch request cut inside its last object id is refused", () => {
+    if (POSIX_ONLY) return;
+    // A three-character prefix is not a complete object id. Its missing row
+    // must not be matched by position to the object the index named.
     assertInconsistent(
       run(tmp, PATH, ["gate"], "cat-file --batch-check", "request"),
       "cat-file --batch-check",
     );
+  });
+});
+
+describe("a shortened HEAD tree cannot hide a deleted page", () => {
+  let tmp = "";
+  let PATH = "";
+  beforeAll(() => {
+    if (POSIX_ONLY) return;
+    tmp = repo();
+    git(tmp, "reset", "--hard", "HEAD");
+    git(tmp, "rm", "wiki/Sedge.md");
+    PATH = cuttingGit(tmp);
+  });
+  afterAll(() => {
+    if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("refuses a HEAD listing cut at the deleted path's record boundary", () => {
+    if (POSIX_ONLY) return;
+    assert.equal(run(tmp, PATH, ["gate"]).status, 0);
+    const cut = run(tmp, PATH, ["gate"], "ls-tree -r -z --full-tree", "record");
+    assert.equal(cut.status, 1, said(cut));
+    assert.equal((cut.envelope["error"] as { code: string }).code, "git-inconsistent-read");
   });
 });
 

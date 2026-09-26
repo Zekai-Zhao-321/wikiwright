@@ -41,10 +41,8 @@ import {
 import {
   GitInconsistentRead,
   gitHasHead,
-  gitHeadBlobs,
   gitIndexEntries,
   gitReadBlobBytes,
-  gitShowHead,
   gitStagedChanges,
   type IndexEntry,
   inArgumentOrder,
@@ -351,6 +349,7 @@ export interface IndexRead {
   top: string;
   bundle: string;
   entries: readonly IndexEntry[];
+  headEntries: readonly GitLawEntry[];
   changes: readonly StagedChange[];
   hasHead: boolean;
 }
@@ -395,6 +394,8 @@ export async function readIndex(root: string): Promise<IndexRead> {
   // `diff --cached` also names every staged path before the first commit.
   // Read it then so a well-formed but shortened index listing is refused.
   const changes = await gitStagedChanges(top);
+  const headEntries = hasHead ? await revisionEntries(top, "HEAD") : [];
+  const headByPath = new Map(headEntries.map((e) => [e.path.normalize("NFC"), e] as const));
   // The two answers describe one index. A path the staged diff says is in it
   // — added, modified, retyped, or the new name of a rename or copy — that
   // the listing does not hold means one of them is not whole, and a listing
@@ -410,27 +411,65 @@ export async function readIndex(root: string): Promise<IndexRead> {
       );
     }
   }
-  const changeOf = new Map(changes.map((c) => [c.path.normalize("NFC"), c] as const));
-  const headPaths: string[] = [];
-  for (const entry of content) {
-    const change = changeOf.get(entry.path);
-    const head = change === undefined ? undefined : headPathOf(change);
-    if (head !== undefined && !head.includes("\n")) headPaths.push(head);
+  for (const change of changes) {
+    const prior = headPathOf(change);
+    if (prior !== undefined && !headByPath.has(prior.normalize("NFC"))) {
+      throw new GitInconsistentRead(
+        ["diff --cached --name-status -z -M --relative", "ls-tree -r -z --full-tree HEAD"],
+        `the staged diff names "${prior}" as a base (${change.status}) and HEAD's listing does not hold it`,
+      );
+    }
   }
+  // The reverse check catches a diff cut at a complete status/path boundary:
+  // its answer still ends in NUL and every path it does name is in the
+  // index, but an omitted changed page would be scoped out of the gate.
+  const indexByPath = new Map(entries.map((e) => [e.path, e] as const));
+  const diffPaths = new Set(
+    changes
+      .flatMap((change) =>
+        [change.path, change.oldPath].filter((p): p is string => p !== undefined),
+      )
+      .map((path) => path.normalize("NFC")),
+  );
+  for (const path of new Set([...indexByPath.keys(), ...headByPath.keys()])) {
+    const indexed = indexByPath.get(path);
+    const head = headByPath.get(path);
+    if (indexed?.object === head?.object && indexed?.mode === head?.mode) continue;
+    if (!diffPaths.has(path)) {
+      throw new GitInconsistentRead(
+        [
+          "ls-files -s -z",
+          "ls-tree -r -z --full-tree HEAD",
+          "diff --cached --name-status -z -M --relative",
+        ],
+        `"${path}" differs between HEAD and the index but the staged diff does not name it`,
+      );
+    }
+  }
+  const changeOf = new Map(changes.map((c) => [c.path.normalize("NFC"), c] as const));
   // A page the commit deletes: its HEAD bytes, so the base's names hold it.
   const deleted: [string, string][] = [];
   for (const change of changes) {
     if (change.status !== "D") continue;
     const path = change.path.normalize("NFC");
     const rel = inBundle(bundle, path);
-    if (rel === undefined || path.includes("\n") || !isContentPath(rel, roots)) continue;
+    if (rel === undefined || !isContentPath(rel, roots)) continue;
     deleted.push([rel, path]);
-    headPaths.push(path);
   }
-  const headBlobs = await gitHeadBlobs(top, headPaths);
+  const headObject = (path: string): string | undefined => {
+    const entry = headByPath.get(path.normalize("NFC"));
+    return entry !== undefined && regular(entry.mode) ? entry.object : undefined;
+  };
   const blobs = await gitReadBlobBytes(top, [
     ...content.map((e) => e.object),
-    ...[...headBlobs.values()].filter((b): b is string => b !== undefined),
+    ...content
+      .map((e) => changeOf.get(e.path))
+      .map((change) => (change === undefined ? undefined : headPathOf(change)))
+      .map((path) => (path === undefined ? undefined : headObject(path)))
+      .filter((blob): blob is string => blob !== undefined),
+    ...deleted
+      .map(([, path]) => headObject(path))
+      .filter((blob): blob is string => blob !== undefined),
   ]);
   const bytesOf = (blob: string, path: string): Uint8Array => {
     const bytes = blobs.get(blob);
@@ -455,13 +494,8 @@ export async function readIndex(root: string): Promise<IndexRead> {
     const head = headPathOf(change);
     if (head === undefined) {
       base.set(rel, null);
-    } else if (head.includes("\n")) {
-      // A rename's source whose name holds a newline cannot go on the batch
-      // reader's line protocol; its own `git show` reads it, as text.
-      const text = await gitShowHead(top, head);
-      base.set(rel, text === undefined ? null : new TextEncoder().encode(text));
     } else {
-      const blob = headBlobs.get(head);
+      const blob = headObject(head);
       base.set(rel, blob === undefined ? null : bytesOf(blob, head));
     }
   }
@@ -478,11 +512,11 @@ export async function readIndex(root: string): Promise<IndexRead> {
   const state: JudgeState = { kind: "index", law, pages: pageMap(pages), base, renames, skipped };
   const removed = new Map<string, Uint8Array>();
   for (const [rel, path] of deleted) {
-    const blob = headBlobs.get(path);
+    const blob = headObject(path);
     if (blob !== undefined) removed.set(rel, bytesOf(blob, path));
   }
   if (removed.size > 0) state.removed = pageMap(removed);
-  return { state, top, bundle, entries: listed, changes, hasHead };
+  return { state, top, bundle, entries: listed, headEntries, changes, hasHead };
 }
 
 /** The staged-diff statuses whose path the index holds. */

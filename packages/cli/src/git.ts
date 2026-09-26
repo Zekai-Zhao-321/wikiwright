@@ -136,16 +136,16 @@ export function terminated(
  * stderr is a pipe, captured,
  * never inherited: it rides on a thrown error's message instead of printing
  * `fatal:` beside a green envelope (docs/cli.md §The envelope), and two
- * answers are recognised from its text — `gitShowHead`'s absent path and
- * `gitTopLevel`'s "not a git repository" — each of which, with the text lost,
- * fails as a plumbing failure rather than a smaller answer.
+ * answer is recognised from its text — `gitTopLevel`'s "not a git
+ * repository". With that text lost, it fails as plumbing rather than a
+ * smaller answer.
  */
 export async function gitRun(
   cwd: string,
   args: readonly string[],
   options: Omit<ChildOptions, "cwd"> = {},
 ): Promise<ChildAnswer> {
-  // `LC_ALL=C`: git's messages, which two answers are recognised from, in
+  // `LC_ALL=C`: git's not-a-repository message, which is recognised, in
   // one language whatever the caller's locale. `GIT_OPTIONAL_LOCKS=0`: a
   // read never takes the index lock to refresh it, so it never moves the
   // index under a dry run or races a concurrent read.
@@ -198,30 +198,6 @@ export async function gitStagedChanges(root: string): Promise<StagedChange[]> {
 /** The staged (index) content of a path (vault-root-relative via ./ pathspec). */
 export async function gitShowStaged(root: string, path: string): Promise<string> {
   return git(root, ["show", `:./${path}`]);
-}
-
-/**
- * The last committed content of a path, or undefined when it did not exist.
- * Kept for the one path `cat-file`'s line protocol cannot name: a rename's
- * source whose name holds a newline. Every other base comes through
- * `gitHeadBlobs` and the batch read.
- */
-export async function gitShowHead(root: string, path: string): Promise<string | undefined> {
-  try {
-    return await git(root, ["show", `HEAD:./${path}`]);
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    // Only a genuinely-absent path means "no base"; any other failure must
-    // surface rather than silently disarming diff-aware checkers.
-    if (
-      message.includes("does not exist") ||
-      message.includes("exists on disk, but not in") ||
-      message.includes("bad revision")
-    ) {
-      return undefined;
-    }
-    throw e;
-  }
 }
 
 /** One index entry: the path (vault-root-relative) and the blob it names. */
@@ -564,57 +540,6 @@ export async function gitReadBlobBytes(
   for (const [blob, text] of await gitReadBlobs(root, blobs, latin1)) {
     out.set(blob, Buffer.from(text, "latin1"));
   }
-  return out;
-}
-
-/**
- * The blob HEAD holds at each path, or `undefined` where it holds none: a path
- * added since, or a repository with no commit yet. One `cat-file --batch-check`
- * over `HEAD:./<path>` for any number of paths, where a `git show` per path made
- * a bulk commit's gate spawn one process for every changed page. `./` resolves
- * each path from the vault root, as `diff --relative` reported it, so an
- * embedded vault reads inside its own directory. git answers `missing` for a
- * path HEAD does not hold and exits non-zero for any other failure, which is
- * thrown. A path must not hold a newline: the names go one per line.
- */
-export async function gitHeadBlobs(
-  root: string,
-  paths: readonly string[],
-): Promise<Map<string, string | undefined>> {
-  const wanted = [...new Set(paths)];
-  const out = new Map<string, string | undefined>();
-  if (wanted.length === 0) return out;
-  const names = wanted.map((path) => `HEAD:./${path}`);
-  const checked = await gitBatch(root, ["cat-file", "--batch-check"], `${names.join("\n")}\n`);
-  const records = parseCatFileBatchCheck(
-    terminated(["cat-file", "--batch-check"], checked.toString("utf8"), "\n"),
-  );
-  if (records.length !== wanted.length) {
-    throw new GitShortRead(
-      "cat-file --batch-check",
-      `it answered ${records.length} of ${wanted.length} paths`,
-    );
-  }
-  // A row git could not resolve echoes the request, which must be the one it
-  // answers; a row it resolved names the object, not the path, so it must at
-  // least be a blob. A request cut inside its path answers `missing` for a
-  // shorter path, and read by position it would be a page HEAD never held.
-  answersInOrder(
-    records.map((r, i) => (r.size === undefined ? r.name : (names[i] ?? ""))),
-    names,
-  );
-  records.forEach((record, i) => {
-    if (record.size !== undefined && record.type !== "blob") {
-      throw new GitInconsistentRead(
-        ["cat-file --batch-check"],
-        `the request ${JSON.stringify(names[i])} was answered with a ${String(record.type)}, not a blob`,
-      );
-    }
-  });
-  wanted.forEach((path, i) => {
-    const record = records[i];
-    out.set(path, record === undefined || record.size === undefined ? undefined : record.name);
-  });
   return out;
 }
 
