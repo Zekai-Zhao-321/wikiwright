@@ -107,8 +107,11 @@ export function inheritedLines(base: Uint8Array, current: Uint8Array): Set<numbe
   return out;
 }
 
-/** The names the base held: a renamed page under the path it was renamed from. */
-function baseNames(state: JudgeState, read: StateRead): VaultNames | undefined {
+/**
+ * The names the base held: a renamed page under the path it was renamed
+ * from, and a page the commit deletes under its own.
+ */
+function baseNames(state: JudgeState, read: StateRead, law: TypeLaw): VaultNames | undefined {
   if (state.base === undefined) return undefined;
   const renamedFrom = new Map((state.renames ?? []).map((r) => [r.to, r.from] as const));
   const current = new Map(read.named.map((p) => [p.path, p] as const));
@@ -122,6 +125,10 @@ function baseNames(state: JudgeState, read: StateRead): VaultNames | undefined {
       frontmatter:
         base === page.read ? (current.get(page.path)?.frontmatter ?? {}) : base.page.frontmatter,
     });
+  }
+  for (const [path, bytes] of state.removed ?? []) {
+    const removed = parsePage(path, bytes, law);
+    if (removed.ok) named.push({ path, frontmatter: removed.page.frontmatter });
   }
   return buildNames(named);
 }
@@ -167,7 +174,7 @@ export function gateScope(
     return { findings: [...found], changed, scoped: false };
   }
   const pages = new Map(read.pages.map((p) => [p.path, p] as const));
-  const names = baseNames(state, read);
+  const names = baseNames(state, read, law);
   const ctx = names === undefined ? undefined : pageContext(state, law, names);
   // Each page judged again against the base's names, once, and only a page
   // that carries a finding whose verdict reads them.

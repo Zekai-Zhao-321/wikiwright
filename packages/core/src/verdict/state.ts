@@ -52,6 +52,12 @@ export interface JudgeState {
   base?: ReadonlyMap<string, Uint8Array | null>;
   /** Renames from the base to the state (the index's staged renames). */
   renames?: readonly PageRename[];
+  /**
+   * The pages the base held that the state no longer holds under any path
+   * (the index's staged deletions), with their base bytes: the names the
+   * base held include theirs.
+   */
+  removed?: ReadonlyMap<string, Uint8Array>;
   /** The links and submodules at, under or above a content root, in code-unit order of path. */
   skipped?: readonly SkippedPath[];
 }

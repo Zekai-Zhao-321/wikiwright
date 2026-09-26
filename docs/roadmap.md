@@ -828,7 +828,8 @@ its old self over any other root. What the rewritten verbs leave, so far:
   reads there. A verdict that reads the vault's names — a wikilink, a
   relation's target, a page reference and its `target_type` or
   `target_root`, a CEL rule, which may read `facts.links` — is asked again
-  of the page against the names the base held; one those names would not
+  of the page against the names the base held, a page the commit deletes
+  among them; one those names would not
   have given is the commit's and is never demoted or scoped away.
 - No finding of the new judge is fix-routed but the two whose fixers
   survive: `folder-tags-present` under `materialize-add-only` and

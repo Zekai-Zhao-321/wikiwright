@@ -279,6 +279,26 @@ describe("what the commit caused is never demoted (v2 contracts §9.2)", () => {
     ).toEqual([["wiki/Basil.md", "error", "type"]]);
   });
 
+  it("shows what a deleted page leaves dangling, on the page the commit did not touch", () => {
+    const vault = gardenVault();
+    const dir = gardenBundle({
+      "wiki/Basil.md": (vault["wiki/Basil.md"] as string).replace(
+        "bed: herb",
+        "bed: herb\norigin: Herb bed",
+      ),
+    });
+    commitAll(dir, "the garden");
+    git(dir, "rm", "-q", "wiki/Herb bed.md");
+    const r = cli(["gate"], dir);
+    expect(r.status).toBe(5);
+    expect(findingsOf(r.envelope, "page-ref-type").map((f) => [f.path, f.details["kind"]])).toEqual(
+      [["wiki/Basil.md", "unresolved"]],
+    );
+    expect(findingsOf(r.envelope, "relation-target-unresolved").map((f) => f.path)).toEqual([
+      "wiki/Basil.md",
+    ]);
+  });
+
   it("agrees with write: the change write refuses, the gate refuses", () => {
     const dir = gardenBundle(DATED);
     commitAll(dir, "the garden");

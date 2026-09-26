@@ -351,6 +351,16 @@ export async function indexState(root: string): Promise<JudgeState> {
     const head = change === undefined ? undefined : headPathOf(change);
     if (head !== undefined && !head.includes("\n")) headPaths.push(head);
   }
+  // A page the commit deletes: its HEAD bytes, so the base's names hold it.
+  const deleted: [string, string][] = [];
+  for (const change of changes) {
+    if (change.status !== "D") continue;
+    const path = change.path.normalize("NFC");
+    const rel = inBundle(bundle, path);
+    if (rel === undefined || path.includes("\n") || !isContentPath(rel, roots)) continue;
+    deleted.push([rel, path]);
+    headPaths.push(path);
+  }
   const headBlobs = await gitHeadBlobs(top, headPaths);
   const blobs = await gitReadBlobBytes(top, [
     ...content.map((e) => e.object),
@@ -399,7 +409,14 @@ export async function indexState(root: string): Promise<JudgeState> {
     .filter((r) => isContentPath(r.to, roots))
     .sort((a, b) => codeUnitCompare(a.to, b.to));
   const skipped = skippedEntries(entries, bundle, roots);
-  return { kind: "index", law, pages: pageMap(pages), base, renames, skipped };
+  const state: JudgeState = { kind: "index", law, pages: pageMap(pages), base, renames, skipped };
+  const removed = new Map<string, Uint8Array>();
+  for (const [rel, path] of deleted) {
+    const blob = headBlobs.get(path);
+    if (blob !== undefined) removed.set(rel, bytesOf(blob, path));
+  }
+  if (removed.size > 0) state.removed = pageMap(removed);
+  return state;
 }
 
 /** A revision's tree, its law and its pages, with no base (§10: `rule try --base`). */
