@@ -53,16 +53,13 @@ interface Expected {
 }
 
 const V2_VERDICTS: Record<string, Expected> = {
-  // The engine's own bundle carries no defect. Its pins are measured against
-  // this repository, so a covered path changed since a pin is `pin-stale`
-  // on the page and `stale-source-cited` on every page that links it, until
-  // the documentation step re-reads and re-pins them. Every pin is on
-  // HEAD's history and every citation stands at its pin.
+  // The engine's own bundle carries no defect or stale pin after the v2
+  // documentation re-read. Every pin is on HEAD's history and every citation
+  // stands at its pin. A changed covered path must make this case fail.
   devwiki: {
     pages: 36,
     findings: [],
     unevaluated: { "body-append-only": 8, "entry-edited": 27, "relation-removed": 27 },
-    live: ["pin-stale", "stale-source-cited"],
     pins: 27,
   },
   // A handbook carries no defect: a finding of any severity is rot. Its

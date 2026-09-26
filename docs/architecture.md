@@ -186,8 +186,8 @@ invokes it. Windows has no carrier in this repository and is unverified.
   mistaken for the checkout.
 - `devwiki` is on the v2 law and imports `libraries/kit-code` by path (v2
   contracts §2), read from the tree with nothing installed.
-  `check --root devwiki` has no error: its warnings are its pins, measured
-  against this repository, and `check --write --root devwiki` regenerates
+  `check --root devwiki` has no error or warning after its v2 re-pinning;
+  its pins are measured against this repository, and `check --write --root devwiki` regenerates
   `generated/`, the brief and the queue included; the same `check` holds
   every page's citations to its pin. `bun tools/uncovered.ts` lists the
   source directories no page covers.
