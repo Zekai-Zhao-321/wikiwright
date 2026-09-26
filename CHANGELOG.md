@@ -794,6 +794,14 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- `hooks.ts`, the installer of the old `hook` verb and of `init` (v2
+  contracts §1, §12 step 6): the marker pre-commit and commit-msg scripts it
+  wrote into `.git/hooks`, the chained script it kept, the
+  `WIKIWRIGHT_BYPASS` log, and the comparison `check` made of an installed
+  hook with the one the build would write (`hook-stale`). No verb reached it
+  since the old table left. A repository runs the gate through the published
+  definition, `.pre-commit-hooks.yaml`, or the one-liners `docs/cli.md`
+  documents, written by hand; nothing compares them with a build.
 - The exports (v2 contracts §1, §12 step 6): `exports.ts`, the planner of a
   bundle's read-only copies and their in-repository renders; `marker.ts`,
   the copy's marker `config/export.json`, and main.ts's check of it, with the

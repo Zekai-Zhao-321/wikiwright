@@ -59,7 +59,7 @@ packages/cli/src/
   atomicwrite.ts   the one staged replace every non-page write lands through
   moduleload.ts, modulefixture.ts   the module ladder: resolve, digest, scan, load, prove
   sha256.ts    the shell's sha256 over bytes: a module's files, a page, a shipped skill
-  hooks.ts, stagedkits.ts   the old verbs' installed hooks and the path kit their staged gate loaded from the index, unreached since the old verbs left, each leaving in its own commit of step 6
+  stagedkits.ts   the path kit the old staged gate loaded from the index, unreached since the old verbs left; it leaves with the modules
   verbs/<name>.ts   one CommandSpec per verb of the command table, over the type-document law
   typelaw.ts   v2: the law a state carries loaded or refused, the engine range, the bundle block
   generated.ts v2: generated/ — the brief and the kernel's four files, rendered, compared and written

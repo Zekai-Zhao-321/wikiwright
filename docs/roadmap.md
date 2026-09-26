@@ -20,8 +20,8 @@ whether it is dirty, and digests of its law and its content — and `read`
 returns a page's sections verbatim with the page's bytes digest and its
 status, under a byte budget. Step 6 is removing the old tree's mechanisms one
 commit each; until each has left, its code is in the tree and reached by no
-verb: the old registry and its standard library, the git hook installer,
-the module loader and the v1 kit
+verb: the old registry and its standard library, the module loader and the
+v1 kit
 `@wikiwright/kit-code`, which `devwiki` no longer imports.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
@@ -377,6 +377,21 @@ Wanted, when host writes bypass the workflow repeatedly or several bundles
 cause targeting mistakes (the first delivery's trigger for host
 guardrails): a hook that runs `check` over an edited page, and one that
 names the bundles a session can reach, each run inside a host and recorded.
+
+### Nothing installs the git hooks
+
+The gate runs from the published hook definition, `.pre-commit-hooks.yaml`
+(`wikiwright-gate` at `pre-commit`, `wikiwright-commit-msg` at `commit-msg`),
+or from two one-liners a maintainer writes into `.git/hooks` by hand
+(`docs/cli.md`, `gate`). The installer the old `hook` verb and `init` ran
+left in step 6 of the v2 delivery, and with it the comparison of an
+installed hook with the one a build would write (`hook-stale`) and the
+`WIKIWRIGHT_BYPASS` log. The loss: a repository whose hook was never
+written, or was removed, commits unjudged, and nothing reports it.
+
+Wanted, once a real installation settles on one hook manager (the first
+delivery's trigger for more hook managers): that manager's route, verified
+on the owner's repository.
 
 ### No bundle is found by name
 
