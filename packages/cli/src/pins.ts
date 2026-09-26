@@ -10,7 +10,7 @@
 // the pin and HEAD over the pin's `covers`, read with `:(top)` so the paths
 // are repository-root-relative wherever the bundle sits (`pin-stale`, the old
 // `stale-capture`); the page's citations held to the pin, read by
-// freshness.ts's own `citationsIn` (`citation-unresolved`, kept); and one hop
+// the old verb's own `citationsIn`, now citations.ts (`citation-unresolved`, kept); and one hop
 // of propagation into every page whose edge, of any kind but `tagged`, names
 // a stale page. Changed: a pin is found by its shape — a top-level property
 // whose schema is the engine `$def` `pin` — and its three parts are one
@@ -29,7 +29,7 @@ import {
   type TypeLawGraphEdge,
   type Unrouted,
 } from "@wikiwright/core";
-import { citationsIn } from "./freshness.ts";
+import { citationsIn } from "./citations.ts";
 import {
   gitBlobLineCount,
   gitCommitKnown,

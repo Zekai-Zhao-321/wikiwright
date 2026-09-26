@@ -17,16 +17,19 @@ system is only as good as its narrowest write path.
 Keep these, and keep the test that holds each (`docs/architecture.md` names
 them):
 
-- **Typed.** One nominal type per page; shapes and section grammars are data
-  in `config/constitution.json`. Conformance, not truth: a conformant claim
-  can still be false, and nothing here claims otherwise.
-- **OKF-compatible.** `okf check` stays green on every corpus.
-- **Four layers behind one registration API.** Kernel, standard library
-  (claims, relations, entries), domain kit, bundle. The kernel imports nothing
-  from `stdlib/`. If a first-party module needs a private hook, the API is
-  wrong, not the module.
-- **One judge at every write path.** Working tree, staged gate, stdin, write
-  draft, replay: the same `judge(state, law)`.
+- **Typed.** One nominal type per page; shapes, sections and rules are data
+  in the type documents under `constitution/` and the libraries a bundle
+  imports. Conformance, not truth: a conformant claim can still be false,
+  and nothing here claims otherwise.
+- **OKF-compatible.** `check` reports no `okf-missing-type` on any corpus.
+- **Three layers, all law is data.** Kernel, library, bundle. The kernel
+  holds the fixed grammar (claims, relations, dated entries), JSON Schema and
+  the CEL profile; a library is a directory of type, fragment and vocabulary
+  documents a bundle imports by path; a bundle's own documents may extend a
+  library's. No layer ships code: a need the kernel does not meet is a CEL
+  rule over the page interface, or a change to the kernel.
+- **One judge at every write path.** The working tree, drafts over the disk,
+  the index over HEAD and a revision: the same `judgeTypeLaw(state, law)`.
 - **Deterministic, byte-reproducible artifacts.** One generator per artifact;
   never hand-edited; no locale, no clock, and no Bun-only API in
   `packages/` outside the git transport (`packages/cli/src/stdoutfile.ts`).
@@ -35,7 +38,8 @@ them):
 - **Routing is total.** Every error or warning finding carries exactly one of
   `fix` and `queue`; a decidable check may gate, a judgment is a queue lane.
 - **The bundle declares policy; the engine supplies mechanism.** A bundle
-  selects from a closed set; it never authors a predicate.
+  writes its rules in the bounded CEL profile over the documented page
+  interface, each with its test set; it never ships an executable hook.
 - **State the loss.** When a mechanism is removed, deferred or unverified,
   write it where a reader will meet it. Green that hides a gap is worse than
   red.
@@ -103,15 +107,15 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
 
 ## Where things live
 
-- `packages/core`: the kernel and the standard library.
+- `packages/core`: the kernel: the type-document loader, the page interface,
+  the fixed grammar's records, the CEL rules, the judge and its artifacts.
 - `packages/cli`: the binary, one module per verb under `src/verbs/`, the
   eight verbs of the v2 contracts.
 - `devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`,
   `fixtures/handbooks/{orchard,allotment}`: the corpora every change is
   judged against, all on the v2 law. `devwiki` imports `libraries/kit-code`
   by path; the tests judge each corpus where it stands and in copies under
-  `os.tmpdir()`. `fixtures/v1` holds their frozen v1 forms, read only by the
-  old registry's core tests until it leaves.
+  `os.tmpdir()`.
 - `libraries/`: the type libraries of the v2 law, data only — type,
   fragment and vocabulary documents with their rule tests and examples.
   `kit-code` (id `code`) is a code wiki's page kinds, the `anchored`
@@ -120,8 +124,6 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
   the kernel or the CLI;
   `kit-garden` (id `garden`) is the neutral test library, which the
   allotment handbook imports.
-- `fixtures/conformance`: the neutral module fixture and the two bundles that
-  consume it. Test infrastructure, not a domain model.
 - `tools/`: the build-info writer, the binary builder (`bun run binary`), the
   playbook renderer, the v2 disposition-table generator, the case-fold table
   generator, the uncovered-directory lister, the suite runner the gate uses,

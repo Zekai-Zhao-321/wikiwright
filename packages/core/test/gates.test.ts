@@ -18,15 +18,6 @@ function files(dir: string, suffix: string): string[] {
 
 const SRC_FILES = [...files("packages/core/src", ".ts"), ...files("packages/cli/src", ".ts")];
 
-/**
- * docs/extending.md §The determinism fixture: the purity scan is the one file whose JOB is to
- * name these constructs, so a substring rule would force it to spell the thing
- * it refuses in fragments — unreadable, in the file where readability is the
- * point. It is held to a STRICTER rule instead: no call form anywhere in it.
- * Every other file keeps the substring rule.
- */
-const NAMES_THE_BANNED = "packages/core/src/modules/purity.ts";
-
 /** The git transport: the one shipped file that calls the runtime's own API. */
 const RUNTIME_SEAM = "packages/cli/src/stdoutfile.ts";
 
@@ -34,25 +25,9 @@ describe("shipped-code gates", () => {
   it("bans locale-dependent comparison in packages/ source", () => {
     for (const file of SRC_FILES) {
       const text = readFileSync(file, "utf8");
-      if (file.endsWith(NAMES_THE_BANNED)) {
-        // The call form, not the name: `x.localeCompare(y)` and `new Intl.Collator(`.
-        assert.equal(
-          /\w\s*\.\s*localeCompare\s*\(/u.test(text.replace(/\\s\*/gu, "")),
-          false,
-          `${file} calls localeCompare`,
-        );
-        assert.equal(/new\s+Intl\.Collator\s*\(/u.test(text), false, `${file} uses a collator`);
-        continue;
-      }
       assert.equal(text.includes("localeCompare"), false, `${file} uses localeCompare`);
       assert.equal(text.includes("Intl.Collator"), false, `${file} uses Intl.Collator`);
     }
-  });
-
-  it("…and the exemption covers exactly one file, which exists", () => {
-    // An exemption nobody can see the size of is how a gate stops being one.
-    const exempt = SRC_FILES.filter((f) => f.endsWith(NAMES_THE_BANNED));
-    assert.equal(exempt.length, 1, `the purity scan is at ${NAMES_THE_BANNED}`);
   });
 
   it("bans Bun-specific APIs in packages/ source outside the one transport file", () => {

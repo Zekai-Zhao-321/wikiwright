@@ -18,10 +18,8 @@ v2 delivery (§The old verbs left in step 6). Every envelope of a verb that
 reads a bundle's law names the bundle it read — its label, real root, head,
 whether it is dirty, and digests of its law and its content — and `read`
 returns a page's sections verbatim with the page's bytes digest and its
-status, under a byte budget. Step 6 is removing the old tree's mechanisms one
-commit each; until each has left, its code is in the tree and reached by no
-verb: the old registry, its standard library and its module registration
-API.
+status, under a byte budget. Step 6 removed the old tree's mechanisms one
+commit each; the kernel is the type-document law alone.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
@@ -101,19 +99,6 @@ is done by content, outside the engine; no verb offers it.
 
 Wanted: a `write` operation that relocates each citation by content and
 re-pins. It belongs to the verb that writes.
-
-### A page-wide append-only law and a dated append-only ledger cannot coexist
-
-Declaring `body.lifecycle: "append-only"` on a type and
-`lifecycle: "append-only"` on one of its dated `entries` sections loads
-`body-lifecycle-doubled`: the two laws would report the same mutation
-twice. `code/decision` takes the page-wide law and keeps Consequences as
-prose; "one dated line per change" is a skill fragment, not a grammar.
-
-Wanted: `"body": { "lifecycle": "append-only" }` beside
-`{ "heading": "Consequences", "grammar": "entries", "date": "required",
-"lifecycle": "append-only" }`, admitted when the ledger is the page's last
-section — the one layout where the two laws see one mutation.
 
 ### A library is read from the bundle's own repository only
 
@@ -655,9 +640,9 @@ old tree is `unknown-command`, a directory with no `config/engine.json` is
 `bundle-not-found` (exit 3), and a bundle on the old
 `config/constitution.json` is `constitution-invalid`, its engine.json not
 schema version 4; `tools/migrate-spellings.ts` rewrites one. The old tree's
-mechanisms leave one commit each after the verbs (contracts §12 step 6); the
-old registry's core tests read frozen v1 copies of the corpora under
-`fixtures/v1/` until the registry leaves. What the rewritten verbs leave:
+mechanisms left one commit each after the verbs (contracts §12 step 6), the
+old registry last, and with it the frozen v1 copies of the corpora under
+`fixtures/v1/` its core tests read. What the rewritten verbs leave:
 
 - `check` absorbs `lint`, `fix`, `freshness` and `okf` (contracts §1). Not
   carried: `lint --since`, the replay of each commit against its parent
@@ -923,8 +908,7 @@ old registry's core tests read frozen v1 copies of the corpora under
 1. Run the release matrix by hand before calling a build a release, and
    carry the gate to Windows, which nothing reaches.
 2. Close the limitations above in the order a bundle asks for them: a
-   documented starter, a `write` operation that shifts citations, the ledger layout
-   for `code/decision`, a published kit; for installed bundles, a declared
+   documented starter, a `write` operation that shifts citations; for installed bundles, a declared
    dependency between bundles, `references` and `outline`, a report type a
    proposal is written in, and a filter by applicability.
 3. The capture verb, the connector layer, rich-content checks, publication

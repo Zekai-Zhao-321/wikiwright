@@ -13,7 +13,6 @@ import { buildLexicalIndex, deterministicLn, rankLexical } from "../src/search/b
 import { searchPages } from "../src/search/index.ts";
 import { buildNearIndex, nearCandidates } from "../src/search/near.ts";
 import { TOKENIZATION_MODE, tokenize } from "../src/search/tokenize.ts";
-import { constitutionOf } from "./helpers/constitution.ts";
 
 function page(path: string, frontmatter: string, body: string): NamedPage {
   return { path, doc: parseDoc(`---\n${frontmatter}\n---\n\n${body}\n`) };
@@ -391,12 +390,6 @@ describe("a query-less search reports the tiers it ran (docs/concepts.md §Gener
 
 describe("type-aware retrieval (docs/concepts.md §Generated artifacts)", () => {
   it("search --type matches descendants through the chain", () => {
-    const registry = constitutionOf({
-      types: {
-        record: { extends: "reference", description: "R." },
-        "test-record": { extends: "record", description: "T." },
-      },
-    });
     const pages = [
       {
         path: "wiki/t.md",
@@ -405,8 +398,11 @@ describe("type-aware retrieval (docs/concepts.md §Generated artifacts)", () => 
         ),
       },
     ];
-    const chains = new Map<string, string[]>();
-    for (const [name, eff] of registry.types) chains.set(name, eff.chain);
+    // Each type with its ancestry, the chains the `search` verb builds from the law.
+    const chains = new Map<string, string[]>([
+      ["test-record", ["test-record", "record", "reference"]],
+      ["record", ["record", "reference"]],
+    ]);
     const exact = searchPages(pages, "boot", { type: "test-record" }, 10, {
       typeChains: chains,
     });

@@ -1,5 +1,12 @@
 # The constitution reference
 
+> **Step 6 of the v2 delivery.** This document describes the v1 law — the
+> JSON constitution, the module registration API, the standard library, the
+> old verbs — which left the engine in step 6. The documentation step of the
+> delivery rewrites it; until then `docs/cli.md`, `docs/architecture.md`,
+> `docs/roadmap.md`, `docs/v2-dispositions.md` and `CHANGELOG.md` describe
+> what the engine does.
+
 A bundle's law is two JSON files under `config/`. `constitution.json` declares
 what a page must look like; `engine.json` is the bootstrap the loader reads
 first: which directories hold pages, which policies are on, which module

@@ -8,7 +8,6 @@ import {
   parseRelationLine,
   RECORD_SCHEMAS,
 } from "../src/index.ts";
-import { claimHandle as oldClaimHandle } from "../src/stdlib/claims-parse.ts";
 
 const ROOTS = ["raw"];
 const claim = (line: string) => parseClaimLine(line, ROOTS);
@@ -150,9 +149,11 @@ describe("claims", () => {
   });
 
   it("keep today's handle: # and eight hex digits of the normalised core's sha256", () => {
-    for (const core of ["Basil bolts above 30 degrees.", "ÉCHALOTE", "韭菜 grows back"]) {
-      expect(claimHandle(core)).toBe(oldClaimHandle(core));
-    }
+    // The values the v1 standard library computed for these cores, frozen when
+    // it left in step 6 (the navigator's ruling 5).
+    expect(
+      ["Basil bolts above 30 degrees.", "ÉCHALOTE", "韭菜 grows back"].map(claimHandle),
+    ).toEqual(["#c361668d", "#a85994c7", "#0441cd31"]);
   });
 });
 

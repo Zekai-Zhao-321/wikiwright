@@ -794,6 +794,25 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- The old registry code the type-document loader replaced (v2 contracts §1,
+  §12 step 6), from `packages/core/src`: `registry/` (loading and flattening
+  `config/constitution.json` and the v3 `config/engine.json`), `stdlib/` (the
+  claims, relations and entries modules), `modules/` (the registration API,
+  `defineModule`, `loadModules`, the purity scan), `grammar/`, `lint/`,
+  `judge/`, `passes/` (the pass table and its lanes), `fixers/`, `generate/`
+  and `shapes/`; the old name index and identity check in `names/`; the item
+  collection over the old grammars in `search/items.ts`; the `zod`
+  dependency, which only the old registry and module API read. From the
+  shell: the old `freshness` measurement (its citation reader moves to
+  `citations.ts`, which `check`'s pins read), the Writer's proof over the old
+  judge, `verdictEnvelope`, the old loader's reader and page walk, and the
+  content-path refusal the old verbs shared. `fixtures/v1` (the frozen v1
+  corpora) and `fixtures/conformance` (the neutral module fixture) leave with
+  the core tests that read them, and so does the memory-law fixture.
+  `tools/dispositions.ts` holds the v1 enumeration as data, frozen as the
+  old tree gave it; `docs/v2-dispositions.md` says so. `docs/concepts.md`,
+  `docs/constitution.md` and `docs/extending.md` still describe the v1 law
+  and say so at their head until the documentation step rewrites them.
 - `WIKIWRIGHT_ROLE` and the bound it set (v2 contracts §1, §12 step 6): the
   refusals `role-forbidden` (a verb above the session's declared rank) and
   `role-unknown`, and the `role` every verb declared, with it the `role` key

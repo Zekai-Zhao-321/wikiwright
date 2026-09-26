@@ -6,9 +6,10 @@ Every rule id, constitution key and engine key of the v1 tree, with what the
 v2 delivery does with it (contracts §1). `kernel`: kept by the engine, and
 where. `rule`: re-expressed as a CEL rule, in which library and under which
 id; each landed with its library and its test set (contracts §12 step 5).
-`dropped`: removed, with the line `CHANGELOG.md` carries for it. The ids are
-enumerated from the v1 tree by the generator, which fails when one has no row
-or a row names nothing, so the table cannot fall behind the code it describes.
+`dropped`: removed, with the line `CHANGELOG.md` carries for it. The ids were
+enumerated from the v1 tree while it was in the repository; it left in step 6,
+and the generator holds that enumeration as data and fails when an id has no
+row or a row names nothing.
 
 ## Rule ids
 

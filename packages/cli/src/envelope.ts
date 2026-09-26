@@ -2,7 +2,7 @@
 // never load-bearing) · the closed exit taxonomy, JSON-only v1
 // docs/concepts.md §Findings and routing (the verdict envelope and the cap flags every judging verb
 // prints — docs/architecture.md §Directories keeps the envelope helpers here rather than beside a verb).
-import type { JudgeOptions, Verdict } from "@wikiwright/core";
+import type { TypeLawJudgeOptions } from "@wikiwright/core";
 import type { CommandArgs } from "./spec.ts";
 
 export const EXIT = {
@@ -144,25 +144,11 @@ export function outPointer(result: CommandResult, out: string, bytes: number): s
   return `${head.slice(0, -1)},\n${JSON.stringify({ out }).slice(1)}\n`;
 }
 
-/** The envelope every judging verb prints (docs/concepts.md §Findings and routing). */
-export function verdictEnvelope(verdict: Verdict): Record<string, unknown> {
-  return {
-    findings: verdict.findings,
-    summary: verdict.summary,
-    coverage: verdict.coverage,
-    // The blind spot named — which pass, how many, why — beside the
-    // scalar `summary.unevaluated` every reader sums.
-    unevaluated: verdict.unevaluated,
-    caps: verdict.caps,
-    dispositions: verdict.dispositions,
-  };
-}
-
 /** docs/concepts.md §Findings and routing: `--limit`, `--rule`, `--path`, `--all`, read once. */
 export function capOptions(
   args: CommandArgs,
-): Pick<JudgeOptions, "limit" | "all" | "rule" | "path"> {
-  const out: Pick<JudgeOptions, "limit" | "all" | "rule" | "path"> = {};
+): Pick<TypeLawJudgeOptions, "limit" | "all" | "rule" | "path"> {
+  const out: Pick<TypeLawJudgeOptions, "limit" | "all" | "rule" | "path"> = {};
   const limit = args.flags["limit"];
   if (typeof limit === "string") {
     const parsed = Number.parseInt(limit, 10);

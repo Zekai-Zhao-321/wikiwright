@@ -3,20 +3,17 @@
 //   kernel   kept by the engine, and where;
 //   rule     re-expressed as a CEL rule, in which library, with which id;
 //   dropped  removed, with the line CHANGELOG.md carries for it.
-// The navigator reviews the table before step 4; an id with no row fails it,
-// and so does this script: the ids and keys are ENUMERATED from the old tree
-// (the composed pass table, the v3 constitution and engine schemas, the
-// standard library's grammar parameters and vocabulary entry properties, the
-// field-shape kinds), and every one must have a row below, and every row an
-// enumerated id.
+// The ids and keys were ENUMERATED from the old tree (the composed pass table,
+// the v3 constitution and engine schemas, the standard library's grammar
+// parameters and vocabulary entry properties, the field-shape kinds) while it
+// was in the repository. It left in step 6 of the delivery, so the
+// enumeration is frozen below as data, exactly as the old tree gave it on
+// its last commit; every id must have a row below, and every row an id.
 //
 // Run: `bun tools/dispositions.ts` (writes docs/v2-dispositions.md) or
 // `--check` (compares). The file has this one generator.
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { ENGINE_CONFIG_SCHEMA, passRows, standardLibrary } from "../packages/core/src/index.ts";
-import { ConstitutionSchema } from "../packages/core/src/registry/document.ts";
-import { KIND_KEYS, UNIVERSAL_KEYS } from "../packages/core/src/shapes/index.ts";
 
 const OUT = fileURLToPath(new URL("../docs/v2-dispositions.md", import.meta.url));
 
@@ -24,87 +21,257 @@ type Disposition = "kernel" | "rule" | "dropped";
 export type Row = readonly [key: string, disposition: Disposition, text: string];
 
 // ---------------------------------------------------------------------------
-// enumeration
+// the enumeration, frozen: what the old tree declared on its last commit
 
-interface ZodLike {
-  _zod?: { def?: Record<string, unknown> };
-}
+/** `passRows(standardLibrary())`: the kernel's rows and the standard library's arms. */
+const V1_RULE_IDS: readonly string[] = [
+  "module-failure",
+  "malformed-frontmatter",
+  "frontmatter-not-mapping",
+  "duplicate-key",
+  "unknown-type",
+  "tombstone",
+  "missing-required-field",
+  "field-shape",
+  "unknown-frontmatter-key",
+  "invalid-tags-field",
+  "unknown-tag",
+  "tag-alias-target",
+  "tag-retired",
+  "identity-collision",
+  "sections",
+  "section-depth",
+  "max-chars",
+  "wikilink-alias-target",
+  "wikilink-unresolved",
+  "generated-drift",
+  "okf-missing-type",
+  "template-placeholder-unknown",
+  "template-field-unknown",
+  "template-orphan",
+  "freshness-unavailable",
+  "folder-segment-registered",
+  "folder-tags-present",
+  "former-folder-tags-review",
+  "unregistered-extension",
+  "malformed-pin",
+  "stale-capture",
+  "stale-source-cited",
+  "citation-unresolved",
+  "pin-unknown-to-origin",
+  "origin-unreachable",
+  "grammar-unparsed",
+  "canonical-form",
+  "abstract-type",
+  "tag-form",
+  "tag-requires-link",
+  "instances",
+  "body-append-only",
+  "vocabulary-alias-target",
+  "vocabulary-retired",
+  "skills-stale",
+  "skills-missing",
+  "brief-stale",
+  "hook-stale",
+  "export-stale",
+  "export-orphan",
+  "export-not-closed",
+  "export-tag-unknown",
+  "export-guide-outside",
+  "export-skill-invalid",
+  "export-destination-invalid",
+  "export-symlink",
+  "export-destination-linked",
+  "renamed-without-alias",
+  "exception-stale",
+  "exception-illegal",
+  "unknown-category",
+  "journal-only-category",
+  "category-not-allowed",
+  "owned-by",
+  "claim-provenance",
+  "closed-claim-in-facts",
+  "history-marker",
+  "marker-like",
+  "sourced-inferred",
+  "provenance-path-only",
+  "provenance-weak",
+  "hearsay",
+  "claims-transition",
+  "claim-landing",
+  "unknown-label",
+  "relation-range",
+  "relation-target-unresolved",
+  "relation-removed",
+  "relation-retired",
+  "relation-require",
+  "entry-date-missing",
+  "entry-mutated",
+];
 
-/** Every key path a zod schema declares: `a.b`, `a[].b`, `a.*.b`. */
-function keyPaths(schema: unknown, path = "", out: string[] = []): string[] {
-  const def = (schema as ZodLike)?._zod?.def;
-  if (def === undefined) return out;
-  switch (def["type"]) {
-    case "optional":
-    case "nullable":
-    case "default":
-    case "readonly":
-    case "catch":
-      return keyPaths(def["innerType"], path, out);
-    case "pipe":
-      return keyPaths(def["in"], path, out);
-    case "object":
-      for (const [key, value] of Object.entries(def["shape"] as Record<string, unknown>)) {
-        const at = path === "" ? key : `${path}.${key}`;
-        if (!out.includes(at)) out.push(at);
-        keyPaths(value, at, out);
-      }
-      return out;
-    case "array":
-      return keyPaths(def["element"], `${path}[]`, out);
-    case "record":
-      return keyPaths(def["valueType"], `${path}.*`, out);
-    case "union":
-      for (const option of def["options"] as unknown[]) keyPaths(option, path, out);
-      return out;
-    default:
-      return out;
-  }
-}
+/** The v3 constitution schema's key paths, a type's and a fragment's shared subtrees named once. */
+const V1_CONSTITUTION_KEYS: readonly string[] = [
+  "schema",
+  "schema_version",
+  "vocabularies",
+  "vocabularies.*.mode",
+  "vocabularies.*.form",
+  "vocabularies.*.entries",
+  "fragments",
+  "fragments.*.description",
+  "fragments.*.fields",
+  "sections",
+  "sections.ordered",
+  "sections.depth",
+  "sections.additional",
+  "sections.list",
+  "sections.list[].heading",
+  "sections.list[].min",
+  "sections.list[].max",
+  "sections.list[].aliases",
+  "sections.list[].grammar",
+  "sections.list[].vocabulary",
+  "sections.list[].max_chars",
+  "sections.list[].severity",
+  "checks",
+  "checks[].use",
+  "checks[].config",
+  "checks[].severity",
+  "types",
+  "types.*.extends",
+  "types.*.description",
+  "types.*.abstract",
+  "types.*.instances",
+  "types.*.instances.min",
+  "types.*.instances.max",
+  "types.*.instances.severity",
+  "types.*.use_when",
+  "types.*.avoid_when",
+  "types.*.fragments",
+  "types.*.fields",
+  "types.*.body",
+  "types.*.body.lifecycle",
+  "types.*.body.severity",
+  "types.*.template",
+  "types.*.example",
+  "types.*.status",
+  "types.*.replaced_by",
+];
 
-/**
- * The v3 constitution's keys, a type's and a fragment's shared subtrees (their
- * `sections` and `checks`) named once: `sections.list[].heading`, not once per
- * owner.
- */
-function constitutionKeys(): string[] {
-  const out: string[] = [];
-  for (const path of keyPaths(ConstitutionSchema)) {
-    const shared = path
-      .replace(/^(?:types|fragments)\.\*\.sections/u, "sections")
-      .replace(/^(?:.*\.)?checks(?=\[\]|$)/u, "checks");
-    if (!out.includes(shared)) out.push(shared);
-  }
-  return out;
-}
+/** The standard library's grammar parameters, `<grammar>.<parameter>`. */
+const V1_GRAMMAR_PARAMS: readonly string[] = [
+  "claims.provenance",
+  "claims.forms",
+  "claims.sources",
+  "claims.history",
+  "claims.role",
+  "claims.categories",
+  "claims.only",
+  "claims.items",
+  "claims.inferred_ref",
+  "relations.require",
+  "relations.history",
+  "entries.date",
+  "entries.lifecycle",
+];
 
-function grammarParams(): string[] {
-  const out: string[] = [];
-  for (const [grammar, spec] of standardLibrary().grammars) {
-    for (const param of Object.keys(spec.params)) out.push(`${grammar}.${param}`);
-  }
-  return out;
-}
+/** The four keys every vocabulary entry shared, and each registered vocabulary's own. */
+const V1_ENTRY_PROPERTIES: readonly string[] = [
+  "*.description",
+  "*.aliases",
+  "*.status",
+  "*.replaced_by",
+  "tags.requires_link",
+  "categories.class",
+  "categories.owned_by",
+  "relations.range",
+];
 
-function entryProperties(): string[] {
-  const shared = ["description", "aliases", "status", "replaced_by"].map((k) => `*.${k}`);
-  const own: string[] = [];
-  for (const [vocabulary, spec] of standardLibrary().vocabularies) {
-    const shape = (spec.entry as { shape?: Record<string, unknown> } | undefined)?.shape ?? {};
-    for (const key of Object.keys(shape)) own.push(`${vocabulary}.${key}`);
-  }
-  return [...shared, ...own];
-}
+/** The field-shape kinds and the keys each admitted, and the keys every kind admitted. */
+const V1_SHAPE_KEYS: readonly string[] = [
+  "any",
+  "string",
+  "string.min_length",
+  "string.max_length",
+  "string.pattern",
+  "dated-string",
+  "integer",
+  "integer.min",
+  "integer.max",
+  "number",
+  "number.min",
+  "number.max",
+  "boolean",
+  "enum",
+  "enum.values",
+  "date",
+  "date.auto",
+  "datetime",
+  "list",
+  "list.item",
+  "list.min_items",
+  "list.max_items",
+  "object",
+  "object.keys",
+  "object.required",
+  "page-ref",
+  "page-ref.target_root",
+  "page-ref.target_type",
+  "page-ref-list",
+  "page-ref-list.target_root",
+  "page-ref-list.target_type",
+  "pin",
+  "pin.origin",
+  "pin.covers",
+  "*.required",
+  "*.requires",
+  "*.checks",
+];
 
-function shapeKeys(): string[] {
-  const out: string[] = [];
-  for (const [kind, keys] of Object.entries(KIND_KEYS)) {
-    out.push(kind);
-    for (const key of keys) if (key !== "kind") out.push(`${kind}.${key}`);
-  }
-  for (const key of UNIVERSAL_KEYS) out.push(`*.${key}`);
-  return out;
-}
+/** The v3 engine.json schema's key paths. */
+const V1_ENGINE_KEYS: readonly string[] = [
+  "content_roots",
+  "engine",
+  "folder_tag_aliases",
+  "folder_tags",
+  "folder_tags.mode",
+  "source_roots",
+  "extensions",
+  "extensions.mode",
+  "extensions.namespaces",
+  "extensions.fields",
+  "commit_prefixes",
+  "commit_prefixes.prefixes",
+  "move_reasons",
+  "modules",
+  "modules[].package",
+  "modules[].version",
+  "modules[].path",
+  "exports",
+  "exports[].name",
+  "exports[].select",
+  "exports[].select.kind",
+  "exports[].select.tags",
+  "exports[].select.directories",
+  "exports[].sources",
+  "exports[].output",
+  "exports[].repository",
+  "exports[].links",
+  "exports[].guide",
+  "exports[].contribution",
+  "exports[].contribution.mode",
+  "exports[].contribution.repository",
+  "exports[].contribution.folder",
+  "exports[].skill",
+  "exports[].license",
+  "plugin",
+  "plugin.name",
+  "plugin.version",
+  "plugin.description",
+  "field_sources",
+  "field_sources.title",
+  "field_sources.description",
+];
 
 // ---------------------------------------------------------------------------
 // the table
@@ -749,37 +916,37 @@ const GROUPS: readonly Group[] = [
     title: "Rule ids",
     what: "Every row of the composed pass table (`passRows(standardLibrary())`): the kernel's rows and the standard library's arms. The code kit registers none.",
     rows: RULES,
-    enumerate: () => passRows(standardLibrary()).map((row) => row.id),
+    enumerate: () => V1_RULE_IDS,
   },
   {
     title: "Constitution keys",
     what: "Every key the v3 `config/constitution.json` schema declares; a type's and a fragment's `sections` and `checks` subtrees are named once.",
     rows: CONSTITUTION,
-    enumerate: constitutionKeys,
+    enumerate: () => V1_CONSTITUTION_KEYS,
   },
   {
     title: "Section grammar parameters",
     what: "Every parameter the standard library's three grammars declare, `<grammar>.<parameter>`.",
     rows: GRAMMAR_PARAMS,
-    enumerate: grammarParams,
+    enumerate: () => V1_GRAMMAR_PARAMS,
   },
   {
     title: "Vocabulary entry keys",
     what: "The four keys every entry shares (`*.`) and each registered vocabulary's own entry properties.",
     rows: ENTRY_PROPERTIES,
-    enumerate: entryProperties,
+    enumerate: () => V1_ENTRY_PROPERTIES,
   },
   {
     title: "Field shape kinds and keys",
     what: "Every field-shape kind and the keys it admits, and the keys every kind admits (`*.`). JSON Schema replaces the table (§3.1).",
     rows: SHAPES,
-    enumerate: shapeKeys,
+    enumerate: () => V1_SHAPE_KEYS,
   },
   {
     title: "Engine keys",
     what: "Every key the v3 `config/engine.json` schema declares.",
     rows: ENGINE,
-    enumerate: () => keyPaths(ENGINE_CONFIG_SCHEMA),
+    enumerate: () => V1_ENGINE_KEYS,
   },
 ];
 
@@ -819,9 +986,10 @@ export function renderDispositions(): string {
     "v2 delivery does with it (contracts §1). `kernel`: kept by the engine, and",
     "where. `rule`: re-expressed as a CEL rule, in which library and under which",
     "id; each landed with its library and its test set (contracts §12 step 5).",
-    "`dropped`: removed, with the line `CHANGELOG.md` carries for it. The ids are",
-    "enumerated from the v1 tree by the generator, which fails when one has no row",
-    "or a row names nothing, so the table cannot fall behind the code it describes.",
+    "`dropped`: removed, with the line `CHANGELOG.md` carries for it. The ids were",
+    "enumerated from the v1 tree while it was in the repository; it left in step 6,",
+    "and the generator holds that enumeration as data and fails when an id has no",
+    "row or a row names nothing.",
     "",
   ];
   const totals = { kernel: 0, rule: 0, dropped: 0 };

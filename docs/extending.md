@@ -1,5 +1,12 @@
 # Extending wikiwright
 
+> **Step 6 of the v2 delivery.** This document describes the v1 law — the
+> JSON constitution, the module registration API, the standard library, the
+> old verbs — which left the engine in step 6. The documentation step of the
+> delivery rewrites it; until then `docs/cli.md`, `docs/architecture.md`,
+> `docs/roadmap.md`, `docs/v2-dispositions.md` and `CHANGELOG.md` describe
+> what the engine does.
+
 The engine has four layers, and the last three register through one API:
 
 ```text
