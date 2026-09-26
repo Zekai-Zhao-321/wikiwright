@@ -195,8 +195,11 @@ export function resolveRelations(page: ParsedPage, names: VaultNames): void {
   }
 }
 
-/** The page-scope ids of the table: what a page's coverage is counted over. */
-const PAGE_ROWS = VERDICT_TABLE.filter((row) => row.scope === "page").map((row) => row.id);
+/**
+ * The ids a page's coverage is counted over: the page rows, and the vault
+ * rows a page takes part in (its names, its type's instances).
+ */
+const PAGE_ROWS = VERDICT_TABLE.filter((row) => row.scope !== "law").map((row) => row.id);
 
 /** The findings of one page, and which passes judged it. */
 export interface PageJudgment {
@@ -247,6 +250,7 @@ export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): P
   const parsed = page.read.page;
   for (const id of ["malformed-frontmatter", "duplicate-key", "frontmatter-not-mapping"])
     judged.add(id);
+  if (!overlaid) judged.add("identity-collision");
   judged.add("type-unknown");
   const refused = readFindings(parsed, page.path);
   if (refused !== undefined) {
@@ -256,6 +260,7 @@ export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): P
   const type = parsed.type;
   if (type === undefined) return out;
   if (!overlaid) judged.add("abstract-type");
+  if (!overlaid && type.instances !== null) judged.add("instances-min").add("instances-max");
   if (type.abstract && !overlaid) {
     out.findings.push({
       rule: "abstract-type",

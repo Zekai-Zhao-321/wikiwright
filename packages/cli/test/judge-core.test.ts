@@ -161,6 +161,46 @@ describe("page references", () => {
   });
 });
 
+describe("target_root", () => {
+  it("holds a page reference to the root it names: a source root, or the content roots", async () => {
+    const { engineJson } = await import("./fixtures/garden-law.ts");
+    const extra = {
+      "config/engine.json": engineJson({ content_roots: ["wiki", "raw"] }),
+      "constitution/types/packet.yaml":
+        "type: packet\nrole: reference\ndescription: A seed packet.\n",
+      "constitution/types/guide.yaml":
+        "type: guide\nrole: hub\ndescription: A route.\nfields:\n  type: object\n  properties:\n    seed: { $ref: '#/$defs/page-ref', target_root: raw }\n    home: { $ref: '#/$defs/page-ref', target_root: content }\n",
+      "raw/Seed packet.md": "---\ntype: packet\ntitle: Seed packet\n---\n",
+    };
+    const at = (seed: string) =>
+      judgeVault({
+        ...extra,
+        "wiki/Start.md": `---\ntype: guide\ntitle: Start\nseed: ${seed}\nhome: ${seed}\n---\n`,
+      });
+    expect(only(await at("Seed packet"), "page-ref-type")).toEqual([]);
+    expect(only(await at("Herb bed"), "page-ref-type")).toMatchObject([
+      { details: { kind: "root", field: "seed", root: "raw", target: "wiki/Herb bed.md" } },
+    ]);
+  });
+});
+
+describe("coverage by id", () => {
+  it("counts the vault rows on the pages that take part in them", async () => {
+    const verdict = await judgeVault({
+      "constitution/types/guide.yaml":
+        "type: guide\nrole: hub\ndescription: A route.\ninstances: { max: 1 }\n",
+    });
+    expect(verdict.coverage["identity-collision"]).toEqual({
+      evaluated: 3,
+      not_applicable: 0,
+      unevaluated: 0,
+    });
+    expect(verdict.coverage["instances-max"]).toMatchObject({ evaluated: 1, not_applicable: 2 });
+    expect(Object.keys(verdict.coverage)).not.toContain("rule-untested");
+    expect(Object.keys(verdict.coverage)).toContain("known-bed");
+  });
+});
+
 describe("the tags vocabulary", () => {
   it("reports a tag outside the bundle's tags vocabulary, and a retired one with its successor", async () => {
     const verdict = await judgeVault({
