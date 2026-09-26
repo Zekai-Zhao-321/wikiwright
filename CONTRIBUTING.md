@@ -111,12 +111,12 @@ else is not covered.
   and `gate`; its warnings only the pins measured live), `routing-xor`,
   `coverage-coherence` and `generated-tracked` (its `generated/` must be
   what this build renders). `starter-fixtures` holds the v1 `code` starter
-  against the frozen v1 copy under `fixtures/v1/devwiki`. The two handbooks under `fixtures/handbooks`
-  are held at zero findings of any severity under `check` by
-  `fixture-verdicts`, their tracked `generated/` and their rendered exports
-  under `skills/` by `generated-tracked`, the two-bundle scenario over
-  them by `multi-bundle`, and a copy of their exports, installed as a host
-  installs it, by `export-copy`.
+  against the frozen v1 copy under `fixtures/v1/devwiki`. The two handbooks
+  under `fixtures/handbooks` are held at zero findings of any severity under
+  `check` and `gate` by `fixture-verdicts` and their tracked `generated/` by
+  `generated-tracked`; the old table's two-bundle scenario (`multi-bundle`)
+  and its export copy (`export-copy`) read their frozen v1 copies under
+  `fixtures/v1/handbooks`.
 
 ## Measuring command performance
 
@@ -145,16 +145,16 @@ logical change is one commit).
 | File | Generator |
 |---|---|
 | `devwiki/generated/*`, the brief and the queue included | `wikiwright check --write --root devwiki` |
-| `fixtures/handbooks/*/generated/*`, the briefs included, and `fixtures/handbooks/*/skills/*`, the rendered exports | `wikiwright check --write --root fixtures/handbooks/orchard`, and the same for `allotment` |
+| `fixtures/handbooks/*/generated/*`, `fixtures/memory-synth/generated/*` and `fixtures/minimal-vault/generated/*`, the briefs and the queues included | `wikiwright check --write --root <corpus>` |
 | `packages/cli/skills/wikiwright-maintain/lint-response.md` | `bun tools/render-playbook.ts` (`--check` verifies) |
 | the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies, and the suite runs it with nothing on PATH) |
 | `packages/core/src/identity/casefold-data.ts` | `bun tools/generate-casefold.ts` |
 
-`freshness --root devwiki` measures every devwiki page against this
-repository and holds its citations to the pin; `bun tools/uncovered.ts`
-lists the source directories no page covers. devwiki's pins name this
-repository's commits, so a copy of the tree with fresh history makes
-`freshness --root devwiki` report every pin `unknown`; the repair is to
+`check --root devwiki` measures every devwiki pin against this repository
+and holds its citations to the pin; `bun tools/uncovered.ts` lists the
+source directories no page covers. devwiki's pins name this repository's
+commits, so a copy of the tree with fresh history makes `check --root
+devwiki` report every pin `pin-unknown`; the repair is to
 re-read the covered paths at the copy's first commit and re-pin
 (`docs/roadmap.md`, "Copying the tree without its history").
 

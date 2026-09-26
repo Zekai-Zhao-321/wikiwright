@@ -35,11 +35,11 @@ own `devwiki`.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
-test file is written to `bun:test`. The suite is 2,201 tests across 150
+test file is written to `bun:test`. The suite is 2,226 tests across 152
 files, and the gate, `bun run check`, passed all of them three times in a
-row on 2026-09-26, at the end of the review fixes to the v2 delivery's
-fourth step, the verbs over the type-document law (§The v2 verbs answer a bundle on schema version
-4; the corpora are still on the old law). It judges five corpora (`devwiki`, `fixtures/memory-synth`,
+row on 2026-09-26, at the end of the v2 delivery's fifth step, which moved
+every corpus onto the type-document law (§The v2 verbs answer a bundle on
+schema version 4). It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
 the module ladder end to end twice: with a neutral module fixture under
@@ -650,11 +650,11 @@ Each stays unbuilt until a bundle needs it.
   Its argv reinstalls the hook, chain kept; a foreign hook is not listed.
 - **A devwiki pin's clean state is `unchanged`, never `current`.** A page
   pinned inside the repository it documents is one commit past its pin as
-  soon as the pin is committed. `freshness --root devwiki` holds it to the
+  soon as the pin is committed. `check --root devwiki` holds it to the
   covering diff: `unchanged` (head moved, covering diff empty) is the clean
   word; `stale` names a page to re-read and re-pin, and only after
   re-reading it.
-- **A devwiki page cites the repository, never the build.** `freshness
+- **A devwiki page cites the repository, never the build.** `check
   --root devwiki` holds every backticked repository path to the pin;
   `packages/cli/dist/main.js` and `devwiki/node_modules` exist on a machine
   and at no commit, so a page names them as `dist/main.js` under
@@ -664,12 +664,11 @@ Each stays unbuilt until a bundle needs it.
 ## Copying the tree without its history
 
 Every devwiki page is pinned to a commit of this repository (`pin`, with
-`origin: .`), and `freshness --root devwiki` measures each pin against the
+`origin: .`), and `check --root devwiki` measures each pin against the
 enclosing repository's history. A copy of the tree with fresh history —
 one squashed commit, or a new repository seeded from the files — has no
-such commits: `freshness` reports every pin `unknown`, with
-`pin-unknown-to-origin` on each page, because the commit a pin names does
-not exist there.
+such commits: `check` reports every pin `unknown`, with `pin-unknown` on
+each page, because the commit a pin names does not exist there.
 
 The honest repair is to re-read each page's covered paths at the copy's
 first commit and re-pin it there. The bytes are the same, so the read is
@@ -1037,18 +1036,15 @@ its old self over any other root. What the rewritten verbs leave, so far:
   `bun test ./<file>` keeps, and the case holds under both.
 - **A test that stamps a date reads the clock.** Set `WIKIWRIGHT_TODAY` in
   any test that spawns `write` or `new`, or the stamp moves with the day.
-- **The corpora are fixtures.** A change to `devwiki`'s pages or
-  constitution is judged by `starter-fixtures` (under the `code` starter's
-  types merged with devwiki's own vocabularies the error set must equal
-  devwiki's own, so a concrete type devwiki adds must exist in the starter,
-  while a tag or a label is devwiki's to register), `routing-xor` (its
-  `lint` must be clean) and `generated-tracked` (its `generated/` must be
-  what this build renders). Regenerate `devwiki/generated`, the brief
-  included, with `wikiwright check --write --root devwiki` after any page
-  edit or an engine change that moves the brief. The two handbooks under
-  `fixtures/handbooks` are held at zero findings under `check` by
-  `fixture-verdicts` and their tracked `generated/` and rendered exports
-  under `skills/` by `generated-tracked`; an engine change that moves the
-  writer's brief, or what an export carries, moves theirs too, and
-  `wikiwright check --write --root fixtures/handbooks/<name>` regenerates each;
-  they declare no module.
+- **The corpora are fixtures, all on the v2 law.** A change to `devwiki`'s
+  pages or constitution is judged by `fixture-verdicts` (no error under
+  `check` and `gate`, its warnings only its pins), `routing-xor`,
+  `coverage-coherence` and `generated-tracked` (its `generated/` must be
+  what this build renders). Regenerate `devwiki/generated`, the brief and
+  the queue included, with `wikiwright check --write --root devwiki` after
+  any page edit or an engine change that moves the brief. The two handbooks
+  under `fixtures/handbooks` are held at zero findings under `check` and
+  `gate` by `fixture-verdicts` and their tracked `generated/` by
+  `generated-tracked`; an engine change that moves the brief moves theirs
+  too, and `wikiwright check --write --root fixtures/handbooks/<name>`
+  regenerates each.
