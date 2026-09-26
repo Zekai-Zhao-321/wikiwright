@@ -154,6 +154,27 @@ describe("exit 2 vs exit 5 never blur (docs/cli.md §The envelope)", () => {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
+
+  it("the gate names a missing or non-directory root as bundle-not-found", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "ww-exit-"));
+    try {
+      const file = join(tmp, "not-a-directory");
+      writeFileSync(file, "plain file\n");
+      for (const root of [join(tmp, "missing"), file]) {
+        const result = runCli([CLI, "gate", "--root", root], {
+          cwd: tmp,
+          encoding: "utf8",
+          env: { ...process.env, ...PINNED_CLOCK },
+        });
+        const envelope = JSON.parse(result.stdout) as Run["envelope"];
+        assert.equal(result.status, 3, result.stdout);
+        assert.equal(envelope.error?.type, "not_found");
+        assert.equal(envelope.error?.code, "bundle-not-found");
+      }
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
 });
 
 /** Every `fail(<command>, "<type>", "<code>", …)` the CLI's sources spell out. */

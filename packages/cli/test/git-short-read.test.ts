@@ -233,6 +233,36 @@ function addedRepo(): string {
   return tmp;
 }
 
+/** A first commit staged but not yet made: the staged diff still lists every path. */
+function unbornRepo(): string {
+  const tmp = mkdtempSync(join(tmpdir(), "ww-short-read-first-"));
+  writeNoteBundle(tmp, ["Fern", "Moss", "Reed", "Sedge"]);
+  git(tmp, "init", "-q", "-b", "main");
+  git(tmp, "add", "-A");
+  return tmp;
+}
+
+describe("the index cross-check before the first commit", () => {
+  let tmp = "";
+  let PATH = "";
+  beforeAll(() => {
+    if (POSIX_ONLY) return;
+    tmp = unbornRepo();
+    PATH = cuttingGit(tmp);
+  });
+  afterAll(() => {
+    if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("refuses a well-formed index listing cut at a record boundary", () => {
+    if (POSIX_ONLY) return;
+    assert.equal(run(tmp, PATH, ["gate"]).status, 0);
+    const cut = run(tmp, PATH, ["gate"], "ls-files -s -z", "record");
+    assert.equal(cut.status, 1, said(cut));
+    assert.equal((cut.envelope["error"] as { code: string }).code, "git-inconsistent-read");
+  });
+});
+
 describe("two git answers that disagree are git-inconsistent-read (docs/roadmap.md)", () => {
   let tmp = "";
   let PATH = "";

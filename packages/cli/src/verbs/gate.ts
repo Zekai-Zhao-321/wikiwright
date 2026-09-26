@@ -56,6 +56,7 @@ import {
   engineMismatch,
   lawOf,
   stateContentDigest,
+  stateRefusal,
   typeLawIdentity,
   withIdentity,
 } from "../typelaw.ts";
@@ -69,6 +70,8 @@ async function indexOf(root: string): Promise<Read<IndexRead>> {
   } catch (e) {
     // A cut or contradicted answer is refused as itself.
     if (e instanceof GitAnswerRefused) throw e;
+    const state = stateRefusal("gate", e);
+    if (state !== undefined) return { ok: false, result: state };
     const message = e instanceof Error ? e.message : String(e);
     if (message.includes("unmerged path")) {
       return {

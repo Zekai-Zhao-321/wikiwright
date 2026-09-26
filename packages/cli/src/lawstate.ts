@@ -368,6 +368,13 @@ export async function indexState(root: string): Promise<JudgeState> {
 
 /** `indexState`, with the reads it was made from. */
 export async function readIndex(root: string): Promise<IndexRead> {
+  let isDirectory = false;
+  try {
+    isDirectory = statSync(root).isDirectory();
+  } catch {
+    // An absent or unreadable path is no bundle, before any git child runs.
+  }
+  if (!isDirectory) throw new RootNotFound(root);
   const { top, bundle } = await repositoryPlace(root);
   const [listed, hasHead] = await inArgumentOrder([gitIndexEntries(top), gitHasHead(top)]);
   const unmerged = listed.find((e) => e.stage !== 0);
@@ -385,7 +392,9 @@ export async function readIndex(root: string): Promise<IndexRead> {
     const rel = inBundle(bundle, e.path);
     return rel !== undefined && regular(e.mode) && isContentPath(rel, roots);
   });
-  const changes = hasHead ? await gitStagedChanges(top) : [];
+  // `diff --cached` also names every staged path before the first commit.
+  // Read it then so a well-formed but shortened index listing is refused.
+  const changes = await gitStagedChanges(top);
   // The two answers describe one index. A path the staged diff says is in it
   // — added, modified, retyped, or the new name of a rename or copy — that
   // the listing does not hold means one of them is not whole, and a listing
