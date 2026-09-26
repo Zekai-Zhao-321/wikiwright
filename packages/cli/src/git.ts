@@ -331,6 +331,36 @@ export async function gitTreeEntries(dir: string, rev: string): Promise<string[]
     .filter((name) => name !== "");
 }
 
+/** One entry of a revision's tree, as `ls-tree -r` lists it: a blob, a link or a submodule. */
+export interface TreeListingEntry {
+  /** `100644`, `100755`, `120000` (a symbolic link) or `160000` (a submodule). */
+  mode: string;
+  /** `blob`, or `commit` for a submodule. */
+  type: string;
+  object: string;
+  /** Repository-relative, as git spells it. */
+  path: string;
+}
+
+/**
+ * Every entry of a revision's tree, recursively, from the repository's top
+ * level whatever directory `dir` is (`--full-tree`), NUL-framed: the one
+ * listing the v2 revision state and its law are read from.
+ */
+export async function gitTreeListing(dir: string, rev: string): Promise<TreeListingEntry[]> {
+  const args = ["ls-tree", "-r", "-z", "--full-tree", rev];
+  const out: TreeListingEntry[] = [];
+  for (const record of terminated(args, await git(dir, args), "\0").split("\0")) {
+    if (record === "") continue;
+    const tab = record.indexOf("\t");
+    if (tab < 0) continue;
+    const [mode, type, object] = record.slice(0, tab).split(" ");
+    if (mode === undefined || type === undefined || object === undefined) continue;
+    out.push({ mode, type, object, path: record.slice(tab + 1) });
+  }
+  return out;
+}
+
 /**
  * The type of the object `<rev>:<path>` names — `blob`, `tree` — or undefined
  * where the revision's tree holds no such path. A missing path is an answer,

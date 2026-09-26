@@ -139,14 +139,7 @@ describe("engine.json v4", () => {
         .filter(([, reader]) => reader === null)
         .map(([key]) => key)
         .sort(),
-    ).toEqual([
-      "commit_prefixes",
-      "content_roots",
-      "engine",
-      "folder_tag_aliases",
-      "folder_tags",
-      "label",
-    ]);
+    ).toEqual(["commit_prefixes", "engine", "folder_tag_aliases", "folder_tags", "label"]);
   });
 
   it("refuses an absent file and a file that is not JSON", () => {

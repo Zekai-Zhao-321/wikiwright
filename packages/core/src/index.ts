@@ -294,6 +294,7 @@ export { parseRelation, rangeAdmits } from "./stdlib/relations.ts";
 // reaches a caller through `transitionSeam` rather than through this barrel:
 // `write --correct` under a kit's grammar must not silently mean "under claims".
 export { boundedLevenshtein, trigramJaccard, trigrams } from "./text/index.ts";
+export * from "./verdict/index.ts";
 export type { Comparator, Semver } from "./version/index.ts";
 export { parseEngineRange, parseSemver, satisfiesEngineRange } from "./version/index.ts";
 export type {
