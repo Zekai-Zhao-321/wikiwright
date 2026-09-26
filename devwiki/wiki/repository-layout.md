@@ -4,7 +4,7 @@ title: Repository layout
 description: "Current file-to-purpose map for the v2 engine repository."
 tags: [repo]
 pin:
-  commit: 1bebda0ca948b352d74c663d205f2963aea26c7f
+  commit: 11ee47eee1fca13918497685bd0e4f8dc4d35163
   origin: .
   covers: ["packages/core/src/index.ts", "packages/cli/src/main.ts", "libraries/kit-code/types/subsystem.yaml", "devwiki/config/engine.json", "fixtures/handbooks/orchard/config/engine.json", "tools/run-suite.ts", "test/episode.test.ts", "docs/architecture.md", "AGENTS.md"]
 ---
