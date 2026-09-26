@@ -67,7 +67,7 @@ packages/cli/src/
   typelaw.ts   v2: the law a state carries loaded or refused, the engine range, the bundle block
   generated.ts v2: generated/ — the brief and the kernel's four files, rendered, compared and written
   pins.ts      v2: every pin measured against the local repository, and the stale sources a page links
-packages/cli/skills/          the three shipped skills (consume, write, maintain) and the generated playbook
+docs/skills/                  the three skill documents (consume, write, maintain) and the generated playbook
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
 libraries/kit-code/           the code wiki's type library of the v2 law, id code: the page kinds, anchored, the relation labels, their rule tests and examples
 libraries/kit-garden/         the neutral test library of the v2 law, id garden: documents, rule tests, examples; the allotment handbook imports it
@@ -206,7 +206,7 @@ invokes it. Windows has no carrier in this repository and is unverified.
 - Generated files have one generator and are never hand-edited:
   `devwiki/generated/*`, the brief included (`wikiwright check --write --root
   devwiki`),
-  `packages/cli/skills/wikiwright-maintain/lint-response.md`
+  `docs/skills/wikiwright-maintain/finding-response.md`
   (`bun tools/render-playbook.ts`), `docs/cli.md`'s verb block
   (`bun docs/render-cli.ts --write`; the gate runs its `--check`), `packages/core/src/identity/casefold-data.ts`
   (`bun tools/generate-casefold.ts`).

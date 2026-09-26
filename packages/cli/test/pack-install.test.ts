@@ -154,13 +154,14 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
   );
 
   it(
-    "the tarball carries dist/ and the skills, and no source",
+    "the tarball carries dist/, and no source",
     () => {
       packAndInstall();
       const installed = join(CONSUMER ?? "", "node_modules", "wikiwright");
       assert.equal(existsSync(join(installed, "dist", "main.js")), true, "the binary");
       assert.equal(existsSync(join(installed, "dist", "bin.js")), true, "the executable");
-      assert.equal(existsSync(join(installed, "skills")), true, "the shipped skills");
+      // The skill documents moved to docs/skills in step 6: the package ships none.
+      assert.equal(existsSync(join(installed, "skills")), false, "no skills");
       assert.equal(existsSync(join(installed, "constitutions")), false, "no starters");
       // The package root is no plugin: its manifest and hook scripts left (v2 step 6).
       assert.equal(existsSync(join(installed, ".claude-plugin")), false, "no plugin manifest");

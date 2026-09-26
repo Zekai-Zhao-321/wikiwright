@@ -214,7 +214,7 @@ does not cover.
 | [AGENTS.md](AGENTS.md) | the operating rules for an agent working in this repository |
 
 The bundle's own manual is its brief, `generated/BRIEF.md`, and the three
-skills under `packages/cli/skills/`: one for using a bundle, one for writing
+skill documents under `docs/skills/`: one for using a bundle, one for writing
 into it and one for maintaining it.
 
 ## Contributing

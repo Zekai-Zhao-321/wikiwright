@@ -392,6 +392,20 @@ Wanted, when several installed bundles cause targeting mistakes (the first
 delivery's trigger for the discovery scan): a scan of the host's skill
 directories, verified against each host's layout first.
 
+### The skill documents are read from the repository
+
+The three skill documents — for using, writing and maintaining a bundle —
+and the generated playbook live under `docs/skills/` since step 6 of the v2
+delivery: the package ships none of them, and nothing installs them into a
+bundle or a host, since `skills` and `init` left with the old verbs. An agent
+reads them from a checkout of this repository, and each bundle's own brief,
+`generated/BRIEF.md`, carries the verbs, the types and the vocabularies.
+
+Wanted, when repeated tasks lose time finding the right type or verb despite
+the brief (the first delivery's trigger for generated bundle skills): a way
+to hand the documents to a host with a bundle, run inside a host and
+recorded.
+
 ### What installed bundles have not been evaluated for
 
 The scenario test drives two handbooks end to end, mechanically. No
@@ -414,16 +428,6 @@ which is its update command. No environment variable turns a remote check
 on. A copy made by hand, or linked, is never compared with anything.
 
 Wanted: nothing in the engine while the installer owns replacement.
-
-### A bundle skill locates the runtime skill by name only
-
-A copy's `SKILL.md` requires the `wikiwright-consume` skill and says it ships
-in the engine's repository under `packages/cli/skills/`; no command installs
-the engine or that skill beside a copy, and the runtime skill's setup names
-the one route that exists, a clone and a build.
-
-Wanted: a published engine and kit, so the setup step and a bundle skill can
-name an install command.
 
 ### The staged gate reads a `node_modules` kit from the working tree
 

@@ -559,6 +559,23 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- The three skill documents move from `packages/cli/skills/` to
+  `docs/skills/` (v2 contracts §1, §12 step 6), and the package ships none of
+  them. They are rewritten against the eight verbs: `wikiwright-consume` is
+  the reader's skill — the setup, `search`, `read` with its sections, digest
+  and `status`, `type show --brief`, the proposal a knowledge problem becomes
+  — and no longer the runtime skill of installed bundle copies, which left
+  with the exports; `wikiwright-write` starts a page from `type show
+  --brief`'s skeleton and lands a cluster as one `write --from` batch;
+  `wikiwright-maintain` adds a rule's test set and the `law-change:` line,
+  names the gate's refusal text, and loses the hook reinstall and the export
+  practices. The playbook is `finding-response.md` (it was
+  `lint-response.md`, named for a verb that left), rendered by
+  `tools/render-playbook.ts` from the verdict table — every code the judge
+  and the verbs beside it emit, with its severity, its route and the v1 ids
+  it carries — where it rendered the old pass table and the fixer registry.
+  The renderer writes only when run as a script; imported by the test that
+  holds the file to it, it had rewritten the file in the checkout.
 - **`fixtures/minimal-vault` is on the v2 law** (v2 contracts §12 step 5),
   migrated by `tools/migrate-spellings.ts`: `config/engine.json` at schema
   version 4, `constitution/` with the `test-case` type (role `procedure`),

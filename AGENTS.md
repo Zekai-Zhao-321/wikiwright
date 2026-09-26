@@ -66,7 +66,8 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
 - **Generated files have one generator.** `devwiki/generated`, the brief
   included, from `wikiwright check --write --root devwiki`; the two
   handbooks' `generated/`, their briefs included, from
-  `wikiwright check --write --root fixtures/handbooks/<name>`; the playbook from
+  `wikiwright check --write --root fixtures/handbooks/<name>`; the playbook,
+  `docs/skills/wikiwright-maintain/finding-response.md`, from
   `bun tools/render-playbook.ts`; `docs/cli.md`'s verb block from
   `bun docs/render-cli.ts --write`; `docs/v2-dispositions.md` from
   `bun tools/dispositions.ts`.
@@ -104,7 +105,7 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
 
 - `packages/core`: the kernel and the standard library.
 - `packages/cli`: the binary, one module per verb under `src/verbs/`, the
-  eight verbs of the v2 contracts; the skills under `skills/`.
+  eight verbs of the v2 contracts.
 - `packages/kit-code`: `@wikiwright/kit-code`, the v1 domain kit — a
   code wiki's types, `anchored` fragment, relation labels, templates and
   discipline — which nothing loads since the old verbs left; it leaves in
@@ -130,4 +131,6 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
   and the benchmark of `check` and `gate`.
 - `test/`: the tests of the built CLI as a whole — the pipe probes and the
   compiled binary.
-- `docs/`: the documentation, and the CLI reference renderer.
+- `docs/`: the documentation, the CLI reference renderer, and under
+  `docs/skills/` the three skill documents — for using, writing and
+  maintaining a bundle — with the generated playbook.
