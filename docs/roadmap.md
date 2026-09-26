@@ -169,8 +169,10 @@ of a green structural check.
 Bun is pinned by `.bun-version` and each `engines.bun`. The workflow
 declares Linux and macOS, but this branch's host-runner execution has not
 been independently verified here. `sh scripts/release-matrix.sh` is a
-manual pre-release gate; it has not run for this v2 continuation.
-Windows remains unverified.
+manual pre-release gate. On 2026-09-26 it passed all six arms on Darwin
+arm64 under Bun 1.3.11: full gate, runtime pin, both package tarballs,
+source/build verdict equality, clean build and corpus verdicts. That run
+does not verify Windows or another operating system.
 
 The suite runs several test files concurrently. Heavy machine load can
 cause timeout failures; a passing rerun alone does not prove why an

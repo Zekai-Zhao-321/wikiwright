@@ -76,6 +76,16 @@ version` prints the engine version and the commit a binary was built from.
   `--set`. `--root` names a bundle; `gate` judges the index;
   `write --from` accepts drafts and operations; `type show --brief`
   supplies the skeleton; `--help --json` replaces `schema`.
+  The complete set of documented v1 flag names absent from the v2 command
+  table is: `--append`, `--bundle`, `--candidate`, `--chain`,
+  `--coexist`, `--constitution`, `--core`, `--correct`, `--date`,
+  `--dest`, `--expect`, `--explain`, `--fast-forward`, `--fetch`,
+  `--force`, `--inbound`, `--item`, `--kind`, `--label`, `--line`,
+  `--missing`, `--not-any-of`, `--outbound`, `--package`, `--page`,
+  `--propose`, `--reason`, `--rename`, `--replace-core`, `--retract`,
+  `--rewrite-links`, `--role`, `--set`, `--since`, `--staged`, `--stdin`,
+  `--superseded-by`, `--target`, and `--to`. The `--version` alias still
+  reaches the new `version` verb.
 - Remote freshness, its network fetch/cache and `generated/freshness.json`
   left. Remote-origin pins are `pin-unmeasured`, not silently current.
   Exports, installed copies, the `bundle-readonly` guard, and
