@@ -279,7 +279,6 @@ async function run(args: CommandArgs): Promise<CommandResult> {
 
 export const checkCommand: CommandSpec = {
   name: "check",
-  role: "writer",
   summary:
     "Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first.",
   positionals: [],

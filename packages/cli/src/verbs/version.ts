@@ -7,7 +7,6 @@ import type { CommandSpec } from "../spec.ts";
 
 export const versionCommand: CommandSpec = {
   name: "version",
-  role: "consumer",
   summary:
     "Report the engine version and the commit this binary was BUILT from (--version / -v alias it).",
   positionals: [],

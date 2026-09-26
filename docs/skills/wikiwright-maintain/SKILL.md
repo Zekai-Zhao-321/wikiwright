@@ -98,9 +98,9 @@ project has already paid for once.
 ## A bundle's guidance is for that bundle; guardrails are not walls
 
 Guidance a bundle carries — its brief, its start page — governs operations on
-that bundle and on no other. The session's role is a guardrail on the command
-line, not isolation: a path reaches any directory, and nothing stops a process
-that does not ask the engine. Which libraries a bundle imports is what its
+that bundle and on no other. Nothing in the engine is isolation: a path
+reaches any directory, and nothing stops a process that does not ask the
+engine. Which libraries a bundle imports is what its
 `config/engine.json` declares; adding or changing one is a reviewed change to
 the bundle's law, and no skill, brief or page makes it.
 

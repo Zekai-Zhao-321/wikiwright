@@ -225,7 +225,6 @@ async function run(args: CommandArgs): Promise<CommandResult> {
 
 export const ruleCommand: CommandSpec = {
   name: "rule",
-  role: "maintainer",
   summary:
     "Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision.",
   positionals: [{ name: "subcommand", required: true }],

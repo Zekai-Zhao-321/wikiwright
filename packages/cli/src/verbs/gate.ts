@@ -333,7 +333,6 @@ async function run(args: CommandArgs): Promise<CommandResult> {
 
 export const gateCommand: CommandSpec = {
   name: "gate",
-  role: "maintainer",
   summary:
     "Judge what the commit would contain: the index with HEAD as its base, the law diff, and under --commit-msg the message's prefix and its law-change line.",
   positionals: [],

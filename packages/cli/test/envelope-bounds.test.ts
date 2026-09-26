@@ -116,7 +116,7 @@ describe("--out (v2 contracts §9)", () => {
     expect(envelope.error?.details?.["exit_code"]).toBe(0);
   });
 
-  it("never writes inside the bundle the invocation reads, whatever the role", () => {
+  it("never writes inside the bundle the invocation reads", () => {
     const garden = gardenBundle();
     const basil = readFileSync(join(garden, "wiki/Basil.md"), "utf8");
     const start = readFileSync(join(garden, "wiki/Start.md"), "utf8");
@@ -137,7 +137,7 @@ describe("--out (v2 contracts §9)", () => {
       const r = runCli([CLI, ...args], {
         cwd,
         encoding: "utf8",
-        env: { ...process.env, WIKIWRIGHT_ROLE: "consumer" },
+        env: process.env,
       });
       expect(r.status).toBe(2);
       const envelope = JSON.parse(r.stdout) as Envelope;
@@ -150,7 +150,7 @@ describe("--out (v2 contracts §9)", () => {
     const r = runCli([CLI, "read", "Basil", "--root", garden, "--out", outside], {
       cwd: dir,
       encoding: "utf8",
-      env: { ...process.env, WIKIWRIGHT_ROLE: "consumer" },
+      env: process.env,
     });
     expect(r.status).toBe(0);
     expect((JSON.parse(readFileSync(outside, "utf8")) as Envelope).ok).toBe(true);

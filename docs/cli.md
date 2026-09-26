@@ -63,8 +63,7 @@ Every verb that reads a bundle's law names the bundle it read in
 
 The block is computed by the verb from the state it judged; the gate's names
 the index's law and content. An envelope answered before the verb runs names
-no bundle: `--help`, a refusal of the arguments, a `role-forbidden`, a root
-with no bundle.
+no bundle: `--help`, a refusal of the arguments, a root with no bundle.
 
 `check` and `gate` answer with the verdict: `findings` (each `rule`,
 `severity`, `path`, `location` — `{kind: "page"}` or `{kind: "section",
@@ -98,7 +97,7 @@ directory, or the nearest ancestor of it carrying `config/engine.json` or
 `config/constitution.json`, every link resolved — is `out-inside-bundle`
 (exit 2) on stdout, the same `details.exit_code` beside `out` and `bundle`:
 the envelope never overwrites a page, a law file or a generated file, which
-no writing verb's checks and no `WIKIWRIGHT_ROLE` bound would see.
+no writing verb's checks would see.
 
 The writing verbs judge with the same judge. `write --from` answers with the
 plan it landed or would land (`ops`, `wrote`), the operations of `ops.json`
@@ -165,7 +164,6 @@ exit code. `check` plans nothing without `--write` or `--fix`.
 
 | Variable | Read by | Effect |
 |---|---|---|
-| `WIKIWRIGHT_ROLE` | the shell, before parsing | `consumer`, `writer` or `maintainer` (the default when unset). A verb above the caller's rank exits 2 with `role-forbidden` and `details.valid_commands` filtered to the caller's rank; an unrecognised value is `role-unknown`, never a fallback. A guard rail for an agent session, not a security boundary |
 | `WIKIWRIGHT_TODAY` | `write`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_GIT_TIMEOUT_MS` | the shell, before parsing; every git child | how long one git child may run, a whole number of milliseconds from 1 to 2147483647; 60000 when unset or empty. A child still running then is killed and the verb refused as `git-timeout` (exit 1); any other value is `git-timeout-invalid` (exit 2) before any verb runs |
 
@@ -317,16 +315,16 @@ Global flags, accepted by every verb:
 | `--json` | with --help: print the verb's schema, the registry row an agent reads |
 | `--out <value>` | write the whole envelope to this file and print a two-line pointer to it on stdout |
 
-| Verb | Role | Writes | Summary |
-|---|---|---|---|
-| [`check`](#check) | writer | yes | Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first. |
-| [`gate`](#gate) | maintainer | no | Judge what the commit would contain: the index with HEAD as its base, the law diff, and under --commit-msg the message's prefix and its law-change line. |
-| [`read`](#read) | consumer | no | Return a page's sections verbatim under a byte budget, with its bytes digest and its status: stale pins, and the queue's unresolved rules. |
-| [`rule`](#rule) | maintainer | no | Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision. |
-| [`search`](#search) | consumer | no | Deterministic lexical search with match reasons and a coverage block; each result carries its page's status. |
-| [`type`](#type) | consumer | no | Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type. |
-| [`version`](#version) | consumer | no | Report the engine version and the commit this binary was BUILT from (--version / -v alias it). |
-| [`write`](#write) | writer | yes | Land a directory of drafts and its ops.json (bases, move, retire, retract, supersede) as one batch, judged together with the disk as its base. |
+| Verb | Writes | Summary |
+|---|---|---|
+| [`check`](#check) | yes | Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first. |
+| [`gate`](#gate) | no | Judge what the commit would contain: the index with HEAD as its base, the law diff, and under --commit-msg the message's prefix and its law-change line. |
+| [`read`](#read) | no | Return a page's sections verbatim under a byte budget, with its bytes digest and its status: stale pins, and the queue's unresolved rules. |
+| [`rule`](#rule) | no | Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision. |
+| [`search`](#search) | no | Deterministic lexical search with match reasons and a coverage block; each result carries its page's status. |
+| [`type`](#type) | no | Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type. |
+| [`version`](#version) | no | Report the engine version and the commit this binary was BUILT from (--version / -v alias it). |
+| [`write`](#write) | yes | Land a directory of drafts and its ops.json (bases, move, retire, retract, supersede) as one batch, judged together with the disk as its base. |
 
 ### check
 
@@ -334,7 +332,7 @@ Global flags, accepted by every verb:
 
 Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first.
 
-Role: `writer`. Writes: yes (accepts `--dry-run`).
+Writes: yes (accepts `--dry-run`).
 
 | Flag | Meaning |
 |---|---|
@@ -359,7 +357,7 @@ wikiwright check --path wiki/Basil.md --all
 
 Judge what the commit would contain: the index with HEAD as its base, the law diff, and under --commit-msg the message's prefix and its law-change line.
 
-Role: `maintainer`. Writes: no.
+Writes: no.
 
 | Flag | Meaning |
 |---|---|
@@ -380,7 +378,7 @@ wikiwright gate --commit-msg .git/COMMIT_EDITMSG
 
 Return a page's sections verbatim under a byte budget, with its bytes digest and its status: stale pins, and the queue's unresolved rules.
 
-Role: `consumer`. Writes: no.
+Writes: no.
 
 | Flag | Meaning |
 |---|---|
@@ -399,7 +397,7 @@ wikiwright read "Herb bed" --budget 800
 
 Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision.
 
-Role: `maintainer`. Writes: no.
+Writes: no.
 
 | Flag | Meaning |
 |---|---|
@@ -420,7 +418,7 @@ wikiwright rule try --type planting --section History --expr "section.items.all(
 
 Deterministic lexical search with match reasons and a coverage block; each result carries its page's status.
 
-Role: `consumer`. Writes: no.
+Writes: no.
 
 | Flag | Meaning |
 |---|---|
@@ -450,7 +448,7 @@ wikiwright search basil --band identity
 
 Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type.
 
-Role: `consumer`. Writes: no.
+Writes: no.
 
 | Flag | Meaning |
 |---|---|
@@ -468,7 +466,7 @@ wikiwright type list
 
 Report the engine version and the commit this binary was BUILT from (--version / -v alias it).
 
-Role: `consumer`. Writes: no.
+Writes: no.
 
 ```text
 wikiwright version
@@ -481,7 +479,7 @@ wikiwright --version
 
 Land a directory of drafts and its ops.json (bases, move, retire, retract, supersede) as one batch, judged together with the disk as its base.
 
-Role: `writer`. Writes: yes (accepts `--dry-run`).
+Writes: yes (accepts `--dry-run`).
 
 | Flag | Meaning |
 |---|---|

@@ -42,9 +42,9 @@ packages/core/src/
   verdict/     v2, beside judge/: judgeTypeLaw(state, law), its table of codes and routes, the grammar checks, the kernel transitions, the folder tags, CEL evaluation, exceptions, rule tests and examples, the law diff
   artifacts/   v2, beside generate/: graph.json, manifest.json, tag-catalog.md and queue.md of a state under its law
 packages/cli/src/
-  main.ts      dispatch to the command table, the role bound, --help and --help --json, the envelope's bound and --out, one stderr writer
+  main.ts      dispatch to the command table, --help and --help --json, the envelope's bound and --out, one stderr writer
   commands.ts  the command table, COMMANDS, and nothing else
-  spec.ts      CommandSpec, FlagSpec, Plan, ROLE_RANK, declaredRole, DRY_RUN_FLAG
+  spec.ts      CommandSpec, FlagSpec, Plan, DRY_RUN_FLAG
   argv.ts      the parser built from the registry
   envelope.ts  ok, fail, EXIT, verdictEnvelope, capOptions
   clock.ts     today(): WIKIWRIGHT_TODAY or the wall clock, read once
@@ -103,7 +103,7 @@ by name when it breaks. Test files live under `packages/core/test`,
 | One pinned runtime | `.bun-version` is the running Bun and every `engines.bun` pins it exactly; no tool, hook, workflow or test spawns `node`, and `docs/cli.md`'s verb block renders, and matches, with nothing on PATH; the compiled binary (`bun run binary`) answers `--help` and `check` byte for byte as `bun dist/main.js` does | `bun-pin`, `binary` |
 | The shell has one clock | the verbs that stamp a date read `today()`; a test pins `WIKIWRIGHT_TODAY` and proves the pin reaches the page | `write-batch` |
 | One code per meaning | every `fail(` in the CLI uses a kebab-case code mapped to exactly one exit type | `exit-taxonomy` |
-| The command registry is the only surface | `--help`, `--help --json`, the brief and the parser render one table; every example a verb documents parses; the playbook is byte-identical to its generator's output | `command-table`, `per-command-help`, `envelope-bounds`, `verbs`, `skills`, `role-enforcement` |
+| The command registry is the only surface | `--help`, `--help --json`, the brief and the parser render one table; every example a verb documents parses; the playbook is byte-identical to its generator's output | `command-table`, `per-command-help`, `envelope-bounds`, `verbs`, `skills` |
 | The corpora are fixtures | every corpus judges to the verdict recorded for it under `check` and under the gate, its tracked `generated/` is what this build renders, and every library holds on its own | `fixture-verdicts`, `generated-tracked`, `libraries` |
 | Identity is Unicode-aware | NFC and full case folding through one seam, with CJK cases; unique basenames, aliases and titles | `identity`, `names-graph` |
 | Every bundle envelope names its bundle | a verb that reads a bundle's law adds `metadata.bundle` — engine.json's label, the real root, head, dirty, the law digest, the content digest over the pages it read — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs or to `version`; the generated brief's header prints the same law digest | `bundle-identity`, `check-verb`, `law-digests` |
@@ -117,9 +117,8 @@ converges).
 
 ## How a verdict is produced
 
-1. `main.ts` finds the verb in `COMMANDS`, applies `WIKIWRIGHT_ROLE`,
-   intercepts `--help` and `--help --json`, and parses argv under the
-   registry.
+1. `main.ts` finds the verb in `COMMANDS`, intercepts `--help` and
+   `--help --json`, and parses argv under the registry.
 2. The verb builds a state with one of the four constructors in
    `lawstate.ts` — the working tree, drafts over the disk, the index over
    HEAD, a revision — each reading the law's files from the same place as

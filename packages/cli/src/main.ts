@@ -16,16 +16,7 @@ import {
 } from "./envelope.ts";
 import { GitInconsistentRead, GitShortRead, GitTimedOut, gitTimeoutSetting } from "./git.ts";
 import { LinkedOutsideVault } from "./paths.ts";
-import {
-  type CommandSpec,
-  commandSchema,
-  declaredRole,
-  flagsOf,
-  GLOBAL_FLAGS,
-  ROLE_RANK,
-  type Role,
-  usageOf,
-} from "./spec.ts";
+import { type CommandSpec, commandSchema, flagsOf, GLOBAL_FLAGS, usageOf } from "./spec.ts";
 
 /** Where an envelope goes: stdout, or the file `--out` names. */
 interface Sink {
@@ -70,7 +61,7 @@ function bundleHolding(root: string): string | undefined {
 /**
  * `--out` never writes inside the bundle the invocation reads: the envelope
  * would overwrite a page, a law file or a generated file by a path no
- * writing verb's checks or `WIKIWRIGHT_ROLE`'s bound see.
+ * writing verb's checks see.
  */
 function outInsideBundle(result: CommandResult, out: string): CommandResult | undefined {
   if (invocationRoot === undefined) return undefined;
@@ -139,7 +130,6 @@ function emit(result: CommandResult, sink: Sink = {}): void {
 function commandHelp(spec: CommandSpec): CommandResult {
   return ok(spec.name, {
     name: spec.name,
-    role: spec.role,
     summary: spec.summary,
     usage: usageOf(spec),
     positionals: spec.positionals,
@@ -160,7 +150,7 @@ function helpResult(json: boolean): CommandResult {
   ).join("");
   return ok("help", {
     usage: `wikiwright <command> [arguments]${globals}`,
-    commands: COMMANDS.map((c) => ({ name: c.name, role: c.role, summary: c.summary })),
+    commands: COMMANDS.map((c) => ({ name: c.name, summary: c.summary })),
     schema:
       "run `wikiwright --help --json` for every verb's schema, or `wikiwright <command> --help --json` for one",
   });
@@ -225,51 +215,6 @@ async function runCommand(
 // envelope shape, one implementation.
 const VERSION_ALIASES = new Set(["--version", "-v"]);
 
-const ROLES = Object.keys(ROLE_RANK) as readonly Role[];
-
-/**
- * docs/cli.md §The envelope: the worker's tool policy, enforced by the binary
- * rather than by a skill's prose. An unrecognised value refuses — falling back
- * to `maintainer` would widen the surface exactly when the declaration was
- * wrong, which is a fail-open on the one switch whose purpose is bounding.
- */
-function currentRole(): Role | { unknown: string } {
-  const declared = declaredRole();
-  if (declared === undefined) return "maintainer";
-  return (ROLES as readonly string[]).includes(declared)
-    ? (declared as Role)
-    : { unknown: declared };
-}
-
-/**
- * docs/cli.md §brief: the bound is a rank comparison, so adding `writer` between
- * the two existing roles changed one function rather than every call site. The
- * refusal lists the verbs the CALLER's role may run — role-filtered, because a
- * list of everything is not an answer to "what may I do".
- */
-function roleRefusal(
-  spec: CommandSpec,
-  role: Role,
-  table: readonly CommandSpec[],
-): CommandResult | undefined {
-  const allowed = ROLE_RANK[role];
-  const details: Record<string, unknown> = {
-    role,
-    valid_commands: table.filter((c) => ROLE_RANK[c.role] <= allowed).map((c) => c.name),
-  };
-  if (ROLE_RANK[spec.role] <= allowed) return undefined;
-  return fail(
-    spec.name,
-    "usage",
-    "role-forbidden",
-    `"${spec.name}" is a ${spec.role} verb and WIKIWRIGHT_ROLE is ${role}`,
-    {
-      details,
-      hint: `run it as the ${spec.role}, or use one of the verbs in details.valid_commands`,
-    },
-  );
-}
-
 /**
  * The root an invocation names, read before its verb is chosen: `--root`'s
  * value, or the working directory.
@@ -304,16 +249,8 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
       sink,
     );
   } else {
-    const role = currentRole();
     const gitTimeout = gitTimeoutSetting();
-    if (typeof role !== "string") {
-      emit(
-        fail("wikiwright", "usage", "role-unknown", `WIKIWRIGHT_ROLE is "${role.unknown}"`, {
-          details: { valid_values: [...ROLES] },
-        }),
-        sink,
-      );
-    } else if (typeof gitTimeout !== "number") {
+    if (typeof gitTimeout !== "number") {
       emit(
         fail(
           "wikiwright",
@@ -326,14 +263,8 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
         ),
         sink,
       );
-    } else {
-      // Before --help and before parsing: a bounded caller cannot learn the
-      // shape of a verb it may not run, and no maintainer path is reached.
-      const refusal = roleRefusal(spec, role, COMMANDS);
-      if (refusal !== undefined) emit(refusal, sink);
-      else if (sink.wantsHelp && sink.wantsJson) emit(ok(spec.name, commandSchema(spec)), sink);
-      else if (sink.wantsHelp) emit(commandHelp(spec), sink);
-      else emit(await runCommand(spec, rest, COMMANDS), sink);
-    }
+    } else if (sink.wantsHelp && sink.wantsJson) emit(ok(spec.name, commandSchema(spec)), sink);
+    else if (sink.wantsHelp) emit(commandHelp(spec), sink);
+    else emit(await runCommand(spec, rest, COMMANDS), sink);
   }
 }

@@ -272,7 +272,6 @@ async function run(args: CommandArgs): Promise<CommandResult> {
 
 export const readCommand: CommandSpec = {
   name: "read",
-  role: "consumer",
   summary:
     "Return a page's sections verbatim under a byte budget, with its bytes digest and its status: stale pins, and the queue's unresolved rules.",
   positionals: [{ name: "page", required: true }],

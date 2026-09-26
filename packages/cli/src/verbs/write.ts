@@ -724,7 +724,6 @@ async function run(args: CommandArgs): Promise<CommandResult> {
 
 export const writeCommand: CommandSpec = {
   name: "write",
-  role: "writer",
   summary:
     "Land a directory of drafts and its ops.json (bases, move, retire, retract, supersede) as one batch, judged together with the disk as its base.",
   positionals: [],

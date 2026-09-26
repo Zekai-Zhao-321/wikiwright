@@ -128,6 +128,18 @@ bundle elsewhere installed as a package, left in step 6 of the v2 delivery.
 Wanted, when several repositories share one library: a way to name a library
 outside the repository whose bytes still enter the law digest.
 
+### No role bounds a session
+
+`WIKIWRIGHT_ROLE` and the bound it set left in step 6 of the v2 delivery
+(contracts §1): a session declared itself a `consumer`, `writer` or
+`maintainer`, and a verb above that rank was refused `role-forbidden`. Every
+verb now runs for every caller, and no verb declares a role. The roles survive
+as the three sections of each bundle's brief and the three documents under
+`docs/skills/`. The loss: a session handed a bundle to read is not stopped by
+the engine from running `write` or `check --write` over it; what bounds it is
+the host's permissions and the filesystem's, as it always was beneath the
+guardrail.
+
 ### A bundle runs no code of its own
 
 The module loader left in step 6 of the v2 delivery: a bundle no longer
@@ -702,9 +714,6 @@ old registry's core tests read frozen v1 copies of the corpora under
   the exports, the graph query, the starters, the modules and the installed
   skills leave with their mechanisms, and `<verb> --help --json` replaces
   `schema`. Nothing scaffolds a bundle (§No starter).
-- `WIKIWRIGHT_ROLE` still bounds every verb by its declared role (`check`
-  and `write` a writer's, `gate` and `rule` a maintainer's, the others a
-  consumer's); the bound leaves in its own commit of step 6 (contracts §1).
 - Every v4 key names the function that reads it, of core or of the shell
   (`ENGINE_V4_CONSUMERS`), and a test holds the function to exist and to
   read the key.

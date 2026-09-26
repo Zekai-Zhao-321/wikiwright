@@ -259,7 +259,6 @@ async function run(args: CommandArgs): Promise<CommandResult> {
 
 export const typeCommand: CommandSpec = {
   name: "type",
-  role: "consumer",
   summary:
     "Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type.",
   positionals: [

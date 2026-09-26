@@ -199,7 +199,6 @@ async function run(args: CommandArgs): Promise<CommandResult> {
 
 export const searchCommand: CommandSpec = {
   name: "search",
-  role: "consumer",
   summary:
     "Deterministic lexical search with match reasons and a coverage block; each result carries its page's status.",
   positionals: [{ name: "query", required: false }],

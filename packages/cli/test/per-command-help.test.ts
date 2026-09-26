@@ -1,6 +1,6 @@
 // docs/cli.md §The envelope (`<verb> --help` is rendered from the same
 // registry as `schema`, exit 0; --help is intercepted before parsing; an unknown
-// verb still exits 2) · every verb declares its role
+// verb still exits 2)
 
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
@@ -42,7 +42,7 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
       assert.equal(r.envelope.ok, true);
       const data = r.envelope.data ?? {};
       assert.equal(data["name"], command.name);
-      assert.equal(data["role"], command.role);
+      assert.equal(data["role"], undefined, "no verb declares a role (v2 contracts §1)");
       assert.equal(data["summary"], command.summary);
       // docs/cli.md §The dry-run law: help renders `flagsOf(spec)` — the verb's
       // own flags plus the registry's `--dry-run` when it writes — because the

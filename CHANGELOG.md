@@ -794,6 +794,14 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- `WIKIWRIGHT_ROLE` and the bound it set (v2 contracts §1, §12 step 6): the
+  refusals `role-forbidden` (a verb above the session's declared rank) and
+  `role-unknown`, and the `role` every verb declared, with it the `role` key
+  of `<verb> --help`, `--help --json` and `docs/cli.md`'s verb table. The
+  roles survive as the three sections of each bundle's brief and the three
+  documents under `docs/skills/`. The loss, in `docs/roadmap.md` §No role
+  bounds a session: nothing in the engine stops a reading session from
+  writing.
 - The v1 code kit, `packages/kit-code` (`@wikiwright/kit-code`: the
   manifest, its determinism fixture and the workspace entry in `bun.lock`),
   as code (v2 contracts §1, §12 step 6). `libraries/kit-code` is its v2 form,

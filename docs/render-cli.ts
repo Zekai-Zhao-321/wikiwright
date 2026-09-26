@@ -29,7 +29,6 @@ interface Flag {
 }
 interface Command {
   name: string;
-  role: string;
   summary: string;
   positionals: { name: string; required: boolean }[];
   subcommands?: string[];
@@ -88,16 +87,16 @@ out.push("Global flags, accepted by every verb:", "", "| Flag | Meaning |", "|--
 for (const f of schema.data.global_flags) out.push(flagRow(f));
 out.push("");
 const commands = [...schema.data.commands].sort((a, b) => (a.name < b.name ? -1 : 1));
-out.push("| Verb | Role | Writes | Summary |", "|---|---|---|---|");
+out.push("| Verb | Writes | Summary |", "|---|---|---|");
 for (const c of commands) {
   out.push(
-    `| [\`${c.name}\`](#${c.name}) | ${c.role} | ${c.writes ? "yes" : "no"} | ${c.summary.replaceAll("|", "\\|")} |`,
+    `| [\`${c.name}\`](#${c.name}) | ${c.writes ? "yes" : "no"} | ${c.summary.replaceAll("|", "\\|")} |`,
   );
 }
 out.push("");
 for (const c of commands) {
   out.push(`### ${c.name}`, "", `\`${usage(c)}\``, "", `${c.summary}`, "");
-  out.push(`Role: \`${c.role}\`. Writes: ${c.writes ? "yes (accepts `--dry-run`)" : "no"}.`, "");
+  out.push(`Writes: ${c.writes ? "yes (accepts `--dry-run`)" : "no"}.`, "");
   if (c.flags.length > 0) {
     out.push("| Flag | Meaning |", "|---|---|");
     for (const f of c.flags) out.push(flagRow(f));

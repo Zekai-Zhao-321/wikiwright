@@ -1,5 +1,5 @@
 // docs/cli.md §The envelope (one spec-driven registry generates help and
-// schema, and every verb declares its role) · docs/cli.md §The dry-run law
+// schema) · docs/cli.md §The dry-run law
 // (`writes` and `plan` are members of the spec, so the registry answers "can
 // this verb write") · docs/architecture.md §Directories (the vocabulary every
 // verb module and the argv parser share).
@@ -114,31 +114,8 @@ export function planOf(ops: PlanOp[]): Plan {
   return { ops, wrote: false };
 }
 
-/**
- * docs/cli.md §brief: the three bounds, ordered. A caller of rank R may call a
- * verb of rank ≤ R, so `consumer ⊂ writer ⊂ maintainer` and a verb declares the
- * LOWEST role that may run it. The writer bound exists because the ingest loop
- * is a real population with a real surface — nine verbs — and bounding it by
- * what a skill happens to print is not a bound (R-wm A10).
- */
-export const ROLE_RANK = { consumer: 0, writer: 1, maintainer: 2 } as const;
-
-export type Role = keyof typeof ROLE_RANK;
-
-/**
- * docs/cli.md §Environment: the role this session declares in `WIKIWRIGHT_ROLE`,
- * or undefined when it declares none (unset or empty). The one reader of the
- * variable: `main.ts` bounds the surface by it and refuses a value that is not a
- * role before any verb runs, and `brief` takes it as its default `--role`.
- */
-export function declaredRole(): string | undefined {
-  const declared = process.env["WIKIWRIGHT_ROLE"];
-  return declared === undefined || declared.length === 0 ? undefined : declared;
-}
-
 interface CommandBase {
   name: string;
-  role: Role;
   summary: string;
   positionals: PositionalSpec[];
   /**
@@ -219,7 +196,6 @@ export function usageOf(spec: CommandSpec): string {
 export function commandSchema(spec: CommandSpec): Record<string, unknown> {
   return {
     name: spec.name,
-    role: spec.role,
     summary: spec.summary,
     positionals: spec.positionals,
     ...(spec.subcommands === undefined ? {} : { subcommands: [...spec.subcommands] }),
