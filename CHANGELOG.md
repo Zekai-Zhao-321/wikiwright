@@ -856,6 +856,20 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Developing
 
+- `tools/migrate-spellings.ts` (v2 contracts §12 step 5): the one-off
+  rewrite of a bundle on the v1 law into the v2 law and the §4 spellings.
+  It writes `config/engine.json` at schema version 4 (`label` from the
+  directory's name, `modules` as `libraries[].path`), one type, fragment
+  and vocabulary document per v1 declaration under `constitution/`, and
+  respells every page: a pin's `origin` and `covers` fold into the pin
+  object, a relation label's `_` becomes `-`, an entry's `DATE:` becomes
+  `DATE — ` with an approximation mark, a range's end or a qualifier moved
+  into its text, a claim's `【category】` and its lifecycle clause take the
+  one spelling. It removes `config/constitution.json` and `templates/`,
+  leaves `generated/` to `check --write`, refuses a bundle already on
+  schema version 4, and prints a report of what it wrote, dropped and left
+  unparsed. It reads the v1 code kit to migrate a bundle over it, so it
+  migrates such a bundle only while `packages/kit-code` exists.
 - Every test file is written to `bun:test` (the v2 contracts, section 0):
   114 files moved off `node:test`, `before` and `after` becoming
   `beforeAll` and `afterAll` and a timeout moving to `it`'s last argument;
