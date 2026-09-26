@@ -173,9 +173,9 @@ export const RULES: readonly Row[] = [
   [
     "sections",
     "kernel",
-    "the judge: `section-count` (`min`, `max`) and `sections-conflict` (`ordered`, `additional`), §3.2 (verdict/grammar.ts)",
+    "the judge: `section-count` (`min`, `max`), `section-order` (`ordered`) and `section-undeclared` (`additional: refused`), §3.2 (verdict/grammar.ts)",
   ],
-  ["section-depth", "kernel", "the judge: `sections-conflict`, `details.kind: depth` (§3)"],
+  ["section-depth", "kernel", "the judge: `section-depth`, carried by id (§3)"],
   [
     "max-chars",
     "dropped",

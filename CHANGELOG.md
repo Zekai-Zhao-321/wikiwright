@@ -124,8 +124,8 @@ version` prints the engine version and the commit a binary was built from.
     `target_root`), `vocabulary-unknown` and `vocabulary-retired` (the
     bundle's `tags` vocabulary, a claim's category, a relation's label),
     `wikilink-unresolved`, `wikilink-alias-target`, `renamed-without-alias`,
-    `section-count`, `sections-conflict` (order, an undeclared heading under
-    `additional: refused`, depth), `item-unparsed`, `category-not-allowed`,
+    `section-count`, `section-order`, `section-undeclared` (a heading
+    under `additional: refused`), `section-depth`, `item-unparsed`, `category-not-allowed`,
     `claim-provenance`, `claim-closed` and `claim-open` (the claims grammar
     gains `closed: allowed | refused | required`, ruling 4),
     `relation-target-unresolved`, `require-unmet` (ruling 2); for the vault,

@@ -3,9 +3,10 @@
 // parameter the engine enforces) and 4 (`closed` on claims).
 //
 // What the kernel judges of a page's sections, occurrence by occurrence: how
-// many there are of each declared heading (`section-count`), their order,
-// depth and whether an undeclared heading may stand among them
-// (`sections-conflict`), every top-level item that does not parse
+// many there are of each declared heading (`section-count`), their order
+// (`section-order`), their depth (`section-depth`) and whether an
+// undeclared heading may stand among them (`section-undeclared`), every
+// top-level item that does not parse
 // (`item-unparsed`), and each record against its section's parameters — a
 // vocabulary value (`vocabulary-unknown`, `vocabulary-retired`), the claims
 // `categories` subset, `provenance` and `closed`, a relation's target and
@@ -97,13 +98,12 @@ export function sectionFindings(page: ParsedPage, type: LawType): Unrouted[] {
   for (const at of all) {
     if (at.occurrence.depth === sections.depth || !declared.has(at.occurrence.heading)) continue;
     out.push({
-      rule: "sections-conflict",
+      rule: "section-depth",
       severity: "error",
       path: page.path,
       location: sectionAt(at),
       message: `"${at.occurrence.heading}" is a heading of depth ${at.occurrence.depth}; ${type.name} declares its sections at depth ${sections.depth}`,
       details: {
-        kind: "depth",
         heading: at.occurrence.heading,
         depth: at.occurrence.depth,
         declared: sections.depth,
@@ -116,12 +116,12 @@ export function sectionFindings(page: ParsedPage, type: LawType): Unrouted[] {
     if (position === undefined) {
       if (sections.additional === "refused") {
         out.push({
-          rule: "sections-conflict",
+          rule: "section-undeclared",
           severity: "error",
           path: page.path,
           location: sectionAt(at),
           message: `"${at.occurrence.heading}" is no section ${type.name} declares, and it refuses additional ones`,
-          details: { kind: "additional", heading: at.occurrence.heading },
+          details: { heading: at.occurrence.heading },
         });
       }
       continue;
@@ -129,12 +129,12 @@ export function sectionFindings(page: ParsedPage, type: LawType): Unrouted[] {
     if (sections.ordered && position < highest) {
       const after = sections.list[highest]?.heading ?? "";
       out.push({
-        rule: "sections-conflict",
+        rule: "section-order",
         severity: "error",
         path: page.path,
         location: sectionAt(at),
         message: `"${at.occurrence.heading}" comes after "${after}"; ${type.name} orders its sections as declared`,
-        details: { kind: "order", heading: at.occurrence.heading, after },
+        details: { heading: at.occurrence.heading, after },
       });
     }
     highest = Math.max(highest, position);
@@ -306,7 +306,9 @@ export function grammarRows(type: LawType): Set<string> {
   const out = new Set<string>();
   const sections = type.sections;
   if (sections === null) return out;
-  out.add("section-count").add("sections-conflict");
+  out.add("section-count").add("section-depth");
+  if (sections.ordered) out.add("section-order");
+  if (sections.additional === "refused") out.add("section-undeclared");
   for (const section of sections.list) {
     if (section.grammar === undefined) continue;
     out.add("item-unparsed");

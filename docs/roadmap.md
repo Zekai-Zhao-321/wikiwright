@@ -748,9 +748,10 @@ library under the temporary directory. What that leaves, until the verbs
   `type-unknown` (v1 `unknown-type`), `page-shape-invalid` (the shape's
   six v1 codes, Ajv's keyword in `details`), `page-ref-type`,
   `vocabulary-unknown` and `vocabulary-retired` (the tag, category and label
-  codes), `section-count` and, at page level, `sections-conflict` (v1
-  `sections` and `section-depth`; the loader raises `sections-conflict` too,
-  for a law), `item-unparsed`, `require-unmet`, `claim-closed` and
+  codes), `section-count`, `section-order` and `section-undeclared` (v1
+  `sections`), `section-depth` (v1's id, kept; the loader's
+  `sections-conflict` is a contradiction in the law, never a page's
+  finding), `item-unparsed`, `require-unmet`, `claim-closed` and
   `claim-open` (v1 `closed-claim-in-facts` and `history-marker`, now the
   claims `closed` parameter of the navigator's ruling 4), `entry-edited`,
   `instances-min` and `instances-max`, `rule-error`, `unevaluated`,

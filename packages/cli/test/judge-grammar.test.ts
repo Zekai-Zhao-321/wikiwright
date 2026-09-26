@@ -87,21 +87,21 @@ describe("sections (§3.2)", () => {
         "## Notes\n\nA dry spring.\n",
         "## Notes\n\nA dry spring.\n\n## Beds\n\n- grows-in [[Herb bed]]\n\n### Closed\n\nNested.\n",
       );
-    const kinds = only(await trial(page), "sections-conflict").map((f) => [
-      f.details["kind"],
-      f.details["heading"],
-    ]);
-    expect(kinds).toEqual([
-      ["additional", "Aside"],
-      ["order", "Beds"],
-      ["depth", "Closed"],
+    const codes = ["section-order", "section-undeclared", "section-depth"];
+    const found = (await trial(page)).findings
+      .filter((f) => codes.includes(f.rule))
+      .map((f) => [f.rule, f.details["heading"], f.queue]);
+    expect(found).toEqual([
+      ["section-undeclared", "Aside", "grammar-review"],
+      ["section-order", "Beds", "grammar-review"],
+      ["section-depth", "Closed", "grammar-review"],
     ]);
     const swapped = TRIAL_PAGE.replace(
       "## Findings\n\n- [observed] Straw mulch kept the soil damp. ([[Herb bed]])\n\n## Closed\n\n- [measured] The bed dried in two days. (retracted 2026-05-01)",
       "## Closed\n\n- [measured] The bed dried in two days. (retracted 2026-05-01)\n\n## Findings\n\n- [observed] Straw mulch kept the soil damp. ([[Herb bed]])",
     );
-    expect(only(await trial(swapped), "sections-conflict")).toMatchObject([
-      { details: { kind: "order", heading: "Findings", after: "Closed" } },
+    expect(only(await trial(swapped), "section-order")).toMatchObject([
+      { details: { heading: "Findings", after: "Closed" } },
     ]);
   });
 

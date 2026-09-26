@@ -30,8 +30,8 @@ Every row of the composed pass table (`passRows(standardLibrary())`): the kernel
 | `tag-alias-target` | dropped | `tag-alias-target` removed with vocabulary entry aliases. |
 | `tag-retired` | kernel | the judge: `vocabulary-retired`, a `tags` value the vocabulary retired, with its successor |
 | `identity-collision` | kernel | the judge: `identity-collision`, carried by id (verdict/names.ts) |
-| `sections` | kernel | the judge: `section-count` (`min`, `max`) and `sections-conflict` (`ordered`, `additional`), §3.2 (verdict/grammar.ts) |
-| `section-depth` | kernel | the judge: `sections-conflict`, `details.kind: depth` (§3) |
+| `sections` | kernel | the judge: `section-count` (`min`, `max`), `section-order` (`ordered`) and `section-undeclared` (`additional: refused`), §3.2 (verdict/grammar.ts) |
+| `section-depth` | kernel | the judge: `section-depth`, carried by id (§3) |
 | `max-chars` | dropped | `max-chars` removed with `max_chars`: a size bound is a section rule over `section.raw`. |
 | `wikilink-alias-target` | kernel | the judge: `wikilink-alias-target`, carried by id (verdict/page.ts) |
 | `wikilink-unresolved` | kernel | the judge: `wikilink-unresolved`, carried by id; a page reference that names no page too |

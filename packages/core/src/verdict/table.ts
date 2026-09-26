@@ -178,10 +178,24 @@ export const VERDICT_TABLE: readonly VerdictRow[] = [
     scope: "page",
   },
   {
-    id: "sections-conflict",
+    id: "section-order",
     severity: "error",
     lane: "grammar-review",
-    carries: ["sections", "section-depth"],
+    carries: ["sections"],
+    scope: "page",
+  },
+  {
+    id: "section-undeclared",
+    severity: "error",
+    lane: "grammar-review",
+    carries: ["sections"],
+    scope: "page",
+  },
+  {
+    id: "section-depth",
+    severity: "error",
+    lane: "grammar-review",
+    carries: ["section-depth"],
     scope: "page",
   },
   {
