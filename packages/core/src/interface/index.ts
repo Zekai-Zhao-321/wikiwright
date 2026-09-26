@@ -242,9 +242,11 @@ export function parsePage(
   // them (the old parser's projection, kept and extended): a line inside a
   // fence, an HTML block (a comment among them) or a break holds no item.
   const doc = parseDoc(text);
-  const opaque = new Set<number>();
-  for (const block of [...doc.fences, ...doc.opaque])
-    for (let i = block.line; i <= block.endLine; i += 1) opaque.add(i);
+  const opaque = new Map<number, number>();
+  for (const block of [...doc.fences, ...doc.opaque]) {
+    const indent = /^( *)/u.exec(lines[block.line - 1]?.text ?? "")?.[1]?.length ?? 0;
+    for (let i = block.line; i <= block.endLine; i += 1) opaque.set(i, indent);
+  }
   const headings = doc.headings.filter((h) => h.line > bodyLine);
   // §6: `page.sections` holds one occurrence per heading, and `facts.links`
   // one entry per distinct target; both are ranges. Refused before the walk
@@ -353,11 +355,11 @@ export function parsePage(
     for (let n = contentFrom; n <= directEnd; n += 1) {
       const line = lines[n - 1];
       if (line === undefined) continue;
-      if (opaque.has(n)) {
-        // Fences, comments and thematic breaks end the preceding list item.
-        // A later indented bullet is a new top-level candidate, not rationale
-        // attached across an intervening block.
-        flush();
+      const blockIndent = opaque.get(n);
+      if (blockIndent !== undefined) {
+        // A separate block ends the preceding list item; a block indented
+        // inside its content remains part of that item's rationale.
+        if (current !== undefined && blockIndent < current.contentIndent) flush();
         continue;
       }
       if (line.text.trim() === "") continue;

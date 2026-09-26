@@ -70,5 +70,16 @@ describe("top-level list indentation under a grammar", () => {
     const nested = cli(["check", "--write", "--all"], dir);
     expect(nested.status).toBe(0);
     expect(findingsOf(nested.envelope, "item-unparsed")).toEqual([]);
+    writeAt(
+      dir,
+      "wiki/Basil.md",
+      notePage(
+        "Basil",
+        "\n## Facts\n\n- [observation] Basil is growing. ([[Basil]])\n\n  ```text\n  code sample\n  ```\n\n  - supporting detail\n",
+      ),
+    );
+    const fenced = cli(["check", "--write", "--all"], dir);
+    expect(fenced.status).toBe(0);
+    expect(findingsOf(fenced.envelope, "item-unparsed")).toEqual([]);
   });
 });

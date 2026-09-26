@@ -67,6 +67,7 @@ export function preflightBatch(
   removed: readonly string[],
 ): void {
   preflightReplacements(pages.map((path) => ({ path: vaultAbsolute(root, path) })));
+  preflightReplacements(removed.map((path) => ({ path: vaultAbsolute(root, path) })));
   for (const path of removed) {
     const absolute = vaultAbsolute(root, path);
     try {
