@@ -104,8 +104,10 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
 ## Where things live
 
 - `packages/core`: the kernel and the standard library.
-- `packages/cli`: the binary, one module per verb under `src/verbs/`; the
-  starters under `constitutions/`; the skills under `skills/`.
+- `packages/cli`: the binary, one module per verb: the verbs of the v2
+  contracts under `src/verbs/`, and each old verb under `src/legacy/` until
+  the deletions of the v2 delivery; the starters under `constitutions/`; the
+  skills under `skills/`.
 - `packages/kit-code`: `@wikiwright/kit-code`, the shipped domain kit — a
   code wiki's types, `anchored` fragment, relation labels, templates and
   discipline — consumed by the `code` starter and by `devwiki`. Nothing

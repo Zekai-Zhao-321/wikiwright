@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type ParsedDoc, parseDoc } from "@wikiwright/core";
-import { pageNamed } from "../src/verbs/read.ts";
+import { pageNamed } from "../src/legacy/read.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
 

@@ -33,6 +33,7 @@ import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
+import { verbModule } from "./fixtures/verb-module.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
@@ -906,9 +907,9 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
   "writer.ts": "THE Writer: every content page, temp-then-rename",
   // `init`'s tree copy is the one declared exception: it lands a starter,
   // it does not edit a page, and a starter is a directory rather than a splice.
-  "verbs/init.ts": "the starter tree copy — the declared exception",
-  "verbs/freshness.ts": "the freshness report under generated/ (a fixed path, not a page)",
-  "verbs/move.ts": "`mkdirSync` for the destination directory, before `git mv`",
+  "legacy/init.ts": "the starter tree copy — the declared exception",
+  "legacy/freshness.ts": "the freshness report under generated/ (a fixed path, not a page)",
+  "legacy/move.ts": "`mkdirSync` for the destination directory, before `git mv`",
 };
 
 describe("the Writer is the only writer of a content page (docs/architecture.md §The invariants)", () => {
@@ -926,7 +927,9 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
   it("a reader verb imports neither a write API nor a direct writer", () => {
     for (const command of COMMANDS) {
       if (command.writes) continue;
-      const raw = source(`verbs/${command.name}.ts`);
+      const rel = verbModule(command.name);
+      const raw = source(rel);
+      const here = rel.slice(0, rel.indexOf("/") + 1);
       assert.deepEqual(
         fsWriteImports(raw),
         [],
@@ -934,8 +937,8 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
       );
       assert.equal(GIT_WRITE.test(raw), false, `"${command.name}" spawns a writing git`);
       const specifiers = [...raw.matchAll(/from\s+"([^"]+)"/g)].map((m) => m[1] ?? "");
-      const writers = Object.keys(DIRECT_WRITERS).map((rel) =>
-        rel.startsWith("verbs/") ? `./${rel.slice("verbs/".length)}` : `../${rel}`,
+      const writers = Object.keys(DIRECT_WRITERS).map((writer) =>
+        writer.startsWith(here) ? `./${writer.slice(here.length)}` : `../${writer}`,
       );
       assert.deepEqual(
         specifiers.filter((spec) => writers.includes(spec)),

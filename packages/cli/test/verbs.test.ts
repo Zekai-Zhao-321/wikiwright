@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
+import { verbModule } from "./fixtures/verb-module.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -300,18 +301,15 @@ describe("retire — status + banner + successor (docs/cli.md)", () => {
 describe("the per-verb split (docs/architecture.md §Directories)", () => {
   const SRC = fileURLToPath(new URL("../src/", import.meta.url));
 
-  it("every registered verb has its own module under src/verbs/", async () => {
+  it("every registered verb has its own module, under src/verbs/ or src/legacy/", async () => {
     const { COMMANDS } = (await import("../src/commands.ts")) as {
       COMMANDS: Array<{ name: string }>;
     };
     assert.equal(COMMANDS.length > 0, true, "the registry is not empty");
     for (const command of COMMANDS) {
-      const module = join(SRC, "verbs", `${command.name}.ts`);
-      assert.equal(
-        existsSync(module),
-        true,
-        `no verbs/${command.name}.ts for verb "${command.name}"`,
-      );
+      const rel = verbModule(command.name);
+      const module = join(SRC, rel);
+      assert.equal(existsSync(module), true, `no ${rel} for verb "${command.name}"`);
       // Windows: node's ESM loader refuses a bare absolute path ("protocol
       // 'd:'"), so a dynamic import of a computed path goes through a file URL.
       const exports = (await import(pathToFileURL(module).href)) as Record<string, unknown>;
@@ -322,7 +320,7 @@ describe("the per-verb split (docs/architecture.md §Directories)", () => {
       assert.equal(
         specs.some((s) => s.name === command.name),
         true,
-        `verbs/${command.name}.ts exports no CommandSpec named "${command.name}"`,
+        `${rel} exports no CommandSpec named "${command.name}"`,
       );
     }
   });

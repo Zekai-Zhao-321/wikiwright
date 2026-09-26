@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { runtimeImports } from "./fixtures/imports.ts";
+import { verbModule } from "./fixtures/verb-module.ts";
 
 const SRC = fileURLToPath(new URL("../src", import.meta.url));
 
@@ -78,7 +79,7 @@ describe("a verb declares whether it reads the vault's law (docs/extending.md)",
   it("every declaration matches what the verb's imports reach", () => {
     const wrong: string[] = [];
     for (const command of COMMANDS) {
-      const entry = join(SRC, "verbs", `${command.name}.ts`);
+      const entry = join(SRC, verbModule(command.name));
       const reaches = readsAVault(entry);
       if (reaches !== command.needsVaultModules) {
         wrong.push(
