@@ -20,8 +20,8 @@ whether it is dirty, and digests of its law and its content — and `read`
 returns a page's sections verbatim with the page's bytes digest and its
 status, under a byte budget. Step 6 is removing the old tree's mechanisms one
 commit each; until each has left, its code is in the tree and reached by no
-verb: the old registry and its standard library, the exports and their
-marker, the git hook installer, the module loader and the v1 kit
+verb: the old registry and its standard library, the git hook installer,
+the module loader and the v1 kit
 `@wikiwright/kit-code`, which `devwiki` no longer imports.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
@@ -177,8 +177,7 @@ deferred until the fixture's cost is measured to matter.
 
 ### Artifact writes are per-file atomic, not batch-atomic
 
-`check --write` lands each generated file temp-then-rename, an export's
-included: an existing file stays in place until its replacement is renamed
+`check --write` lands each generated file temp-then-rename: an existing file stays in place until its replacement is renamed
 over it, so a render that fails leaves the previous bytes. A crash in the
 middle of the loop leaves a mix of old and new files; the next
 `check --write` converges them. There is no transactional write of the set.
@@ -342,13 +341,15 @@ pages applies to one situation is the caller's reading.
 Wanted: a declaration naming which fields state applicability, and a flag on
 `search` and `read` that filters by them.
 
-### A problem is reported to a destination the engine only names
+### A problem with the knowledge is reported by hand
 
-An export declares where a problem with a copy is reported (its
-`contribution`); a `bundle-readonly` refusal says it. The engine sends nothing, and no bundle declares the shape a proposal must take.
+A reader who finds a page wrong writes a proposal and gives it to the
+bundle's maintainer (the reader's skill, `docs/skills/wikiwright-consume`).
+The engine sends nothing, and no bundle declares where a proposal goes or the
+shape it must take.
 
-Wanted: a report type a bundle declares in its constitution, and a verb that
-writes a proposal in it where the export's contribution says.
+Wanted: a report type a bundle declares in its law, and a verb that writes a
+proposal in it.
 
 ### No editor protocol, no transaction across writes, no model of time
 
@@ -406,7 +407,24 @@ the brief (the first delivery's trigger for generated bundle skills): a way
 to hand the documents to a host with a bundle, run inside a host and
 recorded.
 
-### What installed bundles have not been evaluated for
+### No exports
+
+A bundle no longer declares exports, and nothing renders or installs a copy
+of it: the `export` verb left with the old table, and the export planner, the
+in-repository renders under a bundle's `skills/`, their marker
+(`config/export.json`), the `bundle-readonly` refusal of a write over a
+copy, `export-marker-invalid` and the `export` block of `metadata.bundle` left
+in step 6 of the v2 delivery. The v4 `config/engine.json` has no `exports`
+key. The loss: a bundle is shared by sharing its repository, whole; a subset
+cannot be handed to a reader without the rest, and nothing stops a write into
+a directory someone copied.
+
+Wanted, when a second consumer needs a subset or an independently installed
+copy (the first delivery's trigger for exports and selections): an export
+of a selection, read only, whose identity a reader can check against its
+source.
+
+### What bundles have not been evaluated for
 
 The scenario test drives two handbooks end to end, mechanically. No
 evaluation has measured whether an agent that writes a bundle and an agent
@@ -417,17 +435,6 @@ bundle's pages, a proposal or a hook's context unasked.
 
 Wanted: an author-and-reader evaluation over synthetic bundles, and synthetic
 privacy-regression scenarios beside the suite.
-
-### The engine never checks a copy against its source
-
-The session-start hook names the action that fits how each copy was
-installed, from what its installer recorded, and checks nothing remote: a
-recorded ref and tree say what was copied, not which commit, so whether a
-copy is behind cannot be computed without the installer's own comparison,
-which is its update command. No environment variable turns a remote check
-on. A copy made by hand, or linked, is never compared with anything.
-
-Wanted: nothing in the engine while the installer owns replacement.
 
 ### The staged gate reads a `node_modules` kit from the working tree
 
@@ -443,41 +450,6 @@ edit to such a kit changes no staged verdict and makes no copy stale.
 
 Wanted: nothing while `node_modules` stays untracked; a bundle that must pin
 its kit exactly declares it by `path`.
-
-### Exports not built yet
-
-No thin pointer: an export always copies, and none names the bundle's
-repository in place of its pages. No `propose`: a reader of a copy reports a
-problem where its `SKILL.md` says, by hand; no verb files it. Both are
-deferred, not refused.
-
-### What a host does with a copy is unverified
-
-No host has installed a rendered export here. Unverified: whether a host
-follows a bundle skill's line that requires `wikiwright-consume` and loads
-the runtime skill — a required skill is prose, not loading, and this stays
-unverified until it is run live on Claude Code and on Codex; how a skill
-installer that fetches from a repository handles symbolic links, size limits,
-pinning to a branch and updating a pinned copy, and `gh skill`, the one
-named here, needs gh 2.90.0 or later; where each host caches a plugin;
-whether every host sets the skill-directory variable a `SKILL.md` names; how
-the two hosts' skill stores list a generated plugin; whether a host follows a
-skill directory that is a symbolic link; and which keys an installer writes
-into a copy's `SKILL.md`. That the loader accepts
-a copy whose declared source roots are absent is verified (`export-copy`).
-
-Wanted: each of these run once on a host and recorded beside the suite, the
-"requires" line first, since the runtime skill's discipline reaches a
-session only when the host loads it.
-
-### `bundle-readonly` is a guardrail on the CLI
-
-A root that holds a marker refuses a verb that can write, however it was
-named. A process that does not go through the engine is not stopped at all,
-and a copy whose marker is removed is a bundle like any other.
-
-Wanted: nothing in the engine. Isolation is the filesystem's: a read-only
-mount or permissions.
 
 ### The suite is sensitive to machine load
 
@@ -617,7 +589,7 @@ prose: a judgment routes to a queue lane for a human. There is no semantic
 retrieval tier (`search` is a deterministic identity ladder fused with
 BM25, CJK-bigram tokenized), no `capture` verb that turns a git origin
 into a source page, no connector layer, no rich-content checks (Mermaid,
-images, tables), no publication target beyond the exports a bundle declares,
+images, tables), no publication target,
 no access control, and no
 parse cache or long-lived process (§Every run parses the whole corpus).
 Each stays unbuilt until a bundle needs it.
@@ -980,17 +952,11 @@ old registry's core tests read frozen v1 copies of the corpora under
    for `code/decision`, a published kit; for installed bundles, a declared
    dependency between bundles, `references` and `outline`, a report type a
    proposal is written in, and a filter by applicability.
-3. For bundle skills: publish the engine and the kit, so the runtime skill's
-   setup and a bundle skill can name an install command; run live on both
-   hosts whether a bundle skill's "requires" line loads the runtime skill,
-   and how each host's skill store lists a generated plugin; then the thin
-   pointer and `propose`, each deferred rather than refused (§Exports not
-   built yet, §What a host does with a copy is unverified).
-4. For modules: a proof cache that outlives the process, keyed on the
+3. For modules: a proof cache that outlives the process, keyed on the
    engine version too (§A module's proofs are taken once per process), and
    a `modules list` that reports a declared module without importing it
    (§A module runs because it is installed).
-5. The capture verb, the connector layer, rich-content checks, publication
+4. The capture verb, the connector layer, rich-content checks, publication
    and access control are candidates, none scheduled.
 
 ## Developing against it

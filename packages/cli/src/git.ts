@@ -617,7 +617,7 @@ export async function gitHeadBlobs(
 /** The variables git exports into a hook, which change what `rev-parse` discovers. */
 const HOOK_VARIABLES = ["GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE"] as const;
 
-/** What `bundleIdentity` reports about the checkout a vault sits in. */
+/** What `typeLawIdentity` reports about the checkout a bundle sits in. */
 export interface CheckoutState {
   /** The commit HEAD names, or null in a repository with no commit yet. */
   head: string | null;

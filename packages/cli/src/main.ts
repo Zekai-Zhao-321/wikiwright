@@ -5,10 +5,8 @@ import { existsSync, realpathSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { replaceFile } from "./atomicwrite.ts";
-import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
 import {
-  type BundleIdentity,
   type CommandResult,
   ENVELOPE_MAX_BYTES,
   envelopeTooLarge,
@@ -17,7 +15,6 @@ import {
   outPointer,
 } from "./envelope.ts";
 import { GitInconsistentRead, GitShortRead, GitTimedOut, gitTimeoutSetting } from "./git.ts";
-import { type ExportMarker, MARKER_PATH, markerAt } from "./marker.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import { LinkedOutsideVault } from "./paths.ts";
 import {
@@ -171,25 +168,6 @@ function helpResult(json: boolean): CommandResult {
 }
 
 /**
- * docs/cli.md §The envelope: the bundle a vault verb read, on the envelope it
- * returned, ok or not. Computed after the verb, so it describes the state the
- * verb left. An identity the engine cannot read inside the vault (a file under
- * it resolves outside) is left off rather than half-stated; the reads that
- * refuse it are the same ones every verb makes.
- */
-async function withBundle(result: CommandResult, root: string): Promise<CommandResult> {
-  let bundle: BundleIdentity | undefined;
-  try {
-    bundle = await bundleIdentity(root);
-  } catch {
-    return result;
-  }
-  if (bundle === undefined) return result;
-  const metadata = { ...result.envelope.metadata, bundle };
-  return { ...result, envelope: { ...result.envelope, metadata } };
-}
-
-/**
  * docs/cli.md §Exit codes: what a thrown error becomes. A vault path that
  * resolves outside the vault — a config linked out of it, say — is
  * `linked-outside-vault`. A git answer cut short is `git-short-read`; two git
@@ -228,63 +206,6 @@ function thrown(command: string, e: unknown): CommandResult {
   return fail(command, "internal", "unexpected-error", e instanceof Error ? e.message : String(e));
 }
 
-/** docs/cli.md §bundles: where a problem with a copy goes, in the words of its contribution mode. */
-function contributionHint(marker: ExportMarker): string {
-  const { contribution } = marker;
-  const repository = contribution.repository ?? marker.source.repository ?? "its repository";
-  switch (contribution.mode) {
-    case "issues":
-      return `report at ${repository}/issues`;
-    case "pull-requests":
-      return `clone ${repository} and write there`;
-    case "local-folder":
-      return `write a proposal under ${contribution.folder ?? "the folder its SKILL.md names"}`;
-    case "none":
-      return "this copy takes no reports";
-  }
-}
-
-/**
- * docs/cli.md §bundles: a root that carries a marker is a copy, however it was
- * named — `--root` or the working directory — and it is checked
- * before any module preloads or the verb reads a page. A marker that is not one
- * is refused as a config the loader cannot read is: the copy is not loaded
- * (`export-marker-invalid`). A verb that can write is refused over a copy,
- * `--dry-run` included, with where a change goes instead (`bundle-readonly`):
- * a copy is overwritten by its next install. A courtesy, not a guarantee —
- * the files' permissions protect a copy, and a process that does not go
- * through the CLI is not stopped.
- */
-function markedRootRefusal(spec: CommandSpec, root: string): CommandResult | undefined {
-  if (!spec.needsVaultModules && !spec.writes) return undefined;
-  const marker = markerAt(root);
-  if (marker.kind === "none") return undefined;
-  if (marker.kind === "invalid") {
-    return fail(
-      spec.name,
-      "conflict",
-      "export-marker-invalid",
-      `${MARKER_PATH} is not an export's marker: ${marker.reason}`,
-      {
-        details: { path: MARKER_PATH, reason: marker.reason },
-        hint: "the file is written by `check --write` or `export`; install the copy again from its source, or remove the file if this root is not a copy",
-      },
-    );
-  }
-  if (!spec.writes) return undefined;
-  const copy = marker.marker;
-  return fail(
-    spec.name,
-    "usage",
-    "bundle-readonly",
-    `this root is an installed copy of the export "${copy.name}" of the bundle "${copy.bundle}", read only, and "${spec.name}" can write`,
-    {
-      details: { export: copy.name, contribution: copy.contribution, root: resolve(root) },
-      hint: `an installed copy is not changed in place, and its next install overwrites it: ${contributionHint(copy)}`,
-    },
-  );
-}
-
 async function runCommand(
   spec: CommandSpec,
   rest: string[],
@@ -293,8 +214,6 @@ async function runCommand(
   const parsed = parseInvocation(spec, rest, table);
   if (!parsed.ok) return parsed.result;
   const { args } = parsed;
-  const refused = markedRootRefusal(spec, args.root);
-  if (refused !== undefined) return refused;
   let result: CommandResult;
   try {
     // docs/extending.md §Declaring a module: the declared modules load HERE —
@@ -311,9 +230,8 @@ async function runCommand(
   } catch (e) {
     result = thrown(spec.name, e);
   }
-  // The same switch decides it: a verb that reads the vault's law names the
-  // bundle it read, and one that answers about the engine names none.
-  return spec.needsVaultModules ? withBundle(result, args.root) : result;
+  // Each verb names the bundle it read itself, from the state it judged.
+  return result;
 }
 
 // The conventional spellings reach the `version` verb — one

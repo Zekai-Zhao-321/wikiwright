@@ -10,8 +10,10 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { LINK_MODE } from "./exports.ts";
 import { gitReadBlobBytes, type IndexEntry } from "./git.ts";
+
+/** The index mode of a symbolic link. */
+const LINK_MODE = "120000";
 
 /**
  * Write every staged file under each vault-relative kit location — its own

@@ -51,10 +51,7 @@ packages/cli/src/
   git.ts, stdoutfile.ts   the git plumbing: every git child spawned asynchronously (Bun.spawn), at most four at a time, awaited to its exit, its answer read from a file it writes itself
   vaultfiles.ts   the config paths, the reader, the page walk and the page reads, below the loader
   vaultio.ts   the loader, its refusals
-  bundle.ts    the bundle an envelope names: label, root, head, dirty, the law and content digests, and over a copy the export it is
-  marker.ts    a copy's marker, config/export.json: read and checked before any module loads
-  exports.ts   the export planner, the plugin manifests, the in-repository renders and their comparison, unreached since the old verbs left
-  brief.ts     the old brief's renderer, which exports.ts renders a copy's brief with
+  bundle.ts    the old registry's v1 law and content digests, which its loader reads
   law.ts       the loaded vault to a Law; the engine.json consumers
   lawfiles.ts  v2: the working-tree, index and revision adapters that snapshot a bundle's law and its libraries for law/
   lawstate.ts  v2: the four states judgeTypeLaw is handed (working tree, drafts over the disk, the index over HEAD, a revision)

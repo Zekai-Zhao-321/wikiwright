@@ -63,15 +63,8 @@ Every verb that reads a bundle's law names the bundle it read in
 
 The block is computed by the verb from the state it judged; the gate's names
 the index's law and content. An envelope answered before the verb runs names
-no bundle: `--help`, a refusal of the arguments, a `role-forbidden`, a
-refused marker, a root with no bundle.
-
-A root that holds `config/export.json` is a copy an old `export` or `check
---write` rendered (docs/constitution.md §exports). Its marker is checked before
-the verb runs: one that is not one is refused `export-marker-invalid` (exit 4),
-and a verb that can write is refused `bundle-readonly`. Nothing renders a copy
-since the old verbs left; the marker's check leaves with the exports in the
-next commit of step 6.
+no bundle: `--help`, a refusal of the arguments, a `role-forbidden`, a root
+with no bundle.
 
 `check` and `gate` answer with the verdict: `findings` (each `rule`,
 `severity`, `path`, `location` — `{kind: "page"}` or `{kind: "section",
@@ -122,7 +115,7 @@ add the generated files they wrote and, under `--fix`, what the materializer
 | 2 | `usage` | the caller got a verb, flag, positional or environment variable wrong |
 | 2 | `constitution` | the law did not load, or the engine pin refused; nothing was judged |
 | 3 | `not_found` | the page, type, revision, directory or bundle asked for does not exist: a root that is no directory, or a state with no `config/engine.json`, is `bundle-not-found` |
-| 4 | `conflict` | the state refuses the operation: a recorded base that is not the page's bytes (`base-mismatch`), a destination that exists, a tree that changed while it was read (`state-changed-during-read`), unmerged paths, a git read that failed (`git-unavailable`), a copy's marker that is not one (`export-marker-invalid`) |
+| 4 | `conflict` | the state refuses the operation: a recorded base that is not the page's bytes (`base-mismatch`), a destination that exists, a tree that changed while it was read (`state-changed-during-read`), unmerged paths, a git read that failed (`git-unavailable`) |
 | 5 | `findings` | the tool worked and the subject failed: read `data.findings` |
 
 `git-short-read` and `git-inconsistent-read` are the engine refusing git's

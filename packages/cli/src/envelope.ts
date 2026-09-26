@@ -2,7 +2,7 @@
 // never load-bearing) · the closed exit taxonomy, JSON-only v1
 // docs/concepts.md §Findings and routing (the verdict envelope and the cap flags every judging verb
 // prints — docs/architecture.md §Directories keeps the envelope helpers here rather than beside a verb).
-import type { ExportSelect, JudgeOptions, Verdict } from "@wikiwright/core";
+import type { JudgeOptions, Verdict } from "@wikiwright/core";
 import type { CommandArgs } from "./spec.ts";
 
 export const EXIT = {
@@ -23,12 +23,12 @@ export type ErrorType = Exclude<keyof typeof EXIT, "ok">;
 export const ENGINE_VERSION = "0.1.0";
 
 /**
- * docs/cli.md §The envelope: which bundle a vault verb read, beside its answer.
- * Declared here rather than beside `bundleIdentity` so the envelope, which
- * every verb imports, reaches no module that reads a vault.
+ * docs/cli.md §The envelope: which bundle a verb read, beside its answer.
+ * Declared here rather than beside `typeLawIdentity` so the envelope, which
+ * every verb imports, reaches no module that reads a bundle.
  */
 export interface BundleIdentity {
-  /** The basename of the root's real path: a label for a reader, never an identity. */
+  /** engine.json's `label`: a name for a reader, never an identity. */
   label: string;
   /** The root's real path. */
   root: string;
@@ -36,28 +36,10 @@ export interface BundleIdentity {
   head: string | null;
   /** Whether `git status` lists any change under the root, or null when no repository answers. */
   dirty: boolean | null;
-  /** sha256 over the constitution, engine.json and each installed module's digest, loaded or not. */
+  /** The §7 law digest of the law the verb loaded. */
   law: string;
-  /** sha256 over every page under the content roots, path and bytes. */
+  /** The §7 content digest of the pages the verb read. */
   content: string;
-  /** Over a copy, the export it is, read off its marker (docs/constitution.md §exports). */
-  export?: BundleExport;
-}
-
-/**
- * docs/cli.md §The envelope: the identity a copy's marker gives it — the
- * export's name, where the bundle it was cut from is installed from, what it
- * selected, and how many pages it holds and links it cut. `intact: false`
- * says the copy's law or content no longer digests to what its marker
- * recorded: it was changed after export. Informational, never a refusal.
- */
-export interface BundleExport {
-  name: string;
-  source: { repository: string | null };
-  select: ExportSelect;
-  pages: number;
-  cut: { links: number; citations: number; attachments: number };
-  intact?: false;
 }
 
 export interface Metadata {

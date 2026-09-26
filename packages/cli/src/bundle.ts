@@ -1,18 +1,15 @@
-// docs/cli.md §The envelope (every envelope over a vault names the bundle it
-// read: its label, where it is, the commit it sits at, whether it differs from
-// that commit, and a digest of its law and of its content) · docs/cli.md §brief
-// (the brief's header prints the law digest).
+// The old registry's digests of a v1 bundle — its law over the constitution,
+// engine.json and each installed module, and its content — which its loader
+// (vaultio.ts) reads. The envelope's bundle block is the v2 one (typelaw.ts);
+// these leave with the old registry in step 6.
 //
 // Reads only. Nothing here writes, parses a page or loads a module: a
 // module's digest is read off its installed bytes, and the pages are read as
 // bytes.
-import { existsSync, realpathSync } from "node:fs";
-import { basename, join } from "node:path";
+import { realpathSync } from "node:fs";
+import { basename } from "node:path";
 import { codeUnitCompare, loadEngineConfig, normalizeInput } from "@wikiwright/core";
-import type { BundleExport, BundleIdentity } from "./envelope.ts";
-import { gitCheckoutState } from "./git.ts";
-import { markerAt } from "./marker.ts";
-import { declaredModulesInText, type ModuleDeclaration, moduleDigest } from "./moduleload.ts";
+import { type ModuleDeclaration, moduleDigest } from "./moduleload.ts";
 import { sha256Of } from "./sha256.ts";
 import {
   CONSTITUTION_PATH,
@@ -127,76 +124,7 @@ export function contentRootsAt(root: string): readonly string[] | null {
   return contentRootsOf(engine);
 }
 
-/**
- * docs/cli.md §The envelope: a bundle's label, the basename of its root's real
- * path — a name for a reader, not an identity. The envelope names a bundle by
- * it, and an export that declares no name is named from it
- * (docs/constitution.md §exports). A copy is labelled by the bundle its marker
- * names, wherever it was installed, so a copy derives the names its source did.
- */
+/** A v1 bundle's label: the basename of its root's real path, a name for a reader, not an identity. */
 export function bundleLabel(root: string): string {
-  const marker = markerAt(root);
-  return marker.kind === "valid" ? marker.marker.bundle : basename(realpathSync(root));
-}
-
-/**
- * docs/cli.md §The envelope: the bundle at `root`, or undefined when the root
- * holds no constitution. It loads nothing, so it answers the same for a bundle
- * whose modules do not load.
- * A file that resolves outside the vault is thrown, as every read of the vault
- * throws it, and so is a marker that is not one: a copy is named by its
- * marker or not at all.
- *
- * Over a copy (a root that carries `config/export.json`) the label is the
- * marker's bundle, `head` and `dirty` are null — the checkout the copy sits
- * in, if any, is not the bundle's — and `export` names the export it is. The
- * digests are recomputed as for any bundle, so a copy whose law or pages
- * changed after export says so (`export.intact: false`).
- */
-export async function bundleIdentity(root: string): Promise<BundleIdentity | undefined> {
-  if (!existsSync(join(root, CONSTITUTION_PATH))) return undefined;
-  const marker = markerAt(root);
-  if (marker.kind === "invalid") throw new Error(`the marker is not one: ${marker.reason}`);
-  const real = realpathSync(root);
-  const reader = fsReader(root);
-  const constitution = reader.read(CONSTITUTION_PATH);
-  const engine = reader.exists(ENGINE_PATH) ? reader.read(ENGINE_PATH) : undefined;
-  // The declarations come from the engine.json this read, parsed as the
-  // loader parses it, so a byte order mark cannot hide an installed module.
-  const law = lawDigest(
-    root,
-    constitution,
-    engine,
-    engine === undefined ? [] : declaredModulesInText(engine),
-  );
-  const content = contentDigest(root, contentRootsOf(engine));
-  if (marker.kind === "valid") {
-    const { name, source, select, pages, cut } = marker.marker;
-    const exported: BundleExport = {
-      name,
-      source: { repository: source.repository },
-      select,
-      pages,
-      cut,
-    };
-    if (source.law !== law || source.content !== content) exported.intact = false;
-    return {
-      label: marker.marker.bundle,
-      root: real,
-      head: null,
-      dirty: null,
-      law,
-      content,
-      export: exported,
-    };
-  }
-  const checkout = await gitCheckoutState(real);
-  return {
-    label: bundleLabel(root),
-    root: real,
-    head: checkout?.head ?? null,
-    dirty: checkout?.dirty ?? null,
-    law,
-    content,
-  };
+  return basename(realpathSync(root));
 }

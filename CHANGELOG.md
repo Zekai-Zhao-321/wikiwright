@@ -794,6 +794,16 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- The exports (v2 contracts §1, §12 step 6): `exports.ts`, the planner of a
+  bundle's read-only copies and their in-repository renders; `marker.ts`,
+  the copy's marker `config/export.json`, and main.ts's check of it, with the
+  refusals `export-marker-invalid` and `bundle-readonly`; the `export` block
+  of `metadata.bundle`; and `brief.ts`, the old brief renderer, which only
+  the exports still called. No verb has reached any of it since the old
+  table left. The handbooks' `exports` keys and rendered `skills/`
+  directories left with their migration to the v2 law (step 5); their frozen
+  v1 copies keep theirs until `fixtures/v1` leaves. The loss and the trigger
+  for a return are in `docs/roadmap.md` §No exports.
 - The old command table (v2 contracts §1, §12 step 6): the 24 verbs of the
   old tree under `packages/cli/src/legacy/`, which answered every root not
   on schema version 4, and their tests. One table answers every root now:
