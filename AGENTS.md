@@ -1,135 +1,95 @@
 # wikiwright: operating rules
 
-You are working in the engine repository, not in a wiki. `docs/` describes
-the system; `docs/roadmap.md` says where it stands; `CONTRIBUTING.md` says
-how to set up, test and send a change. This file is the rules.
+This is the engine repository, not a wiki. `docs/concepts.md` names its
+terms, `docs/constitution.md` specifies its data law, `docs/architecture.md`
+maps packages to invariants, `docs/roadmap.md` states losses and unverified
+work, and `CONTRIBUTING.md` gives setup and change mechanics.
 
-## What this is
+## What the engine is
 
-A typed wiki engine for LLM agents. A bundle is a Markdown vault in git that
-Obsidian opens unchanged, plus a JSON constitution. One function judges every
-change against that constitution at every write path. No database, no daemon,
-no query language, and the engine never calls a model. The thesis: a type
-system is only as good as its narrowest write path.
+A bundle is Markdown in Git, openable by Obsidian unchanged, plus a strict
+`config/engine.json` and YAML type documents. The kernel, data libraries,
+and bundle documents form its three layers. One `judgeTypeLaw(state, law)`
+judges every write path. The engine does not call a model, keep a database,
+run a daemon, or execute code supplied by a bundle. Conformance is not truth.
 
-## The invariants
+## Keep these invariants and their tests
 
-Keep these, and keep the test that holds each (`docs/architecture.md` names
-them):
+- One nominal type per page. Types, fragments, vocabularies, sections and
+  rules are data. `check` reports `okf-missing-type` on a content page with
+  no type.
+- A library is data only, imported by path from the bundle's repository.
+  The kernel owns the fixed claims, relations and entries grammar, JSON
+  Schema, the bounded CEL profile, and the page interface.
+- Working tree, drafts over disk, index over HEAD, and revision reach the
+  same judge under the law from that same state.
+- Every error or warning finding has exactly one `fix` or `queue` route;
+  informational findings have neither. Unevaluated checks are counted
+  separately, never silently passed.
+- Every declared engine key has a consumer and an end-to-end CLI fixture.
+  A law change carries rule tests and a visible staged diff.
+- Artifacts are byte-reproducible. Each generated file has one generator.
+  Sort without locale, avoid the clock in artifacts, and keep Bun APIs out
+  of `packages/` outside the Git transport.
+- The writer proves the whole proposed batch before the first page write.
+  A dry run and real run have the same refusal and path plan. A Git gate
+  judges staged bytes and law together.
+- The development gate covers every corpus and the built CLI. The
+  invariant-to-test table is in `docs/architecture.md`.
 
-- **Typed.** One nominal type per page; shapes, sections and rules are data
-  in the type documents under `constitution/` and the libraries a bundle
-  imports. Conformance, not truth: a conformant claim can still be false,
-  and nothing here claims otherwise.
-- **OKF-compatible.** `check` reports no `okf-missing-type` on any corpus.
-- **Three layers, all law is data.** Kernel, library, bundle. The kernel
-  holds the fixed grammar (claims, relations, dated entries), JSON Schema and
-  the CEL profile; a library is a directory of type, fragment and vocabulary
-  documents a bundle imports by path; a bundle's own documents may extend a
-  library's. No layer ships code: a need the kernel does not meet is a CEL
-  rule over the page interface, or a change to the kernel.
-- **One judge at every write path.** The working tree, drafts over the disk,
-  the index over HEAD and a revision: the same `judgeTypeLaw(state, law)`.
-- **Deterministic, byte-reproducible artifacts.** One generator per artifact;
-  never hand-edited; no locale, no clock, and no Bun-only API in
-  `packages/` outside the git transport (`packages/cli/src/stdoutfile.ts`).
-- **Every declared key has a consumer and an end-to-end test.** A key nothing
-  reads is a lie the config tells its author.
-- **Routing is total.** Every error or warning finding carries exactly one of
-  `fix` and `queue`; a decidable check may gate, a judgment is a queue lane.
-- **The bundle declares policy; the engine supplies mechanism.** A bundle
-  writes its rules in the bounded CEL profile over the documented page
-  interface, each with its test set; it never ships an executable hook.
-- **State the loss.** When a mechanism is removed, deferred or unverified,
-  write it where a reader will meet it. Green that hides a gap is worse than
-  red.
+## Commands
 
-## The gate
+- Read `docs/roadmap.md`, then inspect `git log --oneline -10` and
+  `git status` before changing anything. Run `bun run check` to establish
+  the inherited baseline.
+- `bun run check` runs Biome, the build, test-project typecheck and whole
+  suite. The local `scripts/hooks/pre-commit` runs it. Enable the hook
+  once per clone with `git config core.hooksPath scripts/hooks`.
+- `bun test ./<path>.test.ts` runs one file. Tests write under
+  `os.tmpdir()`; a test that spawns `write` sets `WIKIWRIGHT_TODAY`.
+- `bun packages/cli/dist/bin.js <verb> --help` and `docs/cli.md` describe
+  the eight verbs: `check`, `gate`, `write`, `rule`, `read`, `search`,
+  `type` and `version`. Run the binary when prose and behavior disagree.
+- `sh scripts/release-matrix.sh` is the manual pre-release matrix.
+  Linux and macOS have workflow runners; Windows remains unverified.
 
-The gate is `bun run check`: biome, `bun run build`, the test-project
-typecheck and the whole suite. The hook runs it locally, the workflow runs
-it on every push and pull request on Linux and macOS. Enable the hook once
-per clone:
+## Generated output
 
-```sh
-git config core.hooksPath scripts/hooks
-```
+- `devwiki/generated/*`, including the brief, from
+  `wikiwright check --write --root devwiki`.
+- A handbook's `generated/*` from `wikiwright check --write --root
+  fixtures/handbooks/<name>`.
+- `fixtures/memory-synth/generated/*` and
+  `fixtures/minimal-vault/generated/*` from their own `check --write`.
+- `docs/skills/wikiwright-maintain/finding-response.md` from
+  `bun tools/render-playbook.ts`.
+- The verb block in `docs/cli.md` from
+  `bun docs/render-cli.ts --write`.
+- `docs/v2-dispositions.md` from `bun tools/dispositions.ts`.
+- `packages/core/src/identity/casefold-data.ts` from
+  `bun tools/generate-casefold.ts`.
 
-The engine runs on Bun only, the version `.bun-version` pins (and every
-`engines.bun` with it). Before a release run `sh scripts/release-matrix.sh`
-by hand; Windows is unverified, and `docs/roadmap.md` says so.
+Regenerate, inspect, and stage generated output with the source change.
+Do not hand-edit it.
 
-## Discipline
+## NEVER
 
-- **Literal names only.** `lint` means lint. No metaphor in a verb, a config
-  key, a rule id or an error code.
-- **One logical change per commit**, with a typed prefix: `feat:`, `fix:`,
-  `refactor:`, `test:`, `docs:`, `chore:`. The why lives in the message body.
-- **Every test writes under `os.tmpdir()`.** A test that spawns a verb that
-  stamps a date sets `WIKIWRIGHT_TODAY`.
-- **Generated files have one generator.** `devwiki/generated`, the brief
-  included, from `wikiwright check --write --root devwiki`; the two
-  handbooks' `generated/`, their briefs included, from
-  `wikiwright check --write --root fixtures/handbooks/<name>`; the playbook,
-  `docs/skills/wikiwright-maintain/finding-response.md`, from
-  `bun tools/render-playbook.ts`; `docs/cli.md`'s verb block from
-  `bun docs/render-cli.ts --write`; `docs/v2-dispositions.md` from
-  `bun tools/dispositions.ts`.
-- **Describe what exists.** A document, a help string or a skill line names
-  behaviour the binary has. When unsure, run the binary and quote the
-  envelope.
-- **Semantic conflicts go to a maintainer**, never auto-resolved.
+- Put private or personal data in this repository, its fixtures, examples,
+  docs, or commit messages. The corpora here are synthetic.
+- Push anywhere but `origin`.
+- Auto-resolve a semantic conflict. Send it to a maintainer.
+- Add an executable library hook or imply that a bundle policy can run code.
+- Call a structural pass proof of a claim's truth, a pin's semantic
+  accuracy, or host hook delivery.
+- Describe a removed verb, key, module loader, or role gate as available.
 
-## Two hard rules
+## Change discipline and verification
 
-- **No private or personal data enters this repository**: not as a fixture,
-  not as an example, not in a commit message. The fixtures are synthetic.
-- **Never push anywhere but `origin`.**
+Use one logical change per commit with `feat:`, `fix:`, `refactor:`,
+`test:`, `docs:`, or `chore:`. Put the why in the body. No co-author
+trailers. Use literal names for verbs, keys, rule ids and errors.
 
-## Before you start
-
-1. Read `docs/roadmap.md`.
-2. `git log --oneline -10` and `git status`.
-3. `bun run check`, so you know whether you inherited a green tree.
-
-## Where to look
-
-| Working on | Read |
-|---|---|
-| the words: page, type, vocabulary, grammar, the judge, findings, the gate | `docs/concepts.md` |
-| a key in `config/constitution.json` or `config/engine.json` | `docs/constitution.md` |
-| a verb, a flag, the envelope, an exit code | `docs/cli.md`, or `wikiwright <verb> --help` |
-| a module, a kit, the loader, the purity scan | `docs/extending.md` |
-| a package, an invariant, a test, the gate | `docs/architecture.md` |
-| what is missing, deferred or unverified | `docs/roadmap.md` |
-| what a release changed | `CHANGELOG.md` |
-| setup, the hook, the runners, sending a change | `CONTRIBUTING.md` |
-
-## Where things live
-
-- `packages/core`: the kernel: the type-document loader, the page interface,
-  the fixed grammar's records, the CEL rules, the judge and its artifacts.
-- `packages/cli`: the binary, one module per verb under `src/verbs/`, the
-  eight verbs of the v2 contracts.
-- `devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`,
-  `fixtures/handbooks/{orchard,allotment}`: the corpora every change is
-  judged against, all on the v2 law. `devwiki` imports `libraries/kit-code`
-  by path; the tests judge each corpus where it stands and in copies under
-  `os.tmpdir()`.
-- `libraries/`: the type libraries of the v2 law, data only — type,
-  fragment and vocabulary documents with their rule tests and examples.
-  `kit-code` (id `code`) is a code wiki's page kinds, the `anchored`
-  fragment and the relation labels, the v2 form of the v1 kit
-  `@wikiwright/kit-code`, which left in step 6; nothing code-specific enters
-  the kernel or the CLI;
-  `kit-garden` (id `garden`) is the neutral test library, which the
-  allotment handbook imports.
-- `tools/`: the build-info writer, the binary builder (`bun run binary`), the
-  playbook renderer, the v2 disposition-table generator, the case-fold table
-  generator, the uncovered-directory lister, the suite runner the gate uses,
-  and the benchmark of `check` and `gate`.
-- `test/`: the tests of the built CLI as a whole — the pipe probes and the
-  compiled binary.
-- `docs/`: the documentation, the CLI reference renderer, and under
-  `docs/skills/` the three skill documents — for using, writing and
-  maintaining a bundle — with the generated playbook.
+Verify the affected CLI seam and corpus, then run `bun run check`.
+Before a release, run the release matrix. If a mechanism is removed,
+deferred or unverified, state the loss where its reader will meet it,
+including `docs/roadmap.md`. Green that hides a gap is worse than red.

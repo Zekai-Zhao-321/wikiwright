@@ -10,9 +10,10 @@ them. This skill is the part of reading one that is the same for every bundle.
 **The flags of every command are in the bundle's brief, `generated/BRIEF.md`,
 which the engine renders for each bundle; its reading section is yours.**
 
-Use the engine to decide, to write and to attribute; use your own tools to look. Reading lines with their
-context, listing and counting are yours; which page a name means, what a bundle
-holds and which version said it are the engine's.
+Use the engine for governed decisions; use your own tools to inspect source context.
+Resolve names, read current status and attribute passages through the engine;
+inspect surrounding lines and count with your own tools. The bundle block
+identifies the current checkout and law, not a historical page-as-of query.
 
 ## 1. Setup
 
@@ -48,7 +49,7 @@ on without its source cannot be checked.
 
 Read each page's `status`. `stale: true` means evidence the page cites has
 changed since the page was written against it; a rule id under `unresolved`
-means the page carries a finding nobody has judged yet; `null` means the
+means the current queue records a finding for the page; `null` means the
 engine could not tell, and `reason` or `unresolved_reason` says why. Such a page is material due for
 reconsideration, not settled knowledge: say so when you use it.
 

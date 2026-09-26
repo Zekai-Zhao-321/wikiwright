@@ -71,9 +71,9 @@ else is not covered.
 ## Tests
 
 - `bun run test` runs the suite after a build, through `tools/run-suite.ts`;
-  `bun test ./packages/cli/test/write-verb.test.ts` runs one file. Keep the
+  `bun test ./packages/cli/test/write-batch.test.ts` runs one file. Keep the
   `./`: to `bun test` a bare path is a substring filter, and
-  `packages/cli/test/staged-gate` also runs `staged-gate-reads`. A plain
+  `packages/cli/test/gate` also matches other gate tests. A plain
   `bun test` still runs every file, one after another, in one process.
   `tools/run-suite.ts` is a bridge, deleted the day `bun test --parallel`
   is proven on this suite.
@@ -86,7 +86,8 @@ else is not covered.
   `beforeAll`, `afterAll`, a timeout as `it`'s last argument); `node:assert`
   stays where a file asserts with it. `bun-pin.test.ts` refuses a
   `node:test` import.
-- A test of the built CLI as a whole goes under `test/`: the pipe probes
+- A test of the built CLI as a whole goes under `test/`: the synthetic
+  gardening episode (`test/episode.test.ts`), the pipe probes
   (`test/pipe-boundary.test.ts`), the one place a test reads the CLI's
   envelope through a pipe, on purpose — a shell's pipe, since Bun's spawned
   "pipe" is a socket with a far larger buffer on macOS — and the compiled
@@ -99,9 +100,8 @@ else is not covered.
   `bun install` does.
 - A test that spawns a verb that stamps a date (`write`) sets
   `WIKIWRIGHT_TODAY`, or the stamp moves with the day.
-- Bun's per-test budget is five seconds. A case that installs a kit and
-  drives a dozen verbs exceeds it: build the bundle in `before` and keep one
-  `it` per verb, or state `{ timeout }` on a deliberately sequential walk.
+- Bun's per-test budget is five seconds. Build shared fixtures in `before`
+  or state a longer timeout on a deliberately sequential episode.
 - `packages/core` is a pure library with no Node typings in its tsconfig, so
   a filesystem call does not typecheck there; the shell is `packages/cli`.
 - The corpora are fixtures, all on the v2 law. A change to `devwiki`'s pages

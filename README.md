@@ -16,8 +16,8 @@ grammar each section's items are written in, the vocabularies those items
 draw from, and rules in CEL. One function judges every change against that
 law at every moment a change can happen: the working tree, a batch of drafts
 before it lands, the pre-commit gate over the index. A type system is only as
-good as its narrowest write path, so there is one judge and nothing goes
-around it.
+good as its narrowest write path, so those engine paths use one judge. A
+direct editor change is judged when it reaches the gate.
 
 Every verb prints one JSON envelope, and every finding carries either a
 runnable fix or a queue lane, so the agent driving the CLI always knows its
@@ -176,7 +176,7 @@ wikiwright rule try --type planting --expr 'page.fields.bed != "herb" || page.bo
 over the index with HEAD as its base:
 
 ```sh
-wikiwright check --write && git add -A && git commit -m "planting: basil"
+wikiwright check --write && git add -A && git commit -m "feat: add basil planting"
 ```
 
 **Read what the bundle knows.** `wikiwright read Basil --section
@@ -204,9 +204,9 @@ does not cover.
 | Read | For |
 |---|---|
 | [docs/concepts.md](docs/concepts.md) | page, type, tag, vocabulary, fragment, grammar, shape, the judge, findings, the gate |
-| [docs/constitution.md](docs/constitution.md) | every key of `config/constitution.json` and `config/engine.json`, and what reads it |
+| [docs/constitution.md](docs/constitution.md) | `config/engine.json` v4, type documents, grammar, rule interface, digests and test sets |
 | [docs/cli.md](docs/cli.md) | every verb and flag, rendered from the binary; the envelope, exit codes, the dry-run law |
-| [docs/extending.md](docs/extending.md) | writing a domain kit: what a module registers, declaring and loading a module, the purity scan, determinism |
+| [docs/extending.md](docs/extending.md) | writing a data library of types, fragments, vocabularies and tested CEL rules |
 | [docs/architecture.md](docs/architecture.md) | the packages, the invariants and the tests that hold them, the gate, how to develop |
 | [docs/roadmap.md](docs/roadmap.md) | status, known limitations, and what is next |
 | [CHANGELOG.md](CHANGELOG.md) | what each release changed |

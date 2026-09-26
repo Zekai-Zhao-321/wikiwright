@@ -12,9 +12,9 @@ labels are in `generated/BRIEF.md`.** Read that first, every session. This file
 is the part the engine cannot check, and it is the part that decides whether the
 vault is worth keeping.
 
-Use the engine to decide, to write and to attribute; use your own tools to look. A line search
-over the pages is looking; whether a page exists, what a claim's handle is,
-and every byte that lands are the engine's.
+Use the engine for governed decisions; use your own tools to inspect source context.
+Resolve names, judge drafts and land them through the engine. A line search helps you look; the current
+type contract, claim handle and write verdict come from the engine.
 
 ## What deserves a page
 
@@ -52,29 +52,29 @@ category — a preference, an opinion, a habit — variance across time and mood
 the signal. Add the new observation with its date; do not overwrite the old one.
 Only an explicit retraction retires it.
 
-## A citation is a relation
+## Name evidence in the form the type asks for
 
-The page that establishes a fact is named once, as a labelled relation under
-the section the type declares for it — the label whose range is the source
-type. The engine checks the target exists, is of that type, and that the
-section carries the obligation the type requires; nothing in frontmatter
-duplicates it. A prose link to a source page is also a citation, by virtue of
-where it points; it is not a second declaration. Cite by canonical name, never
-by path: a move keeps names and changes paths.
+A claim's final parenthetical can name a page, an HTTP(S) URL or a path under
+a declared source root. A relation is a separate labelled record whose target
+must resolve; a library rule may restrict its range. A prose wikilink is a
+graph edge, and a link to a pinned source can carry stale status to the page.
+Use the page name inside a wikilink, not a filesystem path. Read the type's
+sections and rules before deciding which form establishes the needed
+evidence; the engine checks conformance, not whether the source proves the
+sentence.
 
 ## The frontmatter is YAML, and a colon is its one trap
 
 A value that contains `: ` — a title with a clause, a description with a
-colon — must be quoted, or the block does not parse. The engine then reports
-exactly one finding, at the line and column of the value, and nothing about
-the fields it could not read; quote the value and run it again.
+colon — must be quoted, or the block does not parse. The engine reports a
+malformed-frontmatter finding; quote the value and run it again.
 
 ## Pages arrive in clusters; land the cluster
 
 A module and the requirements it implements, a hub and its children, two
 pages that name each other: under a required relation section neither of two
-mutually-linked pages can land alone. The write path takes a directory of
-drafts and judges them as one state — all land or none. Put the whole cluster
+mutually-linked pages can be judged alone. The write path takes a directory of
+drafts and judges them as one state before landing. Put the whole cluster
 in one directory, and a single page in a directory of its own.
 
 A new page starts from the skeleton the brief's type verb prints with

@@ -157,7 +157,7 @@ real run would apply:
 the plan's path set equals the real filesystem delta, and that a dry run leaves
 every byte of the tree unchanged. A dry run is answered at the verb's first
 write, so every refusal the real run would reach before writing (an unknown
-type, a foreign hook, a stale base) is returned by the dry run with the same
+type, an invalid draft, a stale base) is returned by the dry run with the same
 exit code. `check` plans nothing without `--write` or `--fix`.
 
 ## Environment

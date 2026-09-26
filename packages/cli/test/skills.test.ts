@@ -76,12 +76,12 @@ describe("the three skill documents (docs/skills)", () => {
     assert.deepEqual(openings, ["using", "maintaining", "writing"]);
   });
 
-  it("each skill states the principle once: the engine to decide, write and attribute; your own tools to look", () => {
+  it("each skill distinguishes governed decisions from source inspection once", () => {
     for (const skill of SKILLS) {
       const text = readFileSync(join(SKILLS_DIR, skill, "SKILL.md"), "utf8");
       const count =
         text.split(
-          "Use the engine to decide, to write and to attribute; use your own tools to look.",
+          "Use the engine for governed decisions; use your own tools to inspect source context.",
         ).length - 1;
       assert.equal(count, 1, skill);
     }

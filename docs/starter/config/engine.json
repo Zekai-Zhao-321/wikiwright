@@ -1,0 +1,6 @@
+{
+  "schema": "wikiwright/engine",
+  "schema_version": 4,
+  "label": "garden-notes",
+  "content_roots": ["wiki"]
+}

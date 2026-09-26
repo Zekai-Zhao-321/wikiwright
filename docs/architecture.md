@@ -36,13 +36,13 @@ packages/cli/src/
   commands.ts  the command table, COMMANDS, and nothing else
   spec.ts      CommandSpec, FlagSpec, Plan, DRY_RUN_FLAG
   argv.ts      the parser built from the registry
-  envelope.ts  ok, fail, EXIT, verdictEnvelope, capOptions
+  envelope.ts  ok, fail, EXIT, capOptions and the JSON output bound
   clock.ts     today(): WIKIWRIGHT_TODAY or the wall clock, read once
   git.ts, stdoutfile.ts   the git plumbing: every git child spawned asynchronously (Bun.spawn), at most four at a time, awaited to its exit, its answer read from a file it writes itself
-  vaultfiles.ts   the config paths, the reader, the page walk and the page reads, below the loader
+  vaultfiles.ts   the page-byte reader; lawfiles.ts owns law snapshots and lawstate.ts walks content
   lawfiles.ts  v2: the working-tree, index and revision adapters that snapshot a bundle's law and its libraries for law/
   lawstate.ts  v2: the four states judgeTypeLaw is handed (working tree, drafts over the disk, the index over HEAD, a revision)
-  writer.ts    the shell half of the Writer: prove, then temp-and-rename
+  writer.ts    landBatch: stage every page, then rename and remove moved-from paths
   atomicwrite.ts   the one staged replace every non-page write lands through
   verbs/<name>.ts   one CommandSpec per verb of the command table, over the type-document law
   typelaw.ts   v2: the law a state carries loaded or refused, the engine range, the bundle block
@@ -56,8 +56,8 @@ fixtures/handbooks/           two small gardening handbooks on the v2 law, one p
 fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories), on the v2 law
 fixtures/minimal-vault/       the smallest bundle that loads, on the v2 law
 fixtures/okf-upstream/        the OKF pin: repository, commit, grounding line
-tools/                        write-build-info, build-binary, render-playbook, dispositions, generate-casefold, uncovered, run-suite, benchmark-check
-test/                         the tests of the built CLI as a whole: the pipe probes and the compiled binary
+tools/                        write-build-info, build-binary, migrate-spellings, render-playbook, dispositions, generate-casefold, uncovered, run-suite, benchmark-check
+test/                         built-CLI probes, the binary and the synthetic v2 episode
 scripts/hooks/pre-commit      the development gate
 docs/                         this documentation; render-cli.ts renders docs/cli.md's verb block
 ```
@@ -73,7 +73,7 @@ by name when it breaks. Test files live under `packages/core/test`,
 | Typed | one nominal type per page; shapes, sections and rules are data in type documents; the engine never calls a model | `law-types`, `law-shapes`, `law-rules`, `law-libraries`, `records`, `rules-profile` |
 | OKF-compatible | the vault is a valid OKF bundle without an export step: `check` reports a page with no non-empty `type` as `okf-missing-type` on every corpus | `check-verb`, `routing-xor` |
 | Three layers, all law is data | a library is type, fragment and vocabulary documents with rule tests and examples, loaded by path and qualified by its id; a bundle's documents may extend a library's; no layer ships code | `law-libraries`, `libraries` |
-| The modules import in one direction | no package's `src/` holds a runtime import cycle, however many steps around; a type-only import is erased and is not an edge | `import-graph` |
+| Packages import in one direction | no package's `src/` holds a runtime import cycle, however many steps around; a type-only import is erased and is not an edge | `import-graph` |
 | One judge at every write path | the same `judgeTypeLaw` is called by the working tree, the drafts over the disk, the index over HEAD and a revision; a property test judges one fixture through every constructor and asserts agreement, `unevaluated` counted as its own verdict | `judge-law-property`, `judge-states`, `judge-core`, `gate-verb` (the gate refuses what `write` refuses), `write-batch` |
 | Routing is total | every error or warning finding carries exactly one of `fix` and `queue`; every `info` carries neither; over every corpus and every emit path | `routing-xor`, `verdict-table` (no unroutable row) |
 | Coverage is coherent | a pass reporting `evaluated: 0` never sits beside its own findings | `coverage-coherence` |
@@ -82,7 +82,7 @@ by name when it breaks. Test files live under `packages/core/test`,
 | The dry-run law | `CommandSpec` is a union, so `writes: true` without a `plan` does not compile; `--dry-run` leaves the tree byte-identical and its path set equals the real delta; a dry run and a real run agree on every refusal | `dry-run` |
 | Deterministic artifacts | build twice is byte-identical; sorts are code-unit over NFC; no locale, no clock, no Bun-only API in `packages/` outside the git transport (`stdoutfile.ts`) | `generated-tracked`, `check-verb` (the same bytes wherever the bundle sits), `gates` |
 | The path law | a bundle path names a file inside the bundle: shape in core, containment in the shell, at every read and write | `path-law` (core and cli) |
-| Every declared key has a consumer | every `engine.json` key of schema version 4 names a reader and has an end-to-end fixture marked `e2e:<key>` | `law-libraries`, `commit-prefixes` |
+| Every declared key has a consumer | every `engine.json` key of schema version 4 names a reader and has an end-to-end fixture marked `e2e:<key>` | `law-libraries`, `engine-v4-e2e`, `commit-prefixes` |
 | The engine spawns no child synchronously | every git read goes through the asynchronous transport, file-backed, at most four children at once, each under a timeout (`WIKIWRIGHT_GIT_TIMEOUT_MS`) that kills a child still running and refuses the verb as `git-timeout`, and none held past its exit by a process holding its stderr; no file the packages ship names a synchronous spawn; a test runs the CLI with its stdout on a file, and the pipe probes read the CLI's envelope and the binary's through a shell's pipe on purpose, a reader starting late, and hold it to the filed one, the probe itself proven to fail a CLI that exits with its envelope half written | `git-transport`, `git-timeout`, `git-short-read`, `no-sync-spawn`, `pipe-boundary` |
 | The v2 law is one function of its bytes | the working tree and the index snapshot a bundle and its libraries into the same bytes, and `loadTypeLaw` reads nothing else; the law digest is byte-stable across loads and equal under both adapters, for a bundle at the top level and one in a subdirectory; every load-time code the contracts name is raised by a gardening fixture under `os.tmpdir()` | `law-libraries`, `law-types`, `law-shapes`, `law-digests` |
 | A rule's iterations are bounded before it runs | a CEL rule is admitted by an AST walk or refused with the limit named; every comprehension ranges over a direct interface path under a declared bound, and a worst case over 200,000 comprehension iterations is refused at load; the data holds the bounds the worst case multiplies — a page over 200 sections, a section over 5,000 items, a frontmatter list or map over 1,000 members or over 10,000 distinct link targets is `page-too-large`, and a config list over 1,000, a vocabulary over 10,000 entries or a law over 10,000 types is refused at load; the work a built-in does inside one iteration (`in` over a list, `join`, `contains`) is not counted (`docs/roadmap.md`); `Intl` sits in the bundle only behind calls the profile refuses | `rules-profile`, `law-rules`, `law-interface` |
@@ -93,6 +93,33 @@ by name when it breaks. Test files live under `packages/core/test`,
 | The corpora are fixtures | every corpus judges to the verdict recorded for it under `check` and under the gate, its tracked `generated/` is what this build renders, and every library holds on its own | `fixture-verdicts`, `generated-tracked`, `libraries` |
 | Identity is Unicode-aware | NFC and full case folding through one seam, with CJK cases; unique basenames, aliases and titles | `identity`, `judge-core` |
 | Every bundle envelope names its bundle | a verb that reads a bundle's law adds `metadata.bundle` — engine.json's label, the real root, head, dirty, the law digest, the content digest over the pages it read — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs or to `version`; the generated brief's header prints the same law digest | `bundle-identity`, `check-verb`, `law-digests` |
+
+### Disposition of the v1 invariants
+
+The old invariant table named mechanisms that left with the old registry.
+Each row below records what now holds it, or where its loss is stated.
+
+| V1 invariant | V2 disposition |
+|---|---|
+| Typed; OKF-compatible | Retained over type documents; `law-types`, `check-verb`, `routing-xor` |
+| Four layers | Replaced by kernel, data library, bundle; `law-libraries`, `libraries` |
+| Modules import in one direction | The acyclic package boundary remains; `import-graph` |
+| One registration API | Removed with executable modules; see `docs/roadmap.md` §A bundle runs no code of its own |
+| Every surface of the module API is consumed | Removed with that API; the v4 engine key invariant replaces its config guarantee; `law-libraries`, `engine-v4-e2e` |
+| A module loads through the whole ladder | Removed with resolution, purity scan and fixture; see `CHANGELOG.md` §Removed and `docs/roadmap.md` §A bundle runs no code of its own |
+| One judge at every write path | Retained as `judgeTypeLaw` over four states; `judge-law-property`, `judge-states`, `gate-verb`, `write-batch` |
+| Routing is total; coverage is coherent | Retained; `routing-xor`, `verdict-table`, `coverage-coherence` |
+| The splice law; the Writer is the only writer; the dry-run law | Retained; `writer-fuzz`, `writer`, `dry-run`, `write-batch` |
+| Deterministic artifacts; the path law | Retained for the v2 generators and four states; `generated-tracked`, `gates`, `path-law` |
+| Every declared key has a consumer | Retained for engine.json v4, with one CLI fixture per key; `law-libraries`, `engine-v4-e2e`, `commit-prefixes` |
+| The shell has one clock; one code per meaning | Retained; `write-batch`, `exit-taxonomy` |
+| The command registry is the only surface | Retained over eight verbs; `command-table`, `per-command-help`, `skills` |
+| The starters are fixtures | Starter and `init` removed; `minimal-vault` is the smallest loading example, and `fixture-verdicts` holds the corpora |
+| Identity is Unicode-aware | Retained; `identity`, `judge-core` |
+| Every vault envelope names its bundle | Retained with label, real root and digests; the export block left; `bundle-identity` |
+| A copy is a vault | Removed with exports and the copy marker; see `docs/roadmap.md` §No exports |
+| Discovery reads markers only | Removed with bundle-skill discovery; see `docs/roadmap.md` §No bundle is found by name |
+| Two bundles are told apart | Bundle identity remains in envelopes; discovery, copy write refusal and role gating left; `bundle-identity`, `read-search-status` and the roadmap name the loss |
 
 One more property is stated rather than tested, so a reader meets it: the
 artifact write loop is per-file atomic but not batch-atomic (a crash mid-loop

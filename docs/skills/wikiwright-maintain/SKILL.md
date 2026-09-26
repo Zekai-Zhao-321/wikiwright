@@ -10,9 +10,9 @@ The engine owns every mechanical contract. **The commands and their flags are in
 [finding-response.md](finding-response.md), which the engine generates from its
 own table.** This file is what neither of those can say.
 
-Use the engine to decide, to write and to attribute; use your own tools to look. Counting findings or
-reading a generated artifact is looking; a verdict, a fix and a change to the
-law are the engine's.
+Use the engine for governed decisions; use your own tools to inspect source context.
+Counting findings or reading a generated artifact is inspection; a verdict,
+a fix and a law change pass through the engine.
 
 ## A finding is a question about the law as often as about the page
 
@@ -44,12 +44,12 @@ knob. If a row is too loud, the honest moves are: fix the pages, waive the speci
 occurrences with a stated reason, or change the declaration that produces it. A
 severity lowered to silence a queue removes the instrument and keeps the defect.
 
-## A refused commit prints the summary, not the envelope
+## A refused commit has a human summary and a JSON envelope
 
-The gate prints the rule census and the error findings — rule, path, line,
-message, route — then one line saying how to see the rest. The whole envelope
-is `--all` away on the gate verb the brief names; the coverage block is never
-what blocked you.
+The gate prints the rule census and error findings on stderr — rule, path,
+line, message and route — and one line saying how to see the rest. Its JSON
+envelope remains on stdout. Run the gate with `--all` for uncapped findings;
+the coverage block is not what blocked the commit.
 
 ## A law change is stated in the commit
 
