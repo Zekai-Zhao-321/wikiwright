@@ -4,7 +4,7 @@ title: "Determinism of artifacts"
 description: "Stable law and content digests and generated files produced from one judged state."
 tags: [kernel, cli]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
   origin: .
   covers: ["packages/core/src/digest/index.ts", "packages/core/src/artifacts/index.ts", "packages/cli/src/generated.ts", "packages/cli/src/verbs/check.ts"]
 ---

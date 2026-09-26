@@ -4,7 +4,7 @@ title: "Environment variables"
 description: "The two environment inputs the v2 CLI reads: the write date and Git-child timeout."
 tags: [cli]
 pin:
-  commit: 34a9fe67279c277a390b728ac1b8bdeb15ab1a96
+  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
   origin: .
   covers: ["packages/cli/src/clock.ts", "packages/cli/src/git.ts", "packages/cli/src/main.ts"]
 ---

@@ -4,7 +4,7 @@ title: "The command runtime"
 description: "The eight-verb command table, argument parser, JSON envelope and bundle identity of the v2 CLI."
 tags: [cli]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
   origin: .
   covers: ["packages/cli/src/main.ts", "packages/cli/src/commands.ts", "packages/cli/src/argv.ts", "packages/cli/src/envelope.ts", "packages/cli/src/spec.ts", "packages/cli/src/typelaw.ts"]
 ---
@@ -29,7 +29,7 @@ Argument refusals happen before judgment. A successful law load and its page sta
 
 ## Failure modes
 
-Unknown commands, flags and missing arguments are usage errors. An invalid law is a constitution error; Git plumbing, changing trees and page findings remain distinct refusal types.
+Unknown commands, flags and missing arguments are usage errors. An invalid law is a constitution error; unsafe replacement targets and a changed pre-write state are conflicts. Git plumbing and page findings remain distinct refusal types.
 
 ## Relations
 
