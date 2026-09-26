@@ -17,6 +17,7 @@ import { codeUnitCompare } from "../identity/index.ts";
 import { lawFacts, type PageRead, type ParsedPage, parsePage } from "../interface/index.ts";
 import type { TypeLaw } from "../law/load.ts";
 import { applyExceptions, hasExceptions } from "./exceptions.ts";
+import { folderFindings, formerFolderFindings } from "./folders.ts";
 import { grammarRows, itemFindings, sectionFindings } from "./grammar.ts";
 import { type JudgeOverlaid, type LawTestOptions, lawTestFindings } from "./lawtests.ts";
 import { buildNames, identityCollisions, type NamedPage, type VaultNames } from "./names.ts";
@@ -50,6 +51,19 @@ export interface TypeLawJudgeOptions {
   lawTests?: boolean;
   /** §8: rule ids the gate's law diff adds or changes; each one untested is an error. */
   rulesChanged?: ReadonlySet<string>;
+  /**
+   * The state already read under this law (`readPages`), so a verb that also
+   * renders the generated files from it parses each page once.
+   */
+  read?: StateRead;
+  /**
+   * §9: findings a verb judged beside the judge — `check`'s pins, generated
+   * files and base-OKF row, the gate's — routed, ordered, filtered and counted
+   * with the judge's own.
+   */
+  shellFindings?: readonly Unrouted[];
+  /** The coverage cells of the passes a verb ran beside the judge, by id. */
+  shellCoverage?: Readonly<Record<string, CoverageCell>>;
 }
 
 export interface CoverageCell {
@@ -156,11 +170,15 @@ export interface ReadPage {
   base: PageRead | null | undefined;
 }
 
+/** A state's pages read under a law: each page, the vault's names, and what they name. */
+export interface StateRead {
+  pages: ReadPage[];
+  names: VaultNames;
+  named: NamedPage[];
+}
+
 /** Every page of a state read under the law, relation targets resolved against the vault. */
-export function readPages(
-  state: Pick<JudgeState, "pages" | "base">,
-  law: TypeLaw,
-): { pages: ReadPage[]; names: VaultNames; named: NamedPage[] } {
+export function readPages(state: Pick<JudgeState, "pages" | "base">, law: TypeLaw): StateRead {
   const read: ReadPage[] = [...state.pages].map(([path, bytes]) => {
     const current = parsePage(path, bytes, law);
     if (state.base === undefined) return { path, read: current, base: undefined };
@@ -200,7 +218,9 @@ export function resolveRelations(page: ParsedPage, names: VaultNames): void {
  * The ids a page's coverage is counted over: the page rows, and the vault
  * rows a page takes part in (its names, its type's instances).
  */
-const PAGE_ROWS = VERDICT_TABLE.filter((row) => row.scope !== "law").map((row) => row.id);
+const PAGE_ROWS = VERDICT_TABLE.filter((row) => row.scope === "page" || row.scope === "vault").map(
+  (row) => row.id,
+);
 
 /** The findings of one page, and which passes judged it. */
 export interface PageJudgment {
@@ -279,6 +299,16 @@ export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): P
   out.findings.push(...pageRefFindings(ctx, parsed, type));
   if (ctx.tags !== undefined) judged.add("vocabulary-unknown").add("vocabulary-retired");
   out.findings.push(...tagFindings(ctx, parsed));
+  const engine = ctx.law.engine;
+  if (engine.folder_tags.mode !== "off") {
+    judged.add("folder-segment-registered").add("folder-tags-present");
+    out.findings.push(...folderFindings(page.path, parsed, engine, ctx.tags));
+    const from = ctx.renamedFrom.get(page.path);
+    if (from !== undefined) {
+      judged.add("former-folder-tags-review");
+      out.findings.push(...formerFolderFindings(from, page.path, parsed, engine));
+    }
+  }
   judged.add("wikilink-unresolved").add("wikilink-alias-target");
   out.findings.push(...linkFindings(ctx, parsed));
   if (ctx.renamedFrom.has(page.path)) judged.add("renamed-without-alias");
@@ -439,17 +469,26 @@ export function verdictOf(
   };
 }
 
+/** What one judge run found, before it is routed, ordered, filtered and capped. */
+export interface Collected {
+  found: Unrouted[];
+  coverage: Coverage;
+  /** The pages the state holds. */
+  pages: number;
+}
+
 /**
- * v2 contracts §10: `judge(state, law)`. `law` is `loadTypeLaw(state.law)`;
- * the caller loads it, so a law that does not load is reported as the
- * loader's issues and never judged.
+ * Every finding of one state under one law, with the coverage of every row:
+ * the pages, the vault as a whole, the rule tests and examples. What a verb
+ * adds beside it (`shellFindings`, `shellCoverage`) is not read here;
+ * `verdictOfCollected` adds it.
  */
-export function judgeTypeLaw(
+export function collectTypeLaw(
   state: JudgeState,
   law: TypeLaw,
   options: TypeLawJudgeOptions = {},
-): TypeLawVerdict {
-  const { pages, names, named } = readPages(state, law);
+): Collected {
+  const { pages, names, named } = options.read ?? readPages(state, law);
   const ctx = pageContext(state, law, names);
   const coverage = new Coverage([...PAGE_ROWS, ...law.rules.keys()]);
   const found: Unrouted[] = [];
@@ -496,5 +535,42 @@ export function judgeTypeLaw(
       options.rulesChanged === undefined ? {} : { rulesChanged: options.rulesChanged };
     found.push(...lawTestFindings(law, overlaid, tests));
   }
-  return verdictOf(found, coverage, pages.length, options);
+  return { found, coverage, pages: pages.length };
+}
+
+/**
+ * The verdict of what one run collected, with what a verb found beside the
+ * judge: routed, ordered, filtered by `--rule` and `--path`, capped, counted.
+ * The collection is not changed, so one run can answer two verdicts — the
+ * queue's, uncapped and without the verb's own findings, and the envelope's.
+ */
+export function verdictOfCollected(
+  collected: Collected,
+  options: TypeLawJudgeOptions = {},
+): TypeLawVerdict {
+  const coverage = new Coverage([]);
+  for (const [id, cell] of collected.coverage.cells) coverage.cells.set(id, { ...cell });
+  for (const [id, reasons] of collected.coverage.reasons)
+    coverage.reasons.set(id, new Set(reasons));
+  for (const [id, cell] of Object.entries(options.shellCoverage ?? {}))
+    coverage.cells.set(id, { ...cell });
+  return verdictOf(
+    [...collected.found, ...(options.shellFindings ?? [])],
+    coverage,
+    collected.pages,
+    options,
+  );
+}
+
+/**
+ * v2 contracts §10: `judge(state, law)`. `law` is `loadTypeLaw(state.law)`;
+ * the caller loads it, so a law that does not load is reported as the
+ * loader's issues and never judged.
+ */
+export function judgeTypeLaw(
+  state: JudgeState,
+  law: TypeLaw,
+  options: TypeLawJudgeOptions = {},
+): TypeLawVerdict {
+  return verdictOfCollected(collectTypeLaw(state, law, options), options);
 }

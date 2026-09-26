@@ -6,7 +6,7 @@
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { COMMANDS } from "../src/commands.ts";
+import { LEGACY_COMMANDS } from "../src/commands.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -29,7 +29,7 @@ function run(args: string[], env?: Record<string, string>): Run {
 }
 
 describe("WIKIWRIGHT_ROLE=consumer bounds the surface (docs/cli.md §brief)", () => {
-  const consumerVerbs = COMMANDS.filter((c) => c.role === "consumer").map((c) => c.name);
+  const consumerVerbs = LEGACY_COMMANDS.filter((c) => c.role === "consumer").map((c) => c.name);
 
   it("a maintainer verb exits 2 with role-forbidden and the consumer surface", () => {
     const r = run(["lint"], { WIKIWRIGHT_ROLE: "consumer" });

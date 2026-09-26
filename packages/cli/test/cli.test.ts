@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseInvocation } from "../src/argv.ts";
-import { COMMANDS } from "../src/commands.ts";
+import { COMMANDS, LEGACY_COMMANDS } from "../src/commands.ts";
 import { EXIT, fail, ok } from "../src/envelope.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
@@ -218,7 +218,7 @@ describe("schema declares the global flags the parser accepts (docs/cli.md §sch
 
   it("every global flag parses for every command; an undeclared flag for none", () => {
     const flags = globalFlagsFromSchema();
-    for (const spec of COMMANDS) {
+    for (const spec of new Set([...COMMANDS, ...LEGACY_COMMANDS])) {
       // A verb with subcommands takes its first one, so the flag is judged on
       // an invocation the parser would otherwise accept.
       const lead = spec.subcommands === undefined ? [] : [spec.subcommands[0] ?? ""];

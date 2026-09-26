@@ -77,23 +77,24 @@ export const ENGINE_V4_SCHEMA = {
 } as const;
 
 /**
- * Every v4 key and the exported function of @wikiwright/core that reads it.
- * `null` is a key the loader validates and carries with no reader yet: a verb
- * not yet rewritten over the v2 law (contracts §12 step 4). docs/roadmap.md
- * names each.
+ * Every v4 key and the exported function that reads it: a function of
+ * @wikiwright/core by its name, or a function of the shell as
+ * `cli/<module>:<function>` (packages/cli/src). `null` is a key the loader
+ * validates and carries with no reader yet: a verb not yet rewritten over
+ * the v2 law (contracts §12 step 4). docs/roadmap.md names each.
  */
 export const ENGINE_V4_CONSUMERS: Readonly<Record<string, string | null>> = {
   schema: "loadEngineV4",
   schema_version: "loadEngineV4",
-  label: null,
-  engine: null,
+  label: "cli/typelaw.ts:typeLawIdentity",
+  engine: "cli/typelaw.ts:engineMismatch",
   content_roots: "contentRootsOf",
   source_roots: "parsePage",
   libraries: "resolveLibraries",
   commit_prefixes: null,
   field_sources: "compileShapes",
-  folder_tags: null,
-  folder_tag_aliases: null,
+  folder_tags: "folderFindings",
+  folder_tag_aliases: "folderFindings",
   extensions: "compileShapes",
 };
 

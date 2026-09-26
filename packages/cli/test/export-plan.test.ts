@@ -21,7 +21,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parsedPages } from "@wikiwright/core";
 import { contentDigestOf, lawDigest } from "../src/bundle.ts";
-import { COMMANDS } from "../src/commands.ts";
+import { LEGACY_COMMANDS } from "../src/commands.ts";
 import {
   type ExportPlan,
   exportPlans,
@@ -105,7 +105,14 @@ async function plans(root: string, label: string): Promise<ExportPlan[]> {
   const source = fsExportSource(root, parsedPages(fsState(root, rootsOf(vault))));
   const declared = exportPlans(vault, label);
   return declared.map((declaration) =>
-    planExport({ vault, source, declaration, label, commands: COMMANDS, siblings: declared }),
+    planExport({
+      vault,
+      source,
+      declaration,
+      label,
+      commands: LEGACY_COMMANDS,
+      siblings: declared,
+    }),
   );
 }
 

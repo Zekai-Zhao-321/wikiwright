@@ -191,8 +191,16 @@ export const RULES: readonly Row[] = [
     "the judge: `wikilink-alias-target`, carried by id (verdict/page.ts)",
   ],
   ["wikilink-unresolved", "kernel", "the judge: `wikilink-unresolved`, carried by id"],
-  ["generated-drift", "kernel", "`check` and `gate` over `generated/*` (§9)"],
-  ["okf-missing-type", "kernel", "the `okf-missing-type` rule inside `check` (§1, §9.1)"],
+  [
+    "generated-drift",
+    "kernel",
+    "`check` and `gate`: `generated-drift` over `generated/*`, its fix `check --write` (verbs/check.ts, generated.ts)",
+  ],
+  [
+    "okf-missing-type",
+    "kernel",
+    "`check`: `okf-missing-type`, a page with no non-empty `type` (§1, §9.1, verbs/check.ts)",
+  ],
   [
     "template-placeholder-unknown",
     "dropped",
@@ -211,11 +219,23 @@ export const RULES: readonly Row[] = [
   [
     "freshness-unavailable",
     "kernel",
-    "`check`'s pin measurement against the local repository (§9.1)",
+    "`check`'s pin measurement: `pin-unmeasured` (info), reason `no-repository` or `no-head` (pins.ts)",
   ],
-  ["folder-segment-registered", "kernel", "the folder-tag fixer, `folder_tags` as today (§2)"],
-  ["folder-tags-present", "kernel", "the folder-tag fixer, `folder_tags` as today (§2)"],
-  ["former-folder-tags-review", "kernel", "the folder-tag fixer, `folder_tags` as today (§2)"],
+  [
+    "folder-segment-registered",
+    "kernel",
+    "the judge: `folder-segment-registered`, `folder_tags` as today (verdict/folders.ts)",
+  ],
+  [
+    "folder-tags-present",
+    "kernel",
+    "the judge: `folder-tags-present`, its fix `check --fix` under `materialize-add-only` (verdict/folders.ts)",
+  ],
+  [
+    "former-folder-tags-review",
+    "kernel",
+    "the judge: `former-folder-tags-review` over the index state's renames (verdict/folders.ts)",
+  ],
   [
     "unregistered-extension",
     "dropped",
@@ -226,14 +246,22 @@ export const RULES: readonly Row[] = [
     "kernel",
     "the judge: `page-shape-invalid` against the engine `$def` `pin` (schema/shapes.ts)",
   ],
-  ["stale-capture", "kernel", "`check`'s pin measurement, reported as `pin-stale` (§9.1)"],
-  ["stale-source-cited", "kernel", "`check`, propagated over `graph.json` edges (§9.1)"],
+  ["stale-capture", "kernel", "`check`'s pin measurement: `pin-stale` (§9.1, pins.ts)"],
+  [
+    "stale-source-cited",
+    "kernel",
+    "`check`: `stale-source-cited`, one hop over `graph.json`'s edges (§9.1, pins.ts)",
+  ],
   [
     "citation-unresolved",
     "kernel",
-    "`check`'s pin measurement, the citations held to the pin as `freshness` holds them today",
+    "`check`'s pin measurement: `citation-unresolved`, the citations held to the pin as `freshness` held them (pins.ts)",
   ],
-  ["pin-unknown-to-origin", "kernel", "`check`'s pin measurement against the local repository"],
+  [
+    "pin-unknown-to-origin",
+    "kernel",
+    "`check`'s pin measurement: `pin-unknown`, a pin not on the history of HEAD (pins.ts)",
+  ],
   [
     "origin-unreachable",
     "dropped",

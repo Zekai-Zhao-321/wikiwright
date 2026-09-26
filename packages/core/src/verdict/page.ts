@@ -23,7 +23,7 @@ import type { RuleContext } from "./rules.ts";
 import type { FindingLocation, VerdictFinding } from "./table.ts";
 
 /** A finding before it is routed. */
-export type Unrouted = Omit<VerdictFinding, "queue">;
+export type Unrouted = Omit<VerdictFinding, "queue" | "fix">;
 
 export const PAGE_LOCATION: FindingLocation = { kind: "page" };
 

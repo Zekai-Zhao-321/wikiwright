@@ -126,11 +126,17 @@ describe("engine.json v4", () => {
     );
   });
 
-  it("names, for every key it says is read, an exported function of core that reads it", () => {
-    const exported = core as Record<string, unknown>;
+  it("names, for every key it says is read, an exported function of core or the shell that reads it", async () => {
     for (const [key, reader] of Object.entries(ENGINE_V4_CONSUMERS)) {
       if (reader === null) continue;
-      const fn = exported[reader];
+      let exported = core as Record<string, unknown>;
+      let name = reader;
+      if (reader.startsWith("cli/")) {
+        const [module = "", fn = ""] = reader.slice("cli/".length).split(":");
+        exported = (await import(`../src/${module}`)) as Record<string, unknown>;
+        name = fn;
+      }
+      const fn = exported[name];
       expect([key, typeof fn]).toEqual([key, "function"]);
       expect([key, String(fn).includes(key)]).toEqual([key, true]);
     }
@@ -139,7 +145,7 @@ describe("engine.json v4", () => {
         .filter(([, reader]) => reader === null)
         .map(([key]) => key)
         .sort(),
-    ).toEqual(["commit_prefixes", "engine", "folder_tag_aliases", "folder_tags", "label"]);
+    ).toEqual(["commit_prefixes"]);
   });
 
   it("refuses an absent file and a file that is not JSON", () => {

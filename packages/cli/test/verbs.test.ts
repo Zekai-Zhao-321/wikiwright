@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { runCli } from "./fixtures/runtime.ts";
-import { verbModule } from "./fixtures/verb-module.ts";
+import { everyVerb } from "./fixtures/verb-module.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -302,12 +302,12 @@ describe("the per-verb split (docs/architecture.md §Directories)", () => {
   const SRC = fileURLToPath(new URL("../src/", import.meta.url));
 
   it("every registered verb has its own module, under src/verbs/ or src/legacy/", async () => {
-    const { COMMANDS } = (await import("../src/commands.ts")) as {
+    const { COMMANDS, LEGACY_COMMANDS } = (await import("../src/commands.ts")) as {
       COMMANDS: Array<{ name: string }>;
+      LEGACY_COMMANDS: Array<{ name: string }>;
     };
     assert.equal(COMMANDS.length > 0, true, "the registry is not empty");
-    for (const command of COMMANDS) {
-      const rel = verbModule(command.name);
+    for (const { spec: command, module: rel } of everyVerb(COMMANDS, LEGACY_COMMANDS)) {
       const module = join(SRC, rel);
       assert.equal(existsSync(module), true, `no ${rel} for verb "${command.name}"`);
       // Windows: node's ESM loader refuses a bare absolute path ("protocol

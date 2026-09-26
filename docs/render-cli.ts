@@ -1,6 +1,6 @@
 // Renders the verb reference in docs/cli.md from the binary's own command
-// registry (`wikiwright schema`), so the names and flags in the document are the
-// binary's, byte for byte.
+// table (`wikiwright --help --json`, every verb's schema), so the names and
+// flags in the document are the binary's, byte for byte.
 //
 //   bun docs/render-cli.ts            print the generated block
 //   bun docs/render-cli.ts --write    replace the block between the markers in docs/cli.md
@@ -48,13 +48,13 @@ function readSchema(): Schema {
     const out = openSync(outPath, "wx", 0o600);
     let status: number | null;
     try {
-      status = spawnSync(process.execPath, [BIN, "schema"], {
+      status = spawnSync(process.execPath, [BIN, "--help", "--json"], {
         stdio: ["ignore", out, "inherit"],
       }).status;
     } finally {
       closeSync(out);
     }
-    if (status !== 0) throw new Error(`\`wikiwright schema\` exited ${String(status)}`);
+    if (status !== 0) throw new Error(`\`wikiwright --help --json\` exited ${String(status)}`);
     return JSON.parse(readFileSync(outPath, "utf8")) as Schema;
   } finally {
     rmSync(scratch, { recursive: true, force: true });

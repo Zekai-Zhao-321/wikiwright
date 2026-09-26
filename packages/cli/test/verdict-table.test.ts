@@ -7,20 +7,12 @@ import { describe, expect, it } from "bun:test";
 import { unroutableVerdictRows, VERDICT_TABLE } from "@wikiwright/core";
 import { RULES } from "../../../tools/dispositions.ts";
 
-/** Kernel ids whose pass is a verb's, not the judge's: they arrive with step 4. */
-const VERB_OWNED: Readonly<Record<string, string>> = {
-  "generated-drift": "check and gate over generated/*",
-  "okf-missing-type": "check",
-  "freshness-unavailable": "check's pin measurement",
-  "folder-segment-registered": "check's folder-tag fixer",
-  "folder-tags-present": "check's folder-tag fixer",
-  "former-folder-tags-review": "gate's folder-tag review",
-  "stale-capture": "check's pin measurement (pin-stale)",
-  "stale-source-cited": "check, over graph.json",
-  "citation-unresolved": "check's pin measurement",
-  "pin-unknown-to-origin": "check's pin measurement",
-  "brief-stale": "check over generated/BRIEF.md",
-};
+/**
+ * Kernel ids whose pass is a verb's and has no row yet: none since step 4's
+ * `check`, whose codes (`generated-drift`, `okf-missing-type`, the pins) are
+ * rows of scope `shell`, and the judge's folder-tag rows.
+ */
+const VERB_OWNED: Readonly<Record<string, string>> = {};
 
 describe("the v2 judge's table, carried over by id", () => {
   const carried = new Set(VERDICT_TABLE.flatMap((row) => row.carries));

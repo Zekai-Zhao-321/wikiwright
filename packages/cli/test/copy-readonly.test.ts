@@ -25,7 +25,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMMANDS } from "../src/commands.ts";
+import { LEGACY_COMMANDS } from "../src/commands.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
@@ -172,7 +172,7 @@ describe("a marked root refuses every write path (docs/cli.md §bundles)", () =>
   it("every writing verb is refused over a copy", () => {
     const copy = copyWith({ mode: "none" });
     const before = treeHash(copy);
-    for (const spec of COMMANDS.filter((c) => c.writes)) {
+    for (const spec of LEGACY_COMMANDS.filter((c) => c.writes)) {
       const lead = spec.subcommands === undefined ? [] : [spec.subcommands[0] ?? ""];
       const r = run(tmp, [spec.name, ...lead, "--root", copy]);
       assert.equal(

@@ -9,6 +9,41 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- **`check` over the v2 law** (v2 contracts §9.1, step 4). Over a bundle on
+  schema version 4, `check [--write] [--fix] [--dry-run]` reads the working
+  tree through the v2 state, refuses a law that does not load
+  (`constitution-invalid`, exit 2, its issues in `data.issues`) and a
+  running engine outside the declared range (`engine-mismatch`, exit 2),
+  judges every page, rule test and example with `judgeTypeLaw`, and adds
+  beside the judge: `generated-drift` for each file under `generated/`
+  (`BRIEF.md`, `graph.json`, `manifest.json`, `queue.md`, `tag-catalog.md`)
+  that differs from a fresh render, fix `check --write`; `okf-missing-type`
+  (error, `type-review`); every pin — a top-level property whose schema is
+  the engine `$def` `pin` — measured against the repository the bundle sits
+  in: `pin-stale` (warning, `source-review`) when its covered paths changed
+  since its commit, `pin-unknown` (warning) when HEAD's history does not
+  hold its commit, `citation-unresolved` (warning) for a cited path or line
+  the commit does not hold, `pin-unmeasured` (info) with reason
+  `remote-origin`, `no-repository` or `no-head`, and `stale-source-cited`
+  (warning) on every page with an edge, of any kind but `tagged`, into a
+  stale page. `--write` renders `generated/` through the staged replace;
+  `--fix` implies it and first runs the folder-tag materializer under
+  `folder_tags.mode: materialize-add-only`. The envelope carries the
+  verdict, `pins` (`counts` and `entries`), `generated` (`files`,
+  `written`) and, under `--fix`, `fixed`; `metadata.bundle` is the v2 block:
+  engine.json's `label`, the law and content digests of what was judged.
+  `generated/queue.md` holds every queued finding of a judge run with no
+  base over the pages, and the law and content digests it was cut from. The
+  judge gains the folder-tag rows (`folder-segment-registered`,
+  `folder-tags-present`, whose route is `check --fix` under
+  `materialize-add-only` and `tag-review` otherwise, and
+  `former-folder-tags-review` over the index's renames), and a finding may
+  carry `fix: {argv}` in place of `queue`.
+- **Two command tables.** A root whose `config/engine.json` is schema
+  version 4 is answered by the command table of the v2 contracts; any other
+  root, and any `--bundle` invocation, by the old table whole, until the
+  corpora migrate and the old verbs are deleted.
+
 - **The envelope's bound, `--out` and `--help --json`** (v2 contracts §9).
   An envelope over 1 MiB is refused as `envelope-too-large` (exit 2) with a
   hint naming `--out <file>`; `--out`, a global flag, writes the whole
@@ -549,6 +584,17 @@ version` prints the engine version and the commit a binary was built from.
   runs directly, without the cache.
 
 ### Removed
+
+- `lint`, `fix`, `freshness` and `okf`, absorbed by `check` over a
+  schema-version-4 bundle; each still answers any other root. Not carried:
+  `lint --since` (the replay, deferred), `lint --stdin` and `--explain`,
+  `freshness --fast-forward` and `generated/freshness.json`, every fixer
+  but the folder tags and the generated files (`frontmatter-set`,
+  `frontmatter-delete`, `tag-rename`, `section-stub`, `heading-depth`,
+  `link-rewrite`, `retype`, `history-close`), and base OKF's checks other
+  than `okf-missing-type`. Renamed on the way: `stale-capture` is
+  `pin-stale`, `pin-unknown-to-origin` is `pin-unknown`, and the
+  unmeasured states are `pin-unmeasured`.
 
 - A machine-local registry of connected bundles, added and removed on the way
   to this release, so none shipped: registering a bundle by name, its kinds,

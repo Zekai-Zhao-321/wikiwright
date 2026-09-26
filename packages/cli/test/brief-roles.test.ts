@@ -9,7 +9,7 @@
 import { beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { COMMANDS } from "../src/commands.ts";
+import { LEGACY_COMMANDS } from "../src/commands.ts";
 import { ROLE_RANK } from "../src/spec.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
@@ -102,7 +102,7 @@ describe("every role prints its own brief (docs/cli.md §brief)", () => {
 
   it("the consumer's verb list holds no verb that writes a bundle, and only verbs a consumer may run", () => {
     const listed = listedVerbs(consumer.text);
-    const writing = COMMANDS.filter((c) => c.writes).map((c) => c.name);
+    const writing = LEGACY_COMMANDS.filter((c) => c.writes).map((c) => c.name);
     // A consumer runs no writing verb: `bundles` lists what the skill
     // directories hold and writes nothing (docs/cli.md §bundles). A writing
     // verb in the list fails here, so adding one is a decision.
@@ -112,7 +112,7 @@ describe("every role prints its own brief (docs/cli.md §brief)", () => {
     );
     assert.deepEqual(
       listed,
-      COMMANDS.filter((c) => c.role === "consumer")
+      LEGACY_COMMANDS.filter((c) => c.role === "consumer")
         .map((c) => c.name)
         .sort(),
     );
@@ -123,7 +123,9 @@ describe("every role prints its own brief (docs/cli.md §brief)", () => {
     const loop = section(consumer.text, "The loop");
     assert.equal(loop.length, 6, loop.join("\n"));
     assert.equal(loop[0], PRINCIPLE);
-    const above = COMMANDS.filter((c) => ROLE_RANK[c.role] > ROLE_RANK.consumer).map((c) => c.name);
+    const above = LEGACY_COMMANDS.filter((c) => ROLE_RANK[c.role] > ROLE_RANK.consumer).map(
+      (c) => c.name,
+    );
     for (const name of ["write", "new", "fix", "check"]) assert.ok(above.includes(name), name);
     for (const name of above) {
       const named = loop.filter((line) => new RegExp(`\`${name}[\\s\`]`, "u").test(line));

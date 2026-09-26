@@ -39,10 +39,11 @@ packages/core/src/
   interface/   v2: a page read from its bytes, and the page interface a rule is bound to
   rules/       v2: the CEL profile, its static bound, rule evaluation
   digest/      v2: the bytes, content, page and law digests
-  verdict/     v2, beside judge/: judgeTypeLaw(state, law), its table of codes and lanes, the grammar checks, the kernel transitions, CEL evaluation, exceptions, rule tests and examples, the law diff
+  verdict/     v2, beside judge/: judgeTypeLaw(state, law), its table of codes and routes, the grammar checks, the kernel transitions, the folder tags, CEL evaluation, exceptions, rule tests and examples, the law diff
+  artifacts/   v2, beside generate/: graph.json, manifest.json, tag-catalog.md and queue.md of a state under its law
 packages/cli/src/
-  main.ts      dispatch, the role bound, --help, the module preload, the bundle block, one stderr writer
-  commands.ts  the COMMANDS array and nothing else
+  main.ts      dispatch to the table that answers the root, the role bound, --help and --help --json, the module preload, the bundle block, the envelope's bound and --out, one stderr writer
+  commands.ts  the two tables, COMMANDS and LEGACY_COMMANDS, and nothing else
   spec.ts      CommandSpec, FlagSpec, Plan, ROLE_RANK, declaredRole, DRY_RUN_FLAG
   brief.ts     the brief's renderer, below every verb that renders one
   argv.ts      the parser built from the registry
@@ -65,6 +66,10 @@ packages/cli/src/
   sha256.ts    the shell's sha256 over bytes: a module's files, a page, a shipped skill
   discovery.ts the skill directories `--bundle` and `bundles list` scan: a name to the nearest copy of one bundle, reading markers only
   hooks.ts, staged.ts, stagedkits.ts   the installed hooks, the staged gate, and a path kit it loads from the index
+  verbs/<name>.ts   one CommandSpec per verb of the v2 command table, over the type-document law (the v2 delivery, step 4)
+  typelaw.ts   v2: which table answers a root, the law a state carries loaded or refused, the engine range, the bundle block
+  generated.ts v2: generated/ — the brief and the kernel's four files, rendered, compared and written
+  pins.ts      v2: every pin measured against the local repository, and the stale sources a page links
   legacy/<name>.ts  one CommandSpec per old verb, waiting for its replacement under verbs/ (the v2 delivery, step 4); legacy/bundles.ts lists the scan, legacy/read.ts is the consumer's read
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit
 packages/cli/skills/          the three shipped skills (consume, write, maintain) and the generated playbook

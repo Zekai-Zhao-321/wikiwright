@@ -16,7 +16,7 @@ import { PASS_TABLE } from "@wikiwright/core";
 import { renderPlaybook } from "../../../tools/render-playbook.ts";
 import { parseInvocation } from "../src/argv.ts";
 import { WORKFLOW_SLOTS } from "../src/brief.ts";
-import { COMMANDS } from "../src/commands.ts";
+import { LEGACY_COMMANDS } from "../src/commands.ts";
 import { ROLE_RANK } from "../src/spec.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
@@ -154,7 +154,7 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
  * skill's export practices name `export`; the rest live in the generated brief.
  */
 const NAMED: Readonly<Record<string, readonly string[]>> = {
-  "wikiwright-consume": COMMANDS.filter((c) => c.role === "consumer").map((c) => c.name),
+  "wikiwright-consume": LEGACY_COMMANDS.filter((c) => c.role === "consumer").map((c) => c.name),
   // The export practices name the one verb they are about.
   "wikiwright-maintain": ["export"],
   "wikiwright-write": [],
@@ -246,7 +246,7 @@ describe("the playbook is generated, and the generator ran (docs/architecture.md
 
 describe("the reverse gate: every writer verb has a workflow slot (docs/architecture.md §The invariants)", () => {
   it("a writer-role verb the brief does not render fails here", () => {
-    for (const command of COMMANDS) {
+    for (const command of LEGACY_COMMANDS) {
       if (ROLE_RANK[command.role] > ROLE_RANK.writer) continue;
       assert.notEqual(
         WORKFLOW_SLOTS[command.name],
@@ -257,7 +257,7 @@ describe("the reverse gate: every writer verb has a workflow slot (docs/architec
   });
 
   it("and a slot naming no verb fails too — the map is closed in both directions", () => {
-    const names = new Set(COMMANDS.map((c) => c.name));
+    const names = new Set(LEGACY_COMMANDS.map((c) => c.name));
     for (const name of Object.keys(WORKFLOW_SLOTS)) {
       assert.equal(
         names.has(name),
@@ -321,7 +321,7 @@ function tokenize(invocation: string): string[] {
 }
 
 describe("every documented invocation is a legal invocation (docs/cli.md §skills)", () => {
-  const byName = new Map(COMMANDS.map((c) => [c.name, c]));
+  const byName = new Map(LEGACY_COMMANDS.map((c) => [c.name, c]));
 
   // The population this gate walks is the GENERATED half — the brief and the
   // playbook — every example the registry itself renders, and the hand-written
@@ -335,7 +335,9 @@ describe("every documented invocation is a legal invocation (docs/cli.md §skill
         ...SKILLS.map((skill) => readFileSync(join(SKILLS_DIR, skill, "SKILL.md"), "utf8")),
         // An example may carry a trailing `# comment`; the gate parses the
         // invocation, which is what an agent would run.
-        ...COMMANDS.flatMap((c) => c.examples.map((e) => `\`${e.replace(/\s+#.*$/u, "")}\``)),
+        ...LEGACY_COMMANDS.flatMap((c) =>
+          c.examples.map((e) => `\`${e.replace(/\s+#.*$/u, "")}\``),
+        ),
       ].join("\n");
       for (const m of text.matchAll(/`wikiwright ([^`]+)`/g)) {
         const invocation = m[1];
@@ -347,7 +349,7 @@ describe("every documented invocation is a legal invocation (docs/cli.md §skill
         const spec = resolved === undefined ? undefined : byName.get(resolved);
         assert.notEqual(spec, undefined, `unknown verb in \`wikiwright ${invocation}\``);
         if (spec === undefined) continue;
-        const parsed = parseInvocation(spec, rest, COMMANDS);
+        const parsed = parseInvocation(spec, rest, LEGACY_COMMANDS);
         assert.equal(
           parsed.ok,
           true,

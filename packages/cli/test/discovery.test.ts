@@ -26,7 +26,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMMANDS } from "../src/commands.ts";
+import { LEGACY_COMMANDS } from "../src/commands.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
@@ -271,7 +271,7 @@ describe("--bundle resolves by scanning the skill directories (docs/cli.md §bun
     }
     assert.equal(readFileSync(join(copy, "wiki", "turning-compost.md"), "utf8"), before);
     // Every writing verb.
-    for (const spec of COMMANDS.filter((c) => c.writes)) {
+    for (const spec of LEGACY_COMMANDS.filter((c) => c.writes)) {
       const lead = spec.subcommands === undefined ? [] : [spec.subcommands[0] ?? ""];
       const r = run(cwd, [spec.name, ...lead, "--bundle", "garden"], { HOME: home });
       assert.equal(

@@ -6,7 +6,7 @@ import { isSkillName, SKILL_NAME, SKILL_NAME_MAX } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { replaceFile } from "./atomicwrite.ts";
 import { bundleIdentity } from "./bundle.ts";
-import { COMMANDS } from "./commands.ts";
+import { COMMANDS, LEGACY_COMMANDS } from "./commands.ts";
 import { resolveBundle } from "./discovery.ts";
 import {
   type BundleIdentity,
@@ -33,6 +33,7 @@ import {
   type Role,
   usageOf,
 } from "./spec.ts";
+import { isTypeLawBundle } from "./typelaw.ts";
 
 /** Where an envelope goes: stdout, or the file `--out` names. */
 interface Sink {
@@ -319,8 +320,12 @@ function markedRootRefusal(spec: CommandSpec, root: string): CommandResult | und
   );
 }
 
-async function runCommand(spec: CommandSpec, rest: string[]): Promise<CommandResult> {
-  const parsed = parseInvocation(spec, rest, COMMANDS);
+async function runCommand(
+  spec: CommandSpec,
+  rest: string[],
+  table: readonly CommandSpec[],
+): Promise<CommandResult> {
+  const parsed = parseInvocation(spec, rest, table);
   if (!parsed.ok) return parsed.result;
   let target: Target;
   try {
@@ -390,11 +395,15 @@ function currentRole(): Role | { unknown: string } {
  * refusal lists the verbs the CALLER's role may run — role-filtered, because a
  * list of everything is not an answer to "what may I do".
  */
-function roleRefusal(spec: CommandSpec, role: Role): CommandResult | undefined {
+function roleRefusal(
+  spec: CommandSpec,
+  role: Role,
+  table: readonly CommandSpec[],
+): CommandResult | undefined {
   const allowed = ROLE_RANK[role];
   const details: Record<string, unknown> = {
     role,
-    valid_commands: COMMANDS.filter((c) => ROLE_RANK[c.role] <= allowed).map((c) => c.name),
+    valid_commands: table.filter((c) => ROLE_RANK[c.role] <= allowed).map((c) => c.name),
   };
   if (ROLE_RANK[spec.role] <= allowed) return undefined;
   return fail(
@@ -409,6 +418,33 @@ function roleRefusal(spec: CommandSpec, role: Role): CommandResult | undefined {
   );
 }
 
+/**
+ * The root an invocation names, read before its verb is chosen: `--root`'s
+ * value, or the working directory. `--bundle` names an installed copy through
+ * the old skill discovery, so it is answered by the old table.
+ */
+function rootOf(rest: readonly string[]): string | undefined {
+  for (let i = 0; i < rest.length; i += 1) {
+    const token = rest[i] ?? "";
+    if (token === "--") break;
+    if (token === "--bundle" || token.startsWith("--bundle=")) return undefined;
+    if (token.startsWith("--root=")) return token.slice("--root=".length);
+    if (token === "--root") return rest[i + 1] ?? ".";
+  }
+  return ".";
+}
+
+/**
+ * v2 contracts §12 step 4: which table answers. A root holding a bundle on
+ * schema version 4 is answered by the command table of §9; any other root by
+ * the old table, until the corpora migrate (step 5) and the old verbs leave
+ * (step 6).
+ */
+function tableFor(rest: readonly string[]): readonly CommandSpec[] {
+  const root = rootOf(rest);
+  return root !== undefined && isTypeLawBundle(root) ? COMMANDS : LEGACY_COMMANDS;
+}
+
 const argv = process.argv.slice(2);
 const commandName = argv[0];
 if (commandName === undefined || commandName === "help" || commandName === "--help") {
@@ -416,12 +452,14 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
   emit(helpResult(scan.wantsJson), scan);
 } else {
   const resolvedName = VERSION_ALIASES.has(commandName) ? "version" : commandName;
-  const spec = COMMANDS.find((c) => c.name === resolvedName);
-  const sink = scanInvocation(spec, argv.slice(1));
+  const rest = argv.slice(1);
+  const table = tableFor(rest);
+  const spec = table.find((c) => c.name === resolvedName);
+  const sink = scanInvocation(spec, rest);
   if (spec === undefined) {
     emit(
       fail("wikiwright", "usage", "unknown-command", `unknown command "${commandName}"`, {
-        details: { valid_commands: COMMANDS.map((c) => c.name) },
+        details: { valid_commands: table.map((c) => c.name) },
       }),
       sink,
     );
@@ -451,12 +489,11 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
     } else {
       // Before --help and before parsing: a bounded caller cannot learn the
       // shape of a verb it may not run, and no maintainer path is reached.
-      const rest = argv.slice(1);
-      const refusal = roleRefusal(spec, role);
+      const refusal = roleRefusal(spec, role, table);
       if (refusal !== undefined) emit(refusal, sink);
       else if (sink.wantsHelp && sink.wantsJson) emit(ok(spec.name, commandSchema(spec)), sink);
       else if (sink.wantsHelp) emit(commandHelp(spec), sink);
-      else emit(await runCommand(spec, rest), sink);
+      else emit(await runCommand(spec, rest, table), sink);
     }
   }
 }

@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { ENVELOPE_MAX_BYTES } from "../src/envelope.ts";
 import { commandSchema, flagsOf } from "../src/spec.ts";
+import { cleanBundles, gardenBundle } from "./fixtures/garden-cli.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -33,6 +34,7 @@ beforeAll(() => {
 
 afterAll(() => {
   rmSync(dir, { recursive: true, force: true });
+  cleanBundles();
 });
 
 interface Envelope {
@@ -116,11 +118,14 @@ describe("--out (v2 contracts §9)", () => {
 
 describe("--help --json (v2 contracts §9)", () => {
   it("prints each verb's schema, and --help alone its usage", () => {
+    const garden = gardenBundle();
     for (const command of COMMANDS.filter((c) => ["read", "check", "version"].includes(c.name))) {
-      const schema = JSON.parse(run([command.name, "--help", "--json"]).stdout) as Envelope;
+      const schema = JSON.parse(
+        run([command.name, "--help", "--json", "--root", garden]).stdout,
+      ) as Envelope;
       expect(schema.data).toEqual(commandSchema(command));
       expect(schema.data?.["writes"]).toBe(command.writes);
-      const help = JSON.parse(run([command.name, "--help"]).stdout) as Envelope;
+      const help = JSON.parse(run([command.name, "--help", "--root", garden]).stdout) as Envelope;
       expect(String(help.data?.["usage"])).toStartWith(`wikiwright ${command.name}`);
       expect(help.data?.["flags"]).toEqual(flagsOf(command));
       expect(help.data?.["examples"]).toEqual(command.examples);

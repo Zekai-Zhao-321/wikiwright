@@ -9,6 +9,15 @@ when the document is behind the binary. `wikiwright schema` and
 --help --json` prints one verb's row, and `wikiwright <verb> --help` its usage
 line, flags and examples.
 
+The binary has two tables while the v2 delivery lands (contracts §12 step 4).
+A root whose `config/engine.json` is schema version 4 is answered by the
+command table, whose verbs are rewritten over the type-document law one at a
+time; the reference below is that table's. Any other root — a bundle on
+`config/constitution.json`, or none — and any invocation that names its target
+by `--bundle` is answered by the old table whole, whose verbs the notes below
+still describe: `lint`, `fix`, `freshness` and `okf` answer such a root and
+are no verb over a schema-version-4 bundle, where `check` absorbs them.
+
 ## The envelope
 
 ```json
@@ -762,19 +771,15 @@ Global flags, accepted by every verb:
 |---|---|---|---|
 | [`brief`](#brief) | consumer | no | Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/. |
 | [`bundles`](#bundles) | consumer | no | List every bundle skill installed in the skill directories, as --bundle finds them, with its identity and what its installer recorded. |
-| [`check`](#check) | writer | yes | The aggregate pass: registry + lint + generated-drift comparison. |
+| [`check`](#check) | writer | yes | Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first. |
 | [`export`](#export) | maintainer | yes | Write one declared external export into another repository, as skills/<name>/. |
-| [`fix`](#fix) | writer | yes | Apply the mechanical ops one rule licenses, all-or-nothing, and prove them gone. |
-| [`freshness`](#freshness) | maintainer | yes | Measure every pin against the local repository: how far behind its head, and is the capture stale; a pin naming another origin is reported unmeasured; --fast-forward advances the clean pins. |
 | [`gate`](#gate) | maintainer | no | The hooks' entry point: check the engine pin, then judge the staged vault. |
 | [`graph`](#graph) | consumer | no | Query the graph's edges by kind, label and the type on either side — or list the pages on one side that carry none (coverage, derived). |
 | [`hook`](#hook) | maintainer | yes | Install the marker pre-commit gate (and the commit-msg prefix hook when declared). |
 | [`init`](#init) | maintainer | yes | Scaffold a vault from a starter constitution — only what is missing, unless --force; installs the hook when git exists. |
-| [`lint`](#lint) | writer | no | Lint pages against their effective type contracts; error findings exit 5. |
 | [`modules`](#modules) | maintainer | no | List the modules this bundle declares, or plan the delta of adopting another version. |
 | [`move`](#move) | maintainer | yes | Move a page with a stated reason; surfaces tag findings, never edits tags. |
 | [`new`](#new) | writer | yes | Create a page of a registered type from its template; the typed write-path gate. |
-| [`okf`](#okf) | consumer | no | Base-OKF conformance as its own verdict, independent of the constitution. |
 | [`read`](#read) | consumer | no | Return a page's sections verbatim, with its digest and the bundle it came from, under a byte budget. |
 | [`retire`](#retire) | maintainer | yes | Standard end-of-life: status retired + banner + optional successor pointer. |
 | [`schema`](#schema) | consumer | no | Print the generated command registry: names, roles, flags, examples. |
@@ -819,13 +824,14 @@ wikiwright bundles list
 
 `wikiwright check`
 
-The aggregate pass: registry + lint + generated-drift comparison.
+Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first.
 
 Role: `writer`. Writes: yes (accepts `--dry-run`).
 
 | Flag | Meaning |
 |---|---|
-| `--write` | refresh derived artifacts before comparing |
+| `--write` | render generated/ (BRIEF.md, graph.json, manifest.json, queue.md, tag-catalog.md) |
+| `--fix` | run the fixers that survive — the folder-tag materializer, then the generated files — then judge; implies --write |
 | `--limit <value>` | cap the findings array (default 50) |
 | `--rule <value>` | only findings with this rule id |
 | `--path <value>` | only findings on this page |
@@ -833,8 +839,10 @@ Role: `writer`. Writes: yes (accepts `--dry-run`).
 | `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
 
 ```text
-wikiwright check --root .
+wikiwright check
 wikiwright check --write
+wikiwright check --fix --dry-run
+wikiwright check --path wiki/Basil.md --all
 ```
 
 ### export
@@ -852,49 +860,6 @@ Role: `maintainer`. Writes: yes (accepts `--dry-run`).
 
 ```text
 wikiwright export roses --to ../roses-skill
-```
-
-### fix
-
-`wikiwright fix`
-
-Apply the mechanical ops one rule licenses, all-or-nothing, and prove them gone.
-
-Role: `writer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--rule <value>` | the rule id whose ops to apply |
-| `--path <value>` | the page (repo-relative); with neither --path nor --staged, every page |
-| `--staged` | judge the index, the state `gate` and `lint --staged` judge; alone, every page the index changed. Without it the working tree, the state `check` and `lint` judge |
-| `--line <value>` | restrict to the finding on this line |
-| `--propose` | print the HasPlaceholders renderings without applying anything |
-| `--expect <value>` | the op count this call may apply, or `any` |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright fix --rule sections --path wiki/parser.md --expect 1
-wikiwright fix --rule folder-tags-present --staged --expect any
-wikiwright fix --rule unknown-frontmatter-key --expect any
-wikiwright fix --rule renamed-without-alias --path wiki/lexer.md --staged --expect 1
-```
-
-### freshness
-
-`wikiwright freshness`
-
-Measure every pin against the local repository: how far behind its head, and is the capture stale; a pin naming another origin is reported unmeasured; --fast-forward advances the clean pins.
-
-Role: `maintainer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--fast-forward` | rewrite each pin whose covering diff is empty to the repository's head, through the Writer |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright freshness
-wikiwright freshness --fast-forward
 ```
 
 ### gate
@@ -981,33 +946,6 @@ wikiwright init --constitution base --dry-run
 wikiwright init --force
 ```
 
-### lint
-
-`wikiwright lint`
-
-Lint pages against their effective type contracts; error findings exit 5.
-
-Role: `writer`. Writes: no.
-
-| Flag | Meaning |
-|---|---|
-| `--page <value>` | lint one page (repo-relative path) |
-| `--staged` | lint staged content against the base revision |
-| `--stdin` | lint a draft read from stdin (with --path) |
-| `--since <value>` | replay every commit from <rev> to HEAD, each against its first parent |
-| `--limit <value>` | cap the findings array (default 50) |
-| `--rule <value>` | only findings with this rule id |
-| `--all` | lift the findings cap |
-| `--explain` | with --page: chain, sections, vocabularies, and a paste-ready exceptions stanza per queued finding |
-| `--path <value>` | with --stdin, the draft's would-be path; otherwise, only findings on this page |
-
-```text
-wikiwright lint --root .
-wikiwright lint --staged
-wikiwright lint --page wiki/example.md
-wikiwright lint --since HEAD~5
-```
-
 ### modules
 
 `wikiwright modules <list|plan>`
@@ -1067,18 +1005,6 @@ Role: `writer`. Writes: yes (accepts `--dry-run`).
 wikiwright new architecture-overview "Architecture" --dest wiki/architecture.md
 wikiwright new subsystem "Parser" --dest wiki/parser.md --item "Relations: part_of [[Architecture]]"
 wikiwright new code-concept "Lexing" --dest wiki/lexing.md --set description="How the lexer tokenizes."
-```
-
-### okf
-
-`wikiwright okf <check>`
-
-Base-OKF conformance as its own verdict, independent of the constitution.
-
-Role: `consumer`. Writes: no.
-
-```text
-wikiwright okf check
 ```
 
 ### read

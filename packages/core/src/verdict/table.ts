@@ -2,11 +2,15 @@
 // tables carried over by id, docs/v2-dispositions.md).
 //
 // Every code the v2 judge emits, with its severity, its route and the v1 ids
-// it carries. The route is total: an error or a warning names exactly one
-// queue lane (no fixer runs inside the judge; the two that survive, the
-// folder tags and the generated artifacts, are `check --fix`'s, step 4), and
-// an info finding names none. A CEL rule is its own row, severity as the rule
-// declares, lane `rule-review` (§3: every CEL rule routes to the queue).
+// it carries, and every code a verb adds beside the judge's (scope `shell`:
+// `check`'s pins, generated artifacts and base-OKF row). The route is total:
+// an error or a warning names exactly one of a queue lane and a fix, and an
+// info finding names neither. No fixer runs inside the judge; the two that
+// survive, the folder tags and the generated artifacts, are `check --fix`'s,
+// and their rows name that argv (`fix`) — the folder tags' only where the
+// finding says the materializer applies (`fixWhen`), a queue otherwise. A
+// CEL rule is its own row, severity as the rule declares, lane `rule-review`
+// (§3: every CEL rule routes to the queue).
 //
 // Ported from the old PASS_TABLE (passes/index.ts): the lanes by id, the
 // `needsBase` flag that makes a transition `unevaluated` without a base, and
@@ -32,8 +36,10 @@ export interface VerdictFinding {
   location: FindingLocation;
   message: string;
   details: Record<string, unknown>;
-  /** The queue lane: on every error and warning, on no info. */
+  /** The queue lane: on every error and warning that names no fix, on no info. */
   queue?: string;
+  /** The command that repairs it: on an error or a warning whose row names one. */
+  fix?: { argv: string[] };
 }
 
 export interface VerdictRow {
@@ -44,10 +50,17 @@ export interface VerdictRow {
   lane?: string;
   /** The v1 ids this code carries (docs/v2-dispositions.md). */
   carries: readonly string[];
+  /** The argv that repairs a finding of this row, in place of the lane. */
+  fix?: readonly string[];
+  /** The `details` key that must be `true` for `fix` to apply; the lane routes otherwise. */
+  fixWhen?: string;
   /** A transition: without a base it is `unevaluated`, reason `no-base`. */
   needsBase?: true;
-  /** What it judges: a page, the vault as a whole, or the law itself. */
-  scope: "page" | "vault" | "law";
+  /**
+   * What it judges: a page, the vault as a whole, or the law itself — or, for
+   * `shell`, what a verb judges beside the judge (git, the generated files).
+   */
+  scope: "page" | "vault" | "law" | "shell";
 }
 
 /** The lanes a CEL rule and the law's own findings queue to; the rest are v1's. */
@@ -286,6 +299,31 @@ export const VERDICT_TABLE: readonly VerdictRow[] = [
     needsBase: true,
     scope: "page",
   },
+  // --- the folder-tag policy, off unless engine.json declares it -------------------
+  {
+    id: "folder-segment-registered",
+    severity: "error",
+    lane: "tag-review",
+    carries: ["folder-segment-registered"],
+    scope: "page",
+  },
+  {
+    id: "folder-tags-present",
+    severity: "error",
+    lane: "tag-review",
+    fix: ["wikiwright", "check", "--fix"],
+    fixWhen: "materialize",
+    carries: ["folder-tags-present"],
+    scope: "page",
+  },
+  {
+    id: "former-folder-tags-review",
+    severity: "warning",
+    lane: "tag-review",
+    carries: ["former-folder-tags-review"],
+    needsBase: true,
+    scope: "page",
+  },
   // --- exceptions ----------------------------------------------------------------
   { id: "exception-applied", severity: "info", carries: [], scope: "page" },
   {
@@ -313,6 +351,56 @@ export const VERDICT_TABLE: readonly VerdictRow[] = [
   // --- the law diff (§8) ---------------------------------------------------------------
   { id: "law-changed", severity: "info", carries: [], scope: "law" },
   { id: "law-relaxed", severity: "error", lane: LAW_LANE, carries: [], scope: "law" },
+  // --- what `check` judges beside the judge (§9.1) -------------------------------------
+  {
+    id: "generated-drift",
+    severity: "error",
+    fix: ["wikiwright", "check", "--write"],
+    carries: ["generated-drift", "brief-stale"],
+    scope: "shell",
+  },
+  {
+    id: "okf-missing-type",
+    severity: "error",
+    lane: "type-review",
+    carries: ["okf-missing-type"],
+    scope: "shell",
+  },
+  // Pins, measured against the local repository only.
+  {
+    id: "pin-stale",
+    severity: "warning",
+    lane: "source-review",
+    carries: ["stale-capture"],
+    scope: "shell",
+  },
+  {
+    id: "pin-unknown",
+    severity: "warning",
+    lane: "source-review",
+    carries: ["pin-unknown-to-origin"],
+    scope: "shell",
+  },
+  {
+    id: "pin-unmeasured",
+    severity: "info",
+    carries: ["freshness-unavailable"],
+    scope: "shell",
+  },
+  {
+    id: "citation-unresolved",
+    severity: "warning",
+    lane: "source-review",
+    carries: ["citation-unresolved"],
+    scope: "shell",
+  },
+  {
+    id: "stale-source-cited",
+    severity: "warning",
+    lane: "source-review",
+    carries: ["stale-source-cited"],
+    scope: "shell",
+  },
 ];
 
 const BY_ID = new Map(VERDICT_TABLE.map((row) => [row.id, row] as const));
@@ -323,13 +411,22 @@ export function verdictRow(id: string): VerdictRow | undefined {
 }
 
 /**
- * §6: the route of one finding. A kernel code queues to its row's lane; any
- * other id is a CEL rule, which queues to `rule-review`. An info finding
- * carries no route.
+ * §6: the route of one finding. A kernel code routes as its row does: to the
+ * fix its row names, where the finding meets the row's condition, else to its
+ * lane; any other id is a CEL rule, which queues to `rule-review`. An info
+ * finding carries no route.
  */
-export function routeVerdictFinding(finding: Omit<VerdictFinding, "queue">): VerdictFinding {
+export function routeVerdictFinding(
+  finding: Omit<VerdictFinding, "queue" | "fix">,
+): VerdictFinding {
   if (finding.severity === "info") return { ...finding };
   const row = BY_ID.get(finding.rule);
+  if (
+    row?.fix !== undefined &&
+    (row.fixWhen === undefined || finding.details[row.fixWhen] === true)
+  ) {
+    return { ...finding, fix: { argv: [...row.fix] } };
+  }
   const lane = row === undefined ? RULE_LANE : row.lane;
   if (lane === undefined) {
     throw new Error(`finding-unroutable: "${finding.rule}" has no lane and is not info`);
@@ -337,10 +434,17 @@ export function routeVerdictFinding(finding: Omit<VerdictFinding, "queue">): Ver
   return { ...finding, queue: lane };
 }
 
-/** The rows that route nowhere: a non-info row with no lane, or an info row with one. */
+/**
+ * The rows that route nowhere: a non-info row with neither a lane nor an
+ * unconditional fix, or an info row with either.
+ */
 export function unroutableVerdictRows(table: readonly VerdictRow[] = VERDICT_TABLE): string[] {
   return table
-    .filter((row) => (row.severity === "info") === (row.lane !== undefined))
+    .filter((row) => {
+      const routes = row.lane !== undefined || (row.fix !== undefined && row.fixWhen === undefined);
+      const names = row.lane !== undefined || row.fix !== undefined;
+      return row.severity === "info" ? names : !routes;
+    })
     .map((row) => row.id)
     .sort();
 }

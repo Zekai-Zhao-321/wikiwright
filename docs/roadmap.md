@@ -709,7 +709,7 @@ the first delivery defers them until host limits reject ordinary results
 often enough that `--out` is a burden. The pipe probes cover the refusal
 beside a default, a 70,000-byte and an error envelope.
 
-### The v2 loader and judge are read by no verb yet
+### The v2 verbs answer a bundle on schema version 4; the corpora are still on the old law
 
 The second step of the v2 delivery built the type-document loader beside the
 old one: `config/engine.json` schema version 4 and its libraries, the type,
@@ -721,21 +721,43 @@ digests (`packages/core/src/law/`, `schema/`, `records/`, `interface/`,
 third step built the judge over it (`packages/core/src/verdict/`,
 `judgeTypeLaw`), its four states (`packages/cli/src/lawstate.ts`: the
 working tree, drafts over the disk, the index over HEAD, a revision), the
-rule tests and examples, and the law diff. Every verb, every corpus and the
-gate still load `config/constitution.json` through the old loader and judge
-through the old judge; the new ones are reached by a test-only import and
-exercised by their tests alone, over a synthetic gardening bundle and
-library under the temporary directory. What that leaves, until the verbs
-(step 4) are rewritten over them:
+rule tests and examples, and the law diff. The fourth step rewrites the
+verbs over them, one commit each, under `packages/cli/src/verbs/`; each old
+verb moved to `packages/cli/src/legacy/` and leaves the command table when
+its replacement lands.
 
-- Five v4 keys are validated and carried with no consumer: `label`,
-  `engine`, `commit_prefixes`, `folder_tags` and `folder_tag_aliases`,
-  whose readers are verbs (`ENGINE_V4_CONSUMERS` names each as `null`;
-  every other key names the exported function that reads it, and a test
-  holds the function to exist and to read the key). `content_roots` is read
-  by `contentRootsOf`, where the v2 state constructors
-  (`packages/cli/src/lawstate.ts`) discover the pages their own law
-  governs.
+There are two tables. A root whose `config/engine.json` is schema version 4
+is answered by the command table (`COMMANDS`); any other root — a bundle on
+`config/constitution.json`, or no bundle — by the old table, whole
+(`LEGACY_COMMANDS`), and so is every invocation naming its target by
+`--bundle`, the old skill discovery. Every corpus of this repository
+(`devwiki`, the handbooks, `memory-synth`, `minimal-vault`) is still on the
+old constitution, so each is judged by the old verbs until step 5 migrates
+it, and step 6 deletes the old verbs with their table. A verb that left the
+command table answers `unknown-command` over a schema-version-4 bundle, and
+its old self over any other root. What the rewritten verbs leave, so far:
+
+- `check` absorbs `lint`, `fix`, `freshness` and `okf` (contracts §1). Not
+  carried: `lint --since`, the replay of each commit against its parent
+  (deferred with replay); `lint --stdin` and `lint --page`'s `--explain`
+  (a draft is judged by `write --from --dry-run`); `freshness
+  --fast-forward` (a pin is advanced by a write, after re-reading) and its
+  uncommitted `generated/freshness.json` report (the pins are in `check`'s
+  envelope under `pins`); every fixer but the folder-tag materializer and the
+  generated files; base OKF's other checks, duplicates of the judge's
+  frontmatter codes. `check` over a schema-version-4 bundle judges no
+  template, export, installed skill or installed hook: each leaves with its
+  mechanism (contracts §1).
+- The queue (`generated/queue.md`) is cut from a judge run with no base, so
+  a transition (`claims-transition`, `entry-edited`, `relation-removed`) is
+  never in it: without a base each is `unevaluated`, which routes nowhere.
+  A finding `check` reads from git (the pins) or computes beside the judge
+  (`generated-drift`, `okf-missing-type`) is reported live and never
+  written there.
+- `commit_prefixes` is validated and carried with no reader until the gate
+  lands (`ENGINE_V4_CONSUMERS` names it `null`; every other key names the
+  function that reads it, of core or of the shell, and a test holds the
+  function to exist and to read the key).
 - The judge has no gate options yet: today's line-scoped demotion of a
   queued error on an inherited line, and the gate's change-scoping to the
   pages a commit touches, arrive with the `gate` verb, as the commit-message

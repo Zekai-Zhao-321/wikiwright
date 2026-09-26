@@ -5,8 +5,9 @@
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { COMMANDS } from "../src/commands.ts";
+import { COMMANDS, LEGACY_COMMANDS } from "../src/commands.ts";
 import { flagsOf } from "../src/spec.ts";
+import { cleanBundles, gardenBundle } from "./fixtures/garden-cli.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -34,8 +35,15 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
   // not the runner's five-second default. Nothing about the assertion changes —
   // a verb that fails to answer still fails, on any machine.
   it("every registered verb answers --help with ok and its own spec", () => {
-    for (const command of COMMANDS) {
-      const r = run([command.name, "--help"]);
+    // The command table answers a schema-version-4 bundle, the old table any
+    // other root: each verb is asked where its table answers.
+    const garden = gardenBundle();
+    const asked = [
+      ...LEGACY_COMMANDS.map((command) => ({ command, root: [] as string[] })),
+      ...COMMANDS.map((command) => ({ command, root: ["--root", garden] })),
+    ];
+    for (const { command, root } of asked) {
+      const r = run([command.name, "--help", ...root]);
       assert.equal(r.status, 0, `${command.name} --help: ${JSON.stringify(r.envelope)}`);
       assert.equal(r.envelope.ok, true);
       const data = r.envelope.data ?? {};
@@ -51,6 +59,7 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
       assert.deepEqual(data["examples"], command.examples);
       assert.equal(Array.isArray(data["global_flags"]), true, "the flags every verb accepts");
     }
+    cleanBundles();
   }, 120_000);
 
   it("--help never becomes a usage error, even beside flags the verb rejects", () => {

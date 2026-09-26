@@ -30,10 +30,10 @@ import {
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMMANDS } from "../src/commands.ts";
+import { COMMANDS, LEGACY_COMMANDS } from "../src/commands.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
-import { verbModule } from "./fixtures/verb-module.ts";
+import { everyVerb } from "./fixtures/verb-module.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
@@ -290,9 +290,10 @@ const DRY_RUN_SETUP: Record<
 
 describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   it("every writes: true verb declares a plan, and no reader does", () => {
-    const writers = COMMANDS.filter((c) => c.writes).map((c) => c.name);
+    const every = everyVerb(COMMANDS, LEGACY_COMMANDS).map((row) => row.spec);
+    const writers = every.filter((c) => c.writes).map((c) => c.name);
     assert.equal(writers.length > 0, true, "the registry has writing verbs");
-    for (const command of COMMANDS) {
+    for (const command of every) {
       if (command.writes) {
         assert.equal(
           typeof command.plan,
@@ -316,9 +317,9 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
       const commands = ((r.envelope["data"] as Record<string, unknown>)["commands"] ?? []) as Array<
         Record<string, unknown>
       >;
-      assert.equal(commands.length, COMMANDS.length);
+      assert.equal(commands.length, LEGACY_COMMANDS.length);
       for (const row of commands) {
-        const spec = COMMANDS.find((c) => c.name === row["name"]);
+        const spec = LEGACY_COMMANDS.find((c) => c.name === row["name"]);
         assert.notEqual(spec, undefined);
         assert.equal(
           row["writes"],
@@ -332,7 +333,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   });
 
   it("every writing verb has a dry run this test drives", () => {
-    for (const command of COMMANDS) {
+    for (const command of LEGACY_COMMANDS) {
       if (!command.writes || command.name === "init") continue;
       assert.notEqual(
         DRY_RUNS[command.name],
@@ -342,7 +343,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
     }
   });
 
-  for (const command of COMMANDS.filter((c) => c.writes && c.name !== "init")) {
+  for (const command of LEGACY_COMMANDS.filter((c) => c.writes && c.name !== "init")) {
     it(`${command.name} --dry-run writes nothing and reports wrote: false`, () => {
       const setup = DRY_RUN_SETUP[command.name];
       const tmp = vault(setup?.engine);
@@ -414,7 +415,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   it("a reader verb does not accept --dry-run at all (the flag comes from the registry)", () => {
     const tmp = vault();
     try {
-      for (const command of COMMANDS.filter((c) => !c.writes)) {
+      for (const command of LEGACY_COMMANDS.filter((c) => !c.writes)) {
         const r = run(tmp, [command.name, "--dry-run"]);
         assert.equal(
           r.status,
@@ -431,7 +432,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   it("every writing verb advertises --dry-run in its own --help", () => {
     const tmp = vault();
     try {
-      for (const command of COMMANDS) {
+      for (const command of LEGACY_COMMANDS) {
         const r = run(tmp, [command.name, "--help"]);
         const flags = ((r.envelope["data"] as Record<string, unknown>)["flags"] ?? []) as Array<{
           name: string;
@@ -724,7 +725,7 @@ const FIDELITY: Fidelity[] = [
 describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run law)", () => {
   it("every writing verb has a fidelity case", () => {
     const covered = new Set(FIDELITY.map((c) => c.argv[0]));
-    for (const command of COMMANDS) {
+    for (const command of LEGACY_COMMANDS) {
       if (!command.writes) continue;
       assert.equal(
         covered.has(command.name),
@@ -896,6 +897,8 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
     "the shell's one staged replace: an exclusive temp beside the target, renamed into place",
   "artifacts.ts":
     "the generated artifacts, the writer's brief and the in-repository exports, whose obsolete files it removes — one generator, byte-reproducible",
+  "generated.ts":
+    "the v2 generated files under generated/, through the staged replace — one generator, byte-reproducible (v2 contracts §9.1)",
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
   "main.ts":
     "the file `--out` names, which receives the whole envelope through the staged replace: a destination the caller chose, never a page (v2 contracts §9)",
@@ -925,9 +928,8 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
   // A `writes: false` verb has no dry run to drive, so its not writing is held
   // here: it imports no write API and no module from the closed set above.
   it("a reader verb imports neither a write API nor a direct writer", () => {
-    for (const command of COMMANDS) {
+    for (const { spec: command, module: rel } of everyVerb(COMMANDS, LEGACY_COMMANDS)) {
       if (command.writes) continue;
-      const rel = verbModule(command.name);
       const raw = source(rel);
       const here = rel.slice(0, rel.indexOf("/") + 1);
       assert.deepEqual(

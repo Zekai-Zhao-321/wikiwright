@@ -3,13 +3,23 @@
 // yet; the tests import it (contracts §12 step 3), and the verbs are
 // rewritten over it in step 4.
 
+export { folderFindings, formerFolderFindings, missingFolderTags } from "./folders.ts";
 export type {
+  Collected,
   CoverageCell,
+  ReadPage,
+  StateRead,
   TypeLawJudgeOptions,
   TypeLawVerdict,
   UnevaluatedReason,
 } from "./judge.ts";
-export { judgeTypeLaw, sortVerdictFindings } from "./judge.ts";
+export {
+  collectTypeLaw,
+  judgeTypeLaw,
+  readPages,
+  sortVerdictFindings,
+  verdictOfCollected,
+} from "./judge.ts";
 export type { LawChange } from "./lawdiff.ts";
 export {
   changedRules,
@@ -19,6 +29,8 @@ export {
   lawDiff,
 } from "./lawdiff.ts";
 export type { VaultNameEntry, VaultNames } from "./names.ts";
+export type { Unrouted } from "./page.ts";
+export { locationAt, PAGE_LOCATION } from "./page.ts";
 export type { JudgeState, PageRename, SkippedPath, StateKind } from "./state.ts";
 export { contentRootsOf, pageMap, sameBytes, touchesContentRoot } from "./state.ts";
 export type { FindingLocation, VerdictFinding, VerdictRow } from "./table.ts";

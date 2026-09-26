@@ -3,6 +3,7 @@
 // loader schemas from a second zod instance, and `instanceof` checks inside a
 // schema library are exactly where that goes wrong.
 export { z } from "zod";
+export * from "./artifacts/index.ts";
 export type { FieldSources } from "./fields/index.ts";
 export { ledeOf, resolveDescription, resolveTitle } from "./fields/index.ts";
 export type { Applicability, FindingFix, FixerContext, FixTarget } from "./fixers/index.ts";
