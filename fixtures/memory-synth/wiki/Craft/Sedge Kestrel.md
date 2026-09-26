@@ -37,10 +37,10 @@ Sedge Kestrel — Quarry fathom glen glen vellum ember knoll rivet fern juniper 
 - [category-04] Gauge thicket: pebble birch wicket lantern heath grove marrow ochre marrow copse loam bramble moss quiver bramble thicket isle bramble jasper quarry knoll nimbus saffron larch upland 条目 jasper knoll quiver larch heath dapple vellum lantern kestrel pebble pallet upland basin sedge "quarry lantern birch" (inferred, same)
 
 ## Relations
-- peer_of [[揭澜珺]]
-- allied_with [[揭澜珺]]
-- tenant_of [[揭澜珺]]
-- allied_with [[揭澜珺]]
+- peer-of [[揭澜珺]]
+- allied-with [[揭澜珺]]
+- tenant-of [[揭澜珺]]
+- allied-with [[揭澜珺]]
 
 ## Notes
 Glen tallow moss cadence yarrow yarrow bramble yarrow gable zephyr copse knoll nook yarrow ember fathom ridge. Pebble dell marrow upland juniper alder zephyr zephyr quarry mesa pebble.

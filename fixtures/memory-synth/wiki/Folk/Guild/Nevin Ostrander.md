@@ -26,16 +26,16 @@ Nevin Ostrander — Copse dapple larch ochre kiln marrow ember ridge glen loam t
 ## Relations
 - touches [[Maelis Ostrander]]
   - Dapple lantern basin kiln cadence alder birch lantern quiver dune alder basin alder.
-- spun_from [[鄢笳]]
+- spun-from [[鄢笳]]
   - Yarrow cinder copse mesa tallow dune.
-- kin_of [[Rivet Larch]]
+- kin-of [[Rivet Larch]]
   - Jasper fathom quarry kiln loam eddy.
-- mentored_by [[揭澜珺]]
+- mentored-by [[揭澜珺]]
   - Heath fathom rivet larch fern moss dell dell.
 
 ## Notes
 
 ## History
-- 2031-05-05: **Harrow upland larch kiln.** Ember glen grove loam nook cadence pallet kiln isle cadence ochre harrow bramble umber wicket ridge inlet dapple mesa juniper bramble.
-- 2031-04-13: **Basin ridge fathom juniper.** Heath pallet ember yarrow glen sedge larch heath grove knoll nook zephyr gable umber kestrel kestrel harrow dell inlet. The kestrel figure is **superseded** by the jasper record. Nook juniper tallow saffron cadence ember ember wicket nimbus wharf juniper.
-- 2031-03-06: **Vale kiln alder.** Pallet knoll mesa umber dune basin upland saffron dune ochre cadence cadence nimbus yarrow pallet fathom wharf thicket. Kestrel kestrel pallet dune eddy wicket inlet moss loam.
+- 2031-05-05 — **Harrow upland larch kiln.** Ember glen grove loam nook cadence pallet kiln isle cadence ochre harrow bramble umber wicket ridge inlet dapple mesa juniper bramble.
+- 2031-04-13 — **Basin ridge fathom juniper.** Heath pallet ember yarrow glen sedge larch heath grove knoll nook zephyr gable umber kestrel kestrel harrow dell inlet. The kestrel figure is **superseded** by the jasper record. Nook juniper tallow saffron cadence ember ember wicket nimbus wharf juniper.
+- 2031-03-06 — **Vale kiln alder.** Pallet knoll mesa umber dune basin upland saffron dune ochre cadence cadence nimbus yarrow pallet fathom wharf thicket. Kestrel kestrel pallet dune eddy wicket inlet moss loam.

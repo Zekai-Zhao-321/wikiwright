@@ -22,7 +22,7 @@ import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 /** Every corpus this repository ships, judged under its own constitution. */
-const CORPORA = ["fixtures/memory-synth", "devwiki"];
+const CORPORA = ["devwiki"];
 
 // devwiki is a bundle over the code kit: judged from an installed copy under
 // os.tmpdir(), never from the shipped tree (docs/extending.md §The code kit).
@@ -106,9 +106,10 @@ describe("the coverage block agrees with the findings beside it (docs/concepts.m
   }
 
   it("the check is non-vacuous: the corpora do produce findings to check against", () => {
-    const { findings } = verdict("fixtures/memory-synth", "lint");
+    const findings =
+      cli(["check", "--all"], join(REPO, "fixtures/memory-synth")).envelope.data?.findings ?? [];
     assert.equal(findings.length > 20, true, `the measurement corpus reports (${findings.length})`);
-    const ids = new Set(findings.map((f) => f.ruleId));
-    assert.equal(ids.size > 3, true, `across several passes (${ids.size})`);
+    const ids = new Set(findings.map((f) => f.rule));
+    assert.equal(ids.size > 3, true, `across several rules (${ids.size})`);
   });
 });

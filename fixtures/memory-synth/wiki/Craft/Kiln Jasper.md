@@ -34,7 +34,7 @@ Kiln Jasper — Juniper nimbus lantern isle quiver knoll basin ridge heath heath
 ## Relations
 - anchors [[隽珅]]
 - touches [[冼昫珉]]
-- patron_of [[Hollow Jasper]]
+- patron-of [[Hollow Jasper]]
 
 ## Ledger of moves
 Loam nimbus pallet birch heath vellum juniper harrow cadence mesa larch saffron isle fathom loam glen basin quarry glen gable heath harrow larch ochre vellum moss ember eddy isle tallow vellum.

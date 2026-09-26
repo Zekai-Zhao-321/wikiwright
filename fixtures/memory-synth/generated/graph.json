@@ -481,7 +481,7 @@
       "from": "wiki/Admin/Heath Tallow.md",
       "to": "wiki/Folk/Guild/麴珺澜.md",
       "kind": "relation",
-      "label": "tallies_beside"
+      "label": "tallies-beside"
     },
     {
       "from": "wiki/Admin/Heath Tallow.md",
@@ -498,7 +498,7 @@
       "from": "wiki/Admin/Heath Tallow.md",
       "to": "wiki/Folk/Kin/蒯澜.md",
       "kind": "relation",
-      "label": "pilots_with"
+      "label": "pilots-with"
     },
     {
       "from": "wiki/Admin/Heath Tallow.md",
@@ -509,19 +509,19 @@
       "from": "wiki/Admin/Heath Tallow.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "cohort_of"
+      "label": "cohort-of"
     },
     {
       "from": "wiki/Admin/Heath Tallow.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "hosted_by"
+      "label": "hosted-by"
     },
     {
       "from": "wiki/Admin/Heath Tallow.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Admin/Heath Tallow.md",
@@ -557,7 +557,7 @@
       "from": "wiki/Admin/Vault Remit.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "cohort_of"
+      "label": "cohort-of"
     },
     {
       "from": "wiki/Admin/Vault Remit.md",
@@ -574,7 +574,7 @@
       "from": "wiki/Admin/Vault Remit.md",
       "to": "wiki/Roaming/Nimbus Knoll (2020).md",
       "kind": "relation",
-      "label": "steward_of"
+      "label": "steward-of"
     },
     {
       "from": "wiki/Admin/Vault Remit.md",
@@ -610,7 +610,7 @@
       "from": "wiki/Craft/Isle Cadence.md",
       "to": "wiki/Ledger/Thicket Cadence.md",
       "kind": "relation",
-      "label": "mentored_by"
+      "label": "mentored-by"
     },
     {
       "from": "wiki/Craft/Isle Cadence.md",
@@ -621,7 +621,7 @@
       "from": "wiki/Craft/Isle Cadence.md",
       "to": "wiki/Schooling/Dapple Heath.md",
       "kind": "relation",
-      "label": "spun_from"
+      "label": "spun-from"
     },
     {
       "from": "wiki/Craft/Isle Cadence.md",
@@ -674,7 +674,7 @@
       "from": "wiki/Craft/Kiln Jasper.md",
       "to": "wiki/Ledger/Hollow Jasper.md",
       "kind": "relation",
-      "label": "patron_of"
+      "label": "patron-of"
     },
     {
       "from": "wiki/Craft/Kiln Jasper.md",
@@ -720,7 +720,7 @@
       "from": "wiki/Craft/Ridge Loam.md",
       "to": "wiki/Folk/Guild/冼昫珉.md",
       "kind": "relation",
-      "label": "nudges_before"
+      "label": "nudges-before"
     },
     {
       "from": "wiki/Craft/Ridge Loam.md",
@@ -736,13 +736,13 @@
       "from": "wiki/Craft/Ridge Loam.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "cohort_of"
+      "label": "cohort-of"
     },
     {
       "from": "wiki/Craft/Ridge Loam.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "kin_of"
+      "label": "kin-of"
     },
     {
       "from": "wiki/Craft/Ridge Loam.md",
@@ -758,7 +758,7 @@
       "from": "wiki/Craft/Ridge Loam.md",
       "to": "wiki/Ledger/Umber Upland.md",
       "kind": "relation",
-      "label": "mentored_by"
+      "label": "mentored-by"
     },
     {
       "from": "wiki/Craft/Ridge Loam.md",
@@ -769,7 +769,7 @@
       "from": "wiki/Craft/Ridge Loam.md",
       "to": "wiki/Workshop/Rivet Larch.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Craft/Ridge Loam.md",
@@ -785,7 +785,7 @@
       "from": "wiki/Craft/Ridge Loam.md",
       "to": "wiki/Workshop/阶段会所.md",
       "kind": "relation",
-      "label": "kin_of"
+      "label": "kin-of"
     },
     {
       "from": "wiki/Craft/Ridge Loam.md",
@@ -811,19 +811,19 @@
       "from": "wiki/Craft/Sedge Kestrel.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Craft/Sedge Kestrel.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Craft/Sedge Kestrel.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "tenant_of"
+      "label": "tenant-of"
     },
     {
       "from": "wiki/Craft/Sedge Kestrel.md",
@@ -864,7 +864,7 @@
       "from": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
       "to": "wiki/Folk/Kin/鄢霈珉.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
@@ -875,7 +875,7 @@
       "from": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
       "to": "wiki/Ledger/线索台账.md",
       "kind": "relation",
-      "label": "steward_of"
+      "label": "steward-of"
     },
     {
       "from": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
@@ -886,7 +886,7 @@
       "from": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
       "to": "wiki/Workshop/Rivet Larch.md",
       "kind": "relation",
-      "label": "orbits_from"
+      "label": "orbits-from"
     },
     {
       "from": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
@@ -902,7 +902,7 @@
       "from": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
       "to": "wiki/Workshop/阶段会所.md",
       "kind": "relation",
-      "label": "routes_to"
+      "label": "routes-to"
     },
     {
       "from": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
@@ -933,7 +933,7 @@
       "from": "wiki/Folk/Guild/Maelis Ostrander.md",
       "to": "wiki/Ledger/Hollow Jasper.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Folk/Guild/Maelis Ostrander.md",
@@ -975,7 +975,7 @@
       "from": "wiki/Folk/Guild/Nevin Ostrander.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "mentored_by"
+      "label": "mentored-by"
     },
     {
       "from": "wiki/Folk/Guild/Nevin Ostrander.md",
@@ -986,7 +986,7 @@
       "from": "wiki/Folk/Guild/Nevin Ostrander.md",
       "to": "wiki/Folk/鄢笳.md",
       "kind": "relation",
-      "label": "spun_from"
+      "label": "spun-from"
     },
     {
       "from": "wiki/Folk/Guild/Nevin Ostrander.md",
@@ -1007,7 +1007,7 @@
       "from": "wiki/Folk/Guild/Nevin Ostrander.md",
       "to": "wiki/Workshop/Rivet Larch.md",
       "kind": "relation",
-      "label": "kin_of"
+      "label": "kin-of"
     },
     {
       "from": "wiki/Folk/Guild/Nevin Ostrander.md",
@@ -1033,7 +1033,7 @@
       "from": "wiki/Folk/Guild/冼昫珉.md",
       "to": "wiki/Folk/Guild/雒珺珩.md",
       "kind": "relation",
-      "label": "quotes_after"
+      "label": "quotes-after"
     },
     {
       "from": "wiki/Folk/Guild/冼昫珉.md",
@@ -1049,7 +1049,7 @@
       "from": "wiki/Folk/Guild/冼昫珉.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Folk/Guild/冼昫珉.md",
@@ -1060,7 +1060,7 @@
       "from": "wiki/Folk/Guild/冼昫珉.md",
       "to": "wiki/Ledger/线索台账.md",
       "kind": "relation",
-      "label": "borrows_under"
+      "label": "borrows-under"
     },
     {
       "from": "wiki/Folk/Guild/冼昫珉.md",
@@ -1071,7 +1071,7 @@
       "from": "wiki/Folk/Guild/冼昫珉.md",
       "to": "wiki/Workshop/Rivet Larch.md",
       "kind": "relation",
-      "label": "tenant_of"
+      "label": "tenant-of"
     },
     {
       "from": "wiki/Folk/Guild/冼昫珉.md",
@@ -1102,7 +1102,7 @@
       "from": "wiki/Folk/Guild/雒珺珩.md",
       "to": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Folk/Guild/雒珺珩.md",
@@ -1118,7 +1118,7 @@
       "from": "wiki/Folk/Guild/雒珺珩.md",
       "to": "wiki/Folk/Guild/冼昫珉.md",
       "kind": "relation",
-      "label": "steward_of"
+      "label": "steward-of"
     },
     {
       "from": "wiki/Folk/Guild/雒珺珩.md",
@@ -1156,7 +1156,7 @@
       "from": "wiki/Folk/Guild/雒珺珩.md",
       "to": "wiki/Workshop/Upland Fathom.md",
       "kind": "relation",
-      "label": "frames_per"
+      "label": "frames-per"
     },
     {
       "from": "wiki/Folk/Guild/雒珺珩.md",
@@ -1204,7 +1204,7 @@
       "from": "wiki/Folk/Guild/麴珺澜.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "spun_from"
+      "label": "spun-from"
     },
     {
       "from": "wiki/Folk/Guild/麴珺澜.md",
@@ -1215,7 +1215,7 @@
       "from": "wiki/Folk/Guild/麴珺澜.md",
       "to": "wiki/Workshop/Upland Fathom.md",
       "kind": "relation",
-      "label": "lends_under"
+      "label": "lends-under"
     },
     {
       "from": "wiki/Folk/Guild/麴珺澜.md",
@@ -1241,7 +1241,7 @@
       "from": "wiki/Folk/Kin/佘芊.md",
       "to": "wiki/Craft/Ridge Loam.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Folk/Kin/佘芊.md",
@@ -1252,7 +1252,7 @@
       "from": "wiki/Folk/Kin/佘芊.md",
       "to": "wiki/Folk/Guild/Nevin Ostrander.md",
       "kind": "relation",
-      "label": "drafts_after"
+      "label": "drafts-after"
     },
     {
       "from": "wiki/Folk/Kin/佘芊.md",
@@ -1263,19 +1263,19 @@
       "from": "wiki/Folk/Kin/佘芊.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "cohort_of"
+      "label": "cohort-of"
     },
     {
       "from": "wiki/Folk/Kin/佘芊.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "mentored_by"
+      "label": "mentored-by"
     },
     {
       "from": "wiki/Folk/Kin/佘芊.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Folk/Kin/佘芊.md",
@@ -1311,13 +1311,13 @@
       "from": "wiki/Folk/Kin/蒯澜.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "quotes_via"
+      "label": "quotes-via"
     },
     {
       "from": "wiki/Folk/Kin/蒯澜.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "tenant_of"
+      "label": "tenant-of"
     },
     {
       "from": "wiki/Folk/Kin/蒯澜.md",
@@ -1333,7 +1333,7 @@
       "from": "wiki/Folk/Kin/蒯澜.md",
       "to": "wiki/Ledger/Thicket Cadence.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Folk/Kin/蒯澜.md",
@@ -1369,7 +1369,7 @@
       "from": "wiki/Folk/Kin/逄笳.md",
       "to": "wiki/Craft/Isle Cadence.md",
       "kind": "relation",
-      "label": "routes_to"
+      "label": "routes-to"
     },
     {
       "from": "wiki/Folk/Kin/逄笳.md",
@@ -1385,7 +1385,7 @@
       "from": "wiki/Folk/Kin/逄笳.md",
       "to": "wiki/Folk/缑珉珉.md",
       "kind": "relation",
-      "label": "mentored_by"
+      "label": "mentored-by"
     },
     {
       "from": "wiki/Folk/Kin/逄笳.md",
@@ -1421,13 +1421,13 @@
       "from": "wiki/Folk/Kin/鄢霈珉.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Folk/Kin/鄢霈珉.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "mentored_by"
+      "label": "mentored-by"
     },
     {
       "from": "wiki/Folk/Kin/鄢霈珉.md",
@@ -1438,7 +1438,7 @@
       "from": "wiki/Folk/Kin/鄢霈珉.md",
       "to": "wiki/Roaming/Bramble Harbor.md",
       "kind": "relation",
-      "label": "cohort_of"
+      "label": "cohort-of"
     },
     {
       "from": "wiki/Folk/Kin/鄢霈珉.md",
@@ -1484,7 +1484,7 @@
       "from": "wiki/Folk/Kin/隽珅.md",
       "to": "wiki/Roaming/Bramble Harbor.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Folk/Kin/隽珅.md",
@@ -1495,7 +1495,7 @@
       "from": "wiki/Folk/Kin/隽珅.md",
       "to": "wiki/Roaming/Nimbus Knoll (2020).md",
       "kind": "relation",
-      "label": "courts_after"
+      "label": "courts-after"
     },
     {
       "from": "wiki/Folk/Kin/隽珅.md",
@@ -1506,7 +1506,7 @@
       "from": "wiki/Folk/Kin/隽珅.md",
       "to": "wiki/Workshop/Sedge Birch Guild.md",
       "kind": "relation",
-      "label": "hosted_by"
+      "label": "hosted-by"
     },
     {
       "from": "wiki/Folk/Kin/隽珅.md",
@@ -1543,7 +1543,7 @@
       "from": "wiki/Folk/Kin/麴澜昫.md",
       "to": "wiki/Folk/Kin/鄢霈珉.md",
       "kind": "relation",
-      "label": "patron_of"
+      "label": "patron-of"
     },
     {
       "from": "wiki/Folk/Kin/麴澜昫.md",
@@ -1560,7 +1560,7 @@
       "from": "wiki/Folk/Kin/麴澜昫.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "hosted_by"
+      "label": "hosted-by"
     },
     {
       "from": "wiki/Folk/Kin/麴澜昫.md",
@@ -1586,7 +1586,7 @@
       "from": "wiki/Folk/Kin/麴澜昫.md",
       "to": "wiki/Workshop/Rivet Larch.md",
       "kind": "relation",
-      "label": "cohort_of"
+      "label": "cohort-of"
     },
     {
       "from": "wiki/Folk/Kin/麴澜昫.md",
@@ -1607,7 +1607,7 @@
       "from": "wiki/Folk/Nevin Ostrander (cousin).md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Folk/Nevin Ostrander (cousin).md",
@@ -1629,7 +1629,7 @@
       "from": "wiki/Folk/Nevin Ostrander (cousin).md",
       "to": "wiki/Workshop/Rivet Larch.md",
       "kind": "relation",
-      "label": "relays_under"
+      "label": "relays-under"
     },
     {
       "from": "wiki/Folk/Nevin Ostrander (cousin).md",
@@ -1660,7 +1660,7 @@
       "from": "wiki/Folk/揭澜珺.md",
       "to": "wiki/Folk/Guild/麴珺澜.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Folk/揭澜珺.md",
@@ -1671,7 +1671,7 @@
       "from": "wiki/Folk/揭澜珺.md",
       "to": "wiki/Folk/Nevin Ostrander (cousin).md",
       "kind": "relation",
-      "label": "scouts_into"
+      "label": "scouts-into"
     },
     {
       "from": "wiki/Folk/揭澜珺.md",
@@ -1682,7 +1682,7 @@
       "from": "wiki/Folk/揭澜珺.md",
       "to": "wiki/Folk/缑珉珉.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Folk/揭澜珺.md",
@@ -1708,7 +1708,7 @@
       "from": "wiki/Folk/缑珉珉.md",
       "to": "wiki/Craft/Sedge Kestrel.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Folk/缑珉珉.md",
@@ -1719,7 +1719,7 @@
       "from": "wiki/Folk/缑珉珉.md",
       "to": "wiki/Folk/Kin/蒯澜.md",
       "kind": "relation",
-      "label": "cohort_of"
+      "label": "cohort-of"
     },
     {
       "from": "wiki/Folk/缑珉珉.md",
@@ -1735,7 +1735,7 @@
       "from": "wiki/Folk/缑珉珉.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Folk/缑珉珉.md",
@@ -1773,7 +1773,7 @@
       "from": "wiki/Folk/缑珉珉.md",
       "to": "wiki/Workshop/Sedge Birch Guild.md",
       "kind": "relation",
-      "label": "kin_of"
+      "label": "kin-of"
     },
     {
       "from": "wiki/Folk/缑珉珉.md",
@@ -1794,7 +1794,7 @@
       "from": "wiki/Folk/鄢笳.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Folk/鄢笳.md",
@@ -1846,7 +1846,7 @@
       "from": "wiki/Ledger/Hollow Jasper.md",
       "to": "wiki/Workshop/Rivet Larch.md",
       "kind": "relation",
-      "label": "tenant_of"
+      "label": "tenant-of"
     },
     {
       "from": "wiki/Ledger/Hollow Jasper.md",
@@ -1867,7 +1867,7 @@
       "from": "wiki/Ledger/Thicket Cadence.md",
       "to": "wiki/Craft/Kiln Jasper.md",
       "kind": "relation",
-      "label": "echoes_via"
+      "label": "echoes-via"
     },
     {
       "from": "wiki/Ledger/Thicket Cadence.md",
@@ -1878,7 +1878,7 @@
       "from": "wiki/Ledger/Thicket Cadence.md",
       "to": "wiki/Folk/Guild/Nevin Ostrander.md",
       "kind": "relation",
-      "label": "courts_under"
+      "label": "courts-under"
     },
     {
       "from": "wiki/Ledger/Thicket Cadence.md",
@@ -1889,7 +1889,7 @@
       "from": "wiki/Ledger/Thicket Cadence.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "steward_of"
+      "label": "steward-of"
     },
     {
       "from": "wiki/Ledger/Thicket Cadence.md",
@@ -1905,7 +1905,7 @@
       "from": "wiki/Ledger/Thicket Cadence.md",
       "to": "wiki/Roaming/Bramble Harbor.md",
       "kind": "relation",
-      "label": "tenant_of"
+      "label": "tenant-of"
     },
     {
       "from": "wiki/Ledger/Thicket Cadence.md",
@@ -1931,7 +1931,7 @@
       "from": "wiki/Ledger/Umber Upland.md",
       "to": "wiki/Folk/鄢笳.md",
       "kind": "relation",
-      "label": "mentored_by"
+      "label": "mentored-by"
     },
     {
       "from": "wiki/Ledger/Umber Upland.md",
@@ -1952,7 +1952,7 @@
       "from": "wiki/Ledger/线索台账.md",
       "to": "wiki/Craft/Isle Cadence.md",
       "kind": "relation",
-      "label": "cohort_of"
+      "label": "cohort-of"
     },
     {
       "from": "wiki/Ledger/线索台账.md",
@@ -1968,7 +1968,7 @@
       "from": "wiki/Ledger/线索台账.md",
       "to": "wiki/Folk/Kin/佘芊.md",
       "kind": "relation",
-      "label": "mentored_by"
+      "label": "mentored-by"
     },
     {
       "from": "wiki/Ledger/线索台账.md",
@@ -1979,7 +1979,7 @@
       "from": "wiki/Ledger/线索台账.md",
       "to": "wiki/Folk/Kin/逄笳.md",
       "kind": "relation",
-      "label": "hosted_by"
+      "label": "hosted-by"
     },
     {
       "from": "wiki/Ledger/线索台账.md",
@@ -2021,7 +2021,7 @@
       "from": "wiki/Roaming/Bramble Harbor.md",
       "to": "wiki/Workshop/阶段会所.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Roaming/Bramble Harbor.md",
@@ -2042,13 +2042,13 @@
       "from": "wiki/Roaming/Nimbus Knoll (2020).md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "kin_of"
+      "label": "kin-of"
     },
     {
       "from": "wiki/Roaming/Nimbus Knoll (2020).md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "routes_to"
+      "label": "routes-to"
     },
     {
       "from": "wiki/Roaming/Nimbus Knoll (2020).md",
@@ -2059,7 +2059,7 @@
       "from": "wiki/Roaming/Nimbus Knoll (2020).md",
       "to": "wiki/Ledger/Umber Upland.md",
       "kind": "relation",
-      "label": "tenant_of"
+      "label": "tenant-of"
     },
     {
       "from": "wiki/Roaming/Nimbus Knoll (2020).md",
@@ -2080,7 +2080,7 @@
       "from": "wiki/Roaming/备忘坞.md",
       "to": "wiki/Craft/Isle Cadence.md",
       "kind": "relation",
-      "label": "quotes_from"
+      "label": "quotes-from"
     },
     {
       "from": "wiki/Roaming/备忘坞.md",
@@ -2091,7 +2091,7 @@
       "from": "wiki/Roaming/备忘坞.md",
       "to": "wiki/Folk/Guild/Maelis Ostrander.md",
       "kind": "relation",
-      "label": "nudges_for"
+      "label": "nudges-for"
     },
     {
       "from": "wiki/Roaming/备忘坞.md",
@@ -2112,7 +2112,7 @@
       "from": "wiki/Roaming/备忘坞.md",
       "to": "wiki/Ledger/Umber Upland.md",
       "kind": "relation",
-      "label": "hosted_by"
+      "label": "hosted-by"
     },
     {
       "from": "wiki/Roaming/备忘坞.md",
@@ -2175,7 +2175,7 @@
       "from": "wiki/Schooling/Dapple Heath.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "kin_of"
+      "label": "kin-of"
     },
     {
       "from": "wiki/Schooling/Dapple Heath.md",
@@ -2229,7 +2229,7 @@
       "from": "wiki/Workshop/Rivet Larch.md",
       "to": "wiki/Folk/Guild/麴珺澜.md",
       "kind": "relation",
-      "label": "kin_of"
+      "label": "kin-of"
     },
     {
       "from": "wiki/Workshop/Rivet Larch.md",
@@ -2240,7 +2240,7 @@
       "from": "wiki/Workshop/Rivet Larch.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "drafts_into"
+      "label": "drafts-into"
     },
     {
       "from": "wiki/Workshop/Rivet Larch.md",
@@ -2256,7 +2256,7 @@
       "from": "wiki/Workshop/Rivet Larch.md",
       "to": "wiki/Workshop/Upland Fathom.md",
       "kind": "relation",
-      "label": "routes_to"
+      "label": "routes-to"
     },
     {
       "from": "wiki/Workshop/Rivet Larch.md",
@@ -2297,13 +2297,13 @@
       "from": "wiki/Workshop/Sedge Birch Guild.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Workshop/Sedge Birch Guild.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "tenant_of"
+      "label": "tenant-of"
     },
     {
       "from": "wiki/Workshop/Sedge Birch Guild.md",
@@ -2314,7 +2314,7 @@
       "from": "wiki/Workshop/Sedge Birch Guild.md",
       "to": "wiki/Schooling/Dapple Heath.md",
       "kind": "relation",
-      "label": "hosted_by"
+      "label": "hosted-by"
     },
     {
       "from": "wiki/Workshop/Sedge Birch Guild.md",
@@ -2325,7 +2325,7 @@
       "from": "wiki/Workshop/Sedge Birch Guild.md",
       "to": "wiki/Workshop/Rivet Larch.md",
       "kind": "relation",
-      "label": "routes_to"
+      "label": "routes-to"
     },
     {
       "from": "wiki/Workshop/Sedge Birch Guild.md",
@@ -2351,7 +2351,7 @@
       "from": "wiki/Workshop/Upland Fathom.md",
       "to": "wiki/Folk/Guild/Maelis Ostrander.md",
       "kind": "relation",
-      "label": "mentored_by"
+      "label": "mentored-by"
     },
     {
       "from": "wiki/Workshop/Upland Fathom.md",
@@ -2362,7 +2362,7 @@
       "from": "wiki/Workshop/Upland Fathom.md",
       "to": "wiki/Folk/Guild/雒珺珩.md",
       "kind": "relation",
-      "label": "patron_of"
+      "label": "patron-of"
     },
     {
       "from": "wiki/Workshop/Upland Fathom.md",
@@ -2378,7 +2378,7 @@
       "from": "wiki/Workshop/Upland Fathom.md",
       "to": "wiki/Folk/Nevin Ostrander (cousin).md",
       "kind": "relation",
-      "label": "patron_of"
+      "label": "patron-of"
     },
     {
       "from": "wiki/Workshop/Upland Fathom.md",
@@ -2415,13 +2415,13 @@
       "from": "wiki/Workshop/阶段会所.md",
       "to": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
       "kind": "relation",
-      "label": "patron_of"
+      "label": "patron-of"
     },
     {
       "from": "wiki/Workshop/阶段会所.md",
       "to": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
       "kind": "relation",
-      "label": "peer_of"
+      "label": "peer-of"
     },
     {
       "from": "wiki/Workshop/阶段会所.md",
@@ -2432,7 +2432,7 @@
       "from": "wiki/Workshop/阶段会所.md",
       "to": "wiki/Folk/Guild/Nevin Ostrander.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Workshop/阶段会所.md",
@@ -2453,13 +2453,13 @@
       "from": "wiki/Workshop/阶段会所.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "allied_with"
+      "label": "allied-with"
     },
     {
       "from": "wiki/Workshop/阶段会所.md",
       "to": "wiki/Folk/揭澜珺.md",
       "kind": "relation",
-      "label": "lends_before"
+      "label": "lends-before"
     },
     {
       "from": "wiki/Workshop/阶段会所.md",

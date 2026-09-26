@@ -1,0 +1,14 @@
+type: self
+extends: entity
+description: "The owner's hub: identity and contact channels, the life Timeline, a grouped Relations map. Domain facts live on domain pages."
+sections:
+  list:
+    - heading: Facts
+      grammar: claims
+      vocabulary: categories
+      provenance: optional
+      closed: refused
+    - { heading: Relations, min: 1, grammar: relations }
+    - { heading: Timeline, max: 1, grammar: entries }
+    - { heading: Notes, max: 1 }
+    - { heading: History, max: 1, grammar: entries }

@@ -65,8 +65,8 @@ arm "pack: both packages build a tarball" sh -c '
 arm "source and build: one corpus, one verdict" sh -c '
   a=$(mktemp) || exit 1
   b=$(mktemp) || exit 1
-  bun packages/cli/src/main.ts lint --root fixtures/memory-synth --all --limit 100000 > "$a" 2>/dev/null
-  bun packages/cli/dist/main.js lint --root fixtures/memory-synth --all --limit 100000 > "$b" 2>/dev/null
+  bun packages/cli/src/main.ts check --root fixtures/memory-synth --all --limit 100000 > "$a" 2>/dev/null
+  bun packages/cli/dist/main.js check --root fixtures/memory-synth --all --limit 100000 > "$b" 2>/dev/null
   diff -q "$a" "$b" >/dev/null
   status=$?
   rm -f "$a" "$b"

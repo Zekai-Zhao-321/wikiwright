@@ -11,11 +11,11 @@ sources: [idscan digest 2031-03-28, clouddrive digest 2031-07-15, notesync expor
 Nimbus Knoll (2020) — Glen gable tallow quiver bramble zephyr ember pallet bramble jasper hollow vellum; nimbus gable isle knoll eddy.
 
 ## Relations
-- kin_of [[揭澜珺]]
+- kin-of [[揭澜珺]]
   - Mesa sedge larch nimbus orchard birch gable.
-- routes_to [[揭澜珺]]
+- routes-to [[揭澜珺]]
   - Wicket basin larch gable kestrel amber eddy nimbus ridge dune moss copse.
-- tenant_of [[Umber Upland]]
+- tenant-of [[Umber Upland]]
   - Amber umber vellum birch isle tallow kestrel cinder tallow ridge dapple.
 
 ## Open threads

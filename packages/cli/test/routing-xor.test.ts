@@ -85,7 +85,6 @@ const DEVWIKI_COPY = installedCopy(join(REPO, "devwiki"), "xor-devwiki");
 afterAll(() => rmSync(DEVWIKI_COPY, { recursive: true, force: true }));
 
 const CORPORA: Record<string, string> = {
-  "memory-synth": join(REPO, "fixtures/memory-synth"),
   devwiki: DEVWIKI_COPY,
 };
 

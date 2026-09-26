@@ -1,0 +1,14 @@
+type: project
+extends: entity
+description: A body of work with an aim and a lifecycle.
+sections:
+  list:
+    - heading: Facts
+      grammar: claims
+      vocabulary: categories
+      provenance: optional
+      closed: refused
+    - { heading: Relations, min: 1, grammar: relations }
+    - { heading: Timeline, max: 1, grammar: entries }
+    - { heading: Notes, max: 1 }
+    - { heading: History, max: 1, grammar: entries }

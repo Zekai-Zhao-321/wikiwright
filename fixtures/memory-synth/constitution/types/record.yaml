@@ -1,0 +1,12 @@
+type: record
+role: reference
+description: Abstract base for pointer records.
+use_when: "Never directly; author a concrete descendant."
+avoid_when: Anything with its own relationships and narrative (entity).
+fragments: [claim-classes]
+fields:
+  type: object
+  properties:
+    sensitivity: {}
+    cjk_name: {}
+    sources: {}

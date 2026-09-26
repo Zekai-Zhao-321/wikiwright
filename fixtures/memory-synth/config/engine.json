@@ -1,16 +1,18 @@
 {
+  "schema": "wikiwright/engine",
+  "schema_version": 4,
+  "label": "memory-synth",
   "content_roots": [
     "wiki",
     "journal"
   ],
   "field_sources": {
-    "title": "basename",
-    "description": "lede"
-  },
-  "folder_tag_aliases": {
-    "daily": "diary-days"
+    "title": "basename"
   },
   "folder_tags": {
     "mode": "validate"
+  },
+  "folder_tag_aliases": {
+    "daily": "diary-days"
   }
 }

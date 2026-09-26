@@ -11,11 +11,11 @@ sources: [raw/notes/2031-08-26--glen-heath/, websnap thread 2031-07-20]
 Vault Remit — Tallow dapple kiln bramble eddy pebble copse yarrow kiln fern pebble lantern bramble umber isle fathom birch inlet jasper tallow kiln cadence birch mesa kestrel nimbus; birch ember umber cinder ember hollow pebble grove nimbus.
 
 ## Relations
-- steward_of [[Nimbus Knoll (2020)]]
+- steward-of [[Nimbus Knoll (2020)]]
   - Mesa harrow quarry vellum alder upland hollow grove zephyr basin pallet.
 - touches [[揭澜珺]]
   - Wharf marrow ridge eddy loam cinder vale vale gable zephyr nimbus gable pebble alder moss.
-- cohort_of [[揭澜珺]]
+- cohort-of [[揭澜珺]]
   - Bramble rivet gable vellum rivet pallet isle nook thicket heath loam.
 
 ## Remit

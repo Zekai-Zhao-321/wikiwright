@@ -1,0 +1,15 @@
+type: place
+extends: entity
+description: "A city, neighbourhood, or dwelling that anchors a period of the owner's life."
+sections:
+  list:
+    - heading: Facts
+      min: 1
+      grammar: claims
+      vocabulary: categories
+      provenance: optional
+      closed: refused
+    - { heading: Relations, min: 1, grammar: relations }
+    - { heading: Timeline, max: 1, grammar: entries }
+    - { heading: Notes, max: 1 }
+    - { heading: History, max: 1, grammar: entries }

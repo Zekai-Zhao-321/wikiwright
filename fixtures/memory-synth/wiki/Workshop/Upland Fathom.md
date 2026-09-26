@@ -23,15 +23,15 @@ Upland Fathom — Ochre upland pallet fathom gable harrow sedge knoll eddy wharf
 - [category-10] Tallow rivet basin basin glen hollow knoll umber moss heath copse saffron knoll fathom hollow cinder pebble cadence tallow birch dune pallet yarrow dapple kestrel loam umber alder rivet dell quiver mesa nook basin heath pallet vale gable tallow larch loam knoll pallet cadence ember fathom copse jasper dapple nimbus birch lantern knoll knoll wharf moss vellum wicket nimbus dell upland dune kestrel quarry ochre dune wicket quiver nimbus vellum fern knoll tallow upland quiver isle copse amber knoll kiln yarrow fern copse harrow ember **upland ridge dapple copse** kiln hollow gable wicket loam sedge upland hollow birch harrow quarry (inferred, raw/mail/2031-04-23--saffron-heath/)
 
 ## Relations
-- patron_of [[雒珺珩]]
+- patron-of [[雒珺珩]]
   - Moss rivet pebble ember nimbus sedge saffron.
-- mentored_by [[Maelis Ostrander]]
-- patron_of [[Nevin Ostrander (cousin)]]
+- mentored-by [[Maelis Ostrander]]
+- patron-of [[Nevin Ostrander (cousin)]]
   - Knoll heath moss fathom harrow marrow wicket inlet grove inlet inlet.
 
 ## Timeline
-- 2015-05-17: Orchard yarrow larch kiln cadence
-- ~2016-02: Jasper dapple cinder kiln umber dapple kiln vale zephyr jasper wharf orchard
+- 2015-05-17 — Orchard yarrow larch kiln cadence
+- 2016-02 — ~ Jasper dapple cinder kiln umber dapple kiln vale zephyr jasper wharf orchard
 
 ## Notes
 Umber vellum larch saffron quarry alder lantern wicket dell kestrel upland thicket grove wharf isle tallow bramble glen eddy harrow. Eddy mesa cadence yarrow saffron rivet grove lantern birch fern rivet dell cinder lantern moss.
@@ -39,4 +39,4 @@ Mesa nook vellum nook orchard fern heath ochre hollow dell ridge vale inlet basi
 See [[佘芊]].
 
 ## History
-- 2031-05-04: **Wharf vellum nook nook.** Marrow dune pebble loam alder sedge dapple dune loam jasper copse kestrel pallet ochre glen jasper moss marrow cadence. Kiln knoll quarry thicket dapple ochre mesa isle zephyr kiln.
+- 2031-05-04 — **Wharf vellum nook nook.** Marrow dune pebble loam alder sedge dapple dune loam jasper copse kestrel pallet ochre glen jasper moss marrow cadence. Kiln knoll quarry thicket dapple ochre mesa isle zephyr kiln.

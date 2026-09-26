@@ -543,6 +543,23 @@ version` prints the engine version and the commit a binary was built from.
   `section-count` (no Execution) and `vocabulary-unknown` (the tag
   `mystery`). The old table's tests read a frozen v1 copy,
   `fixtures/v1/minimal-vault`, until they leave with the old verbs.
+- **`fixtures/memory-synth` is on the v2 law** (v2 contracts §12 step 5),
+  migrated by `tools/migrate-spellings.ts`: 16 types (v1's `concept` and
+  `reference` bases are roles), the `claim-classes`, `dated-log` and
+  `append-only` fragments, the `tags` and `categories` vocabularies. Facts
+  is a claims section with `closed: refused`, where v1 named a History
+  heading for a closed claim; History and Timeline are entries sections.
+  98 relation labels are respelled with hyphens and 52 entries with ` — `.
+  Dropped with their mechanisms: the categories' `class` (supersede,
+  accumulate, journal-only), `field_sources.description`, and the dialect
+  census the v1 verdict was (`canonical-form`, `hearsay`, `marker-like`,
+  `provenance-weak`, `sourced-inferred`, `journal-only-category`): under §4
+  a marker such as `(stated 2031-04-11)` is core text. Its verdict is the
+  planted `section-depth`, nine `item-unparsed` — six undated Timeline
+  lines of one day, one History line with no date, and the two lines
+  planted for the v1 census, a relation with no link and a fact with no
+  category — and one `page-shape-invalid`, a `status: draft` the reserved
+  `status` does not admit.
 - Every git read is an asynchronous spawn (`Bun.spawn`) awaited to the
   child's exit, at most four children at a time, keeping the file-backed
   protocol: the answer read from a file git wrote, a batch request handed

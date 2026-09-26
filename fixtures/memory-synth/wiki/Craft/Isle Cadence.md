@@ -23,16 +23,16 @@ Isle Cadence — Birch mesa hollow fathom jasper dune kestrel quiver yarrow juni
 - [category-18] Token basin: umber 条目 sedge lantern copse fathom vale basin amber quiver knoll rivet juniper wharf rivet **kestrel tallow wicket grove inlet** wicket nimbus fathom quiver loam harrow fern zephyr heath nook nimbus knoll 场景 cinder (stated 2031-08-03)
 
 ## Relations
-- mentored_by [[Thicket Cadence]]
-- spun_from [[Dapple Heath]]
+- mentored-by [[Thicket Cadence]]
+- spun-from [[Dapple Heath]]
 
 ## Notes
 - Orchard mesa pebble hollow lantern kestrel wicket sedge cinder umber loam.
 ### Timeline
-- 2031-06-28: Juniper wicket sedge wharf alder.
+- 2031-06-28 — Juniper wicket sedge wharf alder.
 See [[麴澜昫]].
 
 ## History
 - Until 2031-04-05 this page fern jasper loam larch kestrel pebble cadence mesa; vale wharf dapple birch (clouddrive 2031-07-21).
-- 2031-05-15: **Basin thicket hollow zephyr.** Amber dapple isle alder moss marrow ochre ochre fathom umber cadence quarry dune wharf jasper. The earlier value was valid 2031-05-19 → 2031-05-15, superseded 2031-05-15 by kestrel harrow isle. Mesa dapple marrow glen quiver dell mesa quarry pallet glen gable pebble lantern.
-- 2031-06-09: **Dune zephyr fathom rivet kestrel.** Pallet loam upland vale isle knoll isle rivet marrow zephyr ember alder gable copse upland quarry sedge rivet ember cadence pallet fathom. The isle figure is **superseded** by the pallet record.
+- 2031-05-15 — **Basin thicket hollow zephyr.** Amber dapple isle alder moss marrow ochre ochre fathom umber cadence quarry dune wharf jasper. The earlier value was valid 2031-05-19 → 2031-05-15, superseded 2031-05-15 by kestrel harrow isle. Mesa dapple marrow glen quiver dell mesa quarry pallet glen gable pebble lantern.
+- 2031-06-09 — **Dune zephyr fathom rivet kestrel.** Pallet loam upland vale isle knoll isle rivet marrow zephyr ember alder gable copse upland quarry sedge rivet ember cadence pallet fathom. The isle figure is **superseded** by the pallet record.

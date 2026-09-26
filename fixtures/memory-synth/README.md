@@ -8,12 +8,17 @@ edited by hand and never regenerated, so the numbers the suite asserts on it
 stay put.
 
 Pages: 41 (35 under wiki/, 5 daily notes under journal/, and one weekly
-review). Categories declared: 29 (22 supersede / 5 accumulate / 2
-journal-only), two left unused on purpose.
+review). Categories declared: 29, two left unused on purpose.
 
-The claims-grammar and lifecycle tests judge it. `fixture-verdicts` holds its
-verdict — one planted `section-depth` error and the grammar census — and
-`journal/2031-W31.md` carries the `review` type, whose page-wide
-`body.lifecycle: "append-only"` law would otherwise have no page in any
-corpus. The review is written in the same synthetic style and is valid under
-the bundle's own constitution.
+It is on the v2 law: `tools/migrate-spellings.ts` wrote its `constitution/`
+from the v1 `config/constitution.json` and respelled its pages into the one
+spelling each grammar reads (98 relations, 52 entries). `fixture-verdicts`
+holds its verdict under `check` and `gate`: the one planted `section-depth`
+(a `### Timeline` under `## Notes`), the nine items the migration could not
+respell without inventing a date, a link or a category — among them the
+relation with no link and the fact with no category planted for the v1
+dialect census, which the v2 grammar has no census for — and the one page
+whose `status: draft` the reserved `status` does not admit. The `daily` and
+`review` types carry the `append-only` fragment, whose `body-append-only`
+rule re-expresses v1's page-wide `body.lifecycle: "append-only"`; its test
+set is under `rule-tests/`.

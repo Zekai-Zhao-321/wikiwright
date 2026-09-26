@@ -1,0 +1,15 @@
+type: org
+extends: entity
+description: "A company, school, employer, club, or institution."
+sections:
+  list:
+    - heading: Facts
+      min: 1
+      grammar: claims
+      vocabulary: categories
+      provenance: optional
+      closed: refused
+    - { heading: Relations, min: 1, grammar: relations }
+    - { heading: Timeline, max: 1, grammar: entries }
+    - { heading: Notes, max: 1 }
+    - { heading: History, max: 1, grammar: entries }

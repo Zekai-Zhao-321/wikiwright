@@ -1,0 +1,9 @@
+type: review
+role: reference
+description: One ISO week built from daily notes and the git log.
+fragments: [dated-log, append-only]
+fields:
+  type: object
+  properties:
+    sensitivity: {}
+    cjk_name: {}

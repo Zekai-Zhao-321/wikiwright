@@ -17,10 +17,10 @@ Thicket Cadence — Nook pebble quarry hollow eddy cinder copse pebble gable lan
 - [category-05] Mesa tallow basin kestrel vale isle vale orchard zephyr quarry amber basin wharf basin hollow umber nook pebble grove tallow ochre kestrel rivet ember birch 样本 juniper upland [[鄢笳]] (inferred, raw/notes/2031-05-27--lantern-fathom/)
 
 ## Relations
-- tenant_of [[Bramble Harbor]]
-- courts_under [[Nevin Ostrander]]
-- steward_of [[揭澜珺]]
-- echoes_via [[Kiln Jasper]]
+- tenant-of [[Bramble Harbor]]
+- courts-under [[Nevin Ostrander]]
+- steward-of [[揭澜珺]]
+- echoes-via [[Kiln Jasper]]
 
 ## Notes
 Juniper marrow vale alder kestrel pallet umber tallow cinder knoll isle alder loam pebble vale upland. Grove orchard larch eddy larch dapple thicket heath rivet kiln yarrow knoll orchard hollow thicket.

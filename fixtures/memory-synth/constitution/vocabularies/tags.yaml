@@ -1,0 +1,26 @@
+vocabulary: tags
+mode: registered
+entries:
+  admin: { description: The wiki about the wiki. }
+  craft: { description: Standing subjects about making things. }
+  diary: { description: Dated diary capture. }
+  diary-days: { description: One-day diary notes. }
+  dossier: { description: A pointer page for a paper. }
+  fauna: { description: Household animals. }
+  folk: { description: Pages standing for persons and household animals. }
+  gear: { description: A durable owned object. }
+  guild: { description: "Organisations, and the persons met through them." }
+  happening: { description: A happening page. }
+  haunt: { description: A location page. }
+  kin: { description: The kin sub-group inside the persons workspace. }
+  ledger: { description: Holdings and owned gear. }
+  persona: { description: Any page standing for a named person. }
+  roaming: { description: Locations and dated happenings away from home. }
+  routing:
+    description: "A page whose job is routing: concise overview plus curated links onward."
+  schooling: { description: Standing subjects about study. }
+  strand: { description: A standing topic. }
+  vault: { description: A financial holding. }
+  venture: { description: A venture page. }
+  wellbeing: { description: Standing subjects about the body and its upkeep. }
+  workshop: { description: Ventures and the organisations that host them. }

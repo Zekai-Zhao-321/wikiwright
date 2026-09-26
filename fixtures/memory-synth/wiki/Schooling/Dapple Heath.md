@@ -12,7 +12,7 @@ Dapple Heath — Marrow lantern bramble wicket grove harrow larch vellum dell gl
 
 ## Relations
 - succeeds [[揭澜珺]]
-- kin_of [[揭澜珺]]
+- kin-of [[揭澜珺]]
 - touches [[鄢笳]]
 - anchors [[Umber Upland]]
 - succeeds [[揭澜珺]]

@@ -25,9 +25,9 @@ Nevin Ostrander (cousin) — Nimbus grove eddy isle saffron fathom kiln pallet k
 - [category-10] Season nook: vellum pallet juniper basin harrow mesa marrow lantern bramble tallow nook nimbus sedge rivet basin mesa eddy birch amber vale copse pallet pallet cinder pebble quiver wharf gable loam gable vellum lantern marrow sedge orchard wicket isle loam knoll larch cinder grove isle moss quiver orchard larch harrow marrow orchard loam sedge kestrel saffron pebble "grove umber kestrel" (inferred, clouddrive)
 
 ## Relations
-- relays_under [[Rivet Larch]]
+- relays-under [[Rivet Larch]]
   - Ochre cinder glen loam nimbus amber dell isle larch rivet lantern eddy.
-- allied_with [[揭澜珺]]
+- allied-with [[揭澜珺]]
   - Ochre cadence quiver upland moss grove moss gable moss tallow inlet ridge juniper isle.
 - touches [[揭澜珺]]
   - Yarrow sedge nimbus kiln wicket amber dapple ridge orchard lantern eddy alder.
@@ -38,4 +38,4 @@ Quiver dell wicket gable rivet amber moss marrow gable cinder heath umber harrow
 Cinder alder ochre heath moss ochre copse ochre vellum moss pallet fern jasper rivet rivet gable jasper vellum. Jasper nook moss isle quarry isle larch moss knoll umber gable zephyr copse dell copse amber.
 
 ## History
-- 2031-05-23: **Sedge pebble kestrel saffron.** Umber larch thicket hollow thicket harrow zephyr dune copse copse ridge saffron kestrel nook hollow kiln quiver knoll wharf grove quiver orchard heath zephyr ochre. Isle vellum eddy loam ochre quarry quarry vellum sedge harrow quiver kestrel tallow upland marrow thicket loam nook pallet.
+- 2031-05-23 — **Sedge pebble kestrel saffron.** Umber larch thicket hollow thicket harrow zephyr dune copse copse ridge saffron kestrel nook hollow kiln quiver knoll wharf grove quiver orchard heath zephyr ochre. Isle vellum eddy loam ochre quarry quarry vellum sedge harrow quiver kestrel tallow upland marrow thicket loam nook pallet.

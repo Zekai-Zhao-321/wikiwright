@@ -19,7 +19,7 @@ Bramble Harbor — Saffron saffron vellum kiln fern fathom rivet moss nimbus cad
 
 ## Relations
 - touches [[Upland Fathom]]
-- allied_with [[阶段会所]]
+- allied-with [[阶段会所]]
 
 ## Notes
 Dune cinder wicket basin larch quiver birch wharf amber grove dune fathom upland fern thicket gable knoll tallow glen. Dell vale harrow kiln pebble eddy.

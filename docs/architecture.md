@@ -79,7 +79,7 @@ packages/kit-code/            @wikiwright/kit-code: the code wiki's types, ancho
 devwiki/                      this repository's own bundle, over the kit, judged by the suite
 fixtures/conformance/         the neutral module fixture and two bundles consuming it
 fixtures/handbooks/           two small gardening handbooks the two-bundle tests read, one page title in both, each with its exports rendered under skills/
-fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories)
+fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories), on the v2 law
 fixtures/minimal-vault/       the smallest bundle that loads, on the v2 law
 fixtures/v1/                  frozen v1 copies of the migrated corpora, read by the old table's tests until step 6
 fixtures/okf-upstream/        the OKF pin: repository, commit, grounding line

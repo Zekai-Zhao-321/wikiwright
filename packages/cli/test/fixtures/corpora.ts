@@ -13,7 +13,7 @@ import { git } from "./garden-cli.ts";
 export const REPO = fileURLToPath(new URL("../../../../", import.meta.url));
 
 /** Every corpus on the v2 law, repository-relative. */
-export const V2_CORPORA: readonly string[] = ["fixtures/minimal-vault"];
+export const V2_CORPORA: readonly string[] = ["fixtures/minimal-vault", "fixtures/memory-synth"];
 
 const copies: string[] = [];
 

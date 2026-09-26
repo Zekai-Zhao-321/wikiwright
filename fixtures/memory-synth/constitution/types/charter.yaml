@@ -1,0 +1,5 @@
+type: charter
+role: reference
+description: The one page that says what this wiki is for and how facts are ruled in or out.
+use_when: Exactly one page.
+avoid_when: "Settings, ruling records, content."

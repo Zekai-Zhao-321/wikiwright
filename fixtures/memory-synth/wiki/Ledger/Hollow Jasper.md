@@ -24,7 +24,7 @@ Hollow Jasper — Ridge rivet pallet dell yarrow harrow loam ochre ochre kiln ke
 - [category-04] Nimbus loam 环节 dapple loam loam saffron bramble yarrow pebble isle juniper bramble kiln juniper ridge bramble gable glen hollow hollow harrow alder kestrel knoll loam copse quiver saffron sedge "isle nook nook" (inferred, raw/mail/2031-08-25--knoll-kiln/)
 
 ## Relations
-- tenant_of [[Rivet Larch]]
+- tenant-of [[Rivet Larch]]
 - tracks [[样本镇 (2013)]]
 
 ## Notes
@@ -32,4 +32,4 @@ Moss wicket dapple harrow vellum ridge vale quarry wharf zephyr inlet umber isle
 - Kiln basin dune ochre harrow alder harrow wharf jasper lantern upland ridge umber dune pallet.
 
 ## History
-- 2031-03-15: **Hollow alder mesa vale ember.** Wicket grove dell rivet birch upland lantern wicket tallow zephyr birch heath pebble kestrel pallet mesa rivet sedge grove tallow ridge eddy ochre ochre marrow marrow.
+- 2031-03-15 — **Hollow alder mesa vale ember.** Wicket grove dell rivet birch upland lantern wicket tallow zephyr birch heath pebble kestrel pallet mesa rivet sedge grove tallow ridge eddy ochre ochre marrow marrow.

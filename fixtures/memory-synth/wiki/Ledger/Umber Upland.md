@@ -18,7 +18,7 @@ Umber Upland — Alder amber larch isle kiln ember quarry lantern cinder loam ja
 - [category-07] Lease pallet: dapple dune copse nook basin jasper nimbus orchard gable heath moss cadence sedge knoll harrow vale vellum ember upland dune moss rivet ember mesa birch pallet copse jasper larch hollow rivet larch jasper amber dell cadence sedge "bramble kestrel pallet nimbus hollow" (stated 2031-06-03)
 
 ## Relations
-- mentored_by [[鄢笳]]
+- mentored-by [[鄢笳]]
   - Harrow kiln glen sedge vale hollow zephyr nimbus harrow pallet umber mesa lantern thicket amber dune.
 
 ## Notes
