@@ -141,7 +141,8 @@ version` prints the engine version and the commit a binary was built from.
     verdict's `unevaluated` block, never passed.
   - The reserved `exceptions` key closes every queued finding of its rule
     on its page as `exception-applied` info; `exception-stale` and
-    `exception-illegal` as before.
+    `exception-illegal` as before. An entry naming a transition the state
+    cannot judge on the page (no base) is neither stale nor applied there.
   - Rule tests and examples (§8): `rule-tests/<rule id>/` with
     `negative.md`, `repaired.md`, `positive/`, `before/` twins and
     `expect.json`, overlaid from outside the content roots and excluded from

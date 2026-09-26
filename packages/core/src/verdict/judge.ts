@@ -307,7 +307,7 @@ export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): P
   // rule under test.
   if (!overlaid && hasExceptions(parsed)) {
     judged.add("exception-applied").add("exception-stale").add("exception-illegal");
-    out.findings = applyExceptions(ctx.law, parsed, out.findings);
+    out.findings = applyExceptions(ctx.law, parsed, out.findings, new Set(unjudged.keys()));
   }
   return out;
 }

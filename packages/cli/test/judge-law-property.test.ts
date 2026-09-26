@@ -63,10 +63,15 @@ const TRANSITIONS = new Set([
   "sections-grow",
 ]);
 
+/** An exception's verdict on a transition compares with the base, as the transition does. */
+const onTransition = (f: TypeLawVerdict["findings"][number]): boolean =>
+  (f.rule === "exception-applied" || f.rule === "exception-stale") &&
+  TRANSITIONS.has(String(f.details["rule"]));
+
 /** Every finding that does not compare with a base, as one comparable line. */
 const stateKey = (v: TypeLawVerdict): string[] =>
   v.findings
-    .filter((f) => !TRANSITIONS.has(f.rule) && f.rule !== "unevaluated")
+    .filter((f) => !TRANSITIONS.has(f.rule) && f.rule !== "unevaluated" && !onTransition(f))
     .map((f) => `${f.path}|${JSON.stringify(f.location)}|${f.rule}|${f.severity}|${f.message}`)
     .sort();
 
@@ -205,6 +210,47 @@ describe("judgeTypeLaw(state, law): four constructors, one verdict", () => {
     expect(index).toEqual(overlay);
     expect(Object.values(tree).every((v) => v === "unevaluated")).toBe(true);
     expect(revision).toEqual(tree);
+  });
+
+  it("an exception on a transition is judged where there is a base, and is neither stale nor applied where there is none", async () => {
+    const dir = committed();
+    const target = "wiki/Tomato.md";
+    const base = new TextDecoder().decode(
+      (await fsState(dir)).pages.get(target) ?? new Uint8Array(),
+    );
+    // A claim and a section gone, each waived; an exception on an entry
+    // transition that holds, which closes nothing.
+    const draft = base
+      .replace(
+        "sown: 2026-04-12\n",
+        "sown: 2026-04-12\nexceptions:\n  - { rule: claims-transition, reason: moved to Tomatoes }\n  - { rule: sections-grow, reason: split in two }\n  - { rule: entry-edited, reason: none edited }\n",
+      )
+      .replace("- [measured] Twelve fruit a truss in 2025. ([[Herb bed]])\n", "")
+      .replace("## Relations\n\n- grows-in [[Herb bed]]\n", "");
+    const waivers = (v: TypeLawVerdict): string[] =>
+      v.findings
+        .filter(onTransition)
+        .map((f) => `${f.path}|${f.rule}|${String(f.details["rule"])}`)
+        .sort();
+    const overlay = await judgeState(
+      await overlayState(dir, [{ path: target, bytes: text(draft) }]),
+    );
+    writeFileSync(join(dir, target), draft);
+    git(dir, "add", "-A");
+    const index = await judgeState(await indexState(dir));
+    const tree = await judgeState(await fsState(dir));
+    git(dir, "commit", "-q", "-m", "the waiver");
+    const revision = await judgeState(await revisionState(dir, "HEAD"));
+
+    expect(waivers(overlay)).toEqual([
+      `${target}|exception-applied|claims-transition`,
+      `${target}|exception-applied|sections-grow`,
+      `${target}|exception-stale|entry-edited`,
+    ]);
+    expect(waivers(index)).toEqual(waivers(overlay));
+    expect(waivers(tree)).toEqual([]);
+    expect(waivers(revision)).toEqual([]);
+    for (const v of [index, tree, revision]) expect(stateKey(v)).toEqual(stateKey(overlay));
   });
 
   it("an unchanged page under a base holds every transition, and without one is unevaluated", async () => {

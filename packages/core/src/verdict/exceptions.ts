@@ -63,9 +63,17 @@ export function hasExceptions(page: ParsedPage): boolean {
 /**
  * The page's findings with its exceptions applied: each finding a legal entry
  * names becomes `exception-applied`, and each entry that closes nothing or
- * may not close anything is reported.
+ * may not close anything is reported. An entry naming a rule this state
+ * could not judge on the page (`unjudged`: a transition with no base) is
+ * neither stale nor applied: whether it closes anything is itself a verdict
+ * against the base, and the rule's `unevaluated` finding already says so.
  */
-export function applyExceptions(law: TypeLaw, page: ParsedPage, found: Unrouted[]): Unrouted[] {
+export function applyExceptions(
+  law: TypeLaw,
+  page: ParsedPage,
+  found: Unrouted[],
+  unjudged: ReadonlySet<string> = new Set(),
+): Unrouted[] {
   const entries = exceptionsOf(page);
   if (entries.length === 0) return found;
   const known = new Set([...VERDICT_TABLE.map((row) => row.id), ...law.rules.keys()]);
@@ -92,6 +100,7 @@ export function applyExceptions(law: TypeLaw, page: ParsedPage, found: Unrouted[
       });
       continue;
     }
+    if (unjudged.has(entry.rule)) continue;
     if (!found.some((f) => f.rule === entry.rule && f.severity !== "info")) {
       out.push({
         rule: "exception-stale",
