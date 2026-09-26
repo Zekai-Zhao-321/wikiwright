@@ -93,7 +93,14 @@ async function readIndex(root: string): Promise<Read<JudgeState>> {
         }),
       };
     }
-    throw e;
+    // Any other failure of the plumbing is git's, not the engine's: refused
+    // as the old gate refused it, with git's own message.
+    return {
+      ok: false,
+      result: fail("gate", "conflict", "git-unavailable", `git plumbing failed: ${message}`, {
+        hint: "the staged gate runs inside a git repository",
+      }),
+    };
   }
 }
 

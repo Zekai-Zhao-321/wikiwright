@@ -853,6 +853,10 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
+- The v2 gate refuses a git read that fails while it reads the index as
+  `git-unavailable` (exit 4, `conflict`), with git's own message, as the old
+  gate did. It answered `unexpected-error` (exit 1), the code for the engine
+  breaking, for any failure but a root in no repository.
 - The v2 gate holds the index listing to the staged diff, as the old
   gate's index read did: a path the diff names as added, modified, retyped,
   renamed or copied that the listing does not hold is
