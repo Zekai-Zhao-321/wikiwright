@@ -61,7 +61,7 @@ describe("rule-invalid at load, the limit named", () => {
     ["range-not-bound", "page.sections.filter(s, s.heading == 'History').all(s, true)"],
     ["cost-bound", "page.sections.all(s, s.items.all(i, i.kind != ''))"],
   ])("refuses %s", async (limit, expr) => {
-    const result = await load(withRule(rule("candidate", expr)));
+    const result = await load(withRule(rule("probe", expr)));
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.issues.map((i) => [i.code, i.details?.["limit"]])).toEqual([
@@ -69,7 +69,7 @@ describe("rule-invalid at load, the limit named", () => {
     ]);
     expect(result.issues[0]).toMatchObject({
       where: "bundle:constitution/types/planting.yaml",
-      details: { pointer: "/rules/1/expr", rule: "candidate" },
+      details: { pointer: "/rules/1/expr", rule: "probe" },
     });
   });
 });
@@ -84,7 +84,7 @@ describe("the law's own ranges, bound at load (§6)", () => {
   it("refuses a rule's config list over 1,000 as rule-invalid, and admits one at 1,000", async () => {
     const config = (n: number) =>
       withRule(
-        rule("candidate", "page.fields.bed in config.beds", `    config: { beds: ${list(n)} }\n`),
+        rule("probe", "page.fields.bed in config.beds", `    config: { beds: ${list(n)} }\n`),
       );
     expect(outcome(await load(config(1000)))).toBe("ok");
     const result = await load(config(1001));
@@ -92,7 +92,7 @@ describe("the law's own ranges, bound at load (§6)", () => {
       ["rule-invalid", "bundle:constitution/types/planting.yaml", "/rules/1/config/beds", 1001],
     ]);
     expect(result.ok ? undefined : result.issues[0]?.details).toMatchObject({
-      rule: "candidate",
+      rule: "probe",
       limit: "config",
       bound: 1000,
     });

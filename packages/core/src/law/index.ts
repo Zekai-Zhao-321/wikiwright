@@ -59,6 +59,7 @@ export type {
   LawVocabulary,
   ShapePart,
 } from "./compose.ts";
+export { CANDIDATE_RULE } from "./compose.ts";
 export type {
   FragmentDocument,
   Grammar,
@@ -88,4 +89,4 @@ export {
   resolveLibraries,
 } from "./snapshot.ts";
 export { utf8Text } from "./text.ts";
-export { readYaml } from "./yaml.ts";
+export { isMapping, readYaml } from "./yaml.ts";

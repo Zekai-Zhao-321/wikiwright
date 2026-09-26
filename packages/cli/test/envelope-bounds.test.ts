@@ -109,8 +109,10 @@ describe("--out (v2 contracts §9)", () => {
   });
 
   it("is accepted by every verb, as a global flag", () => {
+    const garden = gardenBundle();
     for (const command of COMMANDS) {
-      const r = run([command.name, "--help", "--out", join(dir, `${command.name}-help.json`)]);
+      const out = join(dir, `${command.name}-help.json`);
+      const r = run([command.name, "--help", "--root", garden, "--out", out]);
       expect(r.status).toBe(0);
     }
   }, 120_000);

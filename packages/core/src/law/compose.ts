@@ -117,6 +117,12 @@ export interface Composition {
 
 const DEFAULT_DEPTH = 2;
 
+/**
+ * v2 contracts §9.4: the id `rule try` gives its candidate rule, reserved, so
+ * a candidate's findings are never a declared rule's.
+ */
+export const CANDIDATE_RULE = "candidate";
+
 /** The judge's codes and the loader's: no rule may take one as its id. */
 const KERNEL_CODES: ReadonlySet<string> = new Set([
   ...VERDICT_TABLE.map((row) => row.id),
@@ -240,6 +246,15 @@ export function compose(
   const ruleSites = new Map<string, string>();
   for (const doc of [...fragmentDocs, ...typeDocs]) {
     for (const rule of doc.rules) {
+      if (rule.id === CANDIDATE_RULE) {
+        issues.push({
+          code: "rule-collision",
+          where: doc.where,
+          message: `${rule.pointer}/id: "${rule.id}" is the id \`rule try\` gives its candidate; a declared rule takes another`,
+          details: { pointer: `${rule.pointer}/id`, rule: rule.id, kind: "reserved" },
+        });
+        continue;
+      }
       if (KERNEL_CODES.has(rule.id)) {
         issues.push({
           code: "rule-collision",

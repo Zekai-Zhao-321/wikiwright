@@ -800,6 +800,7 @@ Global flags, accepted by every verb:
 | [`init`](#init) | maintainer | yes | Scaffold a vault from a starter constitution — only what is missing, unless --force; installs the hook when git exists. |
 | [`modules`](#modules) | maintainer | no | List the modules this bundle declares, or plan the delta of adopting another version. |
 | [`read`](#read) | consumer | no | Return a page's sections verbatim, with its digest and the bundle it came from, under a byte budget. |
+| [`rule`](#rule) | maintainer | no | Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision. |
 | [`schema`](#schema) | consumer | no | Print the generated command registry: names, roles, flags, examples. |
 | [`search`](#search) | consumer | no | Deterministic lexical search with match reasons and a coverage block. |
 | [`skills`](#skills) | maintainer | yes | Reinstall the shipped skills into .claude/skills/, or compare installed vs shipped. |
@@ -981,6 +982,27 @@ Role: `consumer`. Writes: no.
 wikiwright read wiki/pruning-roses.md
 wikiwright read pruning-roses --section Steps
 wikiwright read "Pruning roses" --budget 800
+```
+
+### rule
+
+`wikiwright rule <try>`
+
+Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision.
+
+Role: `maintainer`. Writes: no.
+
+| Flag | Meaning |
+|---|---|
+| `--type <value>` | the type the candidate attaches to, and every type below it |
+| `--section <value>` | a section rule: the heading it is evaluated at |
+| `--expr <value>` | the candidate's CEL expression, under the profile |
+| `--config <value>` | the candidate's config, a JSON object |
+| `--base <value>` | a revision to try it at too, under the revision adapter |
+
+```text
+wikiwright rule try --type planting --expr "has(page.fields.source)"
+wikiwright rule try --type planting --section History --expr "section.items.all(i, i.precision == \"day\")" --base HEAD
 ```
 
 ### schema

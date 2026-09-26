@@ -940,9 +940,12 @@ its old self over any other root. What the rewritten verbs leave, so far:
   reserved, so every effective shape declares them and every such page is
   stamped; a page whose frontmatter does not read, or whose type the law
   does not declare, is not, and the judge reports it.
-- A rule id may not be a code the judge or the loader reports
-  (`rule-collision`); the id `rule try` gives its candidate (`candidate`,
-  contracts §9.4) is not reserved yet, and arrives with that verb.
+- A rule id may not be a code the judge or the loader reports, nor
+  `candidate`, the id `rule try` gives its candidate (contracts §9.4):
+  either is `rule-collision`, `details.kind` `kernel-code` or `reserved`.
+  `rule try` judges its candidate with the whole judge over every page, and
+  reports only the candidate's outcomes; it runs no rule test, so a
+  candidate carries no test set until it is declared.
 - A library's `library.yaml` has its own line in the law digest, beside
   the five law directories the contracts list, because it can change the
   library's id and with it every qualified name.

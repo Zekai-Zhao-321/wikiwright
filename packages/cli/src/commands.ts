@@ -41,6 +41,7 @@ import { writeCommand as legacyWriteCommand } from "./legacy/write.ts";
 import type { CommandSpec } from "./spec.ts";
 import { checkCommand } from "./verbs/check.ts";
 import { gateCommand } from "./verbs/gate.ts";
+import { ruleCommand } from "./verbs/rule.ts";
 import { writeCommand } from "./verbs/write.ts";
 
 /** The command table: the verbs a schema-version-4 bundle is answered by. */
@@ -54,6 +55,7 @@ export const COMMANDS: CommandSpec[] = [
   initCommand,
   modulesCommand,
   readCommand,
+  ruleCommand,
   schemaCommand,
   searchCommand,
   skillsCommand,

@@ -82,6 +82,16 @@ version` prints the engine version and the commit a binary was built from.
   destination that exists, a claim already closed (exit 4).
   `relation-removed` matches a relation by its label and the page its
   target resolves to, so a move's rewritten relation is the same relation.
+- **`rule try`** (v2 contracts §9.4). `rule try --type <t> [--section <h>]
+  --expr <cel> [--config <json>] [--base <ref>]` admits a candidate rule
+  under the profile (`rule-invalid`, exit 2, with its limit), attaches it as
+  `candidate`, severity error, to `<t>` and every type below it, and judges
+  the working tree and, with `--base`, the revision (`revision-not-found`,
+  exit 3): `working` and `base` each list `would_refuse` (path and
+  location), `would_pass`, `unevaluated` (path and reason) and `errors`
+  (path, kind, message). Exit 0 whatever the counts; nothing is written.
+  The id `candidate` is reserved: a declared rule taking it is
+  `rule-collision`, `details.kind: reserved`.
 - **Two command tables.** A root whose `config/engine.json` is schema
   version 4 is answered by the command table of the v2 contracts; any other
   root, and any `--bundle` invocation, by the old table whole, until the
