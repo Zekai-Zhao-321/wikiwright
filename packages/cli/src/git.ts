@@ -303,6 +303,18 @@ export async function gitCommitKnown(dir: string, sha: string): Promise<boolean>
   return (await gitRefHead(dir, `${sha}^{commit}`)) !== null;
 }
 
+/**
+ * Whether the repository is a shallow clone, whose history stops at a
+ * boundary: a commit behind it is absent, not unknown.
+ */
+export async function gitIsShallow(dir: string): Promise<boolean> {
+  const args = ["rev-parse", "--is-shallow-repository"];
+  const out = terminated(args, await git(dir, args), "\n", true).trim();
+  if (out === "true") return true;
+  if (out === "false") return false;
+  throw new Error(`git rev-parse --is-shallow-repository answered ${JSON.stringify(out)}`);
+}
+
 /** Whether `ancestor` is on the history of `descendant`. */
 export async function gitIsAncestor(
   dir: string,

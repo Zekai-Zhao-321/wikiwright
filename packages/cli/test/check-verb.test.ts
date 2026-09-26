@@ -6,7 +6,16 @@
 // folder-tag fixer — and the table that answers a root: the §9 verbs for a
 // bundle on schema version 4, the old ones for any other root.
 import { afterAll, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { contentDigest, parseTypeLawQueue } from "@wikiwright/core";
@@ -20,7 +29,11 @@ import {
 } from "./fixtures/garden-cli.ts";
 import { engineJson } from "./fixtures/garden-law.ts";
 
-afterAll(cleanBundles);
+const clones: string[] = [];
+afterAll(() => {
+  cleanBundles();
+  for (const dir of clones) rmSync(dir, { recursive: true, force: true });
+});
 
 const MINIMAL = fileURLToPath(new URL("../../../fixtures/v1/minimal-vault", import.meta.url));
 
@@ -249,6 +262,28 @@ describe("pins, measured against the local repository (v2 contracts §9.1)", () 
     writeFileSync(join(dir, "wiki/Seed list.md"), sourcePage("0123456789abcdef", ".", "x"));
     const r = cli(["check", "--all"], dir);
     expect(findingsOf(r.envelope, "pin-unknown").map((f) => f.path)).toEqual(["wiki/Seed list.md"]);
+  });
+
+  it("measures no pin a shallow clone's history does not reach: pin-unmeasured, reason shallow", () => {
+    const { dir } = pinned();
+    writeFileSync(join(dir, "notes/other.txt"), "chives\n");
+    commitAll(dir, "a later commit");
+    const clone = (depth: number): string => {
+      const into = mkdtempSync(join(tmpdir(), "ww-shallow-"));
+      clones.push(into);
+      git(into, "clone", "-q", "--depth", String(depth), `file://${dir}`, ".");
+      return into;
+    };
+    const shallow = cli(["check", "--all"], clone(1));
+    expect(findingsOf(shallow.envelope, "pin-unknown")).toEqual([]);
+    expect(
+      findingsOf(shallow.envelope, "pin-unmeasured").map((f) => [f.severity, f.details["reason"]]),
+    ).toEqual([["info", "shallow"]]);
+    // A shallow clone whose history reaches the pin measures it.
+    const deep = cli(["check", "--all"], clone(3));
+    expect(findingsOf(deep.envelope, "pin-unmeasured")).toEqual([]);
+    const pins = deep.envelope.data?.["pins"] as { counts: Record<string, number> } | undefined;
+    expect(pins?.counts).toMatchObject({ unchanged: 1, unknown: 0, unmeasured: 0 });
   });
 
   it("measures no other origin, and no pin outside a repository: pin-unmeasured, info", () => {

@@ -270,7 +270,8 @@ read.
   them — and `stale-source-cited` (warning) on every page with an edge of
   any kind but `tagged` into a stale page; any other origin, no repository
   or no commit is `pin-unmeasured` (info, `details.reason` `remote-origin`,
-  `no-repository`, `no-head`). `data.pins` carries `counts` by state
+  `no-repository`, `no-head`), and so is a commit a shallow clone's
+  history does not reach (`shallow`), which is absent there, not unknown. `data.pins` carries `counts` by state
   (`current`, `unchanged`, `stale`, `unknown`, `unmeasured`) and one entry
   per pin. `generated/` holds `BRIEF.md` (the bundle's brief: the loop in
   three sections, one per role, the verbs, the types, the vocabularies, the

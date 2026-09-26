@@ -15,8 +15,9 @@
 // a stale page. Changed: a pin is found by its shape — a top-level property
 // whose schema is the engine `$def` `pin` — and its three parts are one
 // value; a pin nothing measures is an info finding (`pin-unmeasured`, reason
-// `remote-origin`, `no-repository` or `no-head`), the old
-// `origin-unreachable` dropped with remote freshness; `--fast-forward` and
+// `remote-origin`, `no-repository` or `no-head`, or `shallow` for a commit a
+// shallow clone's history does not reach, which is absent there rather than
+// unknown), the old `origin-unreachable` dropped with remote freshness; `--fast-forward` and
 // the uncommitted `generated/freshness.json` report are not ported.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -36,6 +37,7 @@ import {
   gitHasHead,
   gitHead,
   gitIsAncestor,
+  gitIsShallow,
   gitObjectType,
   gitRevListCount,
   gitTopLevel,
@@ -48,7 +50,7 @@ export const LOCAL_ORIGIN = ".";
 const COMMIT = /^[0-9a-f]{7,64}$/u;
 
 export type PinState = "current" | "unchanged" | "stale" | "unknown" | "unmeasured";
-export type UnmeasuredReason = "remote-origin" | "no-repository" | "no-head";
+export type UnmeasuredReason = "remote-origin" | "no-repository" | "no-head" | "shallow";
 
 export interface UnresolvedCitation {
   path: string;
@@ -135,6 +137,8 @@ function pinnedPages(read: StateRead, only?: ReadonlySet<string>): Pinned[] {
 interface Repository {
   dir: string | null;
   head: string | null;
+  /** A shallow clone: a pin its history does not reach is not measured. */
+  shallow: boolean;
   reason?: UnmeasuredReason;
 }
 
@@ -145,10 +149,12 @@ async function repositoryAt(root: string): Promise<Repository> {
     if (existsSync(join(root, ".git"))) {
       throw new Error(`"${join(root, ".git")}" exists and git recognises no repository there`);
     }
-    return { dir: null, head: null, reason: "no-repository" };
+    return { dir: null, head: null, shallow: false, reason: "no-repository" };
   }
-  if (!(await gitHasHead(root))) return { dir: root, head: null, reason: "no-head" };
-  return { dir: root, head: await gitHead(root) };
+  if (!(await gitHasHead(root))) {
+    return { dir: root, head: null, shallow: false, reason: "no-head" };
+  }
+  return { dir: root, head: await gitHead(root), shallow: await gitIsShallow(root) };
 }
 
 /** Every citation the repository does not answer at the pin, the objects read once per path. */
@@ -185,6 +191,8 @@ const REASON_TEXT: Readonly<Record<UnmeasuredReason, string>> = {
   "remote-origin": "names another origin, and only the repository the bundle sits in is measured",
   "no-repository": 'names ".", and no repository encloses the bundle',
   "no-head": "names the repository the bundle sits in, which has no commit to measure against",
+  shallow:
+    "names the repository the bundle sits in, a shallow clone whose history does not reach the commit (fetch the full history to measure it)",
 };
 
 function countOf(entries: readonly PinEntry[]): Record<PinState, number> {
@@ -249,6 +257,18 @@ export async function measurePins(
     }
     const known =
       (await gitCommitKnown(dir, pin.commit)) && (await gitIsAncestor(dir, pin.commit, "HEAD"));
+    if (!known && repository?.shallow === true) {
+      entry.reason = "shallow";
+      findings.push({
+        rule: "pin-unmeasured",
+        severity: "info",
+        path: pin.path,
+        location: PAGE_LOCATION,
+        message: `the pin in ${pin.field} ${REASON_TEXT.shallow}; it is not measured`,
+        details: { ...at, reason: "shallow" },
+      });
+      continue;
+    }
     if (!known) {
       entry.state = "unknown";
       findings.push({

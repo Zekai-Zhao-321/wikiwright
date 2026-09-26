@@ -5,7 +5,8 @@
 //   stale       true when one of the page's pins is stale (`pin-stale`) or a
 //               page it links, by an edge of any kind but `tagged`, carries
 //               one (`stale-source-cited`); null when a pin of its own was
-//               not measured (`remote-origin`, `no-repository`, `no-head`)
+//               not measured (`remote-origin`, `no-repository`, `no-head`,
+//               `shallow`)
 //               or is not on HEAD's history (`pin-unknown`); false otherwise.
 //               Measured live against the local repository, as `check`
 //               measures every pin (pins.ts).

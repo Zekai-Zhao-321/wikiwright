@@ -871,6 +871,12 @@ version` prints the engine version and the commit a binary was built from.
   `code`'s `quickstart` (at most one page) let devwiki hold two. The bound
   is the declaring type's own, not inherited as a declaration as v1
   inherited it; `docs/roadmap.md` states where the two readings differ.
+- `check` over a shallow clone reports a pin whose commit the clone's
+  history does not reach as `pin-unmeasured` (info, reason `shallow`), and
+  `read` and `search` give its page `stale: null` with that reason. It was
+  `pin-unknown`, a warning diagnosing "a rewritten history, or a mistyped
+  commit", so a clone at depth 1, as CI checks out, read every pin of
+  devwiki as unknown. A pin the shallow history does reach is measured.
 - The covering diff `freshness` reads no longer depends on the caller's git
   configuration: under `diff.relative=true` a vault in a directory of its
   repository got an empty diff for a covered path outside that directory,
