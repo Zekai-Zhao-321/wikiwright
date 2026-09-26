@@ -6,7 +6,7 @@ tags: [kernel, cli]
 aliases: ["modules-and-trust"]
 status: retired
 pin:
-  commit: 4c477e141a54b545f10206591f9dbb1ea3a2dd05
+  commit: 61cf635d842b8f465a66b0b666b163b39127f909
   origin: .
   covers: ["CHANGELOG.md", "docs/roadmap.md"]
 updated: 2026-09-26

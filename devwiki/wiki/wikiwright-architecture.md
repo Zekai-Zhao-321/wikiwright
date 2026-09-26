@@ -4,7 +4,7 @@ title: wikiwright architecture
 description: "Kernel, data-library and bundle layers and the four adapters that reach one judge."
 tags: [kernel, stdlib, cli, kit]
 pin:
-  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
+  commit: 61cf635d842b8f465a66b0b666b163b39127f909
   origin: .
   covers: ["packages/core/src/index.ts", "packages/cli/src/main.ts", "packages/cli/src/lawstate.ts", "docs/architecture.md"]
 updated: 2026-09-27
@@ -20,6 +20,9 @@ a data library can require particular source types for selected categories.
 Literal paths under source roots are checked for existence from the same
 selected state without reading raw source bytes. The kernel defines those
 reference facts, while the library declares the policy that interprets them.
+CEL binds a relation's current target from current names and its `before`
+target from base names, without rewriting the parsed record or changing
+relation transition matching.
 
 Current source at this pin: `packages/core/src/index.ts`, `packages/cli/src/main.ts`, `packages/cli/src/lawstate.ts`, `docs/architecture.md`.
 

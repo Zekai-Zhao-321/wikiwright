@@ -5,7 +5,7 @@ description: "Historical v1 JSON registry pipeline; the v2 loader composes type 
 tags: [kernel, cli]
 status: retired
 pin:
-  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
+  commit: 61cf635d842b8f465a66b0b666b163b39127f909
   origin: .
   covers: ["packages/core/src/law/load.ts", "packages/cli/src/lawfiles.ts", "CHANGELOG.md"]
 updated: 2026-09-26

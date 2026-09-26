@@ -4,10 +4,10 @@ title: "The parser and the names it binds"
 description: "Markdown and YAML parsing, Unicode page identity and name resolution."
 tags: [kernel]
 pin:
-  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
+  commit: 61cf635d842b8f465a66b0b666b163b39127f909
   origin: .
   covers: ["packages/core/src/parse/index.ts", "packages/core/src/names/index.ts", "packages/core/src/identity/index.ts", "packages/core/src/interface/index.ts"]
-updated: 2026-09-26
+updated: 2026-09-27
 ---
 
 # The parser and the names it binds
@@ -26,6 +26,10 @@ Names, aliases and titles are indexed from the selected pages. Unicode NFC and f
 A claim's lexical provenance keeps its authored page name. The rule interface
 projects the resolved page path and nominal type from the name index, so a
 Unicode citation needs no CEL reconstruction of a normalized map key.
+Relation records also keep the authored target name, heading and alias.
+The CEL page interface projects target resolution, path and type from the
+current name index, or from the base name index in `before`; a shared parsed
+page therefore cannot leak current target metadata into a historical rule.
 
 ## Invariants
 
