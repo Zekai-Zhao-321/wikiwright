@@ -63,6 +63,36 @@ describe("the pre-commit stage (v2 contracts §9.2)", () => {
     expect(r.envelope.data?.["stage"]).toBe("pre-commit");
   });
 
+  it("reviews a former folder tag after a staged rename, then clears it when removed", () => {
+    const oldPath = "wiki/beds/North bed.md";
+    const newPath = "wiki/herbs/North bed.md";
+    const page =
+      "---\ntype: garden/bed\ntitle: North bed\ntags: [beds, herbs]\n---\n\n# North bed\n";
+    const dir = gardenBundle({
+      "config/engine.json": engineJson({ folder_tags: { mode: "validate" } }),
+      [oldPath]: page,
+    });
+    commitAll(dir, "the beds");
+    mkdirSync(join(dir, "wiki/herbs"), { recursive: true });
+    git(dir, "mv", oldPath, newPath);
+    const retained = cli(["gate"], dir);
+    expect(retained.status).toBe(0);
+    expect(
+      findingsOf(retained.envelope, "former-folder-tags-review").map((f) => [
+        f.path,
+        f.severity,
+        f.queue,
+        f.details["from"],
+      ]),
+    ).toEqual([[newPath, "warning", "tag-review", oldPath]]);
+
+    writeFileSync(join(dir, newPath), page.replace("[beds, herbs]", "[herbs]"));
+    git(dir, "add", "-A");
+    const removed = cli(["gate"], dir);
+    expect(removed.status).toBe(0);
+    expect(findingsOf(removed.envelope, "former-folder-tags-review")).toEqual([]);
+  });
+
   it("refuses an error the commit writes, with the census on stderr", () => {
     const dir = gardenBundle();
     commitAll(dir, "the garden");
