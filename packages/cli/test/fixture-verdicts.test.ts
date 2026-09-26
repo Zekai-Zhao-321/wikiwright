@@ -18,6 +18,9 @@ import { cli, type Envelope, git } from "./fixtures/garden-cli.ts";
 
 afterAll(removeCopies);
 
+/** A shallow checkout's history may not reach a pin, which is then not measured. */
+const SHALLOW = git(REPO, "rev-parse", "--is-shallow-repository").trim() === "true";
+
 type Row = [rule: string, severity: string, path: string];
 
 function rows(envelope: Envelope, severities: readonly string[]): Row[] {
@@ -35,22 +38,32 @@ interface Expected {
   unevaluated: Record<string, number>;
   /**
    * Warnings measured live against the repository the corpus sits in (a
-   * pin and the pages that cite a stale one): they change with every commit
+   * stale pin and the pages that link one): they change with every commit
    * that touches a covered path, so their rules are held, not their count.
+   * `pin-unknown` and `citation-unresolved` are not among them: each
+   * depends only on a page's bytes and its pin's commit, so each is held
+   * at the count `findings` gives it.
    */
   live?: string[];
+  /**
+   * How many pins the corpus carries, every one measured unless the
+   * checkout is a shallow clone whose history does not reach it.
+   */
+  pins?: number;
 }
 
 const V2_VERDICTS: Record<string, Expected> = {
   // The engine's own bundle carries no defect. Its pins are measured against
   // this repository, so a covered path changed since a pin is `pin-stale`
   // on the page and `stale-source-cited` on every page that links it, until
-  // the documentation step re-reads and re-pins them.
+  // the documentation step re-reads and re-pins them. Every pin is on
+  // HEAD's history and every citation stands at its pin.
   devwiki: {
     pages: 35,
     findings: [],
     unevaluated: { "body-append-only": 7, "entry-edited": 27, "relation-removed": 27 },
-    live: ["pin-stale", "stale-source-cited", "pin-unknown", "citation-unresolved"],
+    live: ["pin-stale", "stale-source-cited"],
+    pins: 27,
   },
   // A handbook carries no defect: a finding of any severity is rot. Its
   // `source-host-allowed` rule holds the page that names a source.
@@ -110,6 +123,13 @@ describe("the corpora on the v2 law judge to the verdict recorded here (contract
       expect(
         Object.fromEntries(Object.entries(unevaluated).map(([rule, u]) => [rule, u.count])),
       ).toEqual(expected.unevaluated);
+      if (expected.pins !== undefined) {
+        const pins = r.envelope.data?.["pins"] as
+          | { entries: unknown[]; counts: Record<string, number> }
+          | undefined;
+        expect(pins?.entries.length).toBe(expected.pins);
+        if (!SHALLOW) expect(pins?.counts["unmeasured"]).toBe(0);
+      }
       const errors = expected.findings.filter(([, severity]) => severity === "error").length;
       expect(r.status).toBe(errors > 0 ? 5 : 0);
     });
