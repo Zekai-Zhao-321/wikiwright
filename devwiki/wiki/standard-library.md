@@ -5,7 +5,7 @@ description: "Historical v1 code standard library, replaced by kernel grammar an
 tags: [stdlib]
 status: retired
 pin:
-  commit: eaa540f9e7b661097420c218cd9a93e052abcbd9
+  commit: 29cf0dbf5608db22b6ee5d8136125eeea2c0ce45
   origin: .
   covers: ["packages/core/src/records/index.ts", "libraries/kit-code/types/subsystem.yaml", "libraries/kit-garden/types/planting.yaml", "CHANGELOG.md"]
 ---
