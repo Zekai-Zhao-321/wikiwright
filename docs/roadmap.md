@@ -787,6 +787,11 @@ library under the temporary directory. What that leaves, until the verbs
   page is `page-ref-type` (`details.kind: unresolved`), an error as v1's
   `field-shape` was; one written as a path is `page-ref-type`
   (`details.kind: path`) with the canonical name.
+  A reference resolves against the vault's names, which hold the content
+  roots' pages only, so a `target_root` naming a source root that no
+  content root covers (the contracts' §2 layout, `raw/` beside `wiki/`)
+  could never be met and is refused at load (`shape-invalid`) until the
+  navigator decides whether the names index the source roots' pages too.
   Only a top-level property's `target_type` and `target_root` are read, so
   the loader refuses either one anywhere else (`shape-invalid`): a nested
   page reference, one applied in place, one in a `$def`.

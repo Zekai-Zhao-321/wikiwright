@@ -210,6 +210,10 @@ describe("load-time codes of a shape", () => {
       "  type: object\n  properties:\n    bed: { $ref: '#/$defs/bedref' }\n  $defs:\n    bedref: { $ref: '#/$defs/page-ref', target_type: garden/bed }\n",
     ],
     [
+      "target_root naming a source root no content root covers",
+      "  type: object\n  properties:\n    seed: { $ref: '#/$defs/page-ref', target_root: raw }\n",
+    ],
+    [
       "target_root naming an undeclared root",
       "  type: object\n  properties:\n    seed: { $ref: '#/$defs/page-ref', target_root: sources }\n",
     ],
@@ -231,12 +235,13 @@ describe("load-time codes of a shape", () => {
     expect(validate?.({ type: "label", title: "x", tray: { cells: 6, lid: true } })).toBe(false);
   });
 
-  it("accepts the engine keywords beside a page reference, and target_root content or a source root", async () => {
-    const loaded = await law(
-      fields(
+  it("accepts the engine keywords beside a page reference, and target_root content or a source root a content root covers", async () => {
+    const loaded = await law({
+      "config/engine.json": engineJson({ content_roots: ["wiki", "raw"] }),
+      ...fields(
         "  type: object\n  properties:\n    beds: { $ref: '#/$defs/page-ref-list', target_type: garden/bed, target_root: content }\n    seed: { $ref: '#/$defs/page-ref', target_root: raw }\n    pin: { $ref: '#/$defs/pin' }\n    kind: { $ref: '#/$defs/kind' }\n  $defs:\n    kind: { enum: [paper, slate] }\n",
       ),
-    );
+    });
     const validate = loaded.validators.get("label");
     const page = {
       type: "label",

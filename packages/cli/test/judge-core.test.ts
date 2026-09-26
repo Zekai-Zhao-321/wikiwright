@@ -180,7 +180,9 @@ describe("page references", () => {
 });
 
 describe("target_root", () => {
-  it("holds a page reference to the root it names: a source root, or the content roots", async () => {
+  // A source root no content root covers is refused at load (law-shapes):
+  // only the content roots' pages have names a reference resolves to.
+  it("holds a page reference to the root it names: a source root a content root covers, or the content roots", async () => {
     const { engineJson } = await import("./fixtures/garden-law.ts");
     const extra = {
       "config/engine.json": engineJson({ content_roots: ["wiki", "raw"] }),

@@ -65,6 +65,15 @@ export interface ShapeContext {
   types: ReadonlySet<string>;
   /** `content` and the declared source roots: what `target_root` may name. */
   roots: ReadonlySet<string>;
+  /** The content roots: the only pages the vault's names hold. */
+  contentRoots: readonly string[];
+}
+
+/** Whether a root and some content root overlap: some page under it has a name. */
+function named(root: string, contentRoots: readonly string[]): boolean {
+  return contentRoots.some(
+    (c) => c === root || c.startsWith(`${root}/`) || root.startsWith(`${c}/`),
+  );
 }
 
 /**
@@ -163,6 +172,14 @@ export function authoredShapeIssues(
           `${pointer}/${keyword}`,
           `${JSON.stringify(value)} is neither "content" nor a declared source root (${[...context.roots].join(", ")})`,
         );
+      } else if (value !== "content" && !named(value, context.contentRoots)) {
+        // A page reference resolves against the vault's names, which only
+        // the content roots' pages hold: under a source root no content
+        // root covers, no reference could ever resolve.
+        invalid(
+          `${pointer}/${keyword}`,
+          `the source root ${JSON.stringify(value)} lies under no content root, so no page there has a name a reference could resolve to`,
+        );
       }
     }
     for (const [key, value] of Object.entries(record)) {
@@ -215,6 +232,7 @@ export function compileShapes(
   const context: ShapeContext = {
     types: new Set(types.keys()),
     roots: new Set(["content", ...engine.source_roots]),
+    contentRoots: engine.content_roots,
   };
   // One resource object per document, reused by every type it composes:
   // Ajv accepts an embedded `$id` it has seen when it is the same schema.

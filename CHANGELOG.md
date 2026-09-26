@@ -47,7 +47,9 @@ version` prints the engine version and the commit a binary was built from.
     for `date`, `date-time` and `uri` only by the engine's own validators,
     the engine `$defs` `page-ref`, `page-ref-list` and `pin`, the keywords
     `target_type` and `target_root` (on a top-level property only: the
-    judge reads them nowhere else), a `$id` per document, and one
+    judge reads them nowhere else; a `target_root` naming a source root
+    that no content root covers is refused, as no page there has a name), a
+    `$id` per document, and one
     `unevaluatedProperties: false` at the type under `extensions.mode:
     registered`: `shape-invalid`, `shape-relaxed`, `default-conflict`, and
     `constitution-collision` for a document `$def` under a reserved name.
