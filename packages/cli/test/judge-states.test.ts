@@ -62,11 +62,11 @@ function layered(prefix = ""): string {
   const dir = vault({}, prefix);
   gitCommitAll(dir);
   const at = (path: string) => join(dir, prefix, path);
-  writeFileSync(at("wiki/basil.md"), BASIL_EDITED);
-  git(dir, "mv", `${prefix}wiki/start.md`, `${prefix}wiki/begin.md`);
-  writeFileSync(at("wiki/mint.md"), MINT);
+  writeFileSync(at("wiki/Basil.md"), BASIL_EDITED);
+  git(dir, "mv", `${prefix}wiki/Start.md`, `${prefix}wiki/Begin.md`);
+  writeFileSync(at("wiki/Mint.md"), MINT);
   git(dir, "add", "-A");
-  writeFileSync(at("wiki/basil.md"), `${BASIL_EDITED}\nA working-tree line.\n`);
+  writeFileSync(at("wiki/Basil.md"), `${BASIL_EDITED}\nA working-tree line.\n`);
   writeFileSync(
     at("constitution/types/guide.yaml"),
     "type: guide\nrole: hub\ndescription: Edited on disk.\n",
@@ -81,12 +81,12 @@ describe("the four constructors over one repository", () => {
     expect(state.kind).toBe("working-tree");
     expect(state.base).toBe(undefined);
     expect(Object.keys(pagesOf(state))).toEqual([
-      "wiki/basil.md",
-      "wiki/begin.md",
-      "wiki/herb-bed.md",
-      "wiki/mint.md",
+      "wiki/Basil.md",
+      "wiki/Begin.md",
+      "wiki/Herb bed.md",
+      "wiki/Mint.md",
     ]);
-    expect(pagesOf(state)["wiki/basil.md"]).toContain("A working-tree line.");
+    expect(pagesOf(state)["wiki/Basil.md"]).toContain("A working-tree line.");
     expect(lawText(state, "constitution/types/guide.yaml")).toContain("Edited on disk.");
     expect(contentRootsOf(state.law)).toEqual(["wiki"]);
   });
@@ -95,19 +95,19 @@ describe("the four constructors over one repository", () => {
     const dir = layered();
     const state = await indexState(dir);
     expect(state.kind).toBe("index");
-    expect(pagesOf(state)["wiki/basil.md"]).toBe(BASIL_EDITED);
+    expect(pagesOf(state)["wiki/Basil.md"]).toBe(BASIL_EDITED);
     expect(lawText(state, "constitution/types/guide.yaml")).not.toContain("Edited on disk.");
     expect(baseOf(state)).toEqual({
       // Changed: HEAD's bytes at its path.
-      "wiki/basil.md": BASIL,
+      "wiki/Basil.md": BASIL,
       // Renamed: HEAD's bytes at the path it was renamed from.
-      "wiki/begin.md": START,
+      "wiki/Begin.md": START,
       // Unchanged: its own bytes.
-      "wiki/herb-bed.md": pagesOf(state)["wiki/herb-bed.md"],
+      "wiki/Herb bed.md": pagesOf(state)["wiki/Herb bed.md"],
       // New: none.
-      "wiki/mint.md": null,
+      "wiki/Mint.md": null,
     });
-    expect(state.renames).toEqual([{ from: "wiki/start.md", to: "wiki/begin.md" }]);
+    expect(state.renames).toEqual([{ from: "wiki/Start.md", to: "wiki/Begin.md" }]);
   });
 
   it("overlayState lays drafts over the disk, with the disk as the base", async () => {
@@ -117,16 +117,16 @@ describe("the four constructors over one repository", () => {
       bytes: new TextEncoder().encode(body),
     });
     const state = await overlayState(dir, [
-      draft("wiki/basil.md", BASIL),
-      draft("wiki/thyme.md", MINT.replace("Mint", "Thyme")),
+      draft("wiki/Basil.md", BASIL),
+      draft("wiki/Thyme.md", MINT.replace("Mint", "Thyme")),
     ]);
     expect(state.kind).toBe("overlay");
-    expect(pagesOf(state)["wiki/basil.md"]).toBe(BASIL);
-    expect(pagesOf(state)["wiki/thyme.md"]).toContain("Thyme");
+    expect(pagesOf(state)["wiki/Basil.md"]).toBe(BASIL);
+    expect(pagesOf(state)["wiki/Thyme.md"]).toContain("Thyme");
     const base = baseOf(state) ?? {};
-    expect(base["wiki/basil.md"]).toContain("A working-tree line.");
-    expect(base["wiki/thyme.md"]).toBe(null);
-    expect(base["wiki/herb-bed.md"]).toBe(pagesOf(state)["wiki/herb-bed.md"]);
+    expect(base["wiki/Basil.md"]).toContain("A working-tree line.");
+    expect(base["wiki/Thyme.md"]).toBe(null);
+    expect(base["wiki/Herb bed.md"]).toBe(pagesOf(state)["wiki/Herb bed.md"]);
     expect(lawText(state, "constitution/types/guide.yaml")).toContain("Edited on disk.");
     await expect(overlayState(dir, [draft("notes/x.md", "---\n---\n")])).rejects.toThrow(
       "not a page under the content roots",
@@ -138,8 +138,8 @@ describe("the four constructors over one repository", () => {
     const state = await revisionState(dir, "HEAD");
     expect(state.kind).toBe("revision");
     expect(state.base).toBe(undefined);
-    expect(pagesOf(state)).toMatchObject({ "wiki/basil.md": BASIL, "wiki/start.md": START });
-    expect(Object.keys(pagesOf(state))).not.toContain("wiki/mint.md");
+    expect(pagesOf(state)).toMatchObject({ "wiki/Basil.md": BASIL, "wiki/Start.md": START });
+    expect(Object.keys(pagesOf(state))).not.toContain("wiki/Mint.md");
     expect(lawText(state, "constitution/types/guide.yaml")).not.toContain("Edited on disk.");
   });
 
@@ -152,12 +152,12 @@ describe("the four constructors over one repository", () => {
       await revisionState(root, "HEAD"),
     ]) {
       expect(state.law.bundle).toBe("garden");
-      expect(Object.keys(pagesOf(state))).toContain("wiki/herb-bed.md");
+      expect(Object.keys(pagesOf(state))).toContain("wiki/Herb bed.md");
       expect(contentRootsOf(state.law)).toEqual(["wiki"]);
       expect([...state.law.files.keys()]).toContain("libraries/kit-garden/types/planting.yaml");
     }
     expect((await indexState(root)).renames).toEqual([
-      { from: "wiki/start.md", to: "wiki/begin.md" },
+      { from: "wiki/Start.md", to: "wiki/Begin.md" },
     ]);
   });
 
@@ -172,7 +172,7 @@ describe("the four constructors over one repository", () => {
 
   it("reads no page that is a symbolic link, in any constructor", async () => {
     const dir = vault();
-    symlinkSync("herb-bed.md", join(dir, "wiki/alias.md"));
+    symlinkSync("Herb bed.md", join(dir, "wiki/Alias.md"));
     gitCommitAll(dir);
     for (const state of [
       await fsState(dir),
@@ -181,7 +181,7 @@ describe("the four constructors over one repository", () => {
     ]) {
       expect([state.kind, Object.keys(pagesOf(state))]).toEqual([
         state.kind,
-        ["wiki/basil.md", "wiki/herb-bed.md", "wiki/start.md"],
+        ["wiki/Basil.md", "wiki/Herb bed.md", "wiki/Start.md"],
       ]);
     }
   });
@@ -193,14 +193,14 @@ describe("the working tree, read by digest before and after (§11)", () => {
     const state = await fsState(dir, {
       betweenReads: (attempt) => {
         if (attempt !== 1) return;
-        writeFileSync(join(dir, "wiki/basil.md"), BASIL_EDITED);
+        writeFileSync(join(dir, "wiki/Basil.md"), BASIL_EDITED);
         writeFileSync(
           join(dir, "constitution/types/guide.yaml"),
           "type: guide\nrole: hub\ndescription: Changed mid-read.\n",
         );
       },
     });
-    expect(pagesOf(state)["wiki/basil.md"]).toBe(BASIL_EDITED);
+    expect(pagesOf(state)["wiki/Basil.md"]).toBe(BASIL_EDITED);
     expect(lawText(state, "constitution/types/guide.yaml")).toContain("Changed mid-read.");
   });
 
@@ -210,7 +210,7 @@ describe("the working tree, read by digest before and after (§11)", () => {
     const read = fsState(dir, {
       betweenReads: () => {
         n += 1;
-        writeFileSync(join(dir, "wiki/basil.md"), `${BASIL}\nEdit ${n}.\n`);
+        writeFileSync(join(dir, "wiki/Basil.md"), `${BASIL}\nEdit ${n}.\n`);
       },
     });
     await expect(read).rejects.toBeInstanceOf(StateChangedDuringRead);
@@ -222,9 +222,9 @@ describe("the working tree, read by digest before and after (§11)", () => {
     const dir = vault();
     const state = await fsState(dir, {
       betweenReads: (attempt) => {
-        if (attempt === 1) rmSync(join(dir, "wiki/start.md"));
+        if (attempt === 1) rmSync(join(dir, "wiki/Start.md"));
       },
     });
-    expect(Object.keys(pagesOf(state))).toEqual(["wiki/basil.md", "wiki/herb-bed.md"]);
+    expect(Object.keys(pagesOf(state))).toEqual(["wiki/Basil.md", "wiki/Herb bed.md"]);
   });
 });

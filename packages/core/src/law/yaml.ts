@@ -11,7 +11,13 @@ import { isScalar, parseDocument, visit } from "yaml";
 
 export type YamlResult =
   | { ok: true; value: unknown }
-  | { ok: false; message: string; line?: number };
+  | {
+      ok: false;
+      message: string;
+      line?: number;
+      /** The `yaml` library's code (`DUPLICATE_KEY` a repeated key), when it gave one. */
+      code?: string;
+    };
 
 const INT64_MIN = -(2n ** 63n);
 const INT64_MAX = 2n ** 63n - 1n;
@@ -28,10 +34,17 @@ export function readYaml(text: string): YamlResult {
   const error = doc.errors[0];
   if (error !== undefined) {
     const reason = (error.message.split("\n")[0] ?? error.message).trim();
-    const line = error.linePos?.[0]?.line;
-    return line === undefined
-      ? { ok: false, message: reason }
-      : { ok: false, message: reason, line };
+    // `linePos` is filled only under pretty errors; the offset is always there.
+    const offset = error.pos?.[0];
+    const line =
+      error.linePos?.[0]?.line ??
+      (offset === undefined ? undefined : text.slice(0, offset).split("\n").length);
+    return {
+      ok: false,
+      message: reason,
+      code: error.code,
+      ...(line === undefined ? {} : { line }),
+    };
   }
   // `__proto__` is refused as a key: copied into an object by assignment it
   // would set the object's prototype rather than add a key, and its members

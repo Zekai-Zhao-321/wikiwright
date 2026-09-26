@@ -73,8 +73,11 @@ export interface EntryRecord {
 
 export type GrammarRecord = ClaimRecord | RelationRecord | EntryRecord;
 
-/** Where a relation's target lives in the vault, when it resolves. */
-export type ResolveTarget = (name: string) => { path: string; type: string } | undefined;
+/**
+ * Where a relation's target lives in the vault, when it resolves, and the
+ * type its frontmatter names (`null` when it names none).
+ */
+export type ResolveTarget = (name: string) => { path: string; type: string | null } | undefined;
 
 const DAY = "\\d{4}-\\d{2}-\\d{2}";
 const RETRACTED = new RegExp(`^retracted (${DAY})$`, "u");

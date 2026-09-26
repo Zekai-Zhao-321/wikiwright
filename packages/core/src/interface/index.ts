@@ -57,14 +57,21 @@ export interface ParsedPage {
   frontmatter: Record<string, unknown>;
   /** Why the frontmatter did not parse, when it did not. */
   frontmatterError?: string;
+  /**
+   * Which of the three ways it did not: YAML that does not read, a key
+   * written twice, or a document that is not a mapping.
+   */
+  frontmatterCode?: "malformed-frontmatter" | "duplicate-key" | "frontmatter-not-mapping";
+  /** The page line the YAML reader names, the opening fence as line 1, when it names one. */
+  frontmatterLine?: number;
   /** The raw bytes between the fences, when there are fences. */
   frontmatterBytes: Uint8Array | null;
   body: string;
   bodyBytes: Uint8Array;
   occurrences: Occurrence[];
   unparsed: UnparsedItem[];
-  /** Every wikilink target in the body, as written. */
-  links: string[];
+  /** Every wikilink in the body: its target as written, and its line. */
+  links: { target: string; line: number }[];
   /** The type the frontmatter names, when the law declares it. */
   type?: LawType;
 }
@@ -179,6 +186,8 @@ export function parsePage(
   // The frontmatter: `---` on the first line to the next `---` line.
   let frontmatter: Record<string, unknown> = {};
   let frontmatterError: string | undefined;
+  let frontmatterCode: ParsedPage["frontmatterCode"];
+  let frontmatterLine: number | undefined;
   let frontmatterBytes: Uint8Array | null = null;
   let bodyLine = 0;
   if (first === "---") {
@@ -189,10 +198,15 @@ export function parsePage(
       const inner = text.slice(open.startChar + open.raw.length + 1, end.startChar);
       frontmatterBytes = bytes.slice(open.startByte + utf8Length(open.raw) + 1, end.startByte);
       const read = readYaml(inner);
-      if (!read.ok) frontmatterError = read.message;
-      else if (read.value === null) frontmatter = {};
-      else if (!isMapping(read.value)) frontmatterError = "the frontmatter is not a mapping";
-      else frontmatter = read.value;
+      if (!read.ok) {
+        frontmatterError = read.message;
+        frontmatterCode = read.code === "DUPLICATE_KEY" ? "duplicate-key" : "malformed-frontmatter";
+        if (read.line !== undefined) frontmatterLine = read.line + 1;
+      } else if (read.value === null) frontmatter = {};
+      else if (!isMapping(read.value)) {
+        frontmatterError = "the frontmatter is not a mapping";
+        frontmatterCode = "frontmatter-not-mapping";
+      } else frontmatter = read.value;
       bodyLine = close + 1;
     }
   }
@@ -377,9 +391,11 @@ export function parsePage(
     bodyBytes,
     occurrences,
     unparsed,
-    links: doc.wikilinks.map((l) => l.target),
+    links: doc.wikilinks.map((l) => ({ target: l.target, line: l.line })),
   };
   if (frontmatterError !== undefined) out.frontmatterError = frontmatterError;
+  if (frontmatterCode !== undefined) out.frontmatterCode = frontmatterCode;
+  if (frontmatterLine !== undefined) out.frontmatterLine = frontmatterLine;
   if (type !== undefined) out.type = type;
   return { ok: true, page: out };
 }
@@ -471,7 +487,7 @@ export function buildFacts(
     setOwn(vocabularies, name, [...vocabulary.entries.keys()]);
   const links: Record<string, Record<string, unknown>> = {};
   const targets = [
-    ...parsed.links,
+    ...parsed.links.map((l) => l.target),
     ...parsed.occurrences.flatMap((o) =>
       o.items.flatMap((i) => (i.kind === "relation" ? [i.target.name] : [])),
     ),

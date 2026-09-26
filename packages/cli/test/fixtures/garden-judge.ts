@@ -51,13 +51,17 @@ title: Start
 Read [[Basil]] first.
 `;
 
-/** The gardening constitution and three pages that judge clean under it. */
+/**
+ * The gardening constitution and three pages that judge clean under it. A
+ * page's name is its file's basename, as Obsidian names it: `[[Herb bed]]`
+ * is `wiki/Herb bed.md`.
+ */
 export function gardenVault(extra: Tree = {}): Tree {
   return {
     ...gardenTree(),
-    "wiki/herb-bed.md": HERB_BED,
-    "wiki/basil.md": BASIL,
-    "wiki/start.md": START,
+    "wiki/Herb bed.md": HERB_BED,
+    "wiki/Basil.md": BASIL,
+    "wiki/Start.md": START,
     ...extra,
   };
 }
