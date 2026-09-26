@@ -4,9 +4,10 @@ title: "The command runtime"
 description: "The eight-verb command table, argument parser, JSON envelope and bundle identity of the v2 CLI."
 tags: [cli]
 pin:
-  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
+  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
   origin: .
   covers: ["packages/cli/src/main.ts", "packages/cli/src/commands.ts", "packages/cli/src/argv.ts", "packages/cli/src/envelope.ts", "packages/cli/src/spec.ts", "packages/cli/src/typelaw.ts"]
+updated: 2026-09-27
 ---
 
 # The command runtime
@@ -25,7 +26,7 @@ An invocation reads its root and flags, then builds a working-tree, draft, index
 
 ## Invariants
 
-Argument refusals happen before judgment. A successful law load and its selected page and source-path state determine the bundle block, while the envelope writer bounds stdout and preserves one code per refusal meaning. `check --summary` presents totals from the same full verdict; with `--out`, its uncapped selected report is saved. Output paths cannot replace the selected bundle or its imported law, including staged imports.
+Argument refusals happen before judgment. A successful law load and its selected page and source-path state determine the bundle block, while the envelope writer bounds stdout and preserves one code per refusal meaning. `check --summary` presents totals and per-pin citation counts from the same full verdict; with `--out`, its uncapped selected report is saved. Output paths cannot replace the selected bundle or its imported law, including staged imports.
 
 ## Failure modes
 

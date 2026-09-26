@@ -4,7 +4,7 @@ title: "Fixers and routing"
 description: "The surviving mechanical fixes: folder-tag materialization and generated-artifact refresh."
 tags: [kernel, cli]
 pin:
-  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
+  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
   origin: .
   covers: ["packages/cli/src/verbs/check.ts", "packages/core/src/verdict/folders.ts", "packages/cli/src/generated.ts"]
 updated: 2026-09-26

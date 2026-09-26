@@ -4,10 +4,10 @@ title: wikiwright architecture
 description: "Kernel, data-library and bundle layers and the four adapters that reach one judge."
 tags: [kernel, stdlib, cli, kit]
 pin:
-  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
+  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
   origin: .
   covers: ["packages/core/src/index.ts", "packages/cli/src/main.ts", "packages/cli/src/lawstate.ts", "docs/architecture.md"]
-updated: 2026-09-26
+updated: 2026-09-27
 ---
 
 # wikiwright architecture
@@ -25,7 +25,7 @@ Current source at this pin: `packages/core/src/index.ts`, `packages/cli/src/main
 
 ## Layers
 
-The CLI builds working-tree, draft, index or revision states and loads each state with its matching law and source-path facts. Eight verbs expose the same JSON envelope and closed exit taxonomy. A compact check view still carries the full verdict decision, and envelope output cannot overwrite the selected bundle or imported law. Named local Git origins can be observed at captured HEAD ids for pin freshness; URL origins remain unmeasured.
+The CLI builds working-tree, draft, index or revision states and loads each state with its matching law and source-path facts. Eight verbs expose the same JSON envelope and closed exit taxonomy. A compact check view still carries the full verdict decision, and envelope output cannot overwrite the selected bundle or imported law. Named local Git origins can be observed at captured HEAD ids for pin freshness; each pin checks inline citations only inside its declared covers. URL origins remain unmeasured.
 
 A type system is held at both acceptance boundaries: write judges one captured law and page state, preflights every destination and moved-from parent, then rechecks the state after staging, before the first rename; gate judges what a commit would contain. The engine checks conformance, not truth.
 

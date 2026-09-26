@@ -4,10 +4,10 @@ title: "Freshness and pins"
 description: "Local Git pin measurement and evidence status shown by read and search."
 tags: [cli]
 pin:
-  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
+  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
   origin: .
   covers: ["packages/cli/src/pins.ts", "packages/cli/src/verbs/check.ts", "packages/cli/src/verbs/read.ts", "packages/cli/src/verbs/search.ts"]
-updated: 2026-09-26
+updated: 2026-09-27
 ---
 
 # Freshness and pins
@@ -26,7 +26,7 @@ Read and search compute stale true, false or null with a reason. An unbound or U
 
 ## Invariants
 
-A cover must exist at the pinned commit; deletion after it makes the pin stale. A cited path and line are held to the pinned tree. The engine does not infer whether the cited sentence remains semantically true.
+A cover must exist at the pinned commit; deletion after it makes the pin stale. A blob cover owns its exact file, a tree cover owns descendants and `.` owns the whole repository. Only inline paths inside this pin's covers are checked at its tree; outside path-shaped spans and their bare-line follow-ups are counted as unverified for that pin. Overlapping pins measure their own paths independently. The engine does not infer whether a cited sentence remains semantically true.
 
 ## Failure modes
 

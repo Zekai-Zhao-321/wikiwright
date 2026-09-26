@@ -4,7 +4,7 @@ title: wikiwright quickstart
 description: "From-zero Bun setup and the first typed bundle check."
 tags: [repo]
 pin:
-  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
+  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
   origin: .
   covers: ["README.md", "package.json", "docs/starter/README.md", "packages/cli/src/main.ts", "scripts/hooks/pre-commit"]
 ---
