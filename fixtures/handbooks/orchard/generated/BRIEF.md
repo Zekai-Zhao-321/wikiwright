@@ -41,7 +41,7 @@ state could not make, never a pass.
 
 ### `check` — the whole bundle, its pins and its generated files
 
-`wikiwright check` — flags: --write --fix --limit <v> --rule <v> --path <v> --all --dry-run
+`wikiwright check` — flags: --write --fix --limit <v> --rule <v> --path <v> --all --summary --dry-run
 
 ```text
 wikiwright check
@@ -81,7 +81,7 @@ wikiwright search basil
 
 ### `type` — the contract you are about to satisfy, with its skeleton
 
-`wikiwright type <list|show> [name]` — flags: --brief
+`wikiwright type <list|show> [name]` — flags: --brief --concrete
 
 ```text
 wikiwright type show planting
@@ -106,7 +106,9 @@ wikiwright write --from drafts --dry-run
 ## Types
 
 - `guide-page` (hub) — The handbook's front page, one per handbook.
+  - Avoid when: A task with steps to follow. (declared by `guide-page`)
 - `procedure-page` (procedure) — A task a gardener carries out from start to finish.
+  - Avoid when: Background about a plant with nothing to do. (declared by `procedure-page`)
 
 ## Vocabularies
 

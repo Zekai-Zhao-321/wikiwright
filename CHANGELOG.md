@@ -49,6 +49,12 @@ version` prints the engine version and the commit a binary was built from.
   measurement. `check`, `read` and `search` use captured full HEAD ids,
   validate pinned cover existence, and expose invalid or unavailable evidence
   in consumer status. URL origins remain unmeasured; no fetch is run.
+- `check --summary` presents the verdict, scope, pin counts and unevaluated
+  work compactly; with `--out`, its uncapped selected detail is saved from the
+  same run. `type list --concrete` and a shorter `type show --brief` support
+  type selection; normal `type show` retains complete vocabulary values.
+- `--out` resolves parent aliases, refuses leaf links, and protects the
+  selected bundle and imported law roots, including staged law on refusal.
 
 ### Changed
 

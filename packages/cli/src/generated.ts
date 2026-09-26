@@ -149,7 +149,14 @@ export function renderTypeLawBrief(
     "",
     ...(types.length === 0
       ? ["No concrete type is declared."]
-      : types.map((t) => `- \`${t.name}\` (${t.role}) — ${t.use_when ?? t.description}`)),
+      : types.flatMap((t) => [
+          `- \`${t.name}\` (${t.role}) — ${t.use_when ?? t.description}`,
+          ...(t.avoid_when === undefined
+            ? []
+            : [
+                `  - Avoid when: ${t.avoid_when}${t.avoid_when_declared_by === undefined ? "" : ` (declared by \`${t.avoid_when_declared_by}\`)`}`,
+              ]),
+        ])),
     "",
     "## Vocabularies",
     "",

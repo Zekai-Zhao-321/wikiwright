@@ -319,7 +319,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
   if (!read.ok) return withRefusalText(read.result);
   const index = read.value;
   const { state } = index;
-  const loaded = lawOf("gate", state);
+  const loaded = lawOf("gate", state, args.root);
   if (!loaded.ok) return withRefusalText(loaded.result);
   const law = loaded.law;
   // §7: the gate's envelope names the index's law and content.

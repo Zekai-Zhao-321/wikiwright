@@ -221,7 +221,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
     if (refused === undefined) throw e;
     return refused;
   }
-  const loaded = lawOf("rule", working);
+  const loaded = lawOf("rule", working, args.root);
   if (!loaded.ok) return loaded.result;
   const identity = await typeLawIdentity(args.root, working, loaded.law);
   const attached = lawWithCandidate(loaded.law, candidate.value);
@@ -242,7 +242,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
       );
     }
     const revision = await revisionState(args.root, ref);
-    const baseLaw = lawOf("rule", revision);
+    const baseLaw = lawOf("rule", revision, args.root);
     if (!baseLaw.ok) return withIdentity(baseLaw.result, identity);
     const atBase = lawWithCandidate(baseLaw.law, candidate.value);
     if (!atBase.ok) return withIdentity(atBase.result, identity);

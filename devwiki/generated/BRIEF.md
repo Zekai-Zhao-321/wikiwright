@@ -41,7 +41,7 @@ state could not make, never a pass.
 
 ### `check` — the whole bundle, its pins and its generated files
 
-`wikiwright check` — flags: --write --fix --limit <v> --rule <v> --path <v> --all --dry-run
+`wikiwright check` — flags: --write --fix --limit <v> --rule <v> --path <v> --all --summary --dry-run
 
 ```text
 wikiwright check
@@ -81,7 +81,7 @@ wikiwright search basil
 
 ### `type` — the contract you are about to satisfy, with its skeleton
 
-`wikiwright type <list|show> [name]` — flags: --brief
+`wikiwright type <list|show> [name]` — flags: --brief --concrete
 
 ```text
 wikiwright type show planting
@@ -105,16 +105,26 @@ wikiwright write --from drafts --dry-run
 
 ## Types
 
-- `architecture-overview` (concept) — The engine's shape: the four layers and how a verdict flows through them; anchored to the entry points that define them. This bundle lives in the repository it documents, so origin is `.`.
+- `architecture-overview` (concept) — The whole-system view organized around owned systems, not the source tree.
+  - Avoid when: One subsystem's internals (subsystem) or directory listings (source-map). (declared by `code/architecture-overview`)
 - `charter` (hub) — Exactly one page — meta/charter.md: the bundle's intention and scope, loaded every session. Not the agent operating manual (CLAUDE.md / AGENTS.md).
-- `code-concept` (concept) — A cross-cutting mechanism of the engine that lives in many places: an invariant, a law, a data shape spanning subsystems.
-- `decision` (reference) — A decision record of the engine, numbered D-nnn, citing the documents and pages that carry its evidence.
-- `integration` (concept) — An external system the engine talks to, and the contract with it; anchored to the code that speaks it.
-- `ops-reference` (reference) — Lookup tables for the engine: the envelope and exit codes, environment variables, repository scripts; anchored to the code that defines them.
-- `quickstart` (procedure) — Install, build, and verify the engine from a fresh clone; anchored to the files its commands come from.
-- `source-map` (reference) — Directory-to-purpose lookup for the wikiwright repository, anchored to the paths it lists.
-- `subsystem` (concept) — One owned system of the engine, read at the pin and anchored to the directory it covers.
-- `testing-guide` (procedure) — How the engine's tests are organized, run, and written: the two runners, temp copies, the kit-code helper.
+  - Avoid when: Anything that is a setting, a decision record, or content. (declared by `charter`)
+- `code-concept` (concept) — A mechanism (an invariant, a pattern, a data shape) spanning subsystems.
+  - Avoid when: Anything with a single home (subsystem). (declared by `code/concept`)
+- `decision` (reference) — A choice a later reader must be able to revisit: a dependency taken, a boundary drawn, a mechanism rejected.
+  - Avoid when: Content; a setting; the current shape of a component (subsystem). (declared by `code/decision`)
+- `integration` (concept) — Third-party services, protocols, or consumed APIs.
+  - Avoid when: Internal components (subsystem). (declared by `code/integration`)
+- `ops-reference` (reference) — Facts contributors look up, never read linearly.
+  - Avoid when: Anything needing narrative. (declared by `code/ops-reference`)
+- `quickstart` (procedure) — The single from-zero on-ramp; one page per bundle.
+  - Avoid when: The testing story (testing-guide) or command references (ops-reference). (declared by `code/quickstart`)
+- `source-map` (reference) — Answering "where does X live" mechanically.
+  - Avoid when: Explaining how anything works (subsystem, concept). (declared by `code/source-map`)
+- `subsystem` (concept) — A coherent component with its own boundaries and behaviour, described from its code at one commit.
+  - Avoid when: Whole-system views (architecture-overview), cross-cutting mechanisms (concept), or a directory listing (source-map). (declared by `code/subsystem`)
+- `testing-guide` (procedure) — The testing story: runners, fixtures, conventions; the target of verified-by.
+  - Avoid when: Individual command lookups (ops-reference) or the on-ramp (quickstart). (declared by `code/testing-guide`)
 
 ## Vocabularies
 

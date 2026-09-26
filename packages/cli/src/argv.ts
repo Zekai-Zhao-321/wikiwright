@@ -34,6 +34,8 @@ export interface ArgvScan {
   wantsJson: boolean;
   /** The value of `--out`, where the whole envelope goes instead of stdout. */
   out?: string;
+  /** `check --summary` is a stdout projection after the full command ran. */
+  summary?: boolean;
 }
 
 /**
@@ -60,6 +62,10 @@ export function scanInvocation(spec: CommandSpec | undefined, rest: string[]): A
     }
     if (token === "--json") {
       scan.wantsJson = true;
+      continue;
+    }
+    if (spec?.name === "check" && token === "--summary") {
+      scan.summary = true;
       continue;
     }
     if (token.startsWith("--out=")) {

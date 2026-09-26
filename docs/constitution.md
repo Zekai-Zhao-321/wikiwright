@@ -97,7 +97,7 @@ load.
 | `type` | required nominal name |
 | `role` | `concept`, `hub`, `procedure`, or `reference`; required at the root, inherited by a child |
 | `description` | required description of what the type is for |
-| `use_when`, `avoid_when` | optional writing guidance |
+| `use_when`, `avoid_when` | optional writing guidance, inherited from the nearest ancestor that declares each value; type views name that ancestor |
 | `extends` | optional bare or qualified parent type |
 | `fragments` | optional list of fragment names |
 | `abstract` | optional boolean, default false; no content page may use an abstract type |

@@ -161,7 +161,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
     if (refused === undefined) throw e;
     return refused;
   }
-  const loaded = lawOf("search", state);
+  const loaded = lawOf("search", state, args.root);
   if (!loaded.ok) return loaded.result;
   const law = loaded.law;
   const identity = await typeLawIdentity(args.root, state, law);

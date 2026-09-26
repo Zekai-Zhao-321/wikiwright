@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // docs/cli.md §The envelope (stdout = one envelope; stderr = UX; parseArgs
 // strict under the command registry; generated help) · JSON-only v1.
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { ReplacementTargetRefused, replaceFile } from "./atomicwrite.ts";
@@ -27,6 +27,7 @@ import { type CommandSpec, commandSchema, flagsOf, GLOBAL_FLAGS, usageOf } from 
 /** Where an envelope goes: stdout, or the file `--out` names. */
 interface Sink {
   out?: string;
+  summary?: boolean;
 }
 
 /** The root the invocation names (`--root`, else the working directory), read before the verb. */
@@ -64,6 +65,17 @@ function bundleHolding(root: string): string | undefined {
   }
 }
 
+/** Early help and argv refusals have no selected law; keep output outside the enclosing checkout. */
+function repositoryHolding(root: string): string | undefined {
+  let dir = realPathOf(root);
+  for (;;) {
+    if (existsSync(join(dir, ".git"))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return undefined;
+    dir = parent;
+  }
+}
+
 /**
  * `--out` never writes inside the bundle the invocation reads: the envelope
  * would overwrite a page, a law file or a generated file by a path no
@@ -71,20 +83,53 @@ function bundleHolding(root: string): string | undefined {
  */
 function outInsideBundle(result: CommandResult, out: string): CommandResult | undefined {
   if (invocationRoot === undefined) return undefined;
-  const bundle = bundleHolding(invocationRoot);
-  if (bundle === undefined) return undefined;
+  const bundle =
+    result.envelope.metadata.bundle?.root ??
+    result.outputProtected?.[0] ??
+    bundleHolding(invocationRoot);
   const target = realPathOf(out);
-  if (target !== bundle && !target.startsWith(`${bundle}${sep}`)) return undefined;
-  return fail(
-    result.envelope.metadata.command,
-    "usage",
-    "out-inside-bundle",
-    `--out names "${out}", inside the bundle at ${bundle}; the envelope is written only outside it`,
-    {
-      details: { out: target, bundle, exit_code: result.exit },
-      hint: "name a file outside the bundle, e.g. under the system's temporary directory",
-    },
-  );
+  const inside = (root: string): boolean => target === root || target.startsWith(`${root}${sep}`);
+  const realBundle = bundle === undefined ? undefined : realPathOf(bundle);
+  if (realBundle !== undefined && inside(realBundle))
+    return fail(
+      result.envelope.metadata.command,
+      "usage",
+      "out-inside-bundle",
+      `--out names "${out}", inside the bundle at ${realBundle}; the envelope is written only outside it`,
+      {
+        details: { out: target, bundle: realBundle, exit_code: result.exit },
+        hint: "name a file outside the bundle, e.g. under the system's temporary directory",
+      },
+    );
+  for (const library of result.outputProtected ?? []) {
+    const real = realPathOf(library);
+    if (real === realBundle || !inside(real)) continue;
+    return fail(
+      result.envelope.metadata.command,
+      "usage",
+      "out-inside-law",
+      `--out names "${out}", inside an imported law directory; the envelope cannot replace law bytes`,
+      {
+        details: { out: target, library: real, exit_code: result.exit },
+        hint: "name a file outside the bundle and its imported libraries",
+      },
+    );
+  }
+  if (result.outputProtectionComplete !== true) {
+    const repository = repositoryHolding(invocationRoot);
+    if (repository !== undefined && inside(repository))
+      return fail(
+        result.envelope.metadata.command,
+        "usage",
+        "out-inside-repository",
+        `--out names "${out}", inside the enclosing repository before a law was selected`,
+        {
+          details: { out: target, repository, exit_code: result.exit },
+          hint: "name an output file outside the repository",
+        },
+      );
+  }
+  return undefined;
 }
 
 function write(result: CommandResult, text: string): void {
@@ -94,11 +139,61 @@ function write(result: CommandResult, text: string): void {
   process.exitCode = result.exit;
 }
 
+/** A compact view over the same full check verdict; failures keep their error and exit. */
+function summaryView(
+  result: CommandResult,
+  report?: { out: string; bytes: number },
+): CommandResult | undefined {
+  if (result.envelope.metadata.command !== "check") return undefined;
+  const data = result.envelope.data as Record<string, unknown> | undefined;
+  if (data?.["summary"] === undefined || data["pins"] === undefined) return undefined;
+  const pins = data["pins"] as { counts?: unknown };
+  const generated = data["generated"] as { written?: unknown } | undefined;
+  const fixed = data["fixed"];
+  const compact = {
+    summary: data["summary"],
+    scope: data["scope"],
+    unevaluated: data["unevaluated"],
+    pins: { counts: pins.counts },
+    generated: { written: generated?.written ?? [] },
+    fixed_count: Array.isArray(fixed) ? fixed.length : 0,
+    ...(report === undefined ? {} : { report }),
+  };
+  return { ...result, envelope: { ...result.envelope, data: compact } };
+}
+
 function emit(result: CommandResult, sink: Sink = {}): void {
   const text = `${JSON.stringify(result.envelope, null, 2)}\n`;
   const bytes = Buffer.byteLength(text, "utf8");
   if (sink.out !== undefined) {
-    const out = resolve(sink.out);
+    const rawOut = resolve(sink.out);
+    try {
+      if (lstatSync(rawOut).isSymbolicLink()) {
+        const refused = fail(
+          result.envelope.metadata.command,
+          "usage",
+          "out-linked-target",
+          `--out names "${sink.out}", a symbolic link; name a regular file path`,
+          { details: { out: rawOut, exit_code: result.exit } },
+        );
+        write(refused, `${JSON.stringify(refused.envelope, null, 2)}\n`);
+        return;
+      }
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT" && code !== "ENOTDIR") {
+        const refused = fail(
+          result.envelope.metadata.command,
+          "usage",
+          "out-unwritable",
+          `--out names "${sink.out}", and it cannot be inspected: ${error instanceof Error ? error.message : String(error)}`,
+          { details: { out: rawOut, exit_code: result.exit } },
+        );
+        write(refused, `${JSON.stringify(refused.envelope, null, 2)}\n`);
+        return;
+      }
+    }
+    const out = realPathOf(rawOut);
     const inside = outInsideBundle(result, sink.out);
     if (inside !== undefined) {
       write(inside, `${JSON.stringify(inside.envelope, null, 2)}\n`);
@@ -117,15 +212,38 @@ function emit(result: CommandResult, sink: Sink = {}): void {
       write(refused, `${JSON.stringify(refused.envelope, null, 2)}\n`);
       return;
     }
-    write(result, outPointer(result, out, bytes));
+    const summary = sink.summary === true ? summaryView(result, { out, bytes }) : undefined;
+    const summaryText =
+      summary === undefined ? undefined : `${JSON.stringify(summary.envelope, null, 2)}\n`;
+    write(
+      result,
+      summaryText === undefined
+        ? outPointer(result, out, bytes)
+        : Buffer.byteLength(summaryText, "utf8") <= ENVELOPE_MAX_BYTES
+          ? summaryText
+          : `${JSON.stringify(
+              {
+                ok: result.envelope.ok,
+                command: result.envelope.metadata.command,
+                exit_code: result.exit,
+                bytes,
+                out,
+                summary_omitted: "stdout-bound",
+              },
+              null,
+              2,
+            )}\n`,
+    );
     return;
   }
-  if (bytes > ENVELOPE_MAX_BYTES) {
-    const refused = envelopeTooLarge(result, bytes);
+  const shown = sink.summary === true ? (summaryView(result) ?? result) : result;
+  const shownText = shown === result ? text : `${JSON.stringify(shown.envelope, null, 2)}\n`;
+  if (Buffer.byteLength(shownText, "utf8") > ENVELOPE_MAX_BYTES) {
+    const refused = envelopeTooLarge(shown, Buffer.byteLength(shownText, "utf8"));
     write(refused, `${JSON.stringify(refused.envelope, null, 2)}\n`);
     return;
   }
-  write(result, text);
+  write(result, shownText);
 }
 
 /**

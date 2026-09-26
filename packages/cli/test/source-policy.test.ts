@@ -61,7 +61,7 @@ describe("the garden source policy", () => {
     const checked = cli(["check", "--all"], dir);
     expect(checked.status).toBe(0);
     expect(findingsOf(checked.envelope, "rule-test-fails")).toEqual([]);
-    const guidance = cli(["type", "show", "source-kit/observation", "--brief"], dir);
+    const guidance = cli(["type", "show", "source-kit/observation"], dir);
     expect(guidance.status).toBe(0);
     expect(JSON.stringify(guidance.envelope.data)).toContain("i.provenance.page.type");
     expect(JSON.stringify(guidance.envelope.data)).toContain("source-kit/field-note");

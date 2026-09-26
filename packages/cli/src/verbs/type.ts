@@ -121,7 +121,9 @@ function contract(law: TypeLaw, type: LawType): Record<string, unknown> {
     role: type.role,
     description: type.description,
     use_when: type.use_when ?? null,
+    use_when_declared_by: type.use_when_declared_by ?? null,
     avoid_when: type.avoid_when ?? null,
+    avoid_when_declared_by: type.avoid_when_declared_by ?? null,
     abstract: type.abstract,
     instances: type.instances,
     extends: type.extends ?? null,
@@ -169,8 +171,51 @@ function contract(law: TypeLaw, type: LawType): Record<string, unknown> {
   };
 }
 
+/** Complete values and live counts, retained by normal `type show`. */
+function vocabularyDetails(law: TypeLaw, type: LawType, read: StateRead) {
+  const counts = census(read);
+  return vocabulariesRead(law, type).map((vocabularyName) => {
+    const vocabulary = law.vocabularies.get(vocabularyName);
+    const used = counts.get(vocabularyName) ?? new Map<string, number>();
+    return {
+      name: vocabularyName,
+      mode: vocabulary?.mode ?? null,
+      entries: [...(vocabulary?.entries ?? new Map())]
+        .sort(([a], [b]) => codeUnitCompare(a, b))
+        .map(([entry, e]) => ({
+          name: entry,
+          description: (e as { description?: string }).description ?? null,
+          count: used.get(entry) ?? 0,
+        })),
+      retired: [...(vocabulary?.retired ?? new Map())]
+        .sort(([a], [b]) => codeUnitCompare(a, b))
+        .map(([entry, r]) => ({
+          name: entry,
+          successor: (r as { successor?: string }).successor ?? null,
+          count: used.get(entry) ?? 0,
+        })),
+      undeclared: [...used]
+        .filter(
+          ([value]) =>
+            vocabulary?.entries.has(value) !== true && vocabulary?.retired.has(value) !== true,
+        )
+        .sort(([a, x], [b, y]) => y - x || codeUnitCompare(a, b))
+        .map(([value, count]) => ({ name: value, count })),
+    };
+  });
+}
+
 async function run(args: CommandArgs): Promise<CommandResult> {
   const [sub, name] = args.positionals;
+  if (
+    (sub === "list" && args.flags["brief"] === true) ||
+    (sub === "show" && args.flags["concrete"] === true)
+  ) {
+    const flag = sub === "list" ? "--brief" : "--concrete";
+    return fail("type", "usage", "flag-not-applicable", `${flag} does not apply to type ${sub}`, {
+      details: { subcommand: sub, flag },
+    });
+  }
   let state: Awaited<ReturnType<typeof fsState>>;
   try {
     state = await fsState(args.root);
@@ -179,7 +224,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
     if (refused === undefined) throw e;
     return refused;
   }
-  const loaded = lawOf("type", state);
+  const loaded = lawOf("type", state, args.root);
   if (!loaded.ok) return loaded.result;
   const law = loaded.law;
   const identity = await typeLawIdentity(args.root, state, law);
@@ -187,17 +232,22 @@ async function run(args: CommandArgs): Promise<CommandResult> {
   if (sub === "list") {
     return withIdentity(
       ok("type", {
-        types: names.map((n) => {
-          const t = law.types.get(n) as LawType;
-          return {
-            name: t.name,
-            role: t.role,
-            abstract: t.abstract,
-            extends: t.extends ?? null,
-            description: t.description,
-            use_when: t.use_when ?? null,
-          };
-        }),
+        types: names
+          .filter((n) => args.flags["concrete"] !== true || law.types.get(n)?.abstract !== true)
+          .map((n) => {
+            const t = law.types.get(n) as LawType;
+            return {
+              name: t.name,
+              role: t.role,
+              abstract: t.abstract,
+              extends: t.extends ?? null,
+              description: t.description,
+              use_when: t.use_when ?? null,
+              use_when_declared_by: t.use_when_declared_by ?? null,
+              avoid_when: t.avoid_when ?? null,
+              avoid_when_declared_by: t.avoid_when_declared_by ?? null,
+            };
+          }),
       }),
       identity,
     );
@@ -220,51 +270,44 @@ async function run(args: CommandArgs): Promise<CommandResult> {
       identity,
     );
   }
-  const data = contract(law, type);
+  const vocabularies = vocabularyDetails(law, type, readPages(state, law));
   if (args.flags["brief"] === true) {
-    const counts = census(readPages(state, law));
-    data["brief"] = {
-      skeleton: skeletonOf(type),
-      instruction: instruction(law, type),
-      vocabularies: vocabulariesRead(law, type).map((vocabularyName) => {
-        const vocabulary = law.vocabularies.get(vocabularyName);
-        const used = counts.get(vocabularyName) ?? new Map<string, number>();
-        return {
-          name: vocabularyName,
-          mode: vocabulary?.mode ?? null,
-          entries: [...(vocabulary?.entries ?? new Map())]
-            .sort(([a], [b]) => codeUnitCompare(a, b))
-            .map(([entry, e]) => ({
-              name: entry,
-              description: (e as { description?: string }).description ?? null,
-              count: used.get(entry) ?? 0,
-            })),
-          retired: [...(vocabulary?.retired ?? new Map())]
-            .sort(([a], [b]) => codeUnitCompare(a, b))
-            .map(([entry, r]) => ({
-              name: entry,
-              successor: (r as { successor?: string }).successor ?? null,
-              count: used.get(entry) ?? 0,
-            })),
-          // Values the vault uses that the vocabulary does not declare, most used first.
-          undeclared: [...used]
-            .filter(
-              ([value]) =>
-                vocabulary?.entries.has(value) !== true && vocabulary?.retired.has(value) !== true,
-            )
-            .sort(([a, x], [b, y]) => y - x || codeUnitCompare(a, b))
-            .map(([value, count]) => ({ name: value, count })),
-        };
+    return withIdentity(
+      ok("type", {
+        name: type.name,
+        role: type.role,
+        abstract: type.abstract,
+        extends: type.extends ?? null,
+        description: type.description,
+        use_when: type.use_when ?? null,
+        use_when_declared_by: type.use_when_declared_by ?? null,
+        avoid_when: type.avoid_when ?? null,
+        avoid_when_declared_by: type.avoid_when_declared_by ?? null,
+        brief: {
+          skeleton: skeletonOf(type),
+          instruction: instruction(law, type),
+          vocabularies: vocabularies.map((vocabulary) => ({
+            name: vocabulary.name,
+            mode: vocabulary.mode,
+            entries: vocabulary.entries.length,
+            retired: vocabulary.retired.length,
+            undeclared: vocabulary.undeclared.length,
+          })),
+        },
+        full_argv: ["wikiwright", "type", "show", type.name, "--root", identity.root],
       }),
-    };
+      identity,
+    );
   }
+  const data = contract(law, type);
+  data["vocabularies"] = vocabularies;
   return withIdentity(ok("type", data), identity);
 }
 
 export const typeCommand: CommandSpec = {
   name: "type",
   summary:
-    "Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type.",
+    "Show a type's full contract and vocabulary values, a short writing brief, or a list of types.",
   positionals: [
     { name: "subcommand", required: true },
     { name: "name", required: false },
@@ -274,14 +317,15 @@ export const typeCommand: CommandSpec = {
     {
       name: "brief",
       type: "boolean",
-      summary:
-        "add the skeleton to write from and the writing instruction, with the vocabularies' live counts",
+      summary: "with type show, return short guidance and a skeleton instead of the full contract",
     },
+    { name: "concrete", type: "boolean", summary: "with type list, omit abstract types" },
   ],
   examples: [
     "wikiwright type show planting",
     "wikiwright type show planting --brief",
     "wikiwright type list",
+    "wikiwright type list --concrete",
   ],
   writes: false,
   run,

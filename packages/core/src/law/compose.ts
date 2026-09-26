@@ -79,7 +79,9 @@ export interface LawType {
   role: Role;
   description: string;
   use_when?: string;
+  use_when_declared_by?: string;
   avoid_when?: string;
+  avoid_when_declared_by?: string;
   abstract: boolean;
   instances: { min: number | null; max: number | null } | null;
   /** Qualified parent, when the type extends one. */
@@ -469,8 +471,16 @@ export function compose(
         return name === undefined ? [] : [name];
       }),
     };
-    if (doc.use_when !== undefined) type.use_when = doc.use_when;
-    if (doc.avoid_when !== undefined) type.avoid_when = doc.avoid_when;
+    const useWhen = chain.find((member) => member.use_when !== undefined);
+    if (useWhen?.use_when !== undefined) {
+      type.use_when = useWhen.use_when;
+      type.use_when_declared_by = useWhen.name;
+    }
+    const avoidWhen = chain.find((member) => member.avoid_when !== undefined);
+    if (avoidWhen?.avoid_when !== undefined) {
+      type.avoid_when = avoidWhen.avoid_when;
+      type.avoid_when_declared_by = avoidWhen.name;
+    }
     const parent = chain[1];
     if (parent !== undefined) type.extends = parent.name;
     types.set(doc.name, type);

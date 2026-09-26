@@ -155,7 +155,7 @@ async function prepare(args: CommandArgs): Promise<Preparation> {
     if (refused === undefined) throw e;
     return { ok: false, result: refused };
   }
-  const loaded = lawOf("check", read0);
+  const loaded = lawOf("check", read0, args.root);
   if (!loaded.ok) return loaded;
   const law = loaded.law;
   const mismatch = engineMismatch("check", law);
@@ -247,6 +247,16 @@ async function planForCheck(args: CommandArgs): Promise<Plan> {
 }
 
 async function run(args: CommandArgs): Promise<CommandResult> {
+  if (args.flags["summary"] === true && args.flags["limit"] !== undefined)
+    return fail(
+      "check",
+      "usage",
+      "summary-limit-conflict",
+      "--summary reports uncapped selected findings; remove --limit",
+      {
+        details: { flags: ["--summary", "--limit"] },
+      },
+    );
   const preparation = await prepare(args);
   if (!preparation.ok) return preparation.result;
   const prepared = preparation.prepared;
@@ -307,6 +317,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
   ];
   const verdict = verdictOfCollected(prepared.collected, {
     ...capOptions(args),
+    ...(args.flags["summary"] === true ? { all: true } : {}),
     shellFindings: [...drift, ...pins.findings, ...okf],
     shellCoverage: {
       "generated-drift": cell(plans.length, 0),
@@ -367,12 +378,18 @@ export const checkCommand: CommandSpec = {
     { name: "rule", type: "string", summary: "only findings with this rule id" },
     { name: "path", type: "string", summary: "only findings on this page" },
     { name: "all", type: "boolean", summary: "lift the findings cap" },
+    {
+      name: "summary",
+      type: "boolean",
+      summary: "print a compact verdict; with --out save the uncapped full report",
+    },
   ],
   examples: [
     "wikiwright check",
     "wikiwright check --write",
     "wikiwright check --fix --dry-run",
     "wikiwright check --path wiki/Basil.md --all",
+    "wikiwright check --summary",
   ],
   writes: true,
   plan: planForCheck,

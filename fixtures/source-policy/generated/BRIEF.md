@@ -41,7 +41,7 @@ state could not make, never a pass.
 
 ### `check` — the whole bundle, its pins and its generated files
 
-`wikiwright check` — flags: --write --fix --limit <v> --rule <v> --path <v> --all --dry-run
+`wikiwright check` — flags: --write --fix --limit <v> --rule <v> --path <v> --all --summary --dry-run
 
 ```text
 wikiwright check
@@ -81,7 +81,7 @@ wikiwright search basil
 
 ### `type` — the contract you are about to satisfy, with its skeleton
 
-`wikiwright type <list|show> [name]` — flags: --brief
+`wikiwright type <list|show> [name]` — flags: --brief --concrete
 
 ```text
 wikiwright type show planting

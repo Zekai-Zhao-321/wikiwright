@@ -41,7 +41,7 @@ state could not make, never a pass.
 
 ### `check` — the whole bundle, its pins and its generated files
 
-`wikiwright check` — flags: --write --fix --limit <v> --rule <v> --path <v> --all --dry-run
+`wikiwright check` — flags: --write --fix --limit <v> --rule <v> --path <v> --all --summary --dry-run
 
 ```text
 wikiwright check
@@ -81,7 +81,7 @@ wikiwright search basil
 
 ### `type` — the contract you are about to satisfy, with its skeleton
 
-`wikiwright type <list|show> [name]` — flags: --brief
+`wikiwright type <list|show> [name]` — flags: --brief --concrete
 
 ```text
 wikiwright type show planting
@@ -105,22 +105,36 @@ wikiwright write --from drafts --dry-run
 
 ## Types
 
-- `account` (reference) — A bank, brokerage, or financial-service holding.
-- `asset` (reference) — A durable owned object worth tracking.
+- `account` (reference) — Never directly; author a concrete descendant.
+  - Avoid when: Anything with its own relationships and narrative (entity). (declared by `record`)
+- `asset` (reference) — Never directly; author a concrete descendant.
+  - Avoid when: Anything with its own relationships and narrative (entity). (declared by `record`)
 - `charter` (reference) — Exactly one page.
+  - Avoid when: Settings, ruling records, content. (declared by `charter`)
 - `daily` (reference) — One day of diary capture.
-- `doc` (reference) — A pointer page for a permit or an official paper.
+- `doc` (reference) — Never directly; author a concrete descendant.
+  - Avoid when: Anything with its own relationships and narrative (entity). (declared by `record`)
 - `entity` (concept) — Never directly; author a concrete descendant.
-- `event` (concept) — A bounded happening with dates.
-- `org` (concept) — A company, school, employer, club, or institution.
+  - Avoid when: Diary entries and pointer records. (declared by `entity`)
+- `event` (concept) — Never directly; author a concrete descendant.
+  - Avoid when: Diary entries and pointer records. (declared by `entity`)
+- `org` (concept) — Never directly; author a concrete descendant.
+  - Avoid when: Diary entries and pointer records. (declared by `entity`)
 - `person` (concept) — Independent identity, own relationships, substantial content about one named person.
-- `pet` (concept) — An animal in the household.
-- `place` (concept) — A city, neighbourhood, or dwelling that anchors a period of the owner's life.
-- `project` (concept) — A body of work with an aim and a lifecycle.
+  - Avoid when: Mentioned in passing; a group (topic); an animal (pet). (declared by `person`)
+- `pet` (concept) — Never directly; author a concrete descendant.
+  - Avoid when: Diary entries and pointer records. (declared by `entity`)
+- `place` (concept) — Never directly; author a concrete descendant.
+  - Avoid when: Diary entries and pointer records. (declared by `entity`)
+- `project` (concept) — Never directly; author a concrete descendant.
+  - Avoid when: Diary entries and pointer records. (declared by `entity`)
 - `record` (reference) — Never directly; author a concrete descendant.
+  - Avoid when: Anything with its own relationships and narrative (entity). (declared by `record`)
 - `review` (reference) — One ISO week built from daily notes and the git log.
-- `self` (concept) — The owner's hub: identity and contact channels, the life Timeline, a grouped Relations map. Domain facts live on domain pages.
-- `topic` (concept) — A standing subject, including the domain pages that own facts about the owner.
+- `self` (concept) — Never directly; author a concrete descendant.
+  - Avoid when: Diary entries and pointer records. (declared by `entity`)
+- `topic` (concept) — Never directly; author a concrete descendant.
+  - Avoid when: Diary entries and pointer records. (declared by `entity`)
 
 ## Vocabularies
 

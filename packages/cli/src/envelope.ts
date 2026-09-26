@@ -73,6 +73,10 @@ export type Envelope = OkEnvelope | ErrEnvelope;
 export interface CommandResult {
   envelope: Envelope;
   exit: number;
+  /** Selected-state output ownership boundaries; internal, never serialized. */
+  outputProtected?: readonly string[];
+  /** False when selected law imports could not be determined from its engine document. */
+  outputProtectionComplete?: boolean;
   /** docs/cli.md §The envelope: UX on stderr, through one slot main.ts writes. */
   stderr?: string;
 }

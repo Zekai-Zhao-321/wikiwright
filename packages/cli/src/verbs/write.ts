@@ -506,7 +506,7 @@ async function prepare(args: CommandArgs): Promise<Step<Prepared>> {
     if (refused === undefined) throw e;
     return refuse(refused);
   }
-  const loaded = lawOf("write", disk);
+  const loaded = lawOf("write", disk, args.root);
   if (!loaded.ok) return refuse(loaded.result);
   const law = loaded.law;
   const mismatch = engineMismatch("write", law);

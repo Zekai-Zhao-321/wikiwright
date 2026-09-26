@@ -6,11 +6,13 @@
 // working tree's for `check`, the index's for `gate` (§7: the gate's envelope
 // law is the index's).
 import { realpathSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import {
   contentDigest,
   ENGINE_PATH,
   type JudgeState,
   lawDigest,
+  loadEngineV4,
   loadTypeLaw,
   satisfiesEngineRange,
   type TypeLaw,
@@ -20,6 +22,31 @@ import { gitCheckoutState } from "./git.ts";
 import { RootNotFound, StateChangedDuringRead } from "./lawstate.ts";
 
 export type LawLoad = { ok: true; law: TypeLaw } | { ok: false; result: CommandResult };
+
+/** The bundle and repository-relative library roots named by this snapshot. */
+function outputProtection(
+  root: string,
+  state: JudgeState,
+  libraries?: readonly string[],
+): { paths: string[]; complete: boolean } {
+  const bundle = realpathSync(root);
+  let top = bundle;
+  if (state.law.bundle !== "") for (const _ of state.law.bundle.split("/")) top = dirname(top);
+  const loaded =
+    libraries === undefined
+      ? (() => {
+          const path = state.law.bundle === "" ? ENGINE_PATH : `${state.law.bundle}/${ENGINE_PATH}`;
+          return loadEngineV4(state.law.files.get(path)?.bytes);
+        })()
+      : undefined;
+  const declared =
+    libraries ??
+    (loaded?.ok === true ? loaded.engine.libraries.map((library) => library.path) : []);
+  return {
+    paths: [bundle, ...declared.map((path) => resolve(top, path))],
+    complete: libraries !== undefined || loaded?.ok === true,
+  };
+}
 
 /** Where a state read its law from, for the refusal that names what it did not find. */
 const READ_FROM: Record<JudgeState["kind"], string> = {
@@ -35,37 +62,46 @@ const READ_FROM: Record<JudgeState["kind"], string> = {
  * all holds no bundle: absent is not malformed, so that is `bundle-not-found`
  * (exit 3), as the old verbs answered a root with no constitution.
  */
-export function lawOf(command: string, state: JudgeState): LawLoad {
+export function lawOf(command: string, state: JudgeState, root: string): LawLoad {
   const engine = state.law.bundle === "" ? ENGINE_PATH : `${state.law.bundle}/${ENGINE_PATH}`;
+  const protection = outputProtection(root, state);
   if (!state.law.files.has(engine)) {
     return {
       ok: false,
-      result: fail(
-        command,
-        "not_found",
-        "bundle-not-found",
-        `${READ_FROM[state.kind]} holds no ${ENGINE_PATH}, so there is no bundle to read`,
-        {
-          details: { path: ENGINE_PATH },
-          hint: "a bundle is a directory holding config/engine.json at schema_version 4; name one with --root",
-        },
-      ),
+      result: {
+        ...fail(
+          command,
+          "not_found",
+          "bundle-not-found",
+          `${READ_FROM[state.kind]} holds no ${ENGINE_PATH}, so there is no bundle to read`,
+          {
+            details: { path: ENGINE_PATH },
+            hint: "a bundle is a directory holding config/engine.json at schema_version 4; name one with --root",
+          },
+        ),
+        outputProtected: protection.paths,
+        outputProtectionComplete: protection.complete,
+      },
     };
   }
   const loaded = loadTypeLaw(state.law);
   if (loaded.ok) return { ok: true, law: loaded.law };
   return {
     ok: false,
-    result: fail(
-      command,
-      "constitution",
-      "constitution-invalid",
-      `the law does not load: ${loaded.issues.length} issue(s), the first ${loaded.issues[0]?.code ?? "unnamed"} at ${loaded.issues[0]?.where ?? "the bundle"}`,
-      {
-        data: { issues: loaded.issues },
-        hint: "each issue names the law file (`where`) and the pointer inside it; nothing was judged",
-      },
-    ),
+    result: {
+      ...fail(
+        command,
+        "constitution",
+        "constitution-invalid",
+        `the law does not load: ${loaded.issues.length} issue(s), the first ${loaded.issues[0]?.code ?? "unnamed"} at ${loaded.issues[0]?.where ?? "the bundle"}`,
+        {
+          data: { issues: loaded.issues },
+          hint: "each issue names the law file (`where`) and the pointer inside it; nothing was judged",
+        },
+      ),
+      outputProtected: protection.paths,
+      outputProtectionComplete: protection.complete,
+    },
   };
 }
 
@@ -122,7 +158,9 @@ export async function typeLawIdentity(
   root: string,
   state: JudgeState,
   law: TypeLaw,
-): Promise<BundleIdentity> {
+): Promise<
+  BundleIdentity & { outputProtected: readonly string[]; outputProtectionComplete: boolean }
+> {
   const real = realpathSync(root);
   const checkout = await gitCheckoutState(real);
   return {
@@ -132,13 +170,29 @@ export async function typeLawIdentity(
     dirty: checkout?.dirty ?? null,
     law: lawDigest(law, ENGINE_VERSION),
     content: stateContentDigest(state),
+    outputProtected: outputProtection(
+      root,
+      state,
+      law.libraries.map((library) => library.root),
+    ).paths,
+    outputProtectionComplete: true,
   };
 }
 
 /** The envelope with the bundle block it names. */
-export function withIdentity(result: CommandResult, bundle: BundleIdentity): CommandResult {
+export function withIdentity(
+  result: CommandResult,
+  identity: BundleIdentity & {
+    outputProtected?: readonly string[];
+    outputProtectionComplete?: boolean;
+  },
+): CommandResult {
+  const { outputProtected: selected, outputProtectionComplete, ...bundle } = identity;
+  const complete = result.outputProtectionComplete === false ? false : outputProtectionComplete;
   return {
     ...result,
+    outputProtected: [...new Set([...(result.outputProtected ?? []), ...(selected ?? [])])],
+    ...(complete === undefined ? {} : { outputProtectionComplete: complete }),
     envelope: { ...result.envelope, metadata: { ...result.envelope.metadata, bundle } },
   };
 }

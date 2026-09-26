@@ -8,8 +8,10 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
   cpSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -87,7 +89,7 @@ describe("an envelope over 1 MiB (v2 contracts §9)", () => {
       command: "read",
       exit_code: 0,
       bytes: Buffer.byteLength(whole),
-      out,
+      out: realpathSync(out),
     });
     const envelope = JSON.parse(whole) as Envelope;
     expect(envelope.ok).toBe(true);
@@ -96,6 +98,27 @@ describe("an envelope over 1 MiB (v2 contracts §9)", () => {
 });
 
 describe("--out (v2 contracts §9)", () => {
+  it("writes through a canonical parent alias but refuses leaf symlinks", () => {
+    const actual = join(dir, "output-real");
+    mkdirSync(actual);
+    const alias = join(dir, "output-alias");
+    symlinkSync(actual, alias);
+    const target = join(alias, "version.json");
+    const wrote = run(["version", "--out", target]);
+    expect(wrote.status).toBe(0);
+    expect((JSON.parse(wrote.stdout) as { out: string }).out).toBe(
+      join(realpathSync(actual), "version.json"),
+    );
+    expect(existsSync(join(actual, "version.json"))).toBe(true);
+    const held = join(dir, "held.json");
+    writeFileSync(held, "keep\n");
+    const leaf = join(dir, "leaf-link.json");
+    symlinkSync(held, leaf);
+    const refused = run(["version", "--out", leaf]);
+    expect(refused.status).toBe(2);
+    expect((JSON.parse(refused.stdout) as Envelope).error?.code).toBe("out-linked-target");
+    expect(readFileSync(held, "utf8")).toBe("keep\n");
+  });
   it("keeps the envelope's exit code, and takes a small envelope too", () => {
     const out = join(dir, "missing.json");
     const r = run(["read", "no-such-page", "--root", root, "--out", out]);

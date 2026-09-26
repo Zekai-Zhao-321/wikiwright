@@ -76,6 +76,15 @@ state could not judge, with its count and reasons, `no-base` or
 `base-unreadable`) and `caps` (`limit`, and whether it was `hit`). `--limit`
 caps the findings (default 50), `--rule` and `--path` filter before the cap
 and `--all` lifts it.
+`check --summary` runs the same verdict and prints its totals, scope, pin
+state counts, unevaluated counts and reasons, generated files written and the
+number of pages fixed. It omits finding and pin-entry detail from stdout.
+With `--out FILE`, the file receives the uncapped full report for the requested
+`--rule` or `--path` selection from that invocation; stdout includes its
+canonical path and byte count. `--summary` and `--limit` conflict and are
+refused. A dry run keeps its detailed path plan. If a compact summary with
+`--out` exceeds the stdout bound, stdout falls back to a bounded report
+pointer with `summary_omitted: stdout-bound`, preserving the verdict exit.
 
 ### The bound and `--out`
 
@@ -89,7 +98,9 @@ verb and the bundle the whole one named, and its hint `--out <file>`.
 whatever its size, through the same staged replace every generated file
 lands by, and prints a two-line pointer on stdout: the two lines are one JSON
 object, `{"ok", "command", "exit_code", "bytes"` on the first and `"out"}`,
-the file's absolute path, on the second. The exit code is the envelope's own.
+the file's canonical absolute path, on the second. Parent-directory aliases
+are resolved before the replacement; a leaf symbolic link is
+`out-linked-target` (exit 2). The exit code is the envelope's own.
 A file that cannot be written is `out-unwritable` (exit 2) on stdout, with the
 exit code the envelope would have carried in `details.exit_code`. A file
 inside the bundle the invocation reads — `--root`'s directory or the working
@@ -97,7 +108,10 @@ directory, or the nearest ancestor of it carrying `config/engine.json` or
 `config/constitution.json`, every link resolved — is `out-inside-bundle`
 (exit 2) on stdout, the same `details.exit_code` beside `out` and `bundle`:
 the envelope never overwrites a page, a law file or a generated file, which
-no writing verb's checks would see.
+no writing verb's checks would see. The selected law's imported library roots
+are also protected (`out-inside-law`), including staged imports under `gate`
+and a malformed imported law. Before a law can be selected, output inside the
+enclosing repository is refused as `out-inside-repository`.
 
 The writing verbs judge with the same judge. `write --from` answers with the
 plan it landed or would land (`ops`, `wrote`), the operations of `ops.json`
@@ -323,12 +337,15 @@ read.
   effective shape and the documents declaring it (`reserved`,
   `fragment:<name>`, `type:<name>`), the compiled shape, the sections and the
   documents declaring each heading, every rule with its declaring document
-  and its config after `configure`, `meta`, `examples`. `--brief` adds
-  `skeleton` (every key of the effective shape in linearisation order,
-  `type` filled, `# <title>` and one heading per section), `instruction` (a
-  line per section) and `vocabularies`, each with its entries and their
-  live counts, its retired entries and the values the pages use that it
-  does not declare. `type list` lists every type.
+  and its config after `configure`, `meta`, `examples`, and the complete
+  vocabulary entries, retired entries and live/undeclared counts.
+  `use_when` and `avoid_when` inherit the nearest declaration on the type
+  ancestry and name their declaring type. `--brief` returns only identity,
+  inherited guidance, an `abstract` marker, a derived skeleton, one writing
+  instruction per section, compact vocabulary counts and `full_argv` naming
+  this bundle's normal `type show` view. `type list` lists every type;
+  `type list --concrete` omits abstract types. A flag for the other
+  subcommand is `flag-not-applicable`.
 - **`version`** prints the engine version and the commit the binary was
   built from; `--version` and `-v` alias it.
 
@@ -352,7 +369,7 @@ Global flags, accepted by every verb:
 | [`read`](#read) | no | Return a page's sections verbatim under a byte budget, with its bytes digest and its status: stale pins, and the queue's unresolved rules. |
 | [`rule`](#rule) | no | Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision. |
 | [`search`](#search) | no | Deterministic lexical search with match reasons and a coverage block; each result carries its page's status. |
-| [`type`](#type) | no | Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type. |
+| [`type`](#type) | no | Show a type's full contract and vocabulary values, a short writing brief, or a list of types. |
 | [`version`](#version) | no | Report the engine version and the commit this binary was BUILT from (--version / -v alias it). |
 | [`write`](#write) | yes | Land a directory of drafts and its ops.json (bases, move, retire, retract, supersede) as one batch, judged together with the disk as its base. |
 
@@ -372,6 +389,7 @@ Writes: yes (accepts `--dry-run`).
 | `--rule <value>` | only findings with this rule id |
 | `--path <value>` | only findings on this page |
 | `--all` | lift the findings cap |
+| `--summary` | print a compact verdict; with --out save the uncapped full report |
 | `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
 
 ```text
@@ -379,6 +397,7 @@ wikiwright check
 wikiwright check --write
 wikiwright check --fix --dry-run
 wikiwright check --path wiki/Basil.md --all
+wikiwright check --summary
 ```
 
 ### gate
@@ -477,18 +496,20 @@ wikiwright search basil --band identity
 
 `wikiwright type <list|show> [name]`
 
-Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type.
+Show a type's full contract and vocabulary values, a short writing brief, or a list of types.
 
 Writes: no.
 
 | Flag | Meaning |
 |---|---|
-| `--brief` | add the skeleton to write from and the writing instruction, with the vocabularies' live counts |
+| `--brief` | with type show, return short guidance and a skeleton instead of the full contract |
+| `--concrete` | with type list, omit abstract types |
 
 ```text
 wikiwright type show planting
 wikiwright type show planting --brief
 wikiwright type list
+wikiwright type list --concrete
 ```
 
 ### version
