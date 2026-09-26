@@ -10,8 +10,13 @@ that would close the gap, rather than left for a reader to discover.
 
 wikiwright 0.1.0 is two packages and a kit. `@wikiwright/core` is the
 kernel and the standard library (claims, relations, entries), a pure
-library over bytes. `wikiwright` is the binary: 24 verbs, one module each,
-one JSON envelope per invocation; `docs/cli.md` lists every verb and flag.
+library over bytes. `wikiwright` is the binary, one JSON envelope per
+invocation, with two tables while the v2 delivery lands: a bundle on schema
+version 4 is answered by the command table of the v2 contracts, eight verbs
+over the type-document law (`check`, `gate`, `write`, `rule`, `read`,
+`search`, `type`, `version`), and any other root by the old table, 24 verbs,
+one module each, which this paragraph and most of this page describe;
+`docs/cli.md` lists both (§The v2 verbs answer a bundle on schema version 4).
 Every envelope of a verb that reads a vault's law names the bundle it read —
 its label, real root, head, whether it is dirty, and digests of its law and
 its content. `bundles list` lists the bundle skills installed in the skill
@@ -783,10 +788,20 @@ its old self over any other root. What the rewritten verbs leave, so far:
   both. `search` measures the pins of every page it returns and of the pages
   each one links, per invocation: the git work grows with the results, and
   `--limit` bounds it. A tag alias no longer resolves under `--tag`.
-- `commit_prefixes` is validated and carried with no reader until the gate
-  lands (`ENGINE_V4_CONSUMERS` names it `null`; every other key names the
-  function that reads it, of core or of the shell, and a test holds the
-  function to exist and to read the key).
+- `bundles`, `export`, `graph`, `init`, `modules`, `skills` and `schema`
+  have no place in the command table (contracts §1): the skill discovery,
+  the exports, the graph query, the starters, the modules and the installed
+  skills leave with their mechanisms, and `<verb> --help --json` replaces
+  `schema`. Each still answers a root not on schema version 4. So nothing
+  scaffolds a schema-version-4 bundle yet: its starter directory, copied by
+  hand, and the libraries of step 5 are what a new bundle starts from.
+- `WIKIWRIGHT_ROLE` still bounds every verb of both tables by its declared
+  role (`check` and `write` a writer's, `gate` and `rule` a maintainer's,
+  the others a consumer's); the bound leaves with the deletions of step 6
+  (contracts §1).
+- Every v4 key names the function that reads it, of core or of the shell
+  (`ENGINE_V4_CONSUMERS`), and a test holds the function to exist and to
+  read the key.
 - `gate` absorbs `lint --staged`, and the published hook definition
   (`.pre-commit-hooks.yaml` at the repository root, `wikiwright-gate` at
   `pre-commit` and `wikiwright-commit-msg` at `commit-msg`) and two

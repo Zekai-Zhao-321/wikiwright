@@ -35,7 +35,6 @@ import { schemaCommand } from "./legacy/schema.ts";
 import { searchCommand as legacySearchCommand } from "./legacy/search.ts";
 import { skillsCommand } from "./legacy/skills.ts";
 import { typeCommand as legacyTypeCommand } from "./legacy/type.ts";
-import { versionCommand } from "./legacy/version.ts";
 import { vocabularyCommand } from "./legacy/vocabulary.ts";
 import { writeCommand as legacyWriteCommand } from "./legacy/write.ts";
 import type { CommandSpec } from "./spec.ts";
@@ -45,22 +44,19 @@ import { readCommand } from "./verbs/read.ts";
 import { ruleCommand } from "./verbs/rule.ts";
 import { searchCommand } from "./verbs/search.ts";
 import { typeCommand } from "./verbs/type.ts";
+import { versionCommand } from "./verbs/version.ts";
 import { writeCommand } from "./verbs/write.ts";
 
-/** The command table: the verbs a schema-version-4 bundle is answered by. */
+/**
+ * The command table (v2 contracts §9): the eight verbs a schema-version-4
+ * bundle is answered by.
+ */
 export const COMMANDS: CommandSpec[] = [
-  bundlesCommand,
   checkCommand,
-  exportCommand,
   gateCommand,
-  graphCommand,
-  initCommand,
-  modulesCommand,
   readCommand,
   ruleCommand,
-  schemaCommand,
   searchCommand,
-  skillsCommand,
   typeCommand,
   versionCommand,
   writeCommand,

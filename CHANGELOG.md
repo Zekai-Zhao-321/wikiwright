@@ -669,6 +669,12 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- `bundles`, `export`, `graph`, `init`, `modules`, `skills` and `schema`
+  from the command table, which is now the eight verbs of the v2 contracts
+  (§9): the discovery of installed bundle skills, the exports, the graph
+  query, the starters, the modules and the installed skills leave with
+  their mechanisms (§1), and `<verb> --help --json` replaces `schema`. Each
+  still answers a root not on schema version 4.
 - `vocabulary` and `brief` from the command table: `type show --brief`
   lists a vocabulary's entries with their live counts, and the three roles'
   briefs are the sections of `generated/BRIEF.md`, which `check --write`

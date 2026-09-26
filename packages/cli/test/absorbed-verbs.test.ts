@@ -16,6 +16,7 @@ import { moveCommand } from "../src/legacy/move.ts";
 import { newCommand } from "../src/legacy/new.ts";
 import { okfCommand } from "../src/legacy/okf.ts";
 import { retireCommand } from "../src/legacy/retire.ts";
+import { schemaCommand } from "../src/legacy/schema.ts";
 import { vocabularyCommand } from "../src/legacy/vocabulary.ts";
 import type { CommandSpec } from "../src/spec.ts";
 import { cleanBundles, cli, commitAll, gardenBundle } from "./fixtures/garden-cli.ts";
@@ -196,6 +197,16 @@ const ABSORBED: { spec: CommandSpec; rows: Absorbed[] }[] = [
     })),
   },
   {
+    spec: schemaCommand,
+    rows: [
+      {
+        example: "wikiwright schema",
+        replacement: ["check", "--help", "--json"],
+        loss: "a verb that prints every verb's schema: `wikiwright --help --json` does, and a verb's own `--help --json` its row",
+      },
+    ],
+  },
+  {
     spec: okfCommand,
     rows: [
       { example: "wikiwright okf check", replacement: ["check", "--rule", "okf-missing-type"] },
@@ -239,6 +250,8 @@ describe.each(ABSORBED)("the old $spec.name, absorbed", ({ spec, rows }) => {
     const r = cli(argv, dir);
     expect(r.envelope.metadata.command).toBe(argv[0] ?? "");
     expect([0, 5]).toContain(r.status);
-    expect(r.envelope.metadata.bundle?.["label"]).toBe("kitchen-garden");
+    // A verb's help answers before any bundle is read, and names none.
+    if (!argv.includes("--help"))
+      expect(r.envelope.metadata.bundle?.["label"]).toBe("kitchen-garden");
   });
 });

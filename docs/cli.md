@@ -1,45 +1,31 @@
 # The CLI
 
-`wikiwright` is one binary with 24 verbs. Every verb prints exactly one JSON
-envelope on stdout and reserves stderr for text a human at a terminal needs.
-The verb reference below is rendered from the binary's own command registry by
+`wikiwright` is one binary. Every verb prints exactly one JSON envelope on
+stdout and reserves stderr for text a human at a terminal needs.
+
+It answers with one of two tables (the v2 contracts §9 and §12 step 4). A root
+whose `config/engine.json` is schema version 4 — a bundle of type documents
+(docs/v2-dispositions.md) — is answered by the **command table**, eight verbs:
+`check`, `gate`, `write`, `rule`, `read`, `search`, `type` and `version`
+(§The command table). Any other root — a bundle on `config/constitution.json`,
+or none — and any invocation that names its target by `--bundle` is answered
+by the **old table**, the 24 verbs of the old tree, unchanged (§The old
+table), until step 5 of the delivery migrates this repository's corpora and
+step 6 deletes the old verbs. Over a schema-version-4 bundle the verbs the old
+table alone holds are no verb (`unknown-command`): `check` absorbs `lint`,
+`fix`, `freshness` and `okf`; `gate` absorbs `lint --staged`, and the
+published hook definition replaces `hook`; `write --from` absorbs `move`,
+`retire` and `new`; `type show --brief` absorbs `vocabulary` and `brief`;
+`<verb> --help --json` replaces `schema`; `bundles`, `export`, `graph`,
+`init`, `modules` and `skills` leave with their mechanisms (contracts §1).
+
+The verb reference at the end is rendered from the command table by
 `bun docs/render-cli.ts --write`, and `bun docs/render-cli.ts --check` fails
-when the document is behind the binary. `wikiwright schema` and
-`wikiwright --help --json` print the same registry as JSON, `wikiwright <verb>
---help --json` prints one verb's row, and `wikiwright <verb> --help` its usage
-line, flags and examples.
-
-The binary has two tables while the v2 delivery lands (contracts §12 step 4).
-A root whose `config/engine.json` is schema version 4 is answered by the
-command table, whose verbs are rewritten over the type-document law one at a
-time; the reference below is that table's. Any other root — a bundle on
-`config/constitution.json`, or none — and any invocation that names its target
-by `--bundle` is answered by the old table whole, whose verbs the notes below
-still describe. Over a schema-version-4 bundle `check` absorbs `lint`, `fix`,
-`freshness` and `okf`; `write --from` absorbs `move`, `retire` and `new`;
-`type show --brief` absorbs `vocabulary` and `brief`; and
-the published hook definition, invoking `gate`, replaces `hook`: each of these
-is no verb there, and still answers any other root.
-
-Over a schema-version-4 bundle the hooks are `gate`'s two stages. The
-pre-commit framework reads `.pre-commit-hooks.yaml` at this repository's root
-(`wikiwright-gate` at `pre-commit`, `wikiwright-commit-msg` at `commit-msg`);
-without the framework, the two one-liners are, in `.git/hooks/pre-commit`,
-
-```sh
-#!/bin/sh
-exec wikiwright gate --root <bundle>
-```
-
-and in `.git/hooks/commit-msg`,
-
-```sh
-#!/bin/sh
-exec wikiwright gate --root <bundle> --commit-msg "$1"
-```
-
-`--commit-msg` reads the message file where git hands it: a relative path
-against the directory the hook runs in, then against the bundle root.
+when the document is behind the binary. `wikiwright --help --json` prints every
+verb's schema as JSON, `wikiwright <verb> --help --json` one verb's (the
+registry row the old `schema` printed, `writes` included), and `wikiwright
+<verb> --help` its usage line, flags and examples; each answers for the table
+that answers the root it names.
 
 ## The envelope
 
@@ -144,6 +130,21 @@ not chosen (§Notes per verb, `--bundle`).
 | `caps` | `limit` and whether it was `hit` |
 | `dispositions` | per page, the counted transition outcomes where a base exists (`relation_added`, `relation_removed`, `superseded`, `corrected`, …) |
 
+Over a schema-version-4 bundle the bundle block is computed by the verb
+from the state it judged: `label` is `config/engine.json`'s, `law` is the §7
+law digest (every file the loader read, the page-interface and CEL-profile
+identities, eight dependency versions and the engine's), `content` is the §7
+content digest of the pages judged, and `head` and `dirty` are git's for the
+root. The gate's names the index's law and content. There is no `export` or
+`shadowed` there. `check` and `gate` answer with the v2 verdict: `findings`
+(each `rule`, `severity`, `path`, `location` — `{kind: "page"}` or
+`{kind: "section", heading, occurrence, line}` — `message`, `details`, and
+either `queue`, its lane, or `fix: {argv}`, on every error and warning),
+`summary` (as above), `coverage` (every row and rule by id: `evaluated`,
+`not_applicable`, `unevaluated`), `unevaluated` (each row a state could not
+judge, with its count and reasons, `no-base` or `base-unreadable`) and
+`caps`.
+
 ### The bound and `--out`
 
 An envelope is at most 1 MiB (1,048,576 bytes, the closing newline counted)
@@ -239,7 +240,138 @@ the report it always writes.
 | `WIKIWRIGHT_SYSTEM_SKILL_DIR` | `--bundle`, `bundles list` | the machine's skill directory, probed after the user's two; `/etc/codex/skills` when unset, and none when empty. The suite sets it, over any value it inherits, to a directory under the temporary directory, and runs every scan with `HOME` there and its project tier inside a temporary repository, so no test probes a real machine's skill directories |
 | `WIKIWRIGHT_SKILL_DIRS` | `--bundle`, `bundles list` | more skill directories to probe after the project's, the user's and the system's, colon-separated, in order |
 
-## The plugin and its hooks
+## The command table
+
+What the rendered rows at the end do not say, per verb of the command table.
+Each reads the bundle through the v2 states (`packages/cli/src/lawstate.ts`),
+refuses a law that does not load as `constitution-invalid` (exit 2, the
+loader's issues in `data.issues`, nothing judged), and names the bundle it
+read.
+
+- **`check [--write] [--fix] [--dry-run]`** judges the working tree whole:
+  every page under its type, every rule test and example (§8 of the
+  contracts), and beside the judge every pin, `okf-missing-type` and the
+  generated files. A running engine outside `config/engine.json`'s `engine`
+  range is `engine-mismatch` (exit 2). A pin is a top-level property whose
+  schema is the engine `$def` `pin`, `{commit, origin, covers}`; one whose
+  origin is `.` is measured against the repository the bundle sits in:
+  `pin-stale` (warning) when the covered paths changed between its commit
+  and HEAD, `pin-unknown` (warning) when HEAD's history does not hold the
+  commit, `citation-unresolved` (warning) for a cited path or line the
+  commit does not hold — citations are read as the old `freshness` read
+  them — and `stale-source-cited` (warning) on every page with an edge of
+  any kind but `tagged` into a stale page; any other origin, no repository
+  or no commit is `pin-unmeasured` (info, `details.reason` `remote-origin`,
+  `no-repository`, `no-head`). `data.pins` carries `counts` by state
+  (`current`, `unchanged`, `stale`, `unknown`, `unmeasured`) and one entry
+  per pin. `generated/` holds `BRIEF.md` (the bundle's brief: the loop in
+  three sections, one per role, the verbs, the types, the vocabularies, the
+  names), `graph.json`, `manifest.json`, `tag-catalog.md` and `queue.md`
+  (every queued finding of a judge run with no base, and the law and
+  content digests it was cut from); a file that differs from a fresh render
+  is `generated-drift` (error, fix `check --write`). `--write` renders them;
+  `--fix` implies `--write` and first runs the folder-tag materializer under
+  `folder_tags.mode: materialize-add-only`, reporting `fixed`. `--dry-run`
+  plans exactly what the invocation lands, nothing without `--write` or
+  `--fix`. Exit 5 on any error.
+- **`gate [--commit-msg <file>]`** judges the index with HEAD as its base
+  (§8 and §9.2 of the contracts). At `pre-commit`: every page, rule test and
+  example the index holds; a rule the law diff adds or changes held to its
+  test set (`rule-untested`, error); `generated/*` judged as staged once the
+  index tracks any of it (`generated-drift`, `details.state: index`); the
+  law diff between HEAD's law and the index's as `law-changed` (info); a
+  queued error on a line the commit did not touch demoted to a warning
+  (`details.demoted_from: "error"`), and the findings of an untouched page
+  left out — both suspended when the commit stages `config/`,
+  `constitution/`, `rule-tests/`, `examples/` or a library
+  (`data.config_changed: true`). With no HEAD the base is empty and there is
+  no diff. `--commit-msg <file>` holds the message to `commit_prefixes`
+  (`commit-prefix`, exit 5, one line on stderr naming the registered set)
+  and the law diff to a body line `law-change: <reason>`: without one each
+  change is `law-relaxed` (error, lane `law-review`), with one `law-changed`
+  carrying `details.reason`. A refusal prints the census and the blocking
+  findings on stderr. `unmerged-paths` and `git-unavailable` are exit 4.
+  The hooks: `.pre-commit-hooks.yaml` at this repository's root publishes
+  `wikiwright-gate` (`pre-commit`) and `wikiwright-commit-msg`
+  (`commit-msg`, `--commit-msg` the last argument so the framework's file
+  path is its value); without the framework, `.git/hooks/pre-commit` holds
+  `exec wikiwright gate --root <bundle>` and `.git/hooks/commit-msg`
+  `exec wikiwright gate --root <bundle> --commit-msg "$1"`. The message file
+  is read where git hands it: a relative path against the directory the
+  hook runs in, then against the bundle root.
+- **`write --from <dir> [--dry-run]`** lands a batch: `<dir>/ops.json`
+  (optional), then every `.md` under `<dir>` at the vault path it mirrors.
+  `ops.json` is `{"bases": {"<path>": "<bytes digest>"}, "move": [{"from",
+  "to", "reason"}], "retire": [{"path", "successor"}], "retract": [{"path",
+  "handle", "date"}], "supersede": [{"path", "handle", "by", "date"}]}`,
+  every key optional, `successor` nullable, `date` defaulting to the clock;
+  any other shape is `ops-invalid` (exit 2) with its JSON pointer. A base
+  that is not the page's current bytes digest is `base-mismatch` (exit 4).
+  The operations apply in that order: a move renames the page, adds its old
+  name to `aliases` and rewrites every wikilink naming it; a retirement sets
+  `status: retired` and `superseded_by`; a retraction appends `(retracted
+  D)` to the claim's line, a supersession `(valid →D-1, superseded D by
+  #xxxxxxxx)`, the claim named by its handle (`claim-not-found`, exit 3;
+  `claim-not-open`, exit 4). Then the drafts; a draft at a path a move
+  leaves (`draft-on-moved-path`) or of a page an operation changes
+  (`draft-overlaps-op`) is refused, exit 4, and one outside the content
+  roots is `draft-outside-content` (exit 2). `created` is stamped on a page
+  new to the vault and `updated` on every changed one, through
+  `WIKIWRIGHT_TODAY`. The batch is judged together with the disk as its base
+  and each move as its rename; an error on any page it touches refuses the
+  whole batch (`draft-invalid`, exit 5, the findings in `data`). Otherwise
+  every page is staged beside its path, then renamed into place, then each
+  path a move left is removed: each file is its old or its new complete
+  bytes, and the batch is not transactional. The envelope carries the plan's
+  `ops`, `wrote`, `operations` (what each did) and one row per page
+  (`path`, `created`, `moved_from`, `findings`, `digest` before and after).
+- **`rule try --type <t> [--section <h>] --expr <cel> [--config <json>]
+  [--base <ref>]`** admits the candidate under the CEL profile
+  (`rule-invalid`, exit 2), attaches it as `candidate`, severity error, to
+  `<t>` and every type below it, and judges the working tree and, with
+  `--base`, the revision (`revision-not-found`, exit 3). `working` and
+  `base` each list `would_refuse` (path and location), `would_pass`,
+  `unevaluated` (path and reason: a candidate reading `before` has no base
+  in either) and `errors` (path, kind, message). Exit 0 whatever the
+  counts; nothing is written.
+- **`read <page> [--section <heading>] [--budget <bytes>]`** names a page by
+  its path, its name, an alias or its title, in that order, and returns its
+  sections cut at its type's section depth, verbatim, in page order while
+  the budget holds, the rest listed by address; `data.bytes` is the page's
+  bytes digest. `data.status` is the page's standing: `stale` true when a
+  pin of the page is stale (`reason: pin-stale`) or a page it links carries
+  one (`stale-source-cited`), null when a pin of its own is unmeasured or
+  unknown (the reason), false otherwise; `unresolved` the rule ids
+  `generated/queue.md` holds for the page while its digests are the current
+  law's and content's, else null with `unresolved_reason` `queue-stale` or
+  `queue-missing`.
+- **`search <query> [--items] [--files]`** ranks as the old verb did
+  (below), over the pages of the working tree, and every result — a page, a
+  record under `--items` (a claim, a relation or an entry, its fields the
+  record's), a file under `--files` — carries its page's `status`, computed
+  as `read` computes it. The pins measured are the returned pages' and the
+  pages they link: the git work grows with the results. `--type` matches a
+  type and every type below it.
+- **`type show <name> [--brief]`** prints the effective contract with
+  attribution: role, ancestry, fragments, each top-level property of the
+  effective shape and the documents declaring it (`reserved`,
+  `fragment:<name>`, `type:<name>`), the compiled shape, the sections and the
+  documents declaring each heading, every rule with its declaring document
+  and its config after `configure`, `meta`, `examples`. `--brief` adds
+  `skeleton` (every key of the effective shape in linearisation order,
+  `type` filled, `# <title>` and one heading per section), `instruction` (a
+  line per section) and `vocabularies`, each with its entries and their
+  live counts, its retired entries and the values the pages use that it
+  does not declare. `type list` lists every type.
+- **`version`** prints the engine version and the commit the binary was
+  built from; `--version` and `-v` alias it.
+
+## The old table
+
+What follows describes the old table, which answers every root not on schema
+version 4; the command table is §The command table.
+
+### The plugin and its hooks
 
 The package root, `packages/cli`, is also a Claude Code plugin.
 `.claude-plugin/plugin.json` names it `wikiwright` at the package's version;
@@ -299,9 +431,10 @@ Claude Code hooks reference documents. Host behaviour — whether and how a host
 runs these hooks and uses their output — has not been verified in this
 repository.
 
-## Notes per verb
+### Notes per verb of the old table
 
-What the registry rows below do not say.
+What the old table's registry rows do not say; `wikiwright schema`, run
+against a root not on schema version 4, prints those rows.
 
 - **`check`** judges the working tree and, beside the page passes, the artifact
   tree (`generated-drift`), the installed skills (`skills-stale`,
@@ -792,33 +925,14 @@ Global flags, accepted by every verb:
 
 | Verb | Role | Writes | Summary |
 |---|---|---|---|
-| [`bundles`](#bundles) | consumer | no | List every bundle skill installed in the skill directories, as --bundle finds them, with its identity and what its installer recorded. |
 | [`check`](#check) | writer | yes | Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first. |
-| [`export`](#export) | maintainer | yes | Write one declared external export into another repository, as skills/<name>/. |
 | [`gate`](#gate) | maintainer | no | Judge what the commit would contain: the index with HEAD as its base, the law diff, and under --commit-msg the message's prefix and its law-change line. |
-| [`graph`](#graph) | consumer | no | Query the graph's edges by kind, label and the type on either side — or list the pages on one side that carry none (coverage, derived). |
-| [`init`](#init) | maintainer | yes | Scaffold a vault from a starter constitution — only what is missing, unless --force; installs the hook when git exists. |
-| [`modules`](#modules) | maintainer | no | List the modules this bundle declares, or plan the delta of adopting another version. |
 | [`read`](#read) | consumer | no | Return a page's sections verbatim under a byte budget, with its bytes digest and its status: stale pins, and the queue's unresolved rules. |
 | [`rule`](#rule) | maintainer | no | Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision. |
-| [`schema`](#schema) | consumer | no | Print the generated command registry: names, roles, flags, examples. |
 | [`search`](#search) | consumer | no | Deterministic lexical search with match reasons and a coverage block; each result carries its page's status. |
-| [`skills`](#skills) | maintainer | yes | Reinstall the shipped skills into .claude/skills/, or compare installed vs shipped. |
 | [`type`](#type) | consumer | no | Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type. |
 | [`version`](#version) | consumer | no | Report the engine version and the commit this binary was BUILT from (--version / -v alias it). |
 | [`write`](#write) | writer | yes | Land a directory of drafts and its ops.json (bases, move, retire, retract, supersede) as one batch, judged together with the disk as its base. |
-
-### bundles
-
-`wikiwright bundles <list>`
-
-List every bundle skill installed in the skill directories, as --bundle finds them, with its identity and what its installer recorded.
-
-Role: `consumer`. Writes: no.
-
-```text
-wikiwright bundles list
-```
 
 ### check
 
@@ -845,23 +959,6 @@ wikiwright check --fix --dry-run
 wikiwright check --path wiki/Basil.md --all
 ```
 
-### export
-
-`wikiwright export <name>`
-
-Write one declared external export into another repository, as skills/<name>/.
-
-Role: `maintainer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--to <value>` | the root of the repository the export is written into (required) |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright export roses --to ../roses-skill
-```
-
 ### gate
 
 `wikiwright gate`
@@ -881,69 +978,6 @@ Role: `maintainer`. Writes: no.
 ```text
 wikiwright gate
 wikiwright gate --commit-msg .git/COMMIT_EDITMSG
-```
-
-### graph
-
-`wikiwright graph <edges>`
-
-Query the graph's edges by kind, label and the type on either side — or list the pages on one side that carry none (coverage, derived).
-
-Role: `consumer`. Writes: no.
-
-| Flag | Meaning |
-|---|---|
-| `--kind <value>` | edge kind: wikilink, tagged, cites, supersedes, or a grammar's item kind; with --label it defaults to the one kind that carries labels |
-| `--label <value>` (repeatable) | keep edges carrying any of these labels (repeatable) |
-| `--inbound <value>` | keep edges whose target page's type chain includes this type |
-| `--outbound <value>` | keep edges whose source page's type chain includes this type |
-| `--missing` | instead of the edges, list the pages on the named side (exactly one of --inbound / --outbound) that carry none of them: an inbound side lists the targets no selected edge reaches, an outbound side the sources that carry none |
-| `--limit <value>` | cap the edges or missing array (default 100) |
-| `--all` | lift the cap |
-
-```text
-wikiwright graph edges --label implements --label diverges-from --inbound requirement --missing
-wikiwright graph edges --label mapped_in --outbound subsystem --missing
-wikiwright graph edges --kind relation --inbound source --missing
-wikiwright graph edges --label covers --outbound design-note
-```
-
-### init
-
-`wikiwright init`
-
-Scaffold a vault from a starter constitution — only what is missing, unless --force; installs the hook when git exists.
-
-Role: `maintainer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--constitution <value>` | starter constitution (default "base") |
-| `--force` | overwrite the existing files init lists as conflicts |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright init
-wikiwright init --constitution base --dry-run
-wikiwright init --force
-```
-
-### modules
-
-`wikiwright modules <list|plan>`
-
-List the modules this bundle declares, or plan the delta of adopting another version.
-
-Role: `maintainer`. Writes: no.
-
-| Flag | Meaning |
-|---|---|
-| `--package <value>` | with `plan`: the declared module whose version would change |
-| `--candidate <value>` | with `plan`: a bundle root that already has the candidate version installed |
-
-```text
-wikiwright modules list
-wikiwright modules plan --package @acme/kit --candidate ../bundle-with-the-new-version
 ```
 
 ### read
@@ -986,18 +1020,6 @@ wikiwright rule try --type planting --expr "has(page.fields.source)"
 wikiwright rule try --type planting --section History --expr "section.items.all(i, i.precision == \"day\")" --base HEAD
 ```
 
-### schema
-
-`wikiwright schema`
-
-Print the generated command registry: names, roles, flags, examples.
-
-Role: `consumer`. Writes: no.
-
-```text
-wikiwright schema
-```
-
 ### search
 
 `wikiwright search [query]`
@@ -1026,24 +1048,6 @@ wikiwright search "sweet basil" --near
 wikiwright search "thirty degrees" --items
 wikiwright search "herb bed" --files
 wikiwright search basil --band identity
-```
-
-### skills
-
-`wikiwright skills <status|update>`
-
-Reinstall the shipped skills into .claude/skills/, or compare installed vs shipped.
-
-Role: `maintainer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--force` | overwrite a file whose bytes the engine cannot account for |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright skills status
-wikiwright skills update
 ```
 
 ### type
