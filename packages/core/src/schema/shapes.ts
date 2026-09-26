@@ -23,8 +23,8 @@ export const ENGINE_DEFS: Readonly<Record<string, Record<string, unknown>>> = {
     type: "object",
     properties: {
       commit: { type: "string", pattern: "^[0-9a-f]{7,64}$" },
-      // "." for this repository, else a path or URL as today.
-      origin: { type: "string" },
+      // ".", a declared local name, or an unmeasured external identifier.
+      origin: { type: "string", pattern: "^\\S+$" },
       covers: { type: "array", items: { type: "string" } },
     },
     required: ["commit", "origin", "covers"],

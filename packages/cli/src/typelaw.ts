@@ -94,7 +94,23 @@ export function engineMismatch(
 
 /** §7 `content`: every page the state holds, path and bytes. */
 export function stateContentDigest(state: JudgeState): string {
-  return contentDigest([...state.pages].map(([path, bytes]) => ({ path, bytes })));
+  const empty = new Uint8Array();
+  return contentDigest([
+    ...[...state.pages].map(([path, bytes]) => ({ path: `page:${path}`, bytes })),
+    ...[...(state.sources?.files ?? [])].map((path) => ({
+      path: `source-file:${path}`,
+      bytes: empty,
+    })),
+    ...[...(state.sources?.directories ?? [])].map((path) => ({
+      path: `source-directory:${path}`,
+      bytes: empty,
+    })),
+    ...(state.sources?.skipped ?? []).map((entry) => ({
+      path: `source-${entry.kind}:${entry.path}`,
+      bytes: empty,
+    })),
+    ...(state.sources === undefined ? [{ path: "source-unmeasured", bytes: empty }] : []),
+  ]);
 }
 
 /**

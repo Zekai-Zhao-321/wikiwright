@@ -42,13 +42,32 @@ no completeness verdict until the first check. A `new` verb and generated
 bundle skills wait until repeated work loses time assembling drafts or
 finding a type despite the brief and examples.
 
-### Remote evidence is unmeasured
+### URL evidence is unmeasured
 
-`check` measures a pin against the repository enclosing the bundle.
-A pin naming another Git URL is `pin-unmeasured` with reason
-`remote-origin`; the engine does not contact it. When that source moves,
-the page is not marked stale by this engine. A local clone named as an
-origin, without network access by the engine, would close the gap.
+`check`, `read` and `search` measure a pin against the repository enclosing
+the bundle (`origin: "."`) or a local Git repository explicitly bound by
+`local_origins` in the selected engine document. They capture a full HEAD id
+per origin and read objects at that id. Relative bindings resolve from the
+bundle root. No verb fetches or follows a page-authored URL. An unbound or URL
+origin is `pin-unmeasured` (`remote-origin`); unavailable local repositories
+and shallow histories have their own reasons. If an origin path or HEAD moves
+during measurement twice, the run refuses its Git answer.
+
+`gate` judges staged bundle pages, law and source-path existence. It does not
+measure outside repositories or make their working trees part of the staged
+bundle. A separate `check`, `read` or `search` observes their captured HEADs;
+that observation is not an atomic promise with a later commit. A pin whose
+cover did not exist at its pinned commit is `pin-coverage-invalid`, not current;
+deleting a valid cover after that commit is stale. Unknown and unmeasured linked
+sources make consumer status unverified at one hop.
+
+The source-path judge proves only that a literal path under `source_roots`
+exists as a regular file or directory in the selected state. It reads no raw
+source bytes and establishes neither content integrity nor truth. A trailing
+slash requires a directory. A missing path is an error; a symbolic-link or
+submodule boundary is unmeasured. Source path membership enters the content
+and queue digest, so a changed source path invalidates an old queue even when
+Markdown is unchanged.
 
 A local pin holds a cited file path and line to the pinned tree, not the
 meaning of the sentence that cites it. No `write` operation relocates
@@ -174,8 +193,8 @@ uses a library rule to require field-note pages for observed and measured
 claims, with rule tests and a source-only retyping episode. This is an
 example policy, not a built-in evidence taxonomy. Resolution reaches pages
 in the bundle's current content roots; it does not check cited headings,
-URL or path contents, or the truth of a field note. External pin movement
-remains unmeasured.
+URL or path contents, or the truth of a field note. Bound local Git origins
+are measured against captured HEADs; URL origins remain unmeasured.
 
 ### Other knowledge and agent gaps
 

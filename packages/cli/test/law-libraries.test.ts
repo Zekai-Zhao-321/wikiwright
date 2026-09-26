@@ -72,6 +72,7 @@ describe("engine.json v4", () => {
       label: "kitchen-garden",
       content_roots: ["wiki"],
       source_roots: [],
+      local_origins: [],
       libraries: [],
       commit_prefixes: [],
       field_sources: {},

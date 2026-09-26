@@ -16,7 +16,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { contentDigest, parseTypeLawQueue } from "@wikiwright/core";
+import { parseTypeLawQueue } from "@wikiwright/core";
+import { fsState } from "../src/lawstate.ts";
+import { stateContentDigest } from "../src/typelaw.ts";
 import {
   cleanBundles,
   cli,
@@ -109,17 +111,13 @@ describe("check over the working tree (v2 contracts §9.1)", () => {
     expect(generatedBytes(a)).toEqual(generatedBytes(b));
   });
 
-  it("names the bundle it read: engine.json's label and the digests of what it judged", () => {
+  it("names the bundle it read: engine.json's label and the digests of what it judged", async () => {
     const dir = gardenBundle();
     const bundle = cli(["check"], dir).envelope.metadata.bundle ?? {};
     expect(bundle["label"]).toBe("kitchen-garden");
     expect(bundle["head"]).toBe(null);
     expect(bundle["dirty"]).toBe(null);
-    const pages = ["wiki/Basil.md", "wiki/Herb bed.md", "wiki/Start.md"].map((path) => ({
-      path,
-      bytes: new Uint8Array(readFileSync(join(dir, path))),
-    }));
-    expect(bundle["content"]).toBe(contentDigest(pages));
+    expect(bundle["content"]).toBe(stateContentDigest(await fsState(dir)));
     expect(String(bundle["law"])).toMatch(/^[0-9a-f]{64}$/u);
   });
 });

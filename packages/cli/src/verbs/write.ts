@@ -20,8 +20,8 @@
 // new-page identity gate's stem tier, `--not-any-of` and the `near` list
 // (an identity collision with an existing page is the judge's
 // `identity-collision`), and the retirement banner.
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { join, relative, resolve, sep } from "node:path";
 import {
   applyWrite,
   basenameOf,
@@ -756,7 +756,15 @@ async function run(args: CommandArgs): Promise<CommandResult> {
       if (refused === undefined) throw error;
       return withIdentity(refused, await typeLawIdentity(args.root, prepared.disk, prepared.law));
     }
-    const stagedState = workingTreeDigest(afterStaging);
+    const stagedPaths = new Set(
+      staged.tempPaths.map((path) =>
+        relative(realpathSync(args.root), path).split(sep).join("/").normalize("NFC"),
+      ),
+    );
+    const stagedState = workingTreeDigest(afterStaging, {
+      paths: stagedPaths,
+      before: prepared.disk.sources,
+    });
     if (stagedState !== expectedState) {
       return withIdentity(
         fail(

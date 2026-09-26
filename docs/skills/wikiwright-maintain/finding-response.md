@@ -17,6 +17,9 @@ point.
 
 | code | severity | route | carries the v1 ids |
 |---|---|---|---|
+| `source-path-missing` | `error` | queue `source-review` | — |
+| `source-path-kind` | `error` | queue `source-review` | — |
+| `source-path-unmeasured` | `warning` | queue `source-review` | — |
 | `page-too-large` | `error` | queue `syntax-review` | — |
 | `page-not-utf8` | `error` | queue `syntax-review` | — |
 | `malformed-frontmatter` | `error` | queue `syntax-review` | `malformed-frontmatter` |
@@ -81,6 +84,7 @@ point.
 | `okf-missing-type` | `error` | queue `type-review` | `okf-missing-type` |
 | `pin-stale` | `warning` | queue `source-review` | `stale-capture` |
 | `pin-unknown` | `warning` | queue `source-review` | `pin-unknown-to-origin` |
+| `pin-coverage-invalid` | `warning` | queue `source-review` | — |
 | `pin-unmeasured` | `info` | none: an info finding | `freshness-unavailable` |
 | `citation-unresolved` | `warning` | queue `source-review` | `citation-unresolved` |
 | `stale-source-cited` | `warning` | queue `source-review` | `stale-source-cited` |

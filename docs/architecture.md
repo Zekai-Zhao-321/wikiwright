@@ -47,7 +47,7 @@ packages/cli/src/
   verbs/<name>.ts   one CommandSpec per verb of the command table, over the type-document law
   typelaw.ts   v2: the law a state carries loaded or refused, the engine range, the bundle block
   generated.ts v2: generated/ — the brief and the kernel's four files, rendered, compared and written
-  pins.ts      v2: every pin measured against the local repository, and the stale sources a page links
+  pins.ts      v2: captured local Git origin measurement and the stale sources a page links
 docs/skills/                  the three skill documents (consume, write, maintain) and the generated playbook
 libraries/kit-code/           the code wiki's type library of the v2 law, id code: the page kinds, anchored, the relation labels, their rule tests and examples
 libraries/kit-garden/         the neutral test library of the v2 law, id garden: documents, rule tests, examples; the allotment handbook imports it
@@ -76,6 +76,8 @@ by name when it breaks. Test files live under `packages/core/test`,
 | Three layers, all law is data | a library is type, fragment and vocabulary documents with rule tests and examples, loaded by path and qualified by its id; a bundle's documents may extend a library's; no layer ships code | `law-libraries`, `libraries` |
 | Packages import in one direction | no package's `src/` holds a runtime import cycle, however many steps around; a type-only import is erased and is not an edge | `import-graph` |
 | One judge at every write path | the same `judgeTypeLaw` is called by the working tree, the drafts over the disk, the index over HEAD and a revision; `write` holds one accepted disk and law capture and rechecks it before landing | `judge-law-property`, `judge-states`, `judge-core`, `gate-verb`, `write-batch`, `write-snapshot` |
+| Source paths are selected-state facts | a literal claim path under `source_roots` has file, directory, missing, wrong-kind or unmeasured status from the working tree, overlay, index or revision; staged deletion cannot borrow disk existence, and old queues become stale when path membership changes | `source-evidence`, `source-policy`, `gate-verb`, `write-snapshot` |
+| Local Git evidence is observed at immutable refs | a pin names the enclosing or an explicitly bound local repository; every ancestry, diff, cover and citation query uses captured full commit ids; URL origins remain unmeasured and a ref move refuses or retries | `source-evidence`, `check-verb`, `read-search-status`, `git-config` |
 | Routing is total | every error or warning finding carries exactly one of `fix` and `queue`; every `info` carries neither; over every corpus and every emit path | `routing-xor`, `verdict-table` (no unroutable row) |
 | Coverage is coherent | a pass reporting `evaluated: 0` never sits beside its own findings | `coverage-coherence` |
 | The splice law | a write differs from its input only inside the lines its ops name; BOM, line ending and trailing newline survive; fuzzed on a fixed seed | `writer-fuzz`, `writer` |
@@ -94,7 +96,7 @@ by name when it breaks. Test files live under `packages/core/test`,
 | The command registry is the only surface | `--help`, `--help --json`, the brief and the parser render one table; every example a verb documents parses; the playbook is byte-identical to its generator's output | `command-table`, `per-command-help`, `envelope-bounds`, `verbs`, `skills` |
 | The corpora are fixtures | every corpus judges to the verdict recorded for it under `check` and under the gate, its tracked `generated/` is what this build renders, and every library holds on its own | `fixture-verdicts`, `generated-tracked`, `libraries` |
 | Identity is Unicode-aware | NFC and full case folding through one seam, with CJK cases; unique basenames, aliases and titles | `identity`, `judge-core` |
-| Every bundle envelope names its bundle | a verb that reads a bundle's law adds `metadata.bundle` — engine.json's label, the real root, head, dirty, the law digest, the content digest over the pages it read — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs or to `version`; the generated brief's header prints the same law digest | `bundle-identity`, `check-verb`, `law-digests` |
+| Every bundle envelope names its bundle | a verb that reads a bundle's law adds `metadata.bundle` — engine.json's label, the real root, head, dirty, the law digest, the content digest over page bytes and source path membership — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs or to `version`; the generated brief's header prints the same law digest | `bundle-identity`, `check-verb`, `law-digests`, `source-evidence` |
 
 ### Disposition of the v1 invariants
 

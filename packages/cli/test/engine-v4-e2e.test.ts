@@ -60,6 +60,23 @@ describe("every v4 engine key reaches a CLI consumer", () => {
     expect(working(no).would_refuse.map((f) => f.path)).toContain("wiki/Basil.md");
   });
 
+  it("e2e:local_origins binds a named pin to an explicit local directory", () => {
+    const sourceType = `type: source\nrole: reference\ndescription: A capture.\nfields:\n  type: object\n  properties:\n    capture: { $ref: "#/$defs/pin" }\n  required: [capture]\n`;
+    const page = `---\ntype: source\ntitle: Seed list\ncapture:\n  commit: 0123456789abcdef\n  origin: local-code\n  covers: [notes/seeds.txt]\n---\n\n# Seed list\n`;
+    const extra = { "constitution/types/source.yaml": sourceType, "wiki/Seed list.md": page };
+    const without = cli(["check", "--all"], withEngine({}, extra));
+    const withBinding = cli(
+      ["check", "--all"],
+      withEngine({ local_origins: [{ name: "local-code", path: "../no-such-origin" }] }, extra),
+    );
+    expect(findingsOf(without.envelope, "pin-unmeasured")[0]?.details["reason"]).toBe(
+      "remote-origin",
+    );
+    expect(findingsOf(withBinding.envelope, "pin-unmeasured")[0]?.details["reason"]).toBe(
+      "no-repository",
+    );
+  });
+
   it("e2e:libraries supplies the imported garden types", () => {
     expect(cli(["type", "list"], withEngine({ libraries: [] })).envelope.error?.code).toBe(
       "constitution-invalid",

@@ -399,8 +399,19 @@ export async function gitDiffNames(
   paths: readonly string[],
   top: boolean,
 ): Promise<string[]> {
-  const args = ["diff", "--name-only", "-z", "--no-renames", "--no-relative", from, to];
-  if (paths.length > 0) args.push("--", ...paths.map((p) => (top ? `:(top)${p}` : p)));
+  const args = [
+    "diff",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--name-only",
+    "-z",
+    "--no-renames",
+    "--no-relative",
+    from,
+    to,
+  ];
+  if (paths.length > 0 && !paths.includes("."))
+    args.push("--", ...paths.map((p) => (top ? `:(top,literal)${p}` : `:(literal)${p}`)));
   return terminated(args, await git(dir, args), "\0")
     .split("\0")
     .filter((p) => p !== "");

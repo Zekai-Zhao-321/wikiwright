@@ -41,6 +41,14 @@ version` prints the engine version and the commit a binary was built from.
   `provenance.page`. A data-only synthetic source-policy library requires
   field-note pages for selected garden claim categories, with Unicode,
   source-only change, and staged-state tests.
+- Literal paths under `source_roots` are checked for file or directory
+  existence in the selected working tree, draft, index or revision. Missing,
+  wrong-kind and unmeasured boundaries have distinct findings. Source path
+  membership enters content and queue digests.
+- `local_origins` binds named local Git repositories explicitly for pin
+  measurement. `check`, `read` and `search` use captured full HEAD ids,
+  validate pinned cover existence, and expose invalid or unavailable evidence
+  in consumer status. URL origins remain unmeasured; no fetch is run.
 
 ### Changed
 
@@ -102,7 +110,8 @@ version` prints the engine version and the commit a binary was built from.
   `--superseded-by`, `--target`, and `--to`. The `--version` alias still
   reaches the new `version` verb.
 - Remote freshness, its network fetch/cache and `generated/freshness.json`
-  left. Remote-origin pins are `pin-unmeasured`, not silently current.
+  left. URL-origin pins are `pin-unmeasured`, not silently current; explicitly
+  declared local repositories can be observed without a fetch.
   Exports, installed copies, the `bundle-readonly` guard, and
   `metadata.bundle.export` left; a copied directory has no engine-enforced
   read-only identity. `WIKIWRIGHT_ROLE` and `role-forbidden` left.

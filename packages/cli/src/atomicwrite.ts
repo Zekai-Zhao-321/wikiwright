@@ -120,6 +120,7 @@ export function preflightReplacements(
 export function stageReplacements(entries: readonly Replacement[]): {
   commit: () => void;
   discard: () => void;
+  tempPaths: readonly string[];
 } {
   preflightReplacements(entries);
   const staged: { temp: string; target: string }[] = [];
@@ -145,6 +146,7 @@ export function stageReplacements(entries: readonly Replacement[]): {
   };
   return {
     discard,
+    tempPaths: staged.map(({ temp }) => temp),
     commit: () => {
       let renamed = 0;
       try {

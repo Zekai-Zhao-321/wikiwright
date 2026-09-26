@@ -68,6 +68,21 @@ export const RULE_LANE = "rule-review";
 export const LAW_LANE = "law-review";
 
 export const VERDICT_TABLE: readonly VerdictRow[] = [
+  {
+    id: "source-path-missing",
+    severity: "error",
+    lane: "source-review",
+    carries: [],
+    scope: "page",
+  },
+  { id: "source-path-kind", severity: "error", lane: "source-review", carries: [], scope: "page" },
+  {
+    id: "source-path-unmeasured",
+    severity: "warning",
+    lane: "source-review",
+    carries: [],
+    scope: "page",
+  },
   // --- a page as bytes and as YAML -----------------------------------------
   { id: "page-too-large", severity: "error", lane: "syntax-review", carries: [], scope: "page" },
   { id: "page-not-utf8", severity: "error", lane: "syntax-review", carries: [], scope: "page" },
@@ -379,6 +394,13 @@ export const VERDICT_TABLE: readonly VerdictRow[] = [
     severity: "warning",
     lane: "source-review",
     carries: ["pin-unknown-to-origin"],
+    scope: "shell",
+  },
+  {
+    id: "pin-coverage-invalid",
+    severity: "warning",
+    lane: "source-review",
+    carries: [],
     scope: "shell",
   },
   {

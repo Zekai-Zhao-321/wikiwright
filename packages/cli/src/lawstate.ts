@@ -35,7 +35,9 @@ import {
   type PageRename,
   pageMap,
   type SkippedPath,
+  type SourceFacts,
   type StagedChange,
+  sourceRootsOf,
   touchesContentRoot,
 } from "@wikiwright/core";
 import {
@@ -89,11 +91,89 @@ interface Capture {
   law: LawSnapshot;
   pages: ReadonlyMap<string, Uint8Array>;
   skipped: SkippedPath[];
+  sources: SourceFacts;
 }
 
 function bySkippedPath(skipped: SkippedPath[]): SkippedPath[] {
   const unique = new Map(skipped.map((s) => [s.path, s] as const));
   return [...unique.values()].sort((a, b) => codeUnitCompare(a.path, b.path));
+}
+
+function sourceFactsOfEntries(
+  entries: readonly { path: string; mode: string }[],
+  bundle: string,
+  roots: readonly string[],
+): SourceFacts {
+  const files = new Set<string>();
+  const directories = new Set<string>();
+  const skipped: SkippedPath[] = [];
+  for (const entry of entries) {
+    const rel = inBundle(bundle, entry.path.normalize("NFC"));
+    if (rel === undefined || !touchesContentRoot(rel, roots)) continue;
+    const parts = rel.split("/");
+    for (let n = 1; n < parts.length; n += 1) directories.add(parts.slice(0, n).join("/"));
+    if (!regular(entry.mode)) {
+      skipped.push({ path: rel, kind: entry.mode === "120000" ? "symbolic-link" : "submodule" });
+      continue;
+    }
+    if (!roots.some((root) => rel.startsWith(`${root}/`))) continue;
+    files.add(rel);
+  }
+  return { files, directories, skipped: bySkippedPath(skipped) };
+}
+
+/** A metadata-only walk. No source file's bytes are opened or interpreted. */
+function walkSources(root: string, roots: readonly string[]): SourceFacts {
+  const files = new Set<string>();
+  const directories = new Set<string>();
+  const skipped: SkippedPath[] = [];
+  const walk = (disk: string, path: string): void => {
+    const entries = readdirSync(join(root, disk), { withFileTypes: true, encoding: "utf8" });
+    if (entries.some((entry) => entry.name === ".git")) {
+      skipped.push({ path, kind: "submodule" });
+      return;
+    }
+    directories.add(path);
+    for (const entry of entries) {
+      const childDisk = `${disk}/${entry.name}`;
+      const child = `${path}/${entry.name.normalize("NFC")}`;
+      if (entry.isSymbolicLink()) skipped.push({ path: child, kind: "symbolic-link" });
+      else if (entry.isDirectory()) walk(childDisk, child);
+      else if (entry.isFile()) files.add(child);
+    }
+  };
+  for (const sourceRoot of roots) {
+    const segments = sourceRoot.split("/");
+    let blocked = false;
+    for (let n = 1; n <= segments.length; n += 1) {
+      const prefix = segments.slice(0, n).join("/");
+      let stat: ReturnType<typeof lstatSync>;
+      try {
+        stat = lstatSync(join(root, prefix));
+      } catch {
+        blocked = true;
+        break;
+      }
+      if (stat.isSymbolicLink()) {
+        skipped.push({ path: prefix, kind: "symbolic-link" });
+        blocked = true;
+        break;
+      }
+      if (!stat.isDirectory()) {
+        blocked = true;
+        break;
+      }
+      const entries = readdirSync(join(root, prefix), { withFileTypes: true, encoding: "utf8" });
+      if (entries.some((entry) => entry.name === ".git")) {
+        skipped.push({ path: prefix, kind: "submodule" });
+        blocked = true;
+        break;
+      }
+      if (n < segments.length) directories.add(prefix);
+    }
+    if (!blocked) walk(sourceRoot, sourceRoot);
+  }
+  return { files, directories, skipped: bySkippedPath(skipped) };
 }
 
 /**
@@ -159,15 +239,16 @@ function walkContent(
 async function captureWorkingTree(root: string): Promise<Capture> {
   const law = await workingTreeLawSnapshot(root);
   const walked = walkContent(root, contentRootsOf(law));
+  const sources = walkSources(root, sourceRootsOf(law));
   const pages: [string, Uint8Array][] = walked.pages.map((p) => [
     p.path,
     new Uint8Array(readPageBytes(root, p.disk)),
   ]);
-  return { law, pages: pageMap(pages), skipped: walked.skipped };
+  return { law, pages: pageMap(pages), skipped: walked.skipped, sources };
 }
 
 /** One digest over everything a capture read: the law's files, the pages and what it skipped. */
-function captureDigest(capture: Pick<JudgeState, "law" | "pages" | "skipped">): string {
+function captureDigest(capture: Pick<JudgeState, "law" | "pages" | "skipped" | "sources">): string {
   return contentDigest([
     ...[...capture.law.files].map(([path, file]) => ({
       path: `${file.link === true ? "link" : "law"}:${path}`,
@@ -182,12 +263,41 @@ function captureDigest(capture: Pick<JudgeState, "law" | "pages" | "skipped">): 
       path: `${s.kind}:${s.path}`,
       bytes: new Uint8Array(),
     })),
+    ...[...(capture.sources?.files ?? [])].map((path) => ({
+      path: `source-file:${path}`,
+      bytes: new Uint8Array(),
+    })),
+    ...[...(capture.sources?.directories ?? [])].map((path) => ({
+      path: `source-directory:${path}`,
+      bytes: new Uint8Array(),
+    })),
+    ...(capture.sources?.skipped ?? []).map((s) => ({
+      path: `source-${s.kind}:${s.path}`,
+      bytes: new Uint8Array(),
+    })),
+    ...(capture.sources === undefined
+      ? [{ path: "source-unmeasured", bytes: new Uint8Array() }]
+      : []),
   ]);
 }
 
-/** The complete bytes a working-tree write accepted: law, pages and skipped paths. */
-export function workingTreeDigest(state: JudgeState): string {
-  return captureDigest(state);
+/** The accepted working tree, optionally excluding only this writer's staged temps. */
+export function workingTreeDigest(
+  state: JudgeState,
+  staged?: { paths: ReadonlySet<string>; before: SourceFacts | undefined },
+): string {
+  if (staged === undefined || state.sources === undefined) return captureDigest(state);
+  const files = new Set(state.sources.files);
+  for (const path of staged.paths) files.delete(path);
+  const directories = new Set(state.sources.directories);
+  for (const dir of directories) {
+    if (staged.before?.directories.has(dir)) continue;
+    if (![...staged.paths].some((path) => path.startsWith(`${dir}/`))) continue;
+    if ([...files].some((path) => path.startsWith(`${dir}/`))) continue;
+    if (state.sources.skipped.some((entry) => entry.path.startsWith(`${dir}/`))) continue;
+    directories.delete(dir);
+  }
+  return captureDigest({ ...state, sources: { ...state.sources, files, directories } });
 }
 
 /** A file or directory that left, or a link that came back on itself, between the listing and the read. */
@@ -242,8 +352,8 @@ async function consistentCapture(root: string, options: CaptureOptions): Promise
 
 /** The working tree as it stands: its law and its pages, no base. */
 export async function fsState(root: string, options: CaptureOptions = {}): Promise<JudgeState> {
-  const { law, pages, skipped } = await consistentCapture(root, options);
-  return { kind: "working-tree", law, pages, skipped };
+  const { law, pages, skipped, sources } = await consistentCapture(root, options);
+  return { kind: "working-tree", law, pages, skipped, sources };
 }
 
 /** A draft page: a bundle-relative path and the bytes proposed for it. */
@@ -276,8 +386,10 @@ export function overlayFromState(
   const pages = new Map(disk.pages);
   const movedFrom = new Map<string, string>();
   for (const move of moves) {
-    pages.delete(move.from.normalize("NFC"));
-    movedFrom.set(move.to.normalize("NFC"), move.from.normalize("NFC"));
+    const from = move.from.normalize("NFC");
+    const to = move.to.normalize("NFC");
+    pages.delete(from);
+    movedFrom.set(to, from);
   }
   for (const draft of drafts) {
     const path = draft.path.normalize("NFC");
@@ -296,6 +408,16 @@ export function overlayFromState(
     }
     pages.set(path, draft.bytes);
   }
+  const sourceRoots = sourceRootsOf(disk.law);
+  const sourceFiles = new Set(disk.sources?.files ?? []);
+  const sourceDirectories = new Set(disk.sources?.directories ?? []);
+  for (const move of moves) sourceFiles.delete(move.from.normalize("NFC"));
+  for (const path of pages.keys()) {
+    if (!sourceRoots.some((root) => path.startsWith(`${root}/`))) continue;
+    sourceFiles.add(path);
+    const parts = path.split("/");
+    for (let n = 1; n < parts.length; n += 1) sourceDirectories.add(parts.slice(0, n).join("/"));
+  }
   const base = new Map<string, Uint8Array | null>();
   for (const path of pages.keys()) {
     const from = movedFrom.get(path);
@@ -310,6 +432,15 @@ export function overlayFromState(
     pages: pageMap(pages),
     base,
     skipped: disk.skipped ?? [],
+    ...(disk.sources === undefined
+      ? {}
+      : {
+          sources: {
+            files: sourceFiles,
+            directories: sourceDirectories,
+            skipped: disk.sources.skipped,
+          },
+        }),
   };
   if (renames.length > 0) state.renames = renames;
   return state;
@@ -405,6 +536,7 @@ export async function readIndex(root: string): Promise<IndexRead> {
   }));
   const law = await lawSnapshotOfEntries(top, bundle, entries);
   const roots = contentRootsOf(law);
+  const sourceRoots = sourceRootsOf(law);
   const content = entries.filter((e) => {
     const rel = inBundle(bundle, e.path);
     return rel !== undefined && regular(e.mode) && isContentPath(rel, roots);
@@ -527,7 +659,16 @@ export async function readIndex(root: string): Promise<IndexRead> {
     .filter((r) => isContentPath(r.to, roots))
     .sort((a, b) => codeUnitCompare(a.to, b.to));
   const skipped = skippedEntries(entries, bundle, roots);
-  const state: JudgeState = { kind: "index", law, pages: pageMap(pages), base, renames, skipped };
+  const state: JudgeState = {
+    kind: "index",
+    law,
+    pages: pageMap(pages),
+    base,
+    renames,
+    skipped,
+    sources: sourceFactsOfEntries(entries, bundle, sourceRoots),
+    baseSources: sourceFactsOfEntries(headEntries, bundle, sourceRoots),
+  };
   const removed = new Map<string, Uint8Array>();
   for (const [rel, path] of deleted) {
     const blob = headObject(path);
@@ -546,6 +687,7 @@ export async function revisionState(root: string, rev: string): Promise<JudgeSta
   const listing = await revisionEntries(top, rev);
   const law = await lawSnapshotOfEntries(top, bundle, listing);
   const roots = contentRootsOf(law);
+  const sourceRoots = sourceRootsOf(law);
   const content = listing.filter((e) => {
     const rel = inBundle(bundle, e.path);
     return rel !== undefined && regular(e.mode) && isContentPath(rel, roots);
@@ -560,5 +702,11 @@ export async function revisionState(root: string, rev: string): Promise<JudgeSta
     return [inBundle(bundle, e.path) ?? e.path, new Uint8Array(bytes)];
   });
   const skipped = skippedEntries(listing, bundle, roots);
-  return { kind: "revision", law, pages: pageMap(pages), skipped };
+  return {
+    kind: "revision",
+    law,
+    pages: pageMap(pages),
+    skipped,
+    sources: sourceFactsOfEntries(listing, bundle, sourceRoots),
+  };
 }

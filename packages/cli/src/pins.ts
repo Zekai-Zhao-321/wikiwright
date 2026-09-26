@@ -1,10 +1,10 @@
 // v2 contracts §3.1 (the engine `$def` `pin`: `{commit, origin, covers}`),
-// §9.1 (`check` measures every pin against the local repository only:
+// §9.1 (`check` measures pins against the enclosing or a declared local repository:
 // `pin-stale`, a warning; a remote-origin pin `pin-unmeasured`, info;
 // `stale-source-cited` kept, propagated over graph.json's edges) and §9.5
 // (`read` and `search` carry the result as a page's `status`).
 //
-// Ported from the old measurement (freshness.ts): one origin measured, ".",
+// Ported from the old measurement (freshness.ts): "." measures the enclosing repository;
 // the repository enclosing the bundle; a pin not on the history of HEAD
 // (`pin-unknown`, the old `pin-unknown-to-origin`); the covering diff between
 // the pin and HEAD over the pin's `covers`, read with `:(top)` so the paths
@@ -19,38 +19,46 @@
 // shallow clone's history does not reach, which is absent there rather than
 // unknown), the old `origin-unreachable` dropped with remote freshness; `--fast-forward` and
 // the uncommitted `generated/freshness.json` report are not ported.
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { realpathSync, statSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   codeUnitCompare,
   type LawType,
   PAGE_LOCATION,
+  pathRefusal,
   type StateRead,
   type TypeLawGraphEdge,
   type Unrouted,
 } from "@wikiwright/core";
 import { citationsIn } from "./citations.ts";
 import {
+  GitInconsistentRead,
   gitBlobLineCount,
-  gitCommitKnown,
   gitDiffNames,
   gitHasHead,
   gitHead,
   gitIsAncestor,
   gitIsShallow,
   gitObjectType,
+  gitRefHead,
   gitRevListCount,
   gitTopLevel,
   gitTreeEntries,
 } from "./git.ts";
 
-/** The one origin measured: the repository the bundle sits in. */
+/** The implicit origin: the repository the bundle sits in. */
 export const LOCAL_ORIGIN = ".";
 
 const COMMIT = /^[0-9a-f]{7,64}$/u;
 
 export type PinState = "current" | "unchanged" | "stale" | "unknown" | "unmeasured";
-export type UnmeasuredReason = "remote-origin" | "no-repository" | "no-head" | "shallow";
+export type UnmeasuredReason =
+  | "remote-origin"
+  | "no-repository"
+  | "no-head"
+  | "shallow"
+  | "duplicate-root"
+  | "not-root";
 
 export interface UnresolvedCitation {
   path: string;
@@ -62,12 +70,16 @@ export interface PinEntry {
   path: string;
   field: string;
   commit: string;
+  resolved_commit?: string;
   origin: string;
+  /** Full immutable HEAD observed for this origin, null when unavailable. */
+  head: string | null;
   state: PinState;
   /** With `unmeasured`: why nothing measured it. */
-  reason?: UnmeasuredReason;
+  reason?: UnmeasuredReason | "coverage-invalid";
   behind: number | null;
   covering_touched: string[] | null;
+  coverage_invalid?: string[];
   citations: { checked: number; unresolved: UnresolvedCitation[] } | null;
 }
 
@@ -140,21 +152,29 @@ interface Repository {
   /** A shallow clone: a pin its history does not reach is not measured. */
   shallow: boolean;
   reason?: UnmeasuredReason;
+  binding: string;
 }
 
-async function repositoryAt(root: string): Promise<Repository> {
-  if ((await gitTopLevel(root)) === undefined) {
-    // A `.git` git does not recognise is the measurement breaking, not a
-    // bundle outside every repository.
-    if (existsSync(join(root, ".git"))) {
-      throw new Error(`"${join(root, ".git")}" exists and git recognises no repository there`);
-    }
-    return { dir: null, head: null, shallow: false, reason: "no-repository" };
+async function repositoryAt(root: string, path: string): Promise<Repository> {
+  let real: string;
+  try {
+    if (!statSync(path).isDirectory())
+      return { dir: null, head: null, shallow: false, reason: "no-repository", binding: path };
+    real = realpathSync(path);
+  } catch {
+    return { dir: null, head: null, shallow: false, reason: "no-repository", binding: path };
   }
-  if (!(await gitHasHead(root))) {
-    return { dir: root, head: null, shallow: false, reason: "no-head" };
+  const top = await gitTopLevel(real);
+  if (top === undefined) {
+    return { dir: null, head: null, shallow: false, reason: "no-repository", binding: path };
   }
-  return { dir: root, head: await gitHead(root), shallow: await gitIsShallow(root) };
+  const dir = realpathSync(top);
+  if (root !== path && real !== dir)
+    return { dir: null, head: null, shallow: false, reason: "not-root", binding: path };
+  if (!(await gitHasHead(dir))) {
+    return { dir, head: null, shallow: false, reason: "no-head", binding: path };
+  }
+  return { dir, head: await gitHead(dir), shallow: await gitIsShallow(dir), binding: path };
 }
 
 /** Every citation the repository does not answer at the pin, the objects read once per path. */
@@ -188,11 +208,12 @@ async function unresolvedCitations(
 }
 
 const REASON_TEXT: Readonly<Record<UnmeasuredReason, string>> = {
-  "remote-origin": "names another origin, and only the repository the bundle sits in is measured",
-  "no-repository": 'names ".", and no repository encloses the bundle',
-  "no-head": "names the repository the bundle sits in, which has no commit to measure against",
-  shallow:
-    "names the repository the bundle sits in, a shallow clone whose history does not reach the commit (fetch the full history to measure it)",
+  "remote-origin": "names no declared local origin; URL origins are never fetched",
+  "no-repository": "names a local directory with no readable Git repository",
+  "no-head": "names a local Git repository with no commit to measure against",
+  shallow: "names a shallow local clone whose history does not reach the commit",
+  "duplicate-root": "names a local repository bound by more than one origin name",
+  "not-root": "names a directory inside a repository rather than its root",
 };
 
 function countOf(entries: readonly PinEntry[]): Record<PinState, number> {
@@ -215,19 +236,117 @@ export async function measurePins(
   root: string,
   read: StateRead,
   edges: readonly TypeLawGraphEdge[],
+  localOrigins: readonly { name: string; path: string }[] = [],
   only?: ReadonlySet<string>,
 ): Promise<PinMeasurement> {
+  for (const attempt of [1, 2]) {
+    const observed = await measurePinsOnce(root, read, edges, localOrigins, only);
+    let moved = false;
+    for (const [origin, prior] of observed.repositories) {
+      const now = await repositoryAt(root, prior.binding);
+      if (
+        prior.dir !== now.dir ||
+        prior.head !== now.head ||
+        prior.shallow !== now.shallow ||
+        prior.reason !== now.reason
+      ) {
+        moved = true;
+        break;
+      }
+      if (origin !== LOCAL_ORIGIN && prior.dir !== null) {
+        try {
+          if (realpathSync(prior.binding) !== prior.dir) moved = true;
+        } catch {
+          moved = true;
+        }
+      }
+    }
+    const localTop = localOrigins.length > 0 ? await gitTopLevel(root) : undefined;
+    if (
+      (localTop === undefined ? null : realpathSync(localTop)) !==
+      observed.bindings.get(LOCAL_ORIGIN)
+    )
+      moved = true;
+    for (const origin of localOrigins) {
+      const path = resolve(realpathSync(root), origin.path);
+      let canonical: string | null;
+      try {
+        canonical = realpathSync(path);
+      } catch {
+        canonical = null;
+      }
+      if (canonical !== observed.bindings.get(origin.name)) moved = true;
+    }
+    if (!moved) return observed.measurement;
+    if (attempt === 2)
+      throw new GitInconsistentRead(
+        ["rev-parse HEAD", "rev-parse HEAD"],
+        "a declared origin's path or HEAD moved during measurement twice",
+      );
+  }
+  throw new Error("unreachable origin measurement state");
+}
+
+async function measurePinsOnce(
+  root: string,
+  read: StateRead,
+  edges: readonly TypeLawGraphEdge[],
+  localOrigins: readonly { name: string; path: string }[],
+  only?: ReadonlySet<string>,
+): Promise<{
+  measurement: PinMeasurement;
+  repositories: Map<string, Repository>;
+  bindings: Map<string, string | null>;
+}> {
   const pinned = pinnedPages(read, only);
   const entries: PinEntry[] = [];
   const findings: Unrouted[] = [];
   const stale = new Set<string>();
-  let repository: Repository | undefined;
+  const repositories = new Map<string, Repository>();
+  const declared = new Map(localOrigins.map((origin) => [origin.name, origin.path] as const));
+  for (const pin of pinned) {
+    if (repositories.has(pin.origin)) continue;
+    const path = pin.origin === LOCAL_ORIGIN ? root : declared.get(pin.origin);
+    if (path === undefined) continue;
+    repositories.set(
+      pin.origin,
+      await repositoryAt(
+        root,
+        pin.origin === LOCAL_ORIGIN ? root : resolve(realpathSync(root), path),
+      ),
+    );
+  }
+  const byDir = new Map<string, string[]>();
+  const bindings = new Map<string, string | null>();
+  const localTop = localOrigins.length > 0 ? await gitTopLevel(root) : undefined;
+  bindings.set(LOCAL_ORIGIN, localTop === undefined ? null : realpathSync(localTop));
+  if (localTop !== undefined) byDir.set(realpathSync(localTop), [LOCAL_ORIGIN]);
+  for (const origin of localOrigins) {
+    const path = resolve(realpathSync(root), origin.path);
+    let canonical: string;
+    try {
+      canonical = realpathSync(path);
+    } catch {
+      bindings.set(origin.name, null);
+      continue;
+    }
+    bindings.set(origin.name, canonical);
+    const names = byDir.get(canonical) ?? [];
+    names.push(origin.name);
+    byDir.set(canonical, names);
+  }
+  const duplicate = new Set<string>();
+  for (const names of byDir.values()) {
+    if (names.length < 2) continue;
+    for (const name of names) duplicate.add(name);
+  }
   for (const pin of pinned) {
     const entry: PinEntry = {
       path: pin.path,
       field: pin.field,
       commit: pin.commit,
       origin: pin.origin,
+      head: repositories.get(pin.origin)?.head ?? null,
       state: "unmeasured",
       behind: null,
       covering_touched: null,
@@ -235,12 +354,10 @@ export async function measurePins(
     };
     entries.push(entry);
     const at = { field: pin.field, commit: pin.commit, origin: pin.origin };
-    let reason: UnmeasuredReason | undefined;
-    if (pin.origin !== LOCAL_ORIGIN) reason = "remote-origin";
-    else {
-      repository ??= await repositoryAt(root);
-      reason = repository.reason;
-    }
+    const repository = repositories.get(pin.origin);
+    const reason: UnmeasuredReason | undefined =
+      (duplicate.has(pin.origin) ? "duplicate-root" : repository?.reason) ??
+      (repository === undefined ? "remote-origin" : undefined);
     const dir = repository?.dir ?? null;
     const head = repository?.head ?? null;
     if (reason !== undefined || dir === null || head === null) {
@@ -255,8 +372,8 @@ export async function measurePins(
       });
       continue;
     }
-    const known =
-      (await gitCommitKnown(dir, pin.commit)) && (await gitIsAncestor(dir, pin.commit, "HEAD"));
+    const pinCommit = await gitRefHead(dir, `${pin.commit}^{commit}`);
+    const known = pinCommit !== null && (await gitIsAncestor(dir, pinCommit, head));
     if (!known && repository?.shallow === true) {
       entry.reason = "shallow";
       findings.push({
@@ -281,14 +398,43 @@ export async function measurePins(
       });
       continue;
     }
-    const behind = await gitRevListCount(dir, pin.commit, "HEAD");
-    const touched = await gitDiffNames(dir, pin.commit, "HEAD", pin.covers, true);
+    const commit = pinCommit as string;
+    entry.resolved_commit = commit;
+    const invalid: string[] = [];
+    for (const cover of pin.covers) {
+      const path = cover.endsWith("/") ? cover.slice(0, -1) : cover;
+      if (cover !== "." && (pathRefusal(path) !== undefined || path.startsWith(":"))) {
+        invalid.push(cover);
+        continue;
+      }
+      if (cover === ".") continue;
+      const kind = await gitObjectType(dir, `${commit}:${path}`);
+      if ((kind !== "blob" && kind !== "tree") || (cover.endsWith("/") && kind !== "tree"))
+        invalid.push(cover);
+    }
+    if (pin.covers.length === 0) invalid.push("<empty>");
+    if (invalid.length > 0) {
+      entry.state = "unknown";
+      entry.reason = "coverage-invalid";
+      entry.coverage_invalid = invalid;
+      findings.push({
+        rule: "pin-coverage-invalid",
+        severity: "warning",
+        path: pin.path,
+        location: PAGE_LOCATION,
+        message: `the pin in ${pin.field} covers a path absent or unsafe at ${pin.commit.slice(0, 12)}: ${invalid.join(", ")}`,
+        details: { ...at, invalid },
+      });
+      continue;
+    }
+    const behind = await gitRevListCount(dir, commit, head);
+    const touched = await gitDiffNames(dir, commit, head, pin.covers, true);
     entry.behind = behind;
     entry.covering_touched = touched;
-    const topLevel = new Set(await gitTreeEntries(dir, pin.commit));
+    const topLevel = new Set(await gitTreeEntries(dir, commit));
     const scan = citationsIn(pin.text, topLevel, pin.covers);
     const unresolved: UnresolvedCitation[] = [
-      ...(await unresolvedCitations(dir, pin.commit, scan.citations)),
+      ...(await unresolvedCitations(dir, commit, scan.citations)),
       ...scan.problems.map((p) => ({ path: p.token, line: null, reason: p.reason })),
     ];
     entry.citations = { checked: scan.citations.length, unresolved };
@@ -303,7 +449,7 @@ export async function measurePins(
         details: { ...at, cited: citation.path, line: citation.line, reason: citation.reason },
       });
     }
-    const current = head.startsWith(pin.commit);
+    const current = head === commit;
     entry.state = touched.length > 0 ? "stale" : current ? "current" : "unchanged";
     if (touched.length > 0) {
       stale.add(pin.path);
@@ -336,5 +482,9 @@ export async function measurePins(
       });
     }
   }
-  return { entries, counts: countOf(entries), findings, stale, citing };
+  return {
+    measurement: { entries, counts: countOf(entries), findings, stale, citing },
+    repositories,
+    bindings,
+  };
 }

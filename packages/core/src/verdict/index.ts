@@ -33,8 +33,10 @@ export type { VaultNameEntry, VaultNames } from "./names.ts";
 export { titleOf as titleOfPage } from "./names.ts";
 export type { Unrouted } from "./page.ts";
 export { locationAt, PAGE_LOCATION } from "./page.ts";
-export type { JudgeState, PageRename, SkippedPath, StateKind } from "./state.ts";
-export { contentRootsOf, pageMap, sameBytes, touchesContentRoot } from "./state.ts";
+export type { SourcePathStatus } from "./sourcepaths.ts";
+export { sourcePathFindings, sourcePathStatus } from "./sourcepaths.ts";
+export type { JudgeState, PageRename, SkippedPath, SourceFacts, StateKind } from "./state.ts";
+export { contentRootsOf, pageMap, sameBytes, sourceRootsOf, touchesContentRoot } from "./state.ts";
 export type { FindingLocation, VerdictFinding, VerdictRow } from "./table.ts";
 export {
   RULE_LANE,

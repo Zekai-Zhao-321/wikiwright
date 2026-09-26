@@ -17,6 +17,7 @@
 // identity, computed, never written on the claim itself.
 import { sha256Hex } from "../hash/index.ts";
 import { normalizeIdentity } from "../identity/index.ts";
+import { pathRefusal } from "../paths/index.ts";
 import { isDate } from "../schema/formats.ts";
 
 export interface Location {
@@ -133,7 +134,7 @@ function trailingParenthetical(text: string): { body: string; before: string } |
 function underSourceRoot(token: string, sourceRoots: readonly string[]): boolean {
   if (/\s/u.test(token) || !token.includes("/")) return false;
   const spine = token.endsWith("/") ? token.slice(0, -1) : token;
-  if (spine.split("/").some((s) => s === "" || s === "." || s === "..")) return false;
+  if (pathRefusal(spine) !== undefined) return false;
   return sourceRoots.some((root) => spine.startsWith(`${root}/`) && spine.length > root.length + 1);
 }
 

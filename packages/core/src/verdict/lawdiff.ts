@@ -263,6 +263,7 @@ export function lawDiff(head: TypeLaw, index: TypeLaw): LawChange[] {
   const engineKeys: [string, keyof TypeLaw["engine"], string][] = [
     ["extensions", "extensions", "extensions"],
     ["source-roots", "source_roots", "source_roots"],
+    ["local-origins", "local_origins", "local_origins"],
     ["field-sources", "field_sources", "field_sources"],
   ];
   for (const [kind, key, written] of engineKeys) {

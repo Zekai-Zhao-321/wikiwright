@@ -31,6 +31,13 @@ export interface SkippedPath {
   kind: "symbolic-link" | "submodule";
 }
 
+/** Existence and kind only; source bytes are outside the page and law snapshot. */
+export interface SourceFacts {
+  files: ReadonlySet<string>;
+  directories: ReadonlySet<string>;
+  skipped: readonly SkippedPath[];
+}
+
 /** A page the base held under one path and the state holds under another. */
 export interface PageRename {
   from: string;
@@ -60,6 +67,10 @@ export interface JudgeState {
   removed?: ReadonlyMap<string, Uint8Array>;
   /** The links and submodules at, under or above a content root, in code-unit order of path. */
   skipped?: readonly SkippedPath[];
+  /** Paths below source_roots from this selected state. Absence means unmeasured. */
+  sources?: SourceFacts;
+  /** HEAD's source paths when the selected state is the index. */
+  baseSources?: SourceFacts;
 }
 
 /** Whether `path` is a content root, lies under one, or holds one. */
@@ -94,4 +105,11 @@ export function contentRootsOf(law: LawSnapshot): string[] {
   const file = law.files.get(joinUnder(law.bundle, ENGINE_PATH));
   const loaded = loadEngineV4(file?.link === true ? undefined : file?.bytes);
   return loaded.ok ? [...loaded.engine.content_roots] : [];
+}
+
+/** Source roots declared by this state's own law. */
+export function sourceRootsOf(law: LawSnapshot): string[] {
+  const file = law.files.get(joinUnder(law.bundle, ENGINE_PATH));
+  const loaded = loadEngineV4(file?.link === true ? undefined : file?.bytes);
+  return loaded.ok ? [...loaded.engine.source_roots] : [];
 }

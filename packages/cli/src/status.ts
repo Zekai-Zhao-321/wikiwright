@@ -2,14 +2,11 @@
 // `search` result, so material due for reconsideration is not reused blind —
 // the first delivery's "expose invalidation to the consumer".
 //
-//   stale       true when one of the page's pins is stale (`pin-stale`) or a
-//               page it links, by an edge of any kind but `tagged`, carries
-//               one (`stale-source-cited`); null when a pin of its own was
-//               not measured (`remote-origin`, `no-repository`, `no-head`,
-//               `shallow`)
-//               or is not on HEAD's history (`pin-unknown`); false otherwise.
-//               Measured live against the local repository, as `check`
-//               measures every pin (pins.ts).
+//   stale       true for a stale own pin or one-hop linked source; null for
+//               missing/unmeasured source paths, invalid covers or citations,
+//               unknown/unmeasured own pins, or a directly linked source
+//               with any unverified status. False means none of these applies.
+//               Git measurement uses captured HEADs of local repositories.
 //   reason      why `stale` is true or null; null when it is false.
 //   unresolved  the rule ids queue.md holds for the page, when the law and
 //               content digests queue.md records are the current ones; null
@@ -24,11 +21,12 @@ import {
   parseTypeLawQueue,
   QUEUE_PATH,
   type StateRead,
+  sourcePathFindings,
   type TypeLaw,
   typeLawGraph,
 } from "@wikiwright/core";
 import { ENGINE_VERSION } from "./envelope.ts";
-import { measurePins } from "./pins.ts";
+import { measurePins, pinFields } from "./pins.ts";
 import { stateContentDigest } from "./typelaw.ts";
 
 export interface PageStatus {
@@ -36,6 +34,8 @@ export interface PageStatus {
   reason: string | null;
   unresolved: string[] | null;
   unresolved_reason: "queue-stale" | "queue-missing" | null;
+  /** Full immutable HEAD ids observed for the pins relevant to this status. */
+  observations?: { origin: string; head: string | null }[];
 }
 
 /** queue.md's rows by page, when its digests are the state's; else why not. */
@@ -88,21 +88,67 @@ export async function pageStatuses(
   }
   const measured = new Set(wanted);
   for (const targets of links.values()) for (const t of targets) measured.add(t);
-  const pins = await measurePins(root, read, [], measured);
+  const pins = await measurePins(root, read, [], law.engine.local_origins, measured);
   const queue = queueRows(root, state, law);
   const out = new Map<string, PageStatus>();
+  const ownStatus = new Map<string, { stale: boolean | null; reason: string | null }>();
+  for (const page of read.pages) {
+    if (!measured.has(page.path)) continue;
+    const own = pins.entries.filter((entry) => entry.path === page.path);
+    const parsed = page.read.ok ? page.read.page : null;
+    const invalidPin =
+      parsed?.type !== undefined &&
+      parsed !== null &&
+      pinFields(parsed.type).some(
+        (field) =>
+          Object.hasOwn(parsed.frontmatter, field) && !own.some((entry) => entry.field === field),
+      );
+    const source = page.read.ok ? sourcePathFindings(page.read.page, state.sources)[0] : undefined;
+    const unresolved = own.find((entry) => (entry.citations?.unresolved.length ?? 0) > 0);
+    const unmeasured = own.find((entry) => entry.state === "unmeasured");
+    const unknown = own.find((entry) => entry.state === "unknown");
+    ownStatus.set(
+      page.path,
+      own.some((entry) => entry.state === "stale")
+        ? { stale: true, reason: "pin-stale" }
+        : source !== undefined
+          ? { stale: null, reason: source.rule }
+          : invalidPin
+            ? { stale: null, reason: "pin-invalid" }
+            : unresolved !== undefined
+              ? { stale: null, reason: "citation-unresolved" }
+              : unmeasured !== undefined
+                ? { stale: null, reason: unmeasured.reason ?? "pin-unmeasured" }
+                : unknown !== undefined
+                  ? { stale: null, reason: unknown.reason ?? "pin-unknown" }
+                  : { stale: false, reason: null },
+    );
+  }
   for (const path of paths) {
-    const own = pins.entries.filter((e) => e.path === path);
-    const cited = [...(links.get(path) ?? [])].filter((t) => pins.stale.has(t));
-    let stale: boolean | null = false;
-    let reason: string | null = null;
-    if (own.some((e) => e.state === "stale")) [stale, reason] = [true, "pin-stale"];
-    else if (cited.length > 0) [stale, reason] = [true, "stale-source-cited"];
-    else {
-      const unmeasured = own.find((e) => e.state === "unmeasured");
-      const unknown = own.find((e) => e.state === "unknown");
-      if (unmeasured !== undefined) [stale, reason] = [null, unmeasured.reason ?? "no-head"];
-      else if (unknown !== undefined) [stale, reason] = [null, "pin-unknown"];
+    const own = ownStatus.get(path) ?? { stale: false, reason: null };
+    const cited = [...(links.get(path) ?? [])].sort(codeUnitCompare);
+    const staleLink = cited.find((target) => ownStatus.get(target)?.stale === true);
+    const unverifiedLink = cited.find((target) => ownStatus.get(target)?.stale === null);
+    const stale: boolean | null =
+      own.stale === true || staleLink !== undefined
+        ? true
+        : own.stale === null || unverifiedLink !== undefined
+          ? null
+          : false;
+    const reason =
+      own.stale === true
+        ? own.reason
+        : staleLink !== undefined
+          ? "stale-source-cited"
+          : own.stale === null
+            ? own.reason
+            : unverifiedLink !== undefined
+              ? "source-unverified-cited"
+              : null;
+    const observations = new Map<string, string | null>();
+    for (const entry of pins.entries) {
+      if (entry.path === path || cited.includes(entry.path))
+        observations.set(entry.origin, entry.head);
     }
     out.set(path, {
       stale,
@@ -110,6 +156,13 @@ export async function pageStatuses(
       unresolved:
         typeof queue === "string" ? null : [...(queue.get(path) ?? [])].sort(codeUnitCompare),
       unresolved_reason: typeof queue === "string" ? queue : null,
+      ...(observations.size === 0
+        ? {}
+        : {
+            observations: [...observations]
+              .sort(([a], [b]) => codeUnitCompare(a, b))
+              .map(([origin, head]) => ({ origin, head })),
+          }),
     });
   }
   return out;

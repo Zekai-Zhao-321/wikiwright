@@ -19,6 +19,7 @@ export interface EngineV4 {
   engine?: string;
   content_roots: string[];
   source_roots: string[];
+  local_origins: { name: string; path: string }[];
   libraries: { path: string }[];
   commit_prefixes: string[];
   field_sources: { title?: "basename" };
@@ -41,6 +42,18 @@ export const ENGINE_V4_SCHEMA = {
     engine: { type: "string", minLength: 1 },
     content_roots: ROOTS,
     source_roots: { type: "array", items: { type: "string", minLength: 1 } },
+    local_origins: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["name", "path"],
+        properties: {
+          name: { type: "string", pattern: NAME_PATTERN, maxLength: LABEL_MAX },
+          path: { type: "string", minLength: 1 },
+        },
+      },
+    },
     libraries: {
       type: "array",
       items: {
@@ -89,6 +102,7 @@ export const ENGINE_V4_CONSUMERS: Readonly<Record<string, string | null>> = {
   engine: "cli/typelaw.ts:engineMismatch",
   content_roots: "contentRootsOf",
   source_roots: "parsePage",
+  local_origins: "cli/status.ts:pageStatuses",
   libraries: "resolveLibraries",
   commit_prefixes: "cli/verbs/gate.ts:commitMessageStage",
   field_sources: "compileShapes",
@@ -149,6 +163,7 @@ export function loadEngineV4(bytes: Uint8Array | undefined): EngineV4Result {
     engine?: string;
     content_roots: string[];
     source_roots?: string[];
+    local_origins?: { name: string; path: string }[];
     libraries?: { path: string }[];
     commit_prefixes?: string[];
     field_sources?: { title?: "basename" };
@@ -168,14 +183,52 @@ export function loadEngineV4(bytes: Uint8Array | undefined): EngineV4Result {
   for (const key of ["content_roots", "source_roots"] as const) {
     (raw[key] ?? []).forEach((root, index) => {
       const refusal = pathRefusal(root);
-      if (refusal === undefined) return;
+      if (
+        refusal === undefined &&
+        !(
+          key === "source_roots" &&
+          (root === "generated" ||
+            root.startsWith("generated/") ||
+            "generated".startsWith(`${root}/`))
+        )
+      )
+        return;
       issues.push({
         code: "engine-invalid",
         where: WHERE,
-        message: `/${key}/${index}: "${root}" is not a directory inside the bundle (${refusal})`,
+        message: `/${key}/${index}: "${root}" is not an admissible directory inside the bundle (${refusal ?? "overlaps generated output"})`,
         details: { keyword: "path", pointer: `/${key}/${index}` },
       });
     });
+  }
+  const names = new Set<string>();
+  for (const [index, origin] of (raw.local_origins ?? []).entries()) {
+    const pointer = `/local_origins/${index}`;
+    if (origin.name === "." || names.has(origin.name)) {
+      issues.push({
+        code: "engine-invalid",
+        where: WHERE,
+        message: `${pointer}/name: a local origin name must be unique and cannot be "."`,
+        details: { pointer: `${pointer}/name` },
+      });
+    }
+    names.add(origin.name);
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: refusing invisible control characters is intentional
+    const controls = /[\u0000-\u001f\u007f]/u.test(origin.path);
+    if (
+      origin.path.startsWith("-") ||
+      controls ||
+      /^[a-z][a-z0-9+.-]*:\/\//iu.test(origin.path) ||
+      /^[A-Za-z]:/u.test(origin.path) ||
+      origin.path.startsWith("\\\\")
+    ) {
+      issues.push({
+        code: "engine-invalid",
+        where: WHERE,
+        message: `${pointer}/path: a local origin names a filesystem directory, not an option, URL or control-character path`,
+        details: { pointer: `${pointer}/path` },
+      });
+    }
   }
   if (issues.length > 0) return { ok: false, issues };
   const engine: EngineV4 = {
@@ -184,6 +237,7 @@ export function loadEngineV4(bytes: Uint8Array | undefined): EngineV4Result {
     label: raw.label,
     content_roots: [...raw.content_roots],
     source_roots: [...(raw.source_roots ?? [])],
+    local_origins: (raw.local_origins ?? []).map((origin) => ({ ...origin })),
     libraries: (raw.libraries ?? []).map((l) => ({ path: l.path })),
     commit_prefixes: [...(raw.commit_prefixes ?? [])],
     field_sources: raw.field_sources?.title === undefined ? {} : { title: "basename" },

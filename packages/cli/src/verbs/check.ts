@@ -1,11 +1,11 @@
 // v2 contracts §9.1: `check [--write] [--fix] [--dry-run]` — the working-tree
 // adapter over the whole bundle; the rule tests and examples; every pin
-// measured against the local repository; the `okf-missing-type` rule; the
+// measured against the enclosing or declared local repositories; the `okf-missing-type` rule; the
 // generated files compared with a fresh render and, under `--write`, written;
 // `--fix` implying `--write` and running the surviving fixers first.
 //
 // Replaces the old `check` (legacy/check.ts) and absorbs `lint` (the working
-// tree's verdict), `freshness` (the pins, local repository only), `okf` (its
+// tree's verdict), `freshness` (the pins), `okf` (its
 // one surviving row) and `fix` (the folder-tag materializer and the generated
 // files, the two fixers that survive). What the old `check` also judged and
 // this one does not: templates, exports, installed skills, installed hooks
@@ -270,23 +270,59 @@ async function run(args: CommandArgs): Promise<CommandResult> {
   const written = changedPlans.map((plan) => plan.path);
   const drift = driftFindings(plans, (path) => onDisk(args.root, path), "working-tree");
   const graph = typeLawGraph(law, read);
-  const pins = await measurePins(args.root, read, graph.edges);
+  const pins = await measurePins(args.root, read, graph.edges, law.engine.local_origins);
   const okf = okfFindings(read);
-  const pinned = new Set(pins.entries.map((e) => e.path)).size;
-  const measured = new Set(pins.entries.filter((e) => e.state !== "unmeasured").map((e) => e.path))
-    .size;
   const pages = read.pages.length;
+  const byPage = new Map<string, typeof pins.entries>();
+  for (const entry of pins.entries) {
+    const entries = byPage.get(entry.path) ?? [];
+    entries.push(entry);
+    byPage.set(entry.path, entries);
+  }
+  const pinned = byPage.size;
+  // A page with several pins is fully evaluated only when every pin was checked.
+  const pinCell = (checked: (entry: (typeof pins.entries)[number]) => boolean): CoverageCell => ({
+    evaluated: [...byPage.values()].filter((entries) => entries.every(checked)).length,
+    not_applicable: pages - pinned,
+    unevaluated: [...byPage.values()].filter((entries) => entries.some((entry) => !checked(entry)))
+      .length,
+  });
+  const evidenceReasons = [
+    ...new Set(
+      pins.entries
+        .map((entry) =>
+          entry.state === "unmeasured"
+            ? "pin-unmeasured"
+            : entry.reason === "coverage-invalid"
+              ? "pin-coverage-invalid"
+              : entry.state === "unknown"
+                ? "pin-unknown"
+                : null,
+        )
+        .filter(
+          (reason): reason is "pin-unmeasured" | "pin-coverage-invalid" | "pin-unknown" =>
+            reason !== null,
+        ),
+    ),
+  ];
   const verdict = verdictOfCollected(prepared.collected, {
     ...capOptions(args),
     shellFindings: [...drift, ...pins.findings, ...okf],
     shellCoverage: {
       "generated-drift": cell(plans.length, 0),
       "okf-missing-type": cell(read.pages.filter((p) => p.read.ok).length, 0),
-      "pin-stale": cell(measured, pages - measured),
-      "pin-unknown": cell(measured, pages - measured),
+      "pin-stale": pinCell((entry) => entry.citations !== null),
+      "pin-unknown": pinCell((entry) => entry.state !== "unmeasured"),
+      "pin-coverage-invalid": pinCell((entry) => entry.resolved_commit !== undefined),
       "pin-unmeasured": cell(pinned, pages - pinned),
-      "citation-unresolved": cell(measured, pages - measured),
+      "citation-unresolved": pinCell((entry) => entry.citations !== null),
       "stale-source-cited": cell(pages, 0),
+    },
+    shellReasons: {
+      "pin-stale": evidenceReasons,
+      "pin-unknown": evidenceReasons,
+      "pin-coverage-invalid": evidenceReasons,
+      "citation-unresolved": evidenceReasons,
     },
   });
   const data = {
@@ -313,7 +349,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
 export const checkCommand: CommandSpec = {
   name: "check",
   summary:
-    "Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first.",
+    "Judge the whole bundle: every page, the rule tests and examples, pins against declared local repositories, and generated files; --write renders generated/, --fix repairs what a fixer may first.",
   positionals: [],
   flags: [
     {

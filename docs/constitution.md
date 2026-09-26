@@ -56,6 +56,7 @@ written by `check --write`, and is not hand-edited.
 | `engine` | optional parsed engine range | mismatch refusal in bundle verbs |
 | `content_roots` | required nonempty array of bundle-relative directories | page discovery |
 | `source_roots` | array, default `[]` | claim path provenance and page-reference roots |
+| `local_origins` | array of unique `{name, path}` local Git repository bindings, default `[]` | pin measurement in `check`, `read` and `search` |
 | `libraries` | array of `{path}`, default `[]` | library loader |
 | `commit_prefixes` | array of strings, default `[]` | `gate --commit-msg` |
 | `field_sources` | `{title: "basename"}` or `{}` | title derivation and effective shape |
@@ -63,13 +64,20 @@ written by `check --write`, and is not hand-edited.
 | `folder_tag_aliases` | mapping from folder segment to tag, default `{}` | folder checks |
 | `extensions` | `mode` is `registered` or `open`; default registered | effective shape |
 
-Every key has a named consumer and an end-to-end CLI fixture. Paths obey
+Every key has a named consumer and an end-to-end CLI fixture. Bundle paths obey
 the vault path law; `..` and absolute paths are refused. `libraries[].path`
 resolves against the enclosing Git repository's top level, stays inside
 that repository, and is read from the selected state. Its id is the
 directory basename less `kit-`, or the explicit `id` in
 `library.yaml`. A bundle in a subdirectory can therefore import a library
 beside it with the same repository-relative path a root bundle uses.
+`local_origins[].path` is instead an explicit local observation binding:
+an absolute directory or a directory relative to the physical bundle root,
+which may name a sibling repository. It is canonicalized to a real path and
+must be that repository's top level. Duplicate names are law errors;
+duplicate canonical roots are unmeasured. Its name is not a URL and cannot be `.`; `.`
+always means the repository enclosing the bundle. Source roots cannot
+overlap `generated/`, whose files the engine owns.
 
 The v1 `modules`, `exports`, `plugin`, and `move_reasons` keys are gone.
 [The disposition table](v2-dispositions.md) and [changelog](../CHANGELOG.md)
@@ -221,6 +229,14 @@ the grammar is `item-unparsed` too.
 A claim's final parenthetical is provenance only when it is a wikilink,
 an HTTP(S) URL, or a path under `source_roots`. Otherwise it remains
 part of the core. The category is checked against the named vocabulary.
+A source-root path is literal: a regular file or directory must exist in the
+selected state. A trailing slash requires a directory. The working-tree
+adapter captures path existence with its double read; drafts update that
+capture, and the index and revision use their own Git tree entries. None reads
+raw source bytes or follows a symbolic link or submodule. Missing and wrong-kind
+paths are errors; a skipped boundary or absent source facts in a pure-core
+caller is unmeasured, never a pass. Source existence does not prove what the
+claim says.
 A claim may end with `(retracted YYYY-MM-DD)` or
 `(valid YYYY-MM-DD→YYYY-MM-DD, superseded YYYY-MM-DD by #xxxxxxxx)`.
 The first date and the `by` handle are optional in the superseded form.
@@ -299,7 +315,10 @@ the page interface and CEL profile identities, pinned dependency versions,
 and engine version. It is computed from the selected state, so `gate`
 names staged law. `metadata.bundle` gives `label`, real `root`, Git
 `head`, `dirty`, `law`, and `content` digests. The content digest covers
-the selected page paths and bytes.
+the selected page paths and bytes, and the kind and membership of paths under
+source roots. It does not hash raw source bytes. External origin HEADs are
+observations in pin results and page status; they do not enter generated
+artifacts or the bundle digests.
 
 ## Rule tests and law changes
 

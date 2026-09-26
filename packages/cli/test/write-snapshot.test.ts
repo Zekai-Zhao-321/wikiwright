@@ -7,16 +7,58 @@ import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { cleanBundles, gardenBundle } from "./fixtures/garden-cli.ts";
+import { BASIL } from "./fixtures/garden-judge.ts";
 import { notePage, writeAt, writeNoteBundle } from "./fixtures/note-bundle.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const made: string[] = [];
 afterAll(() => {
+  cleanBundles();
   for (const dir of made) rmSync(dir, { recursive: true, force: true });
 });
 
 describe("write holds the accepted disk and law until landing", () => {
+  it("refuses a source path removed after temporary staging", () => {
+    const pageText = BASIL.replace("([[Herb bed]])", "(raw/bed.txt)");
+    const dir = realpathSync(
+      gardenBundle({ "wiki/Basil.md": pageText, "raw/bed.txt": "evidence\n" }),
+    );
+    const page = join(dir, "wiki/Basil.md");
+    const source = join(dir, "raw/bed.txt");
+    const before = readFileSync(page, "utf8");
+    const draft = realpathSync(mkdtempSync(join(tmpdir(), "ww-source-late-draft-")));
+    made.push(draft);
+    writeAt(draft, "wiki/Basil.md", `${pageText}\n`);
+    const preload = join(dir, "remove-source.cjs");
+    writeFileSync(
+      preload,
+      `const fs = require("node:fs");
+const { syncBuiltinESMExports } = require("node:module");
+const open = fs.openSync;
+let injected = false;
+fs.openSync = function(path, ...args) {
+  const fd = Reflect.apply(open, this, [path, ...args]);
+  if (!injected && String(path).startsWith(${JSON.stringify(`${page}.wikiwright-tmp-`)})) {
+    injected = true;
+    fs.rmSync(${JSON.stringify(source)});
+  }
+  return fd;
+};
+syncBuiltinESMExports();
+`,
+    );
+    const result = runCli(["--require", preload, CLI, "write", "--from", draft, "--root", dir], {
+      cwd: dir,
+      encoding: "utf8",
+      env: { ...process.env, WIKIWRIGHT_TODAY: "2026-09-26" },
+    });
+    const envelope = JSON.parse(result.stdout) as { error?: { code: string } };
+    expect(result.status).toBe(4);
+    expect(envelope.error?.code).toBe("state-changed-before-write");
+    expect(readFileSync(page, "utf8")).toBe(before);
+  });
   it("refuses an edit made while its temporary page is staged", () => {
     const dir = realpathSync(mkdtempSync(join(tmpdir(), "ww-write-late-snapshot-")));
     made.push(dir);

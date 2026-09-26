@@ -34,6 +34,7 @@ import {
   withFrontmatterLines,
 } from "./page.ts";
 import { ruleFindings } from "./rules.ts";
+import { sourcePathFindings } from "./sourcepaths.ts";
 import { type JudgeState, sameBytes } from "./state.ts";
 import { routeVerdictFinding, VERDICT_TABLE, type VerdictFinding } from "./table.ts";
 import { transitionFindings, transitionRows } from "./transitions.ts";
@@ -64,6 +65,8 @@ export interface TypeLawJudgeOptions {
   shellFindings?: readonly Unrouted[];
   /** The coverage cells of the passes a verb ran beside the judge, by id. */
   shellCoverage?: Readonly<Record<string, CoverageCell>>;
+  /** Reasons for shell rows whose applicable pages could not be measured. */
+  shellReasons?: Readonly<Record<string, readonly UnevaluatedReason[]>>;
 }
 
 export interface CoverageCell {
@@ -80,7 +83,13 @@ export interface CoverageCell {
  * base (§5), or the base's bytes do not read as a page (over 1 MiB, or not
  * UTF-8).
  */
-export type UnevaluatedReason = "no-base" | "base-unreadable";
+export type UnevaluatedReason =
+  | "no-base"
+  | "base-unreadable"
+  | "source-facts-unavailable"
+  | "pin-unmeasured"
+  | "pin-unknown"
+  | "pin-coverage-invalid";
 
 export interface TypeLawVerdict {
   findings: VerdictFinding[];
@@ -561,6 +570,21 @@ export function collectTypeLaw(
     }
     const judgment = judgePage(ctx, page);
     found.push(...judgment.findings);
+    if (page.read.ok) {
+      const sourced = sourcePathFindings(page.read.page, state.sources);
+      found.push(...sourced);
+      if (
+        page.read.page.occurrences.some((section) =>
+          section.items.some((item) => item.kind === "claim" && item.provenance.kind === "path"),
+        )
+      ) {
+        judgment.judged.add("source-path-unmeasured");
+        if (sourced.some((f) => f.rule === "source-path-unmeasured")) {
+          judgment.unjudged.set("source-path-missing", "source-facts-unavailable");
+          judgment.unjudged.set("source-path-kind", "source-facts-unavailable");
+        } else judgment.judged.add("source-path-missing").add("source-path-kind");
+      }
+    }
     coverage.page(judgment.judged, judgment.unjudged);
   }
   for (const collision of identityCollisions(named, ctx.titleFromBasename)) {
@@ -623,6 +647,8 @@ export function verdictOfCollected(
     coverage.reasons.set(id, new Set(reasons));
   for (const [id, cell] of Object.entries(options.shellCoverage ?? {}))
     coverage.cells.set(id, { ...cell });
+  for (const [id, reasons] of Object.entries(options.shellReasons ?? {}))
+    coverage.reasons.set(id, new Set(reasons));
   return {
     ...verdictOf(
       [...collected.found, ...(options.shellFindings ?? [])],

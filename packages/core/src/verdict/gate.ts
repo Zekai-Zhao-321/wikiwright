@@ -46,6 +46,7 @@ import {
   type StateRead,
 } from "./judge.ts";
 import type { Unrouted } from "./page.ts";
+import { sourcePathStatus } from "./sourcepaths.ts";
 import type { JudgeState } from "./state.ts";
 import { sameBytes } from "./state.ts";
 import { routeVerdictFinding, VERDICT_TABLE } from "./table.ts";
@@ -225,8 +226,27 @@ export function gateScope(
     const base = state.base.get(finding.path);
     const onPage = current !== undefined;
     const byNames = onPage && causedByNames(finding);
-    if (onPage && !changed.has(finding.path) && !byNames && !VAULT_WIDE.has(finding.rule)) continue;
-    if (!onPage || byNames || base === undefined || base === null || current === undefined) {
+    const source = finding.details["source"];
+    const bySource =
+      typeof source === "string" &&
+      finding.rule.startsWith("source-path-") &&
+      sourcePathStatus(source, state.sources) !== sourcePathStatus(source, state.baseSources);
+    if (
+      onPage &&
+      !changed.has(finding.path) &&
+      !byNames &&
+      !bySource &&
+      !VAULT_WIDE.has(finding.rule)
+    )
+      continue;
+    if (
+      !onPage ||
+      byNames ||
+      bySource ||
+      base === undefined ||
+      base === null ||
+      current === undefined
+    ) {
       out.push(finding);
       continue;
     }

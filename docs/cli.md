@@ -182,18 +182,27 @@ read.
   generated files. A running engine outside `config/engine.json`'s `engine`
   range is `engine-mismatch` (exit 2). A pin is a top-level property whose
   schema is the engine `$def` `pin`, `{commit, origin, covers}`; one whose
-  origin is `.` is measured against the repository the bundle sits in:
+  origin is `.` is measured against the repository the bundle sits in;
+  a name in `local_origins` is measured against that explicitly bound local
+  repository. Each origin's full HEAD is captured once and used by every Git
+  query in the measurement, then rechecked. `data.pins.entries[].head` exposes
+  that full observed id; the engine does not fetch. A pin cover must exist at
+  the pinned commit (file or directory; `.` explicitly covers the whole tree).
+  An absent or unsafe cover is `pin-coverage-invalid` (warning) and leaves
+  status unverified. A valid cover deleted by the captured HEAD is stale:
   `pin-stale` (warning) when the covered paths changed between its commit
   and HEAD, `pin-unknown` (warning) when HEAD's history does not hold the
   commit, `citation-unresolved` (warning) for a cited path or line the
   commit does not hold — citations are read as the old `freshness` read
   them — and `stale-source-cited` (warning) on every page with an edge of
-  any kind but `tagged` into a stale page; any other origin, no repository
+  any kind but `tagged` into a stale page; any undeclared or URL origin, no repository
   or no commit is `pin-unmeasured` (info, `details.reason` `remote-origin`,
-  `no-repository`, `no-head`), and so is a commit a shallow clone's
+  `no-repository`, `no-head`, `duplicate-root`, `not-root`), and so is a commit a shallow clone's
   history does not reach (`shallow`), which is absent there, not unknown. `data.pins` carries `counts` by state
   (`current`, `unchanged`, `stale`, `unknown`, `unmeasured`) and one entry
-  per pin. `generated/` holds `BRIEF.md` (the bundle's brief: the loop in
+  per pin. A path provenance under `source_roots` must exist in the selected
+  state; missing or wrong-kind paths are errors, and link/submodule boundaries
+  are unmeasured warnings. `generated/` holds `BRIEF.md` (the bundle's brief: the loop in
   three sections, one per role, the verbs, the types, the vocabularies, the
   names), `graph.json`, `manifest.json`, `tag-catalog.md` and `queue.md`
   (every queued finding of a judge run with no base, and the law and
@@ -217,7 +226,8 @@ read.
   (`details.demoted_from: "error"`) — a finding at a section's heading only
   when the section's raw text is unchanged, and never a finding with no
   line or a transition — and the findings of an untouched page
-  left out — both suspended when the commit stages `config/`,
+  left out — a staged source deletion that first breaks an untouched page's
+  path citation is still reported — both suspended when the commit stages `config/`,
   `constitution/`, `rule-tests/`, `examples/` or a library
   (`data.config_changed: true`). With no HEAD the base is empty and there is
   no diff. `--commit-msg <file>` holds the message to `commit_prefixes`
@@ -287,8 +297,10 @@ read.
   the budget holds, the rest listed by address; `data.bytes` is the page's
   bytes digest. `data.status` is the page's standing: `stale` true when a
   pin of the page is stale (`reason: pin-stale`) or a page it links carries
-  one (`stale-source-cited`), null when a pin of its own is unmeasured or
-  unknown (the reason), false otherwise; `unresolved` the rule ids
+  one (`stale-source-cited`), null when its source path, citation, cover or pin
+  is unverified, or when a directly linked source is unverified (the reason),
+  false otherwise. `observations` lists the full captured HEAD id for each
+  relevant pin origin; `unresolved` gives the rule ids
   `generated/queue.md` holds for the page while its digests are the current
   law's and content's, else null with `unresolved_reason` `queue-stale` or
   `queue-missing`.
@@ -335,7 +347,7 @@ Global flags, accepted by every verb:
 
 | Verb | Writes | Summary |
 |---|---|---|
-| [`check`](#check) | yes | Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first. |
+| [`check`](#check) | yes | Judge the whole bundle: every page, the rule tests and examples, pins against declared local repositories, and generated files; --write renders generated/, --fix repairs what a fixer may first. |
 | [`gate`](#gate) | no | Judge what the commit would contain: the index with HEAD as its base, the law diff, and under --commit-msg the message's prefix and its law-change line. |
 | [`read`](#read) | no | Return a page's sections verbatim under a byte budget, with its bytes digest and its status: stale pins, and the queue's unresolved rules. |
 | [`rule`](#rule) | no | Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision. |
@@ -348,7 +360,7 @@ Global flags, accepted by every verb:
 
 `wikiwright check`
 
-Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first.
+Judge the whole bundle: every page, the rule tests and examples, pins against declared local repositories, and generated files; --write renders generated/, --fix repairs what a fixer may first.
 
 Writes: yes (accepts `--dry-run`).
 

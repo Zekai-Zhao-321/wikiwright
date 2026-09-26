@@ -2,7 +2,7 @@
 // `check` holds each to the page's pin (pins.ts): its path must exist at the
 // pin and its line inside the blob there. Kept from the old `freshness` verb,
 // whose measurement `check` absorbed; the rest of that verb left with it.
-import { codeUnitCompare } from "@wikiwright/core";
+import { codeUnitCompare, pathRefusal } from "@wikiwright/core";
 
 /**
  * What a page CITES, checked at its pin by `check` (pins.ts), and what it says
@@ -12,6 +12,8 @@ import { codeUnitCompare } from "@wikiwright/core";
  *
  * - a repository path whose first segment is an entry at the root of the tree
  *   at the pin (`packages/cli/src/git.ts`), the root file included (`AGENTS.md`);
+ *   a slash-ended directory or slash-separated file name is also recognized
+ *   when its top-level segment is missing, so it can be reported unresolved;
  * - that path with a line or a range (`packages/cli/src/git.ts:31`, `:31-44`);
  * - a bare file name, suffix included, that is the basename of exactly one
  *   FILE the page covers (`git.ts:31`) — two covered paths of that name are
@@ -103,7 +105,11 @@ export function citationsIn(
         continue;
       }
       path = antecedent;
-    } else if (topLevel.has(written.split("/")[0] ?? "")) {
+    } else if (
+      topLevel.has(written.split("/")[0] ?? "") ||
+      ((raw.endsWith("/") || (written.includes("/") && basename(written).includes("."))) &&
+        pathRefusal(written) === undefined)
+    ) {
       path = written;
     } else if (!written.includes("/") && written.includes(".")) {
       const matches = covers

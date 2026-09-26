@@ -102,7 +102,7 @@ export function stageBatch(
   root: string,
   pages: readonly { path: string; bytes: Uint8Array }[],
   removed: readonly string[],
-): { commit: () => void; discard: () => void } {
+): { commit: () => void; discard: () => void; tempPaths: readonly string[] } {
   preflightBatch(
     root,
     pages.map((page) => page.path),
@@ -116,6 +116,7 @@ export function stageBatch(
   );
   return {
     discard: staged.discard,
+    tempPaths: staged.tempPaths,
     commit: () => {
       preflightBatch(
         root,
