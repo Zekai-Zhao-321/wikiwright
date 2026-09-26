@@ -794,6 +794,89 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- **Dropped v1 rule IDs and keys.** Each line below names an old surface
+  and its disposition from `docs/v2-dispositions.md`.
+  - Rule ids:
+    - `module-failure`: removed with modules: a rule that cannot evaluate is `rule-error` (§6).
+    - `tombstone`: removed with type `status` and `replaced_by`: a type leaves by removal, which `law-changed` reports (§8).
+    - `tag-alias-target`: removed with vocabulary entry aliases.
+    - `max-chars`: removed with `max_chars`: a size bound is a section rule over `section.raw`.
+    - `template-placeholder-unknown`: removed with templates: the skeleton is derived (§3.3).
+    - `template-field-unknown`: removed with templates: the skeleton is derived (§3.3).
+    - `unregistered-extension`: removed with `extensions.namespaces` and `extensions.fields`: under `registered` an undeclared key is refused by the effective shape.
+    - `tag-requires-link`: removed with the `requires_link` entry property: a page rule over `page.fields.tags` and `facts.links` expresses it.
+    - `vocabulary-alias-target`: removed with vocabulary entry aliases.
+    - `skills-stale`: removed with the `skills` verb and installed-skill comparison (§1).
+    - `skills-missing`: removed with the `skills` verb and installed-skill comparison (§1).
+    - `export-orphan`: removed with exports (§1).
+    - `export-not-closed`: removed with exports (§1).
+    - `export-tag-unknown`: removed with exports (§1).
+    - `export-guide-outside`: removed with exports (§1).
+    - `export-skill-invalid`: removed with exports (§1).
+    - `export-destination-invalid`: removed with exports (§1).
+    - `owned-by`: removed with the `owned_by` entry property.
+    - `provenance-path-only`: removed with the provenance forms: a path under a source root is provenance of kind `path` (§4).
+    - `claim-landing`: removed: a census of where closed claims land, which no rule reads.
+    - `relation-retired`: removed: a census of retired labels; a retired label in use is `vocabulary-retired`.
+  - Constitution keys:
+    - `schema_version`: `config/constitution.json` replaced by `constitution/` directories; `config/engine.json` carries `schema_version: 4` (§2).
+    - `vocabularies.*.form`: vocabulary `form` removed: every entry name is a lower-case hyphenated name (§3).
+    - `sections.list[].aliases`: section heading `aliases` removed: a heading is matched by its exact text (§3).
+    - `sections.list[].max_chars`: `max_chars` removed: a size bound is a section rule over `section.raw`.
+    - `sections.list[].severity`: a section's `severity` removed: a rule carries its own `severity` (§3).
+    - `checks`: (on a type, a fragment or a section entry) removed with registered checks: `rules` carry CEL expressions, a section rule names its heading (§3, §6).
+    - `checks[].use`: a check's `use` removed: a rule is its own `expr` (§6).
+    - `types.*.instances.severity`: `instances.severity` removed: `instances-min` and `instances-max` carry their own rows.
+    - `types.*.template`: type `template` removed: `type show --brief` prints the derived skeleton (§3.3).
+    - `types.*.status`: type `status` removed: a type leaves by removal, which `law-changed` reports (§8).
+    - `types.*.replaced_by`: type `replaced_by` removed with type `status`.
+  - Section grammar parameters:
+    - `claims.forms`: claims `forms` removed with the provenance forms: provenance is a page, a URL or a path (§4).
+    - `claims.sources`: claims `sources` removed with the `sourced` provenance form (§4).
+    - `claims.history`: claims `history` removed: a closed claim is a record with `retracted` or `superseded`; where it may stand is the `closed` parameter (ruling 4).
+    - `claims.role`: claims `role: history` removed: a History section is an `entries` section, or a claims section with `closed: required` (ruling 4).
+    - `claims.categories`: the legacy `categories: claim-classes` spelling removed; `categories` now names the admitted subset (§4).
+    - `claims.items`: claims `items` removed: a section holds one record kind (§4).
+    - `claims.inferred_ref`: claims `inferred_ref` removed with the `inferred` provenance form (§4).
+    - `entries.date`: entries `date` removed: an entry is dated or does not parse (§4).
+  - Vocabulary entry keys:
+    - `*.aliases`: vocabulary entry `aliases` removed.
+    - `tags.requires_link`: the tags entry property `requires_link` removed: a page rule over `page.fields.tags` and `facts.links` expresses it.
+    - `categories.class`: the category entry property `class` (supersede, accumulate, journal-only) removed with the claims transition classes.
+    - `categories.owned_by`: the category entry property `owned_by` removed.
+  - Field shape kinds and keys:
+    - `*.checks`: field `checks` removed: a rule reads `page.fields` (§5).
+  - Engine keys:
+    - `extensions.namespaces`: removed: the `x-` mount is gone; a key is declared by a type or refused.
+    - `extensions.fields`: removed: a key is declared by a type or refused.
+    - `commit_prefixes.prefixes`: removed: `commit_prefixes` is the list itself.
+    - `move_reasons`: removed: a move carries its reason in `ops.json` (§2, §9.3).
+    - `modules[].package`: removed with `modules`.
+    - `modules[].version`: removed with `modules`.
+    - `modules[].path`: removed with `modules`; `libraries[].path` resolves against the git top level.
+    - `exports[].name`: removed with `exports`.
+    - `exports[].select`: removed with `exports`.
+    - `exports[].select.kind`: removed with `exports`.
+    - `exports[].select.tags`: removed with `exports`.
+    - `exports[].select.directories`: removed with `exports`.
+    - `exports[].sources`: removed with `exports`.
+    - `exports[].output`: removed with `exports`.
+    - `exports[].repository`: removed with `exports`.
+    - `exports[].links`: removed with `exports`.
+    - `exports[].guide`: removed with `exports`.
+    - `exports[].contribution`: removed with `exports`.
+    - `exports[].contribution.mode`: removed with `exports`.
+    - `exports[].contribution.repository`: removed with `exports`.
+    - `exports[].contribution.folder`: removed with `exports`.
+    - `exports[].skill`: removed with `exports`.
+    - `exports[].license`: removed with `exports`.
+    - `plugin.name`: removed with `plugin`.
+    - `plugin.version`: removed with `plugin`.
+    - `plugin.description`: removed with `plugin`.
+- Refusal codes renamed by the v2 verbs: `engine-pin-mismatch` is
+  `engine-mismatch`; `stale-base` is `base-mismatch`; `not-a-git-repo`
+  is `git-unavailable`; `directory-not-found` is `bundle-not-found`.
+
 - The old registry code the type-document loader replaced (v2 contracts §1,
   §12 step 6), from `packages/core/src`: `registry/` (loading and flattening
   `config/constitution.json` and the v3 `config/engine.json`), `stdlib/` (the
