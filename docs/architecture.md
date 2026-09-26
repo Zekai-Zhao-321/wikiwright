@@ -4,9 +4,9 @@ Two packages, TypeScript, built, tested and run with Bun only, the version
 `.bun-version` pins. `@wikiwright/core` is a pure library: functions over bytes, with no Node
 typings in its tsconfig, so a filesystem call does not typecheck there. The
 `wikiwright` package is the shell: argv, envelopes, exit codes, the filesystem,
-git, and one module per verb. A third workspace package, `@wikiwright/kit-code`,
-is a domain kit: plain JavaScript, no dependencies, declarations only, built by
-nothing and loaded by a bundle through the same API a third-party kit uses.
+git, and one module per verb. The type libraries under `libraries/` are
+data — type, fragment and vocabulary documents — that a bundle imports by
+path; no package of code serves a domain.
 
 ## Directories
 
@@ -59,7 +59,6 @@ packages/cli/src/
   generated.ts v2: generated/ — the brief and the kernel's four files, rendered, compared and written
   pins.ts      v2: every pin measured against the local repository, and the stale sources a page links
 docs/skills/                  the three skill documents (consume, write, maintain) and the generated playbook
-packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
 libraries/kit-code/           the code wiki's type library of the v2 law, id code: the page kinds, anchored, the relation labels, their rule tests and examples
 libraries/kit-garden/         the neutral test library of the v2 law, id garden: documents, rule tests, examples; the allotment handbook imports it
 devwiki/                      this repository's own bundle, on the v2 law, importing libraries/kit-code, judged by the suite

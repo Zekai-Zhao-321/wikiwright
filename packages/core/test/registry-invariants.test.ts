@@ -493,21 +493,13 @@ describe("5. one `where` spelling, over every code a document can make the load 
 });
 
 describe("6. every shipped constitution loads clean (docs/cli.md §init)", () => {
-  // devwiki's frozen v1 copy (devwiki itself is on the v2 law) is a bundle
-  // over the code kit (docs/extending.md §The code kit); minimal-vault's
-  // loads under the standard library alone. The starters left with `init`.
-  const OVER_KIT = [join(REPO, "fixtures", "v1", "devwiki")];
+  // minimal-vault's frozen v1 copy loads under the standard library alone.
+  // devwiki's needed the v1 code kit, which left in step 6, and the starters
+  // left with `init`.
   const STDLIB = [join(REPO, "fixtures", "v1", "minimal-vault")];
   const stdlib = () => {
     const loaded = loadModules(STANDARD_LIBRARY);
     if (!loaded.ok) throw new Error("the standard library loads");
-    return loaded.registry;
-  };
-  const withKit = async () => {
-    const kit = join(REPO, "packages", "kit-code", "index.js");
-    const imported = (await import(pathToFileURL(kit).href)) as { default: ModuleManifest };
-    const loaded = loadModules([...STANDARD_LIBRARY, imported.default]);
-    if (!loaded.ok) throw new Error("the code kit composes with the standard library");
     return loaded.registry;
   };
   const read = (vault: string) =>
@@ -517,14 +509,6 @@ describe("6. every shipped constitution loads clean (docs/cli.md §init)", () =>
     it(`${vault.slice(REPO.length)} loads under the standard library`, () => {
       assert.equal(existsSync(join(vault, "config", "constitution.json")), true);
       const loaded = loadConstitution(read(vault), stdlib());
-      assert.equal(loaded.ok, true, loaded.ok ? "" : JSON.stringify(loaded.issues));
-    });
-  }
-
-  for (const vault of OVER_KIT) {
-    it(`${vault.slice(REPO.length)} loads under the standard library plus the code kit`, async () => {
-      assert.equal(existsSync(join(vault, "config", "constitution.json")), true);
-      const loaded = loadConstitution(read(vault), await withKit());
       assert.equal(loaded.ok, true, loaded.ok ? "" : JSON.stringify(loaded.issues));
     });
   }
@@ -548,14 +532,14 @@ describe("6. every shipped constitution loads clean (docs/cli.md §init)", () =>
 });
 
 describe("9. determinism: two loads of one document are one registry", () => {
-  it("devwiki, loaded twice, serializes identically", async () => {
+  it("minimal-vault, loaded twice, serializes identically", async () => {
     const json = JSON.parse(
-      readFileSync(join(REPO, "fixtures", "v1", "devwiki", "config", "constitution.json"), "utf8"),
+      readFileSync(
+        join(REPO, "fixtures", "v1", "minimal-vault", "config", "constitution.json"),
+        "utf8",
+      ),
     ) as unknown;
-    const kit = (await import(
-      pathToFileURL(join(REPO, "packages", "kit-code", "index.js")).href
-    )) as { default: ModuleManifest };
-    const modules = loadModules([...STANDARD_LIBRARY, kit.default]);
+    const modules = loadModules(STANDARD_LIBRARY);
     if (!modules.ok) throw new Error("unreachable");
     const a = loadConstitution(json, modules.registry);
     const b = loadConstitution(json, modules.registry);

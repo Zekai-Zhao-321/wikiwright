@@ -62,10 +62,11 @@
 // under §4 and stays where it is.
 //
 // The code kit: a bundle declaring the module `@wikiwright/kit-code` imports
-// the library `libraries/kit-code` instead (§2). The tool reads the v1 kit
+// the library `libraries/kit-code` instead (§2). The tool read the v1 kit
 // (packages/kit-code/index.js) for the sections and the pin its types carry,
-// so it can rewrite a devwiki page; that package leaves in step 6, and with
-// it the tool's ability to migrate a bundle over the kit.
+// so it could rewrite a devwiki page; that package left in step 6, and the
+// tool refuses such a bundle by name. It migrates one from a checkout that
+// still holds packages/kit-code (any commit before the kit left).
 //
 // Run: `bun tools/migrate-spellings.ts <bundle root> [--dry-run]`. Prints a
 // JSON report: the files written and removed, the rewrites by kind, the
@@ -141,7 +142,11 @@ interface V1Kit {
 
 const BASES = new Set(["hub", "concept", "procedure", "reference"]);
 
-/** The one module a corpus of this repository declares, and the library that replaces it. */
+/**
+ * The one module a corpus of this repository declared, and the library that
+ * replaced it: the module left in step 6, so this tool refuses a bundle over
+ * it (the header says how to migrate one).
+ */
 const KITS: Readonly<Record<string, { module: string; library: string }>> = {
   "@wikiwright/kit-code": { module: "packages/kit-code/index.js", library: "libraries/kit-code" },
 };
@@ -783,7 +788,12 @@ function labelOf(name: string): string {
   return label;
 }
 
-async function loadKit(module: string): Promise<V1Kit> {
+async function loadKit(root: string, name: string, module: string): Promise<V1Kit> {
+  if (!existsSync(join(REPO, module))) {
+    throw new Error(
+      `${root}: the module ${name} left with packages/kit-code in step 6 of the v2 delivery; migrate the bundle from a checkout that still holds it`,
+    );
+  }
   const imported = (await import(pathToFileURL(join(REPO, module)).href)) as { default: V1Kit };
   return imported.default;
 }
@@ -819,7 +829,7 @@ export async function migrate(root: string, dryRun: boolean): Promise<Report> {
     if (kit === undefined)
       throw new Error(`${root}: the module ${name} has no library to migrate to`);
     libraries.push({ path: kit.library });
-    const loaded = await loadKit(kit.module);
+    const loaded = await loadKit(root, name, kit.module);
     kitIds.push(loaded.id);
     for (const [n, t] of Object.entries(loaded.types ?? {})) types.set(n, t);
     for (const [n, f] of Object.entries(loaded.fragments ?? {})) fragments.set(n, f);

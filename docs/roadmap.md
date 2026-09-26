@@ -21,8 +21,7 @@ returns a page's sections verbatim with the page's bytes digest and its
 status, under a byte budget. Step 6 is removing the old tree's mechanisms one
 commit each; until each has left, its code is in the tree and reached by no
 verb: the old registry, its standard library and its module registration
-API, and the v1 kit
-`@wikiwright/kit-code`, which `devwiki` no longer imports.
+API.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
@@ -116,14 +115,18 @@ Wanted: `"body": { "lifecycle": "append-only" }` beside
 "lifecycle": "append-only" }`, admitted when the ledger is the page's last
 section — the one layout where the two laws see one mutation.
 
-### The kit is on no registry
+### A library is read from the bundle's own repository only
 
-`@wikiwright/kit-code` is a workspace package of this repository. A bundle
-outside it depends on the kit by `file:<path>` to `packages/kit-code` in a
-checkout, and `init --constitution code` says so in its envelope.
+A bundle names a library by a path that resolves against the top level of
+the repository holding the bundle and must stay inside it
+(`library-outside-repository`, the v2 contracts §2). So `libraries/kit-code`
+serves this repository's bundles; a bundle in another repository imports it
+only by copying the directory into its own tree, and the copy is then its
+own law, compared with nothing. The v1 kit, `@wikiwright/kit-code`, which a
+bundle elsewhere installed as a package, left in step 6 of the v2 delivery.
 
-Wanted: a published package, so a bundle's `package.json` can name a
-version range and `bun install` resolves it.
+Wanted, when several repositories share one library: a way to name a library
+outside the repository whose bytes still enter the law digest.
 
 ### A bundle runs no code of its own
 

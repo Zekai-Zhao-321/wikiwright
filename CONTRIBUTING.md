@@ -34,10 +34,8 @@ chmod +x ~/.local/bin/wikiwright
 `devwiki` is on the v2 law and imports the type library `libraries/kit-code`
 by its path from the repository's top level, so `check --root devwiki` needs
 nothing installed: the library is data, read from the tree. The tests judge
-it where it stands and in copies under `os.tmpdir()`. The v1 kit,
-`@wikiwright/kit-code` under `packages/kit-code`, is loaded by nothing since
-the old verbs left; the old registry's core tests read a frozen v1 copy of
-devwiki, `fixtures/v1/devwiki`, until the registry leaves.
+it where it stands and in copies under `os.tmpdir()`. The v1 kit it
+imported before, `@wikiwright/kit-code`, left in step 6 of the v2 delivery.
 
 ## The gate
 

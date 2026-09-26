@@ -106,11 +106,6 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
 - `packages/core`: the kernel and the standard library.
 - `packages/cli`: the binary, one module per verb under `src/verbs/`, the
   eight verbs of the v2 contracts.
-- `packages/kit-code`: `@wikiwright/kit-code`, the v1 domain kit — a
-  code wiki's types, `anchored` fragment, relation labels, templates and
-  discipline — which nothing loads since the old verbs left; it leaves in
-  its own commit of step 6. Nothing code-specific enters the kernel or the
-  CLI.
 - `devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`,
   `fixtures/handbooks/{orchard,allotment}`: the corpora every change is
   judged against, all on the v2 law. `devwiki` imports `libraries/kit-code`
@@ -120,7 +115,9 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
 - `libraries/`: the type libraries of the v2 law, data only — type,
   fragment and vocabulary documents with their rule tests and examples.
   `kit-code` (id `code`) is a code wiki's page kinds, the `anchored`
-  fragment and the relation labels, the v2 form of `packages/kit-code`;
+  fragment and the relation labels, the v2 form of the v1 kit
+  `@wikiwright/kit-code`, which left in step 6; nothing code-specific enters
+  the kernel or the CLI;
   `kit-garden` (id `garden`) is the neutral test library, which the
   allotment handbook imports.
 - `fixtures/conformance`: the neutral module fixture and the two bundles that

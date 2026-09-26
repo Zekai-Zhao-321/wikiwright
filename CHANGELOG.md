@@ -794,6 +794,17 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- The v1 code kit, `packages/kit-code` (`@wikiwright/kit-code`: the
+  manifest, its determinism fixture and the workspace entry in `bun.lock`),
+  as code (v2 contracts §1, §12 step 6). `libraries/kit-code` is its v2 form,
+  data, and `devwiki` has imported it since step 5; nothing loaded the kit
+  since the old verbs left. `kit-code.test.ts` and its install fixture go
+  with it, and the old registry's core tests no longer load devwiki's v1
+  copy over it. `tools/migrate-spellings.ts` refuses a bundle that declares
+  the kit, naming the checkout it must run from, where it read the kit's
+  types to migrate one. The loss: a bundle in another repository has no
+  package to install; `docs/roadmap.md` §A library is read from the bundle's
+  own repository only.
 - The module loader (v2 contracts §1, §12 step 6): `moduleload.ts` (resolving
   a declared module from `node_modules` or a bundle path, its digest, the
   purity scan at load, the preload `main.ts` ran before a verb that declared
