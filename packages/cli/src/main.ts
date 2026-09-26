@@ -147,14 +147,14 @@ function summaryView(
   if (result.envelope.metadata.command !== "check") return undefined;
   const data = result.envelope.data as Record<string, unknown> | undefined;
   if (data?.["summary"] === undefined || data["pins"] === undefined) return undefined;
-  const pins = data["pins"] as { counts?: unknown };
+  const pins = data["pins"] as { counts?: unknown; citations?: unknown };
   const generated = data["generated"] as { written?: unknown } | undefined;
   const fixed = data["fixed"];
   const compact = {
     summary: data["summary"],
     scope: data["scope"],
     unevaluated: data["unevaluated"],
-    pins: { counts: pins.counts },
+    pins: { counts: pins.counts, citations: pins.citations },
     generated: { written: generated?.written ?? [] },
     fixed_count: Array.isArray(fixed) ? fixed.length : 0,
     ...(report === undefined ? {} : { report }),

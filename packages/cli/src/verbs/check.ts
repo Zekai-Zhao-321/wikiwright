@@ -343,7 +343,17 @@ async function run(args: CommandArgs): Promise<CommandResult> {
     scope: verdict.scope,
     unevaluated: verdict.unevaluated,
     caps: verdict.caps,
-    pins: { counts: pins.counts, entries: pins.entries },
+    pins: {
+      counts: pins.counts,
+      citations: {
+        checked: pins.entries.reduce((sum, entry) => sum + (entry.citations?.checked ?? 0), 0),
+        outside_scope: pins.entries.reduce(
+          (sum, entry) => sum + (entry.citations?.outside_scope ?? 0),
+          0,
+        ),
+      },
+      entries: pins.entries,
+    },
     generated: { files: [...GENERATED_PATHS], written },
     ...(args.flags["fix"] === true ? { fixed } : {}),
   };

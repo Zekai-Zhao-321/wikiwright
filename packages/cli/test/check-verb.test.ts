@@ -183,14 +183,19 @@ fields:
   required: [capture]
 `;
 
-function sourcePage(commit: string, origin: string, cited: string): string {
+function sourcePage(
+  commit: string,
+  origin: string,
+  cited: string,
+  cover = "notes/seeds.txt",
+): string {
   return `---
 type: source
 title: Seed list
 capture:
   commit: ${commit}
   origin: "${origin}"
-  covers: [notes/seeds.txt]
+  covers: [${cover}]
 ---
 
 # Seed list
@@ -244,7 +249,10 @@ describe("pins, measured against the local repository (v2 contracts §9.1)", () 
 
   it("holds each citation to the pin: a path the pin does not hold is citation-unresolved", () => {
     const { dir, head } = pinned();
-    writeFileSync(join(dir, "wiki/Seed list.md"), sourcePage(head, ".", "notes/weeds.txt"));
+    writeFileSync(
+      join(dir, "wiki/Seed list.md"),
+      sourcePage(head, ".", "notes/weeds.txt", "notes/"),
+    );
     const r = cli(["check", "--all"], dir);
     expect(findingsOf(r.envelope, "citation-unresolved").map((f) => f.details["cited"])).toEqual([
       "notes/weeds.txt",

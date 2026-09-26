@@ -141,7 +141,9 @@ and a route. Every error or warning has exactly one `fix` command or
 `queue` lane. A decidable error can stop a write or a commit. A judgment
 goes to a human-review lane. An informational finding has neither route.
 The verdict includes coverage and a separate `unevaluated` count; a green
-summary does not claim that unevaluated checks passed.
+summary does not claim that unevaluated checks passed. A known failure may
+still be reported when another applicable obligation on the same page was
+unmeasured; that page counts as unevaluated for the pass, not as not applicable.
 
 `check` judges the working tree. `write` proves the full proposed batch
 under one captured law and page state, checks destinations, stages the pages,

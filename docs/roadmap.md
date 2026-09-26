@@ -69,7 +69,7 @@ submodule boundary is unmeasured. Source path membership enters the content
 and queue digest, so a changed source path invalidates an old queue even when
 Markdown is unchanged.
 
-A local pin holds a cited file path and line to the pinned tree, not the
+A local pin holds a cited file path and line inside its declared covers to the pinned tree, not the
 meaning of the sentence that cites it. No `write` operation relocates
 citations by content after a source moves. That requires a separate
 content-based relocation operation and a reviewed re-pin.

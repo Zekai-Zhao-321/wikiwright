@@ -135,7 +135,13 @@ refused. Only `date`, `date-time`, and `uri` formats are registered. A
 |---|---|
 | `page-ref` | nonempty page name as written inside a wikilink |
 | `page-ref-list` | array of page references |
-| `pin` | object with `commit`, `origin`, and nonempty `covers` paths |
+| `pin` | object with `commit`, `origin`, and a `covers` array; nonempty, valid coverage is required before a pin is measured |
+
+Pin citation checking is scoped to each cover as it exists at the pinned
+commit: a blob owns its path, a tree owns its descendants, and `.` explicitly
+owns the whole repository. Path-shaped code spans outside a pin's covers are
+unverified prose for that pin. Two pins with overlapping covers each measure
+their own source; no inline origin is inferred.
 
 `target_type` and `target_root` are engine keywords on a page reference
 or list; the target must resolve to the required type or root. The engine

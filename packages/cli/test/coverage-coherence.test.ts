@@ -1,5 +1,6 @@
 // docs/concepts.md §Findings and routing (a pass that produced a finding on this run
-// did apply; reporting it as `not_applicable` beside its own findings is the
+// did apply or had a known failure beside an unmeasured obligation; reporting it
+// only as `not_applicable` beside its own findings is the
 // incoherence the block exists to prevent) · docs/architecture.md §The invariants
 //
 // "Did not run here" and "found nothing" are two claims and the coverage block
@@ -17,7 +18,7 @@ describe("the coverage block agrees with the findings beside it (docs/concepts.m
   // v2 contracts §12 step 5: the corpora on the v2 law, under the v2
   // `check`, whose coverage is keyed by rule id.
   for (const corpus of V2_CORPORA) {
-    it(`${corpus}: no rule reports findings while claiming it never applied (the v2 check)`, () => {
+    it(`${corpus}: no rule reports findings while claiming only not applicable (the v2 check)`, () => {
       const data = cli(["check", "--all"], join(REPO, corpus)).envelope.data;
       const coverage = (data?.["coverage"] ?? {}) as Record<
         string,
@@ -28,9 +29,9 @@ describe("the coverage block agrees with the findings beside it (docs/concepts.m
         const row = coverage[f.rule];
         if (row === undefined || f.rule === "unevaluated") continue;
         assert.equal(
-          row.evaluated > 0,
+          row.evaluated > 0 || row.unevaluated > 0,
           true,
-          `${f.rule} produced a finding on ${corpus} and reports evaluated: ${row.evaluated}`,
+          `${f.rule} produced a finding on ${corpus} and reports neither evaluated nor unevaluated`,
         );
       }
     });

@@ -70,18 +70,17 @@ export interface TypeLawJudgeOptions {
 }
 
 export interface CoverageCell {
-  /** Pages the pass judged. */
+  /** Pages whose applicable obligations the pass fully judged. */
   evaluated: number;
   /** Pages the pass does not govern. */
   not_applicable: number;
-  /** Pages it governs and could not judge: a transition with no base. */
+  /** Governed pages with an unavailable obligation, even beside a known finding. */
   unevaluated: number;
 }
 
 /**
- * Why a pass a page is governed by was not judged there: the state has no
- * base (§5), or the base's bytes do not read as a page (over 1 MiB, or not
- * UTF-8).
+ * Why an applicable pass could not be fully judged: no readable transition
+ * base, missing source-path facts, or unavailable pin evidence.
  */
 export type UnevaluatedReason =
   | "no-base"
@@ -95,7 +94,7 @@ export interface TypeLawVerdict {
   findings: VerdictFinding[];
   /** Every row of the table and every CEL rule, by id. */
   coverage: Record<string, CoverageCell>;
-  /** The transitions this state could not judge, by id, with every reason it could not. */
+  /** Applicable passes not fully judged, by id, with their reasons. */
   unevaluated: Record<string, { count: number; reasons: UnevaluatedReason[] }>;
   /** Physical heading bodies by grammar ownership; prose/unbound is not a claim verdict. */
   scope?: ScopeCoverage;

@@ -283,16 +283,12 @@ describe("declared local Git origins", () => {
     expect(findingsOf(invalid.envelope, "pin-coverage-invalid")).toHaveLength(1);
     expect(status(dir, "Seed list")).toMatchObject({ stale: null, reason: "coverage-invalid" });
     expect(status(dir, "Start")).toMatchObject({ stale: null, reason: "source-unverified-cited" });
-    put(
-      dir,
-      "wiki/Seed list.md",
-      capture(pinned, "local-code", "notes/seeds.txt", "notes/missing.txt:1"),
-    );
+    put(dir, "wiki/Seed list.md", capture(pinned, "local-code", "notes/", "notes/missing.txt:1"));
     expect(findingsOf(cli(["check", "--all"], dir).envelope, "citation-unresolved")).toHaveLength(
       1,
     );
     expect(status(dir, "Seed list")).toMatchObject({ stale: true, reason: "pin-stale" });
-    put(dir, "wiki/Seed list.md", capture(pinned, "local-code", "notes/seeds.txt", "gone/"));
+    put(dir, "wiki/Seed list.md", capture(pinned, "local-code", "notes/", "notes/gone/"));
     expect(findingsOf(cli(["check", "--all"], dir).envelope, "citation-unresolved")).toHaveLength(
       1,
     );

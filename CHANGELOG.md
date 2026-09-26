@@ -55,6 +55,9 @@ version` prints the engine version and the commit a binary was built from.
   type selection; normal `type show` retains complete vocabulary values.
 - `--out` resolves parent aliases, refuses leaf links, and protects the
   selected bundle and imported law roots, including staged law on refusal.
+- Pin citation checks now stay inside each pin's actual blob or tree covers.
+  Out-of-scope code spans and their bare-line context are counted as
+  unverified; missing paths and lines within explicit coverage still warn.
 
 ### Changed
 

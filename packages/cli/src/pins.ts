@@ -4,13 +4,14 @@
 // `stale-source-cited` kept, propagated over graph.json's edges) and §9.5
 // (`read` and `search` carry the result as a page's `status`).
 //
-// Ported from the old measurement (freshness.ts): "." measures the enclosing repository;
-// the repository enclosing the bundle; a pin not on the history of HEAD
+// Ported from the old measurement (freshness.ts): "." measures the repository
+// enclosing the bundle; a pin not on the history of captured HEAD
 // (`pin-unknown`, the old `pin-unknown-to-origin`); the covering diff between
 // the pin and HEAD over the pin's `covers`, read with `:(top)` so the paths
 // are repository-root-relative wherever the bundle sits (`pin-stale`, the old
-// `stale-capture`); the page's citations held to the pin, read by
-// the old verb's own `citationsIn`, now citations.ts (`citation-unresolved`, kept); and one hop
+// `stale-capture`); the page's citations inside each pin's actual blob/tree
+// covers held to that pin (`citation-unresolved`), with outside spans counted
+// as unverified; and one hop
 // of propagation into every page whose edge, of any kind but `tagged`, names
 // a stale page. Changed: a pin is found by its shape — a top-level property
 // whose schema is the engine `$def` `pin` — and its three parts are one
@@ -30,7 +31,7 @@ import {
   type TypeLawGraphEdge,
   type Unrouted,
 } from "@wikiwright/core";
-import { citationsIn } from "./citations.ts";
+import { type CitationCover, citationsIn } from "./citations.ts";
 import {
   GitInconsistentRead,
   gitBlobLineCount,
@@ -80,7 +81,7 @@ export interface PinEntry {
   behind: number | null;
   covering_touched: string[] | null;
   coverage_invalid?: string[];
-  citations: { checked: number; unresolved: UnresolvedCitation[] } | null;
+  citations: { checked: number; outside_scope: number; unresolved: UnresolvedCitation[] } | null;
 }
 
 export interface PinMeasurement {
@@ -401,16 +402,21 @@ async function measurePinsOnce(
     const commit = pinCommit as string;
     entry.resolved_commit = commit;
     const invalid: string[] = [];
+    const validCovers: CitationCover[] = [];
     for (const cover of pin.covers) {
       const path = cover.endsWith("/") ? cover.slice(0, -1) : cover;
       if (cover !== "." && (pathRefusal(path) !== undefined || path.startsWith(":"))) {
         invalid.push(cover);
         continue;
       }
-      if (cover === ".") continue;
+      if (cover === ".") {
+        validCovers.push({ path: ".", kind: "tree" });
+        continue;
+      }
       const kind = await gitObjectType(dir, `${commit}:${path}`);
       if ((kind !== "blob" && kind !== "tree") || (cover.endsWith("/") && kind !== "tree"))
         invalid.push(cover);
+      else validCovers.push({ path, kind });
     }
     if (pin.covers.length === 0) invalid.push("<empty>");
     if (invalid.length > 0) {
@@ -432,12 +438,18 @@ async function measurePinsOnce(
     entry.behind = behind;
     entry.covering_touched = touched;
     const topLevel = new Set(await gitTreeEntries(dir, commit));
-    const scan = citationsIn(pin.text, topLevel, pin.covers);
+    const scan = citationsIn(pin.text, topLevel, [
+      ...new Map(validCovers.map((cover) => [cover.path, cover])).values(),
+    ]);
     const unresolved: UnresolvedCitation[] = [
       ...(await unresolvedCitations(dir, commit, scan.citations)),
       ...scan.problems.map((p) => ({ path: p.token, line: null, reason: p.reason })),
     ];
-    entry.citations = { checked: scan.citations.length, unresolved };
+    entry.citations = {
+      checked: scan.citations.length,
+      outside_scope: scan.outside_scope,
+      unresolved,
+    };
     for (const citation of unresolved) {
       const cited = citation.line === null ? citation.path : `${citation.path}:${citation.line}`;
       findings.push({

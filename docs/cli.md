@@ -72,12 +72,14 @@ lane, or `fix: {argv}`, on every error and warning), `summary` (`pages`,
 `errors`, `warnings`, `infos`, `by_rule`, `excepted`, `unevaluated`, over the
 uncapped set; the exit code follows `errors`), `coverage` (every row and rule
 by id: `evaluated`, `not_applicable`, `unevaluated`), `unevaluated` (each row a
-state could not judge, with its count and reasons, `no-base` or
-`base-unreadable`) and `caps` (`limit`, and whether it was `hit`). `--limit`
+state could not judge, with its count and reasons including `no-base`,
+`base-unreadable`, `source-facts-unavailable`, `pin-unmeasured`,
+`pin-unknown` and `pin-coverage-invalid`) and `caps` (`limit`, and whether it
+was `hit`). `--limit`
 caps the findings (default 50), `--rule` and `--path` filter before the cap
 and `--all` lifts it.
 `check --summary` runs the same verdict and prints its totals, scope, pin
-state counts, unevaluated counts and reasons, generated files written and the
+state counts, per-pin citation totals, unevaluated counts and reasons, generated files written and the
 number of pages fixed. It omits finding and pin-entry detail from stdout.
 With `--out FILE`, the file receives the uncapped full report for the requested
 `--rule` or `--path` selection from that invocation; stdout includes its
@@ -206,15 +208,23 @@ read.
   status unverified. A valid cover deleted by the captured HEAD is stale:
   `pin-stale` (warning) when the covered paths changed between its commit
   and HEAD, `pin-unknown` (warning) when HEAD's history does not hold the
-  commit, `citation-unresolved` (warning) for a cited path or line the
-  commit does not hold — citations are read as the old `freshness` read
-  them — and `stale-source-cited` (warning) on every page with an edge of
+  commit, `citation-unresolved` (warning) for a path or line inside that
+  pin's covers which the pinned tree does not answer, and
+  `stale-source-cited` (warning) on every page with an edge of
   any kind but `tagged` into a stale page; any undeclared or URL origin, no repository
   or no commit is `pin-unmeasured` (info, `details.reason` `remote-origin`,
   `no-repository`, `no-head`, `duplicate-root`, `not-root`), and so is a commit a shallow clone's
   history does not reach (`shallow`), which is absent there, not unknown. `data.pins` carries `counts` by state
   (`current`, `unchanged`, `stale`, `unknown`, `unmeasured`) and one entry
-  per pin. A path provenance under `source_roots` must exist in the selected
+  per pin. `citations.checked` counts distinct path-and-line checks owned by
+  that pin; `citations.outside_scope` counts code-span occurrences and bare-line
+  follow-ups left unverified for that pin. `data.pins.citations` sums those
+  per-pin counts and appears in the compact summary too. An overlapping span
+  can count for two pins; outside-scope counts are not verified foreign
+  references or unique claims. A blob cover owns its exact file, a tree
+  cover owns descendants with or without a trailing slash, and `.` owns the
+  whole repository. Another pin can validate the same path independently;
+  the engine does not guess an origin from inline prose. A path provenance under `source_roots` must exist in the selected
   state; missing or wrong-kind paths are errors, and link/submodule boundaries
   are unmeasured warnings. `generated/` holds `BRIEF.md` (the bundle's brief: the loop in
   three sections, one per role, the verbs, the types, the vocabularies, the

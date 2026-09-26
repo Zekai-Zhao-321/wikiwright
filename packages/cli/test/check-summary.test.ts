@@ -33,6 +33,9 @@ describe("check --summary", () => {
     expect(compact.envelope.data?.["scope"]).toBeDefined();
     expect(compact.envelope.data?.["unevaluated"]).toBeDefined();
     expect(compact.envelope.data?.["pins"]).toMatchObject({ counts: expect.any(Object) });
+    expect(compact.envelope.data?.["pins"]).toMatchObject({
+      citations: { checked: 0, outside_scope: 0 },
+    });
     const report = JSON.parse(readFileSync(out, "utf8")) as typeof compact.envelope;
     expect(report.data?.["findings"]).toHaveLength(56);
     expect((report.data?.["caps"] as { hit: boolean } | undefined)?.hit).toBe(false);

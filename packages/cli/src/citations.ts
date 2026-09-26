@@ -5,8 +5,8 @@
 import { codeUnitCompare, pathRefusal } from "@wikiwright/core";
 
 /**
- * What a page CITES, checked at its pin by `check` (pins.ts), and what it says
- * that cannot be read as a citation at all.
+ * What a page cites inside one pin's declared covers, checked at that pin by
+ * `check` (pins.ts), and what it says there that cannot be read as a citation.
  *
  * A code span is a citation in one of four spellings, and nothing else is:
  *
@@ -16,17 +16,20 @@ import { codeUnitCompare, pathRefusal } from "@wikiwright/core";
  *   when its top-level segment is missing, so it can be reported unresolved;
  * - that path with a line or a range (`packages/cli/src/git.ts:31`, `:31-44`);
  * - a bare file name, suffix included, that is the basename of exactly one
- *   FILE the page covers (`git.ts:31`) — two covered paths of that name are
+ *   blob the pin covers (`git.ts:31`) — two covered paths of that name are
  *   ambiguous and are reported rather than guessed at, a covered directory is
  *   no candidate, and a name with no suffix is prose: `skills` is a verb in a
  *   sentence far more often than it is a path;
- * - a line or range alone (`:31-44`), which names the nearest FILE cited before
- *   it on the page, and is reported when nothing is cited before it. A
- *   directory (`packages/cli/src/verbs/`) is a citation of its own and is not
- *   that file: a line does not live in a directory, and a page that names one
- *   in passing is still writing about the file it was reading.
+ * - a line or range alone (`:31-44`), which names the nearest covered file
+ *   cited before it, and is reported when there is no preceding file context.
+ *   A foreign file changes that context to out-of-scope: its following bare
+ *   lines are not assigned back to an older covered file. A covered directory
+ *   does not replace an earlier covered file context.
  *
- * Each distinct path must exist at the pin, and a cited line must not exceed
+ * Covers define scope: a blob owns its exact path, a tree owns descendants
+ * whether or not its spelling ends in `/`, and `.` owns the whole tree.
+ * Other code spans are unverified prose for this pin, not resolved citations.
+ * Each distinct covered path must exist at the pin, and a cited line must not exceed
  * the blob's line count. A range must count up from a first line, so `:0` and
  * `:12-3` are refused rather than read as line 12 or line 3. What this does NOT
  * check is whether those lines say what the prose says they say; a citation
@@ -48,6 +51,12 @@ export interface Citation {
   line: number | null;
 }
 
+/** The object kind actually held at the pin, not inferred from path spelling. */
+export interface CitationCover {
+  path: string;
+  kind: "blob" | "tree";
+}
+
 /** A span that reads as a citation and names nothing this page can resolve. */
 export interface CitationProblem {
   /** The span as written, so the writer can find it. */
@@ -60,6 +69,8 @@ export interface CitationProblem {
 export interface CitationScan {
   citations: Citation[];
   problems: CitationProblem[];
+  /** Path-shaped spans outside this pin's covers, including their bare lines. */
+  outside_scope: number;
 }
 
 /** The last path segment, for resolving a bare file name against `covers`. */
@@ -72,13 +83,22 @@ function basename(path: string): string {
 export function citationsIn(
   source: string,
   topLevel: ReadonlySet<string>,
-  covers: readonly string[] = [],
+  covers: readonly CitationCover[] = [],
 ): CitationScan {
   const seen = new Map<string, Citation>();
   const problems: CitationProblem[] = [];
   const reported = new Set<string>();
-  // The page's own reading order: a bare line names the path cited before it.
-  let antecedent: string | undefined;
+  const owns = (path: string): boolean =>
+    covers.some(
+      (cover) =>
+        cover.path === "." ||
+        (cover.kind === "blob"
+          ? path === cover.path
+          : path === cover.path || path.startsWith(`${cover.path}/`)),
+    );
+  // A foreign file stops later bare lines from falling back to an older owned file.
+  let antecedent: { kind: "owned"; path: string } | { kind: "outside" } | undefined;
+  let outsideScope = 0;
   for (const match of source.matchAll(CODE_SPAN)) {
     const token = match[2] ?? "";
     if (NOT_A_PATH.test(token)) continue;
@@ -104,30 +124,47 @@ export function citationsIn(
         problem("unattached");
         continue;
       }
-      path = antecedent;
+      if (antecedent.kind === "outside") {
+        outsideScope += 1;
+        continue;
+      }
+      path = antecedent.path;
     } else if (
       topLevel.has(written.split("/")[0] ?? "") ||
-      ((raw.endsWith("/") || (written.includes("/") && basename(written).includes("."))) &&
-        pathRefusal(written) === undefined)
+      raw.endsWith("/") ||
+      (written.includes("/") && basename(written).includes("."))
     ) {
+      if (pathRefusal(written) !== undefined) {
+        antecedent = { kind: "outside" };
+        outsideScope += 1;
+        continue;
+      }
       path = written;
     } else if (!written.includes("/") && written.includes(".")) {
       const matches = covers
-        .filter((cover) => !cover.endsWith("/"))
-        .filter((cover) => basename(cover) === written);
+        .filter((cover) => cover.kind === "blob")
+        .filter((cover) => basename(cover.path) === written)
+        .map((cover) => cover.path);
       const first = matches[0];
       if (first === undefined) continue;
       if (matches.length > 1) {
+        antecedent = { kind: "outside" };
         problem("ambiguous", [...matches].sort(codeUnitCompare));
         continue;
       }
-      path = first;
+      path ??= first;
     } else {
       continue;
     }
     if (path === undefined || path.length === 0) continue;
+    if (!owns(path)) {
+      antecedent = { kind: "outside" };
+      outsideScope += 1;
+      continue;
+    }
     // A directory does not become the path a later bare line names.
-    if (!raw.endsWith("/")) antecedent = path;
+    if (!raw.endsWith("/") && !covers.some((cover) => cover.kind === "tree" && cover.path === path))
+      antecedent = { kind: "owned", path };
     // A range counts up from a first line; anything else is not one, and
     // reading `:12-3` as line 3 would check a line nobody cited.
     if (from !== null && (from < 1 || (to !== null && to < from))) {
@@ -141,5 +178,5 @@ export function citationsIn(
   const citations = [...seen.values()].sort((a, b) =>
     codeUnitCompare(`${a.path}\u0000${a.line ?? ""}`, `${b.path}\u0000${b.line ?? ""}`),
   );
-  return { citations, problems };
+  return { citations, problems, outside_scope: outsideScope };
 }
