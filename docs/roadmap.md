@@ -35,11 +35,11 @@ own `devwiki`.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
-test file is written to `bun:test`. The suite is 2,069 tests across 141
+test file is written to `bun:test`. The suite is 2,187 tests across 150
 files, and the gate, `bun run check`, passed all of them three times in a
-row on 2026-09-26, at the end of the review fixes to the v2 delivery's
-third step, the judge over the type-document law (§The v2 loader and judge
-are read by no verb yet). It judges five corpora (`devwiki`, `fixtures/memory-synth`,
+row on 2026-09-26, at the end of the v2 delivery's fourth step, the verbs
+over the type-document law (§The v2 verbs answer a bundle on schema version
+4; the corpora are still on the old law). It judges five corpora (`devwiki`, `fixtures/memory-synth`,
 `fixtures/minimal-vault`, and the two gardening handbooks under
 `fixtures/handbooks`, which the two-bundle tests read end to end) and proves
 the module ladder end to end twice: with a neutral module fixture under
