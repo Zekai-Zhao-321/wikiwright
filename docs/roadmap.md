@@ -111,6 +111,10 @@ them. `generated/BRIEF.md` is a bundle's own current guidance. A host
 distribution for the skills waits until repeated tasks lose time finding
 the right type or verb despite the brief.
 
+The repository also no longer carries the `CLAUDE.md` pointer to
+`AGENTS.md`. A host that reads only that pointer will not receive these
+operating rules unless they are supplied through that host's setup.
+
 ### Writes are complete per file, not transactional as a set
 
 `write --from` proves the whole proposed batch, then stages complete

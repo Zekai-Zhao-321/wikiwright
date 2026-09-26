@@ -95,6 +95,11 @@ version` prints the engine version and the commit a binary was built from.
   Windows remains unverified. The old trust store and `trust` verb had
   already been removed during this unreleased development; no trust
   decision or executable module loader ships in v2.
+- The unused public core helper `boundedLevenshtein` and the shell's
+  uncalled `runningCommit` helper left; current search and transition
+  matching use the trigram utilities. The root `CLAUDE.md` pointer to
+  `AGENTS.md` also left, so a host that reads only `CLAUDE.md` must be
+  given the repository rules explicitly.
 - Refusal codes renamed by surviving operations: `engine-pin-mismatch`
   became `engine-mismatch`, `stale-base` became `base-mismatch`,
   `not-a-git-repo` became `git-unavailable`, and
