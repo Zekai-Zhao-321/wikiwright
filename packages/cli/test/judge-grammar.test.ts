@@ -180,6 +180,30 @@ describe("the grammar's records (§4)", () => {
     expect(only(verdict, "claim-closed")[0]?.details).toMatchObject({ closed: "retracted" });
   });
 
+  it("holds a claim to the categories subset over a census vocabulary, which admits a new value", async () => {
+    const census = `vocabulary: notes
+mode: census
+entries:
+  observed: { description: Seen. }
+  measured: { description: Counted. }
+`;
+    const verdict = await judgeVault({
+      "constitution/vocabularies/notes.yaml": census,
+      "constitution/types/trial.yaml": TRIAL.replace(
+        "vocabulary: garden/observations, provenance: required",
+        "vocabulary: notes, provenance: required",
+      ),
+      "wiki/Mulch trial.md": TRIAL_PAGE.replace("[observed] Straw", "[rumour] Straw"),
+    });
+    expect(only(verdict, "vocabulary-unknown")).toEqual([]);
+    expect(only(verdict, "category-not-allowed")).toMatchObject([
+      {
+        location: { kind: "section", heading: "Findings", occurrence: 0 },
+        details: { category: "rumour", categories: ["observed", "measured"] },
+      },
+    ]);
+  });
+
   it("reports a relation whose target names no page, and a require row unmet", async () => {
     const verdict = await trial(
       TRIAL_PAGE.replace("- grows-in [[Herb bed]]", "- companion-of [[Pond]]"),

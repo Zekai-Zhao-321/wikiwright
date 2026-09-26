@@ -158,16 +158,15 @@ function claimFindings(
   const base = { heading: section.heading, handle: claim.handle };
   const vocabulary =
     section.vocabulary === undefined ? undefined : law.vocabularies.get(section.vocabulary);
-  if (vocabulary !== undefined) {
-    const finding = vocabularyFinding(vocabulary, claim.category, path, location, base);
-    if (finding !== undefined) out.push(finding);
-  }
+  const unknown =
+    vocabulary === undefined
+      ? undefined
+      : vocabularyFinding(vocabulary, claim.category, path, location, base);
+  if (unknown !== undefined) out.push(unknown);
+  // A category the vocabulary refused is reported once, as the vocabulary's;
+  // one it admits — a census admits a new one — is still held to the subset.
   const categories = section.params.categories;
-  if (
-    categories !== undefined &&
-    !categories.includes(claim.category) &&
-    vocabulary?.entries.has(claim.category) !== false
-  ) {
+  if (categories !== undefined && !categories.includes(claim.category) && unknown === undefined) {
     out.push({
       rule: "category-not-allowed",
       severity: "error",
