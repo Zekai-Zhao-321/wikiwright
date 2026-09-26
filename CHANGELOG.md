@@ -230,6 +230,11 @@ version` prints the engine version and the commit a binary was built from.
   `item-unparsed` instead of bypassing a declared grammar. Cyclic YAML
   aliases are malformed page or law input rather than an internal stack
   error.
+- The accepted pages and law are checked again after `write` stages temporary
+  files, so an edit during staging refuses the write. `check --fix` stages its
+  page repairs and generated artifacts together; an unwritable generated
+  directory is refused before either lands, including on a dry run. Opaque
+  blocks end a grammar list item, so a later indented bullet is judged.
 
 ### Developing
 

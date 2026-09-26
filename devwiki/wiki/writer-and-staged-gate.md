@@ -4,7 +4,7 @@ title: "The Writer and the staged gate"
 description: "The judged draft writer and staged Git acceptance boundary."
 tags: [kernel, cli]
 pin:
-  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
+  commit: d8b5ad4a05fac7ea12a06853a0f36007d95059a3
   origin: .
   covers: ["packages/cli/src/verbs/write.ts", "packages/cli/src/verbs/gate.ts", "packages/cli/src/lawstate.ts", "packages/cli/src/writer.ts", "packages/cli/src/ops.ts"]
 ---
@@ -25,7 +25,7 @@ The writer stages complete file replacements, then renames them into place. Gate
 
 ## Invariants
 
-A dry run and a real write agree on refusal and plan paths. Draft bases, pages and law come from one accepted capture, which is checked again before landing. Every replacement target is preflighted before the first write. One judge decides at both write and commit boundaries.
+A dry run and a real write agree on refusal and plan paths. Draft bases, pages and law come from one accepted capture, which is checked again after all temporary files are staged and before the first rename. Every replacement target is preflighted before the first write. One judge decides at both write and commit boundaries.
 
 ## Failure modes
 

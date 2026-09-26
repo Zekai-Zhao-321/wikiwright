@@ -202,8 +202,9 @@ read.
   `--fix` implies `--write` and proposes folder-tag materialization under
   `folder_tags.mode: materialize-add-only`; a proposed repair that violates
   the effective type law is `fix-invalid` and lands nothing. Generated
-  destinations are checked for links and obstructions before any page or
-  artifact write, in dry and real runs. A valid fix reports `fixed`. `--dry-run`
+  destinations are checked for links, obstructions and unwritable parents before
+  any page or artifact write, in dry and real runs. Fixed pages and generated
+  artifacts are staged as one batch. A valid fix reports `fixed`. `--dry-run`
   plans exactly what the invocation lands, nothing without `--write` or
   `--fix`. Exit 5 on any error.
 - **`gate [--commit-msg <file>]`** judges the index with HEAD as its base
@@ -260,8 +261,9 @@ read.
   makes invalid, an identity collision reported on the page already there,
   an instance count), refuses the whole batch (`draft-invalid`, exit 5, the
   findings and the `failing` paths in `data`). The recorded bases, proposed
-  overlay and law come from one capture; a changed page or law before landing
-  is `state-changed-before-write` (exit 4). Every destination is checked in
+  overlay and law come from one capture; a changed page or law before landing,
+  including while temporary files are staged, is `state-changed-before-write`
+  (exit 4). Every destination is checked in
   dry and real runs; an obstructing directory or link is
   `replacement-target-refused` (exit 4) before the first replacement. Otherwise
   every page is staged beside its path, then renamed into place, then each

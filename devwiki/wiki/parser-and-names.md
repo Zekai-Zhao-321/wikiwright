@@ -4,7 +4,7 @@ title: "The parser and the names it binds"
 description: "Markdown and YAML parsing, Unicode page identity and name resolution."
 tags: [kernel]
 pin:
-  commit: 42733023e556c175d27846546fbdd5f5c60b5edb
+  commit: d8b5ad4a05fac7ea12a06853a0f36007d95059a3
   origin: .
   covers: ["packages/core/src/parse/index.ts", "packages/core/src/names/index.ts", "packages/core/src/identity/index.ts", "packages/core/src/interface/index.ts"]
 ---
@@ -29,7 +29,7 @@ A page has one nominal type. A duplicate key, malformed frontmatter or colliding
 
 ## Failure modes
 
-A top-level list item with one to three leading spaces is item-unparsed rather than silently skipped; nested bullets remain rationale. Cyclic YAML aliases are malformed input, not an internal stack error. A name collision needs review, and a normalisation-sensitive filesystem can hold two disk paths the engine normalizes to one key.
+A top-level list item with one to three leading spaces is item-unparsed rather than silently skipped; nested bullets remain rationale. A fence, comment or thematic break ends the previous item, so a later bullet is judged on its own. Cyclic YAML aliases are malformed input, not an internal stack error. A name collision needs review, and a normalisation-sensitive filesystem can hold two disk paths the engine normalizes to one key.
 
 ## Relations
 

@@ -4,7 +4,7 @@ title: "Fixers and routing"
 description: "The surviving mechanical fixes: folder-tag materialization and generated-artifact refresh."
 tags: [kernel, cli]
 pin:
-  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
+  commit: d8b5ad4a05fac7ea12a06853a0f36007d95059a3
   origin: .
   covers: ["packages/cli/src/verbs/check.ts", "packages/core/src/verdict/folders.ts", "packages/cli/src/generated.ts"]
 ---
@@ -29,7 +29,7 @@ A fix is offered only where the engine has a mechanical operation it can prove. 
 
 ## Failure modes
 
-Under validate mode, a missing folder tag queues review instead of editing. Under materialize-add-only, a proposed tag that violates the effective shape is refused before any fix lands. A direct edit or a crash between artifact replacements can leave drift.
+Under validate mode, a missing folder tag queues review instead of editing. Under materialize-add-only, a proposed tag that violates the effective shape is refused before any fix lands. Page fixes and generated artifacts are staged together; an unwritable generated directory is refused before pages change. A direct edit or a crash between artifact replacements can leave drift.
 
 ## Relations
 

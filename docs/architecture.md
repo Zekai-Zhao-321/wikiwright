@@ -148,8 +148,10 @@ leaves a mix the next `check --write` converges).
    `metadata.bundle` computed from the state it read (`typelaw.ts`).
 
 A writing verb (`write`, `check --write`, `check --fix`) judges the state it
-would leave before it lands anything: `write` lands the batch through
-`landBatch`, and `check` renders `generated/` through the staged replace.
+would leave before it lands anything: `write` stages the batch through the
+Writer, recaptures the accepted pages and law, then commits the staged files;
+`check --fix` stages page repairs and generated artifacts in one replacement
+batch. The first rename starts only after all temporary files are ready.
 
 ## The gate
 

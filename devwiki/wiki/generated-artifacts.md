@@ -4,7 +4,7 @@ title: "Generated artifacts"
 description: "The brief, graph, manifest, tag catalog and queue rendered by check --write."
 tags: [kernel, cli]
 pin:
-  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
+  commit: d8b5ad4a05fac7ea12a06853a0f36007d95059a3
   origin: .
   covers: ["packages/core/src/artifacts/index.ts", "packages/cli/src/generated.ts", "packages/cli/src/verbs/check.ts"]
 ---
@@ -29,7 +29,7 @@ The same input bytes generate identical outputs. Each file has one generator and
 
 ## Failure modes
 
-A hand edit is overwritten and a stale file is generated-drift. A linked or obstructed generated destination is refused before writing. Replacements are atomic per file, not a transaction over the set.
+A hand edit is overwritten and a stale file is generated-drift. A linked, obstructed or unwritable generated destination is refused before writing. Check stages every changed artifact and any page fix before the first rename. Replacements are atomic per file, not a transaction over the set.
 
 ## Relations
 

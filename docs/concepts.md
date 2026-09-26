@@ -132,9 +132,10 @@ The verdict includes coverage and a separate `unevaluated` count; a green
 summary does not claim that unevaluated checks passed.
 
 `check` judges the working tree. `write` proves the full proposed batch
-under one captured law and page state, checks destinations, then rechecks
-that state before landing. `check --fix` refuses a proposed content repair
-that would leave a new error. `gate` judges the index, demotes eligible inherited
+under one captured law and page state, checks destinations, stages the pages,
+then rechecks that state before the first rename. `check --fix` refuses a
+proposed content repair that would leave a new error and stages its pages with
+the generated artifacts before either lands. `gate` judges the index, demotes eligible inherited
 findings on untouched lines, and refuses a commit with an error that
 remains. At commit-message time it also requires a reason for a law change
 and checks the declared commit prefixes. The published hooks invoke the

@@ -4,7 +4,7 @@ title: "Determinism of artifacts"
 description: "Stable law and content digests and generated files produced from one judged state."
 tags: [kernel, cli]
 pin:
-  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
+  commit: d8b5ad4a05fac7ea12a06853a0f36007d95059a3
   origin: .
   covers: ["packages/core/src/digest/index.ts", "packages/core/src/artifacts/index.ts", "packages/cli/src/generated.ts", "packages/cli/src/verbs/check.ts"]
 ---
@@ -23,7 +23,7 @@ The same law and page bytes produce the same artifacts regardless of checkout pa
 
 Current source at this pin: `packages/core/src/digest/index.ts`, `packages/core/src/artifacts/index.ts`, `packages/cli/src/generated.ts`, `packages/cli/src/verbs/check.ts`.
 
-Generated drift is an error with check --write as its fix. Replacements are complete per file, but a crash between generated files can leave a mixed set until the next run.
+Generated drift is an error with check --write as its fix. Fixed pages and generated artifacts are staged together before the first replacement; a staging failure changes neither. Replacements are complete per file, but a crash between generated files can leave a mixed set until the next run.
 
 ## Relations
 
