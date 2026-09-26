@@ -5,8 +5,9 @@
 // the vault's paths, is laid in place; `created` and `updated` are stamped
 // (the navigator's ruling 7); the whole batch is judged together under the
 // overlay with the disk as its base; on no error finding on a page the batch
-// touches, the pages land through the batch writer (writer.ts `landBatch`),
-// a move's old path removed last.
+// touches, and none elsewhere that judging the disk alone does not give, the
+// pages land through the batch writer (writer.ts `landBatch`), a move's old
+// path removed last.
 //
 // Replaces the old `write` (legacy/write.ts) and absorbs `move` and `retire`
 // (operations here) and `new` (the skeleton is `type show --brief`'s, and the
@@ -28,6 +29,7 @@ import {
   type ClaimRecord,
   codeUnitCompare,
   collectTypeLaw,
+  findingKey,
   isContentPath,
   type JudgeState,
   normalizeIdentity,
@@ -596,7 +598,18 @@ async function prepare(args: CommandArgs): Promise<Step<Prepared>> {
   const collected = collectTypeLaw(overlay, law, { read, lawTests: false });
   const touched = new Set(changed);
   const verdict = verdictOfCollected(collected, { all: true });
-  const findings = verdict.findings.filter((f) => touched.has(f.path));
+  // §9.3 installs on no error finding: every finding on a page the batch
+  // touches, and every other finding the disk alone does not give — a page
+  // the batch makes invalid, an identity collision reported on the page it
+  // collides with, an instance count at its type's law file.
+  const before = new Set(
+    verdictOfCollected(collectTypeLaw(disk, law, { lawTests: false }), { all: true }).findings.map(
+      findingKey,
+    ),
+  );
+  const findings = verdict.findings.filter(
+    (f) => touched.has(f.path) || !before.has(findingKey(f)),
+  );
   return {
     ok: true,
     value: { disk, law, batch, changed, overlay, findings, from, date },
@@ -665,7 +678,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
       "write",
       "findings",
       "draft-invalid",
-      `${errors.length} error finding(s) on ${failing.length} of ${prepared.changed.length} page(s); nothing landed`,
+      `${errors.length} error finding(s) on ${failing.length} page(s), the batch touching ${prepared.changed.length}; nothing landed`,
       {
         data: { ...planOf(plan.length === 0 ? [] : plan), ...data, failing },
         hint: "each finding names its fix or its queue lane; the batch lands whole or not at all",

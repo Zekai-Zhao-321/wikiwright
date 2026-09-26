@@ -79,7 +79,9 @@ version` prints the engine version and the commit a binary was built from.
   new page and `updated` on every changed one, through `WIKIWRIGHT_TODAY`.
   The batch is judged together, with the disk as its base and each move as
   a rename, and lands whole (`draft-invalid`, exit 5, on an error on any
-  page it touches, nothing landed); `--dry-run` answers with the same
+  page it touches or any other error the disk alone does not give —
+  a page it makes invalid, a collision, an instance count — nothing
+  landed); `--dry-run` answers with the same
   refusals and the plan the real run lands. Refused besides: a draft
   outside the content roots, at a path a move leaves, or of a page an
   operation changes; a missing page, successor or claim (exit 3); a

@@ -320,8 +320,11 @@ read.
   roots is `draft-outside-content` (exit 2). `created` is stamped on a page
   new to the vault and `updated` on every changed one, through
   `WIKIWRIGHT_TODAY`. The batch is judged together with the disk as its base
-  and each move as its rename; an error on any page it touches refuses the
-  whole batch (`draft-invalid`, exit 5, the findings in `data`). Otherwise
+  and each move as its rename; an error on any page it touches, or an error
+  elsewhere that judging the disk alone does not give (a page the batch
+  makes invalid, an identity collision reported on the page already there,
+  an instance count), refuses the whole batch (`draft-invalid`, exit 5, the
+  findings and the `failing` paths in `data`). Otherwise
   every page is staged beside its path, then renamed into place, then each
   path a move left is removed: each file is its old or its new complete
   bytes, and the batch is not transactional. The envelope carries the plan's

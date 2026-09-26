@@ -132,6 +132,46 @@ describe("drafts (v2 contracts §9.3)", () => {
     ]);
   });
 
+  it("refuses an identity collision the batch causes, on the page it collides with", () => {
+    const dir = gardenBundle();
+    const before = snapshot(dir);
+    // "wiki/Annuals/Basil.md" sorts before "wiki/Basil.md": the collision is
+    // reported on the page already on disk, which the batch does not touch.
+    const r = cli(
+      ["write", "--from", drafts({ "wiki/Annuals/Basil.md": page(dir, "wiki/Basil.md") })],
+      dir,
+    );
+    expect(r.status).toBe(5);
+    expect(r.envelope.error?.code).toBe("draft-invalid");
+    expect([...new Set(findingsOf(r.envelope, "identity-collision").map((f) => f.path))]).toEqual([
+      "wiki/Basil.md",
+    ]);
+    expect(r.envelope.data?.["failing"]).toEqual(["wiki/Basil.md"]);
+    expect(delta(before, snapshot(dir))).toEqual([]);
+  });
+
+  it("refuses a page the batch makes invalid elsewhere, and a type pushed past its instances", () => {
+    const dir = gardenBundle({
+      "wiki/Basil.md": page(gardenBundle(), "wiki/Basil.md").replace(
+        "bed: herb",
+        "bed: herb\norigin: Herb bed",
+      ),
+    });
+    const retyped =
+      "---\ntype: guide\ntitle: Herb bed\n---\n\n# Herb bed\n\n## Start here\n\nThe raised bed.\n";
+    const r = cli(["write", "--from", drafts({ "wiki/Herb bed.md": retyped })], dir);
+    expect(r.status).toBe(5);
+    expect(findingsOf(r.envelope, "page-ref-type").map((f) => [f.path, f.details["kind"]])).toEqual(
+      [["wiki/Basil.md", "type"]],
+    );
+    const bounded = gardenBundle({
+      "constitution/types/guide.yaml": `${page(gardenBundle(), "constitution/types/guide.yaml")}instances: { min: 0, max: 1 }\n`,
+    });
+    const over = cli(["write", "--from", drafts({ "wiki/Tour.md": TOUR })], bounded);
+    expect(over.status).toBe(5);
+    expect(findingsOf(over.envelope, "instances-max").map((f) => f.details["count"])).toEqual([2]);
+  });
+
   it("refuses a draft outside the content roots, and a directory that is not there", () => {
     const dir = gardenBundle();
     const outside = cli(["write", "--from", drafts({ "notes/x.md": TOUR })], dir);

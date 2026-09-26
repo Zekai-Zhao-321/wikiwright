@@ -5,7 +5,7 @@
 
 export { folderFindings, formerFolderFindings, missingFolderTags } from "./folders.ts";
 export type { GateScope } from "./gate.ts";
-export { changesLaw, gateScope, inheritedLines as inheritedPageLines } from "./gate.ts";
+export { changesLaw, findingKey, gateScope, inheritedLines as inheritedPageLines } from "./gate.ts";
 export type {
   Collected,
   CoverageCell,

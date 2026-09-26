@@ -133,13 +133,13 @@ function baseNames(state: JudgeState, read: StateRead, law: TypeLaw): VaultNames
   return buildNames(named);
 }
 
-/** One finding as a key: its rule, its location and its details. */
-function findingKey(f: Unrouted): string {
+/** One finding as a key: its rule, its path, its location and its details. */
+export function findingKey(f: Unrouted): string {
   const at =
     f.location.kind === "page"
       ? "page"
       : `${f.location.heading}\u0000${f.location.occurrence}\u0000${f.location.line}`;
-  return `${f.rule}\u0000${at}\u0000${JSON.stringify(f.details)}`;
+  return `${f.rule}\u0000${f.path}\u0000${at}\u0000${JSON.stringify(f.details)}`;
 }
 
 export interface GateScope {

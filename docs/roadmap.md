@@ -779,7 +779,8 @@ its old self over any other root. What the rewritten verbs leave, so far:
   draft: a typo-sized correction passes `claims-transition`), the new-page
   identity gate's stem tier, `--not-any-of` and the advisory `near` list
   (an existing page a draft collides with is the judge's
-  `identity-collision`), the retirement banner, and `new`'s templates,
+  `identity-collision`, which refuses the batch on whichever page it is
+  reported), the retirement banner, and `new`'s templates,
   `--item` and `--set`.
 - A page's status (`read`, and each `search` result) keeps its two reasons
   apart: `reason` says why `stale` is true or null, and `unresolved_reason`
