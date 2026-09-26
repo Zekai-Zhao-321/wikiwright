@@ -1,9 +1,10 @@
-// docs/cli.md §The envelope (envelopes, one command registry, generated help/
-// schema; a zero-positional command names the flag a stray value belongs to) · 09
-// docs/cli.md §schema (global_flags from the parser's one constant) (exit taxonomy:
-// usage 2 · not_found 3 · conflict 4 · findings 5; JSON-only v1; extra positionals
-// are usage) · docs/architecture.md §Directories (byte-deterministic output; byte-entry normalization — a BOM
-// on a registry, a backslash in a filename).
+// docs/cli.md §The envelope (envelopes, one command registry, generated help
+// and schema; a zero-positional command names the flag a stray value belongs
+// to) · `--help --json` (global_flags from the parser's one constant) (exit
+// taxonomy: usage 2 · not_found 3 · conflict 4 · findings 5; JSON only;
+// extra positionals are usage) · docs/architecture.md §Directories
+// (byte-deterministic output; byte-entry normalization — a BOM on
+// engine.json, a backslash in a filename).
 
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
@@ -12,12 +13,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseInvocation } from "../src/argv.ts";
-import { COMMANDS, LEGACY_COMMANDS } from "../src/commands.ts";
+import { COMMANDS } from "../src/commands.ts";
 import { EXIT, fail, ok } from "../src/envelope.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const FIXTURE = fileURLToPath(new URL("../../../fixtures/v1/minimal-vault", import.meta.url));
+const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
+const ORCHARD = fileURLToPath(new URL("../../../fixtures/handbooks/orchard", import.meta.url));
 
 interface RunOutcome {
   status: number;
@@ -50,16 +52,15 @@ describe("envelope unit layer", () => {
       not_found: 3,
       conflict: 4,
       findings: 5,
-      confirm_required: 10,
     });
   });
 
   it("builds ok and error envelopes with uniform shapes", () => {
-    const good = ok("lint", { hello: 1 });
+    const good = ok("check", { hello: 1 });
     assert.equal(good.envelope.ok, true);
     assert.equal(good.exit, 0);
-    const bad = fail("lint", "usage", "unknown-flag", "no such flag", {
-      hint: "run wikiwright schema",
+    const bad = fail("check", "usage", "unknown-flag", "no such flag", {
+      hint: "run wikiwright check --help",
     });
     assert.equal(bad.envelope.ok, false);
     assert.equal(bad.exit, 2);
@@ -70,20 +71,13 @@ describe("envelope unit layer", () => {
 });
 
 describe("process surface — routing and taxonomy", () => {
-  it("returns generated schema for the whole command registry", () => {
-    const r = run(["schema"]);
+  it("returns the generated schema of the whole command registry", () => {
+    const r = run(["--help", "--json"]);
     assert.equal(r.status, 0);
-    const data = r.envelope["data"] as { commands: Array<{ name: string; role: string }> };
-    const names = data.commands.map((c) => c.name);
-    for (const expected of ["lint", "new", "schema", "search", "type"]) {
-      assert.equal(names.includes(expected), true, `schema lists ${expected}`);
-    }
-    // docs/cli.md §brief: three ordered bounds, not two.
-    assert.equal(
-      data.commands.every(
-        (c) => c.role === "maintainer" || c.role === "writer" || c.role === "consumer",
-      ),
-      true,
+    const data = r.envelope["data"] as { commands: Array<{ name: string }> };
+    assert.deepEqual(
+      data.commands.map((c) => c.name),
+      COMMANDS.map((c) => c.name),
     );
   });
 
@@ -91,30 +85,28 @@ describe("process surface — routing and taxonomy", () => {
     const r = run(["frobnicate"]);
     assert.equal(r.status, EXIT.usage);
     const details = errorOf(r.envelope)["details"] as { valid_commands?: string[] };
-    assert.equal(details.valid_commands?.includes("lint"), true);
+    assert.equal(details.valid_commands?.includes("check"), true);
   });
 
   it("fails unknown flags as usage (parseArgs strict)", () => {
-    const r = run(["lint", "--root", FIXTURE, "--no-such-flag"]);
+    const r = run(["check", "--root", FIXTURE, "--no-such-flag"]);
     assert.equal(r.status, EXIT.usage);
     assert.equal(errorOf(r.envelope)["type"], "usage");
   });
 
-  it("fails a missing vault as not_found", () => {
-    const r = run(["lint", "--root", "/nonexistent/vault"]);
+  it("fails a missing bundle as not_found", () => {
+    const r = run(["check", "--root", "/nonexistent/vault"]);
     assert.equal(r.status, EXIT.not_found);
   });
 });
 
-describe("build — a deprecation that states the difference (docs/cli.md)", () => {});
-
-describe("lint — the gate", () => {
+describe("check — findings exit 5", () => {
   it("exits 5 with findings still in data when error findings exist", () => {
-    const r = run(["lint", "--root", FIXTURE]);
+    const r = run(["check", "--root", FIXTURE]);
     assert.equal(r.status, EXIT.findings);
     assert.equal(r.envelope["ok"], false);
     const data = r.envelope["data"] as {
-      findings: Array<{ ruleId: string; path: string }>;
+      findings: Array<{ rule: string; path: string }>;
       summary: { errors: number };
     };
     assert.equal(data.summary.errors > 0, true);
@@ -125,15 +117,15 @@ describe("lint — the gate", () => {
     assert.equal(errorOf(r.envelope)["type"], "findings");
   });
 
-  it("exits 0 on a clean page", () => {
-    const r = run(["lint", "--root", FIXTURE, "--page", "wiki/test-execution/warm-reset.md"]);
-    assert.equal(r.status, 0);
+  it("exits 0 on a clean bundle", () => {
+    const r = run(["check", "--root", ORCHARD]);
+    assert.equal(r.status, 0, JSON.stringify(r.envelope));
     assert.equal(r.envelope["ok"], true);
   });
 
   it("is byte-deterministic across runs", () => {
-    const a = runCli([CLI, "lint", "--root", FIXTURE]);
-    const b = runCli([CLI, "lint", "--root", FIXTURE]);
+    const a = runCli([CLI, "check", "--root", FIXTURE]);
+    const b = runCli([CLI, "check", "--root", FIXTURE]);
     assert.equal(a.stdout.length > 0, true);
     assert.equal(a.stdout.equals(b.stdout), true);
   });
@@ -153,13 +145,13 @@ describe("extra positionals are a usage error (docs/cli.md §The envelope)", () 
   });
 
   it("a zero-positional command names the flag a stray value belongs to, not a quoting bug", () => {
-    const r = run(["lint", "--explain", "meta/charter.md", "--root", FIXTURE]);
+    const r = run(["check", "--all", "wiki/test-execution/warm-reset.md", "--root", FIXTURE]);
     assert.equal(r.status, EXIT.usage, JSON.stringify(r.envelope));
     const err = errorOf(r.envelope);
     assert.equal(err["code"], "unexpected-argument");
     const hint = String(err["hint"]);
     assert.match(hint, /no positional/);
-    assert.match(hint, /--page/);
+    assert.match(hint, /--path/);
     assert.doesNotMatch(hint, /quote multi-word/);
     const details = err["details"] as { expected_positionals: string[] };
     assert.deepEqual(details.expected_positionals, []);
@@ -172,9 +164,9 @@ interface GlobalFlag {
   summary: string;
 }
 
-describe("schema declares the global flags the parser accepts (docs/cli.md §schema)", () => {
+describe("--help --json declares the global flags the parser accepts (docs/cli.md §The envelope)", () => {
   function globalFlagsFromSchema(): GlobalFlag[] {
-    const schema = run(["schema"]);
+    const schema = run(["--help", "--json"]);
     assert.equal(schema.status, 0);
     const flags = (schema.envelope["data"] as Record<string, unknown>)["global_flags"];
     assert.equal(Array.isArray(flags), true, "schema carries a top-level global_flags");
@@ -212,7 +204,7 @@ describe("schema declares the global flags the parser accepts (docs/cli.md §sch
 
   it("every global flag parses for every command; an undeclared flag for none", () => {
     const flags = globalFlagsFromSchema();
-    for (const spec of new Set([...COMMANDS, ...LEGACY_COMMANDS])) {
+    for (const spec of COMMANDS) {
       // A verb with subcommands takes its first one, so the flag is judged on
       // an invocation the parser would otherwise accept.
       const lead = spec.subcommands === undefined ? [] : [spec.subcommands[0] ?? ""];
@@ -229,11 +221,11 @@ describe("schema declares the global flags the parser accepts (docs/cli.md §sch
 });
 
 describe("byte-entry normalization (docs/architecture.md §Directories)", () => {
-  it("loads a registry saved with a UTF-8 BOM", () => {
+  it("loads an engine.json saved with a UTF-8 BOM", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-cli-"));
     try {
       cpSync(FIXTURE, tmp, { recursive: true });
-      const p = join(tmp, "config/constitution.json");
+      const p = join(tmp, "config/engine.json");
       writeFileSync(p, `\ufeff${readFileSync(p, "utf8")}`);
       assert.equal(run(["type", "list", "--root", tmp]).status, 0);
     } finally {
@@ -250,9 +242,9 @@ describe("byte-entry normalization (docs/architecture.md §Directories)", () => 
       cpSync(FIXTURE, tmp, { recursive: true });
       writeFileSync(
         join(tmp, "wiki/a\\b.md"),
-        "---\ntype: concept\ntitle: Backslash page\ndescription: x.\ntags: []\n---\n\n# Backslash page\n",
+        "---\ntype: test-case\ntitle: Backslash page\n---\n\n# Backslash page\n",
       );
-      const r = run(["lint", "--root", tmp]);
+      const r = run(["check", "--root", tmp]);
       assert.notEqual(r.status, EXIT.internal, "whole-vault commands must not crash");
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -263,9 +255,9 @@ describe("byte-entry normalization (docs/architecture.md §Directories)", () => 
 describe("an unknown flag is refused with the verb's flags listed (docs/cli.md §The envelope)", () => {
   it("names the flag and lists valid_flags — global and the verb's own — on every verb", () => {
     for (const [verb, flag] of [
-      ["lint", "--staged-only"],
+      ["check", "--staged-only"],
       ["write", "--batch"],
-      ["init", "--keep"],
+      ["gate", "--keep"],
     ] as const) {
       const r = run([verb, flag]);
       assert.equal(r.status, 2, `${verb} ${flag}: ${JSON.stringify(r.envelope)}`);
@@ -289,10 +281,10 @@ describe("an unknown flag is refused with the verb's flags listed (docs/cli.md �
   });
 
   it("a flag missing its value is invalid-arguments, still with valid_flags", () => {
-    const r = run(["lint", "--page"]);
+    const r = run(["check", "--path"]);
     assert.equal(r.status, 2);
     const error = r.envelope["error"] as { code: string; details: { valid_flags: string[] } };
     assert.equal(error.code, "invalid-arguments");
-    assert.equal(error.details.valid_flags.includes("--page"), true);
+    assert.equal(error.details.valid_flags.includes("--path"), true);
   });
 });

@@ -15,9 +15,9 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMMANDS, LEGACY_COMMANDS } from "../src/commands.ts";
+import { COMMANDS } from "../src/commands.ts";
 import { runtimeImports } from "./fixtures/imports.ts";
-import { everyVerb } from "./fixtures/verb-module.ts";
+import { verbModule } from "./fixtures/verb-module.ts";
 
 const SRC = fileURLToPath(new URL("../src", import.meta.url));
 
@@ -78,8 +78,8 @@ function readsAVault(entry: string, read: (file: string) => string = readSource)
 describe("a verb declares whether it reads the vault's law (docs/extending.md)", () => {
   it("every declaration matches what the verb's imports reach", () => {
     const wrong: string[] = [];
-    for (const { spec: command, module } of everyVerb(COMMANDS, LEGACY_COMMANDS)) {
-      const entry = join(SRC, module);
+    for (const command of COMMANDS) {
+      const entry = join(SRC, verbModule(command.name));
       const reaches = readsAVault(entry);
       if (reaches !== command.needsVaultModules) {
         wrong.push(
@@ -90,19 +90,11 @@ describe("a verb declares whether it reads the vault's law (docs/extending.md)",
     assert.deepEqual(wrong, []);
   });
 
-  it("the verbs that read no vault are named, so adding one is a decision", () => {
-    // A verb of the command table reads its law through the type-document
-    // loader, which loads no module: none of them preloads one.
+  it("no verb of the table preloads a module", () => {
+    // Every verb reads its law through the type-document loader, which loads
+    // no module: none of them preloads one.
     assert.deepEqual(
-      LEGACY_COMMANDS.filter((c) => !c.needsVaultModules)
-        .map((c) => c.name)
-        .sort(),
-      ["schema", "version"],
-    );
-    assert.deepEqual(
-      COMMANDS.filter((c) => !LEGACY_COMMANDS.includes(c) && c.needsVaultModules).map(
-        (c) => c.name,
-      ),
+      COMMANDS.filter((c) => c.needsVaultModules).map((c) => c.name),
       [],
     );
   });

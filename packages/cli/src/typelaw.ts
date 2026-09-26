@@ -1,13 +1,11 @@
 // v2 contracts §2 (a bundle is detected by config/engine.json), §7 (the
 // bundle block: label, root, head, dirty, law, content), §9 (the envelope).
 //
-// What every verb of the v2 table shares: which table answers a root, the law
-// a state carries loaded or refused, the engine range refused, and the bundle
+// What every verb shares: the law a state carries loaded or refused, the engine range refused, and the bundle
 // block the envelope names, computed from the state the verb read — the
 // working tree's for `check`, the index's for `gate` (§7: the gate's envelope
 // law is the index's).
-import { readFileSync, realpathSync } from "node:fs";
-import { join } from "node:path";
+import { realpathSync } from "node:fs";
 import {
   contentDigest,
   ENGINE_PATH,
@@ -19,33 +17,7 @@ import {
 } from "@wikiwright/core";
 import { type BundleIdentity, type CommandResult, ENGINE_VERSION, fail } from "./envelope.ts";
 import { gitCheckoutState } from "./git.ts";
-import { StateChangedDuringRead } from "./lawstate.ts";
-
-/**
- * Whether the root holds a bundle of the v2 law: a `config/engine.json` that
- * reads as JSON with `schema_version: 4`. Such a bundle is answered by the
- * command table of §9; any other root — a bundle on the old constitution, or
- * no bundle at all — by the old table (`LEGACY_COMMANDS`), until step 5 of the
- * delivery migrates the corpora and step 6 deletes the old verbs.
- */
-export function isTypeLawBundle(root: string): boolean {
-  let text: string;
-  try {
-    text = readFileSync(join(root, ENGINE_PATH), "utf8");
-  } catch {
-    return false;
-  }
-  try {
-    const json = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text) as unknown;
-    return (
-      json !== null &&
-      typeof json === "object" &&
-      (json as Record<string, unknown>)["schema_version"] === 4
-    );
-  } catch {
-    return false;
-  }
-}
+import { RootNotFound, StateChangedDuringRead } from "./lawstate.ts";
 
 export type LawLoad = { ok: true; law: TypeLaw } | { ok: false; result: CommandResult };
 
@@ -157,10 +129,17 @@ export function withIdentity(result: CommandResult, bundle: BundleIdentity): Com
 
 /**
  * A state that could not be read as one state (§11): the working tree changed
- * while it was read, twice. Refused, and nothing judged; any other error is
- * the engine's.
+ * while it was read, twice; or the root names no directory, which is no
+ * bundle (`bundle-not-found`, as a directory with no engine.json is).
+ * Refused, and nothing judged; any other error is the engine's.
  */
 export function stateRefusal(command: string, error: unknown): CommandResult | undefined {
+  if (error instanceof RootNotFound) {
+    return fail(command, "not_found", "bundle-not-found", error.message, {
+      details: { path: ENGINE_PATH },
+      hint: "a bundle is a directory holding config/engine.json at schema_version 4; name one with --root",
+    });
+  }
   if (error instanceof StateChangedDuringRead) {
     return fail(command, "conflict", "state-changed-during-read", error.message, {
       hint: "read again when no editor or process is writing to the bundle",

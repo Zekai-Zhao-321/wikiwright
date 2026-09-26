@@ -11,8 +11,8 @@
 // The law travels with the pages: each state reads `config/engine.json`, the
 // constitution and the libraries from the same place as its pages (the
 // adapters in lawfiles.ts), so the content roots it walks are the ones its
-// own law declares. Beside the old constructors (state.ts), which every verb
-// still calls; nothing in the binary reaches these yet.
+// own law declares. They replaced the old constructors (state.ts), which
+// left with the old verbs.
 //
 // A symbolic link or a submodule at, under or above a content root is read
 // by none of the four: the index and a revision hold a link as the text of
@@ -22,7 +22,7 @@
 // each as `path-skipped`: the working tree walks with lstat and descends into
 // no link and no directory holding `.git`; the index and a revision list
 // modes 120000 and 160000.
-import { type Dirent, lstatSync, readdirSync } from "node:fs";
+import { type Dirent, lstatSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import {
   codeUnitCompare,
@@ -66,6 +66,18 @@ export class StateChangedDuringRead extends Error {
       `the working tree under "${root}" changed while it was read, twice in a row; nothing was judged — read again when no editor or process is writing to it`,
     );
     this.name = "StateChangedDuringRead";
+  }
+}
+
+/**
+ * The root a verb names is not a directory: nothing to read, which is no
+ * bundle rather than a tree that moved while it was read.
+ */
+export class RootNotFound extends Error {
+  readonly code = "bundle-not-found";
+  constructor(root: string) {
+    super(`there is no directory at "${root}", so there is no bundle to read`);
+    this.name = "RootNotFound";
   }
 }
 
@@ -200,6 +212,13 @@ export interface CaptureOptions {
  * once more; on a second difference, `state-changed-during-read`.
  */
 async function consistentCapture(root: string, options: CaptureOptions): Promise<Capture> {
+  let isDirectory = false;
+  try {
+    isDirectory = statSync(root).isDirectory();
+  } catch {
+    // Absent, or unreadable as a path: refused below as no directory.
+  }
+  if (!isDirectory) throw new RootNotFound(root);
   for (const attempt of [1, 2]) {
     // A path that vanishes mid-read is a tree that changed: read again.
     const first = await tryCapture(root);

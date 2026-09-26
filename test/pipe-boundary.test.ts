@@ -36,7 +36,7 @@ import { buildBinary } from "./fixtures/binary.ts";
 
 const REPO = fileURLToPath(new URL("../", import.meta.url));
 const CLI = join(REPO, "packages", "cli", "dist", "main.js");
-const ORCHARD = join(REPO, "fixtures", "v1", "handbooks", "orchard");
+const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
 const PAGE = "wiki/pruning-roses.md";
 const TARGET = 70_000;
 /** How long the reader waits for a CLI that has not exited before it starts reading. */
@@ -187,6 +187,6 @@ describe.each(ENGINES)("$name: the envelope arrives whole through a pipe", (engi
     const bytes = probe(engine, ["check", "--root", join(root, "no-such-bundle")], REPO, 3);
     const envelope = JSON.parse(bytes.toString("utf8")) as { ok: boolean; error: { code: string } };
     expect(envelope.ok).toBe(false);
-    expect(envelope.error.code).toBe("vault-not-found");
+    expect(envelope.error.code).toBe("bundle-not-found");
   });
 });

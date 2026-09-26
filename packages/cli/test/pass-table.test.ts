@@ -209,19 +209,6 @@ describe("the pass table's severity is a ceiling, and it is enforced", () => {
       );
     }
   });
-
-  it("the ceiling is a ceiling, not an equality: skills-stale emits both arms", () => {
-    // The ceiling law needs the room, and a gate that demanded equality would have
-    // forced a second id for what is one law with one route.
-    const emitted = emittedSeverities().filter((p) => p.id === "skills-stale");
-    assert.deepEqual(
-      [...new Set(emitted.map((p) => p.severity))].sort(),
-      ["info", "warning"],
-      "both arms of skills-stale are written as literals and both are collected",
-    );
-    assert.equal(rank("info") < rank("warning"), true, "the comparison is an ordering");
-    assert.equal(rank("warning") < rank("error"), true, "the comparison is an ordering");
-  });
 });
 
 describe("the routing law: every finding routes or the build fails (docs/concepts.md §Findings and routing)", () => {

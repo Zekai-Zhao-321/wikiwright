@@ -2,7 +2,8 @@
 // by name as `git-short-read` (exit 1), never read as a shorter listing. Under
 // load a runtime's synchronous spawn has handed back a child's stdout cut short
 // with exit 0; these tests put a `git` on PATH that does the same to one
-// command, and hold every verb that reads it to the refusal.
+// command, and hold the verbs that read it — the gate over the index, check
+// over the checkout's status — to the refusal.
 
 import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
@@ -11,7 +12,6 @@ import { chmodSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { GitShortRead, terminated } from "../src/git.ts";
 import { spawnWithStdoutFile } from "../src/stdoutfile.ts";
 import { notePage, writeAt, writeNoteBundle } from "./fixtures/note-bundle.ts";
@@ -26,33 +26,20 @@ function git(cwd: string, ...args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 }
 
-function page(title: string, body = ""): string {
-  return `---\ntype: note\ntitle: ${title}\ndescription: ${title}.\ntags: []\n---\n\n# ${title}\n${body}`;
-}
-
-/** A one-type repository of four pages, committed, then two of them staged as modified. */
+/** A one-type bundle of four notes, committed, then two of them staged as modified. */
 function repo(): string {
   const tmp = mkdtempSync(join(tmpdir(), "ww-short-read-"));
-  mkdirSync(join(tmp, "config"));
-  mkdirSync(join(tmp, "wiki"));
-  writeFileSync(
-    join(tmp, "config", "constitution.json"),
-    JSON.stringify(documentOf({ types: { note: { extends: "concept", description: "A note." } } })),
-  );
-  writeFileSync(join(tmp, "config", "engine.json"), JSON.stringify({ content_roots: ["wiki"] }));
-  for (const name of ["Fern", "Moss", "Reed", "Sedge"]) {
-    writeFileSync(join(tmp, "wiki", `${name}.md`), page(name));
-  }
+  writeNoteBundle(tmp, ["Fern", "Moss", "Reed", "Sedge"]);
   git(tmp, "init", "-q", "-b", "main");
   git(tmp, "config", "user.email", "test@example.com");
   git(tmp, "config", "user.name", "Test");
   git(tmp, "add", "-A");
   git(tmp, "commit", "-q", "-m", "base");
-  writeFileSync(join(tmp, "wiki", "Fern.md"), page("Fern", "\nA second frond.\n"));
+  writeAt(tmp, "wiki/Fern.md", notePage("Fern", "\nA second frond.\n"));
   git(tmp, "add", "-A");
   git(tmp, "commit", "-q", "-m", "fern");
-  writeFileSync(join(tmp, "wiki", "Moss.md"), page("Moss", "\nA staged line.\n"));
-  writeFileSync(join(tmp, "wiki", "Reed.md"), page("Reed", "\nA staged line.\n"));
+  writeAt(tmp, "wiki/Moss.md", notePage("Moss", "\nA staged line.\n"));
+  writeAt(tmp, "wiki/Reed.md", notePage("Reed", "\nA staged line.\n"));
   git(tmp, "add", "-A");
   return tmp;
 }
@@ -176,65 +163,42 @@ describe("a cut git answer is refused as git-short-read (docs/roadmap.md)", () =
     if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
   });
 
-  it("the untouched shim changes nothing: lint --staged judges both staged pages", () => {
+  it("the untouched shim changes nothing: the gate judges the staged pages", () => {
     if (POSIX_ONLY) return;
-    const r = run(tmp, PATH, ["lint", "--staged"]);
+    const r = run(tmp, PATH, ["gate"]);
     assert.equal(r.status, 0, said(r));
     const data = r.envelope["data"] as { summary: { pages: number } };
     assert.ok(data.summary.pages > 0, said(r));
   });
 
-  it("lint --staged refuses a staged-change listing cut before its final NUL", () => {
+  it("the gate refuses a staged-change listing cut before its final NUL", () => {
     if (POSIX_ONLY) return;
     assertShortRead(
-      run(tmp, PATH, ["lint", "--staged"], "diff --cached --name-status"),
+      run(tmp, PATH, ["gate"], "diff --cached --name-status"),
       "diff --cached --name-status -z",
     );
   });
 
-  it("lint --staged refuses an index listing cut before its final NUL", () => {
+  it("the gate refuses an index listing cut before its final NUL", () => {
     if (POSIX_ONLY) return;
-    assertShortRead(run(tmp, PATH, ["lint", "--staged"], "ls-files -s -z"), "ls-files -s -z");
+    assertShortRead(run(tmp, PATH, ["gate"], "ls-files -s -z"), "ls-files -s -z");
   });
 
-  it("lint --staged refuses a batch-check answer cut after its first line", () => {
+  it("the gate refuses a batch-check answer cut after its first line", () => {
     if (POSIX_ONLY) return;
     // Cut at a line: every line it kept is well formed, so only the count gives it away.
     assertShortRead(
-      run(tmp, PATH, ["lint", "--staged"], "cat-file --batch-check", "line"),
+      run(tmp, PATH, ["gate"], "cat-file --batch-check", "line"),
       "cat-file --batch-check",
     );
   });
 
-  it("fix --staged refuses a cut staged read instead of fixing nothing", () => {
+  it("a cut status is refused by name instead of stating a clean checkout", () => {
     if (POSIX_ONLY) return;
-    const r = run(
-      tmp,
-      PATH,
-      ["fix", "--rule", "folder-tags-present", "--staged", "--dry-run", "--expect", "any"],
-      "ls-files -s -z",
-    );
-    assertShortRead(r, "ls-files -s -z");
-  });
-
-  it("lint --since refuses a cut commit walk instead of replaying fewer commits", () => {
-    if (POSIX_ONLY) return;
-    const base = git(tmp, "rev-list", "--max-parents=0", "HEAD");
-    assertShortRead(
-      run(tmp, PATH, ["lint", "--since", base], "rev-list --first-parent"),
-      "rev-list",
-    );
-  });
-
-  it("a cut status leaves the bundle block off instead of stating a clean checkout", () => {
-    if (POSIX_ONLY) return;
-    const whole = run(tmp, PATH, ["lint"]);
-    assert.equal(whole.status, 0, said(whole));
+    const whole = run(tmp, PATH, ["check"]);
     const bundle = (whole.envelope["metadata"] as { bundle?: { dirty: boolean } }).bundle;
     assert.equal(bundle?.dirty, true, said(whole));
-    const cut = run(tmp, PATH, ["lint"], "status --porcelain=v2");
-    assert.equal(cut.status, 0, said(cut));
-    assert.equal((cut.envelope["metadata"] as { bundle?: unknown }).bundle, undefined, said(cut));
+    assertShortRead(run(tmp, PATH, ["check"], "status --porcelain=v2"), "status --porcelain=v2");
   });
 });
 
@@ -253,44 +217,18 @@ describe("a batch stream cut inside an object is a short read by name (docs/road
   // Every page ends in a newline, so the batch stream without its last byte
   // still ends in one: the terminator check passes it, and only the last
   // object's size says the stream stopped inside it.
-  it("lint --staged refuses it as git-short-read, not as an engine error", () => {
+  it("the gate refuses it as git-short-read, not as an engine error", () => {
     if (POSIX_ONLY) return;
-    const r = run(tmp, PATH, ["lint", "--staged"], "cat-file --batch", "exact");
+    const r = run(tmp, PATH, ["gate"], "cat-file --batch", "exact");
     assertShortRead(r, "cat-file --batch");
     assert.match(String((r.envelope["error"] as { message: string }).message), /inside object/u);
-  });
-
-  it("fix --staged refuses it as git-short-read, not git-unavailable", () => {
-    if (POSIX_ONLY) return;
-    assertShortRead(
-      run(
-        tmp,
-        PATH,
-        ["fix", "--rule", "folder-tags-present", "--staged", "--dry-run", "--expect", "any"],
-        "cat-file --batch",
-        "exact",
-      ),
-      "cat-file --batch",
-    );
-  });
-
-  it("lint --since refuses it as git-short-read, not as an engine error", () => {
-    if (POSIX_ONLY) return;
-    const base = git(tmp, "rev-list", "--max-parents=0", "HEAD");
-    assertShortRead(
-      run(tmp, PATH, ["lint", "--since", base], "cat-file --batch", "exact"),
-      "cat-file --batch",
-    );
   });
 });
 
 /** repo() with one more page staged as added, sorting last in the index: a type no law declares. */
 function addedRepo(): string {
   const tmp = repo();
-  writeFileSync(
-    join(tmp, "wiki", "Yarrow.md"),
-    "---\ntype: shrub\ntitle: Yarrow\ndescription: Yarrow.\ntags: []\n---\n\n# Yarrow\n",
-  );
+  writeAt(tmp, "wiki/Yarrow.md", "---\ntype: shrub\ntitle: Yarrow\n---\n\n# Yarrow\n");
   git(tmp, "add", "-A");
   return tmp;
 }
@@ -324,97 +262,6 @@ describe("two git answers that disagree are git-inconsistent-read (docs/roadmap.
 
   it("the whole index fails the added page's unknown type", () => {
     if (POSIX_ONLY) return;
-    const r = run(tmp, PATH, ["lint", "--staged"]);
-    assert.equal(r.status, 5, said(r));
-    const findings = (r.envelope["data"] as { findings: Array<{ ruleId: string; path: string }> })
-      .findings;
-    assert.ok(
-      findings.some((f) => f.path === "wiki/Yarrow.md" && f.ruleId === "unknown-type"),
-      said(r),
-    );
-  });
-
-  it("an index listing cut before its last record, while the diff names that page, is refused", () => {
-    if (POSIX_ONLY) return;
-    // The listing still ends in NUL: well formed, one record short, and judged
-    // it would be a clean index without the failing page.
-    assertInconsistent(
-      run(tmp, PATH, ["lint", "--staged"], "ls-files -s -z", "record"),
-      "ls-files",
-    );
-  });
-
-  it("an empty index listing, while the diff names pages, is refused", () => {
-    if (POSIX_ONLY) return;
-    assertInconsistent(run(tmp, PATH, ["lint", "--staged"], "ls-files -s -z", "empty"), "ls-files");
-  });
-
-  it("a batch request cut inside its last path is refused, not read as a page HEAD never held", () => {
-    if (POSIX_ONLY) return;
-    // git answers the shortened path `missing` and exits 0; by position that
-    // row would be the whole path's, a base of nothing.
-    assertInconsistent(
-      run(tmp, PATH, ["lint", "--staged"], "cat-file --batch-check", "request"),
-      "cat-file --batch-check",
-    );
-  });
-
-  it("a commit walk cut before its last line, or empty, is refused against git's count", () => {
-    if (POSIX_ONLY) return;
-    const head = git(tmp, "rev-parse", "HEAD");
-    for (const mode of ["lastline", "empty"]) {
-      assertInconsistent(
-        run(tmp, PATH, ["lint", "--since", head], "rev-list --first-parent --reverse", mode),
-        "rev-list --first-parent --reverse",
-      );
-    }
-  });
-});
-
-/**
- * The v2 law's index read (lawstate.ts `indexState`): a note bundle of four
- * pages, committed, two staged as modified and one added whose type no law
- * declares, sorting last in the index.
- */
-function typeLawRepo(): string {
-  const tmp = mkdtempSync(join(tmpdir(), "ww-short-read-v2-"));
-  writeNoteBundle(tmp, ["Fern", "Moss", "Reed", "Sedge"]);
-  git(tmp, "init", "-q", "-b", "main");
-  git(tmp, "config", "user.email", "test@example.com");
-  git(tmp, "config", "user.name", "Test");
-  git(tmp, "add", "-A");
-  git(tmp, "commit", "-q", "-m", "base");
-  writeAt(tmp, "wiki/Moss.md", notePage("Moss", "\nA staged line.\n"));
-  writeAt(tmp, "wiki/Reed.md", notePage("Reed", "\nA staged line.\n"));
-  writeAt(tmp, "wiki/Yarrow.md", "---\ntype: shrub\ntitle: Yarrow\n---\n\n# Yarrow\n");
-  git(tmp, "add", "-A");
-  return tmp;
-}
-
-describe("the v2 gate's index listing is held to the staged diff (docs/roadmap.md)", () => {
-  let tmp = "";
-  let PATH = "";
-  beforeAll(() => {
-    if (POSIX_ONLY) return;
-    tmp = typeLawRepo();
-    PATH = cuttingGit(tmp);
-  });
-  afterAll(() => {
-    if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
-  });
-
-  function assertInconsistent(r: Run): void {
-    assert.equal(r.status, 1, said(r));
-    const error = r.envelope["error"] as { code: string; details: { commands: string[] } };
-    assert.equal(error.code, "git-inconsistent-read", said(r));
-    assert.ok(
-      error.details.commands.some((c) => c.startsWith("git ls-files")),
-      said(r),
-    );
-  }
-
-  it("the whole index fails the added page's unknown type", () => {
-    if (POSIX_ONLY) return;
     const r = run(tmp, PATH, ["gate"]);
     assert.equal(r.status, 5, said(r));
     const findings = (r.envelope["data"] as { findings: Array<{ rule: string; path: string }> })
@@ -425,13 +272,26 @@ describe("the v2 gate's index listing is held to the staged diff (docs/roadmap.m
     );
   });
 
-  it("a listing cut before its last record, or empty, while the diff names pages, is refused", () => {
+  it("an index listing cut before its last record, while the diff names that page, is refused", () => {
     if (POSIX_ONLY) return;
     // The listing still ends in NUL: well formed, one record short, and judged
     // it would be a clean index without the failing page.
-    for (const mode of ["record", "empty"]) {
-      assertInconsistent(run(tmp, PATH, ["gate"], "ls-files -s -z", mode));
-    }
+    assertInconsistent(run(tmp, PATH, ["gate"], "ls-files -s -z", "record"), "ls-files");
+  });
+
+  it("an empty index listing, while the diff names pages, is refused", () => {
+    if (POSIX_ONLY) return;
+    assertInconsistent(run(tmp, PATH, ["gate"], "ls-files -s -z", "empty"), "ls-files");
+  });
+
+  it("a batch request cut inside its last path is refused, not read as a page HEAD never held", () => {
+    if (POSIX_ONLY) return;
+    // git answers the shortened path `missing` and exits 0; by position that
+    // row would be the whole path's, a base of nothing.
+    assertInconsistent(
+      run(tmp, PATH, ["gate"], "cat-file --batch-check", "request"),
+      "cat-file --batch-check",
+    );
   });
 });
 
@@ -518,99 +378,5 @@ describe("terminated: a git answer held to its terminator", () => {
       () => terminated(["rev-parse", "HEAD"], "", "\n", true),
       (e: unknown) => e instanceof GitShortRead && /printed nothing/u.test(e.message),
     );
-  });
-});
-
-/**
- * A repository whose vault pins itself: one source page with origin `.`,
- * pinned to the commit before HEAD and covering a path HEAD did not touch, so
- * `freshness --fast-forward` has one pin to advance.
- */
-function pinnedRepo(): string {
-  const tmp = mkdtempSync(join(tmpdir(), "ww-short-read-pin-"));
-  mkdirSync(join(tmp, "config"));
-  mkdirSync(join(tmp, "raw"));
-  mkdirSync(join(tmp, "src"));
-  writeFileSync(
-    join(tmp, "config", "constitution.json"),
-    JSON.stringify(
-      documentOf({
-        types: {
-          source: {
-            extends: "reference",
-            description: "A captured source.",
-            fields: {
-              locator: { kind: "string", required: true },
-              commit: { kind: "pin", origin: "locator", covers: "covers", required: true },
-              covers: { kind: "list", item: { kind: "string" } },
-            },
-          },
-        },
-      }),
-    ),
-  );
-  writeFileSync(
-    join(tmp, "config", "engine.json"),
-    JSON.stringify({ content_roots: ["raw"], source_roots: ["raw"] }),
-  );
-  writeFileSync(join(tmp, "src", "trellis.txt"), "Tie the canes in autumn.\n");
-  git(tmp, "init", "-q", "-b", "main");
-  git(tmp, "config", "user.email", "test@example.com");
-  git(tmp, "config", "user.name", "Test");
-  git(tmp, "add", "-A");
-  git(tmp, "commit", "-q", "-m", "trellis");
-  const pin = git(tmp, "rev-parse", "HEAD");
-  writeFileSync(
-    join(tmp, "raw", "Trellis.md"),
-    `---\ntype: source\ntitle: Trellis\ndescription: A capture.\ntags: []\nlocator: "."\ncommit: ${pin}\ncovers: ["src/"]\n---\n\n# Trellis\n\nCaptured.\n`,
-  );
-  git(tmp, "add", "-A");
-  git(tmp, "commit", "-q", "-m", "capture");
-  return tmp;
-}
-
-/** The refusal code and exit of a run, for comparing a dry run with the run. */
-function refusalOf(r: Run): { status: number; code: unknown } {
-  return { status: r.status, code: (r.envelope["error"] as { code?: unknown } | undefined)?.code };
-}
-
-describe("freshness --fast-forward --dry-run refuses what the run refuses (docs/cli.md §The dry-run law)", () => {
-  let tmp = "";
-  let PATH = "";
-  const argv = ["freshness", "--fast-forward"];
-  beforeAll(() => {
-    if (POSIX_ONLY) return;
-    tmp = pinnedRepo();
-    PATH = cuttingGit(tmp);
-  });
-  afterAll(() => {
-    if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
-  });
-
-  it("plans the one pin advance when git answers whole", () => {
-    if (POSIX_ONLY) return;
-    const r = run(tmp, PATH, [...argv, "--dry-run"]);
-    assert.equal(r.status, 0, said(r));
-    const ops = (r.envelope["data"] as { ops: Array<{ path: string }> }).ops;
-    assert.ok(
-      ops.some((op) => op.path === "raw/Trellis.md"),
-      said(r),
-    );
-  });
-
-  it("a cut rev-parse is git-short-read under the dry run, as under the run", () => {
-    if (POSIX_ONLY) return;
-    const dry = run(tmp, PATH, [...argv, "--dry-run"], "rev-parse HEAD");
-    assertShortRead(dry, "rev-parse HEAD");
-    const real = run(tmp, PATH, argv, "rev-parse HEAD");
-    assertShortRead(real, "rev-parse HEAD");
-  });
-
-  it("a git that fails is git-unavailable under the dry run, as under the run", () => {
-    if (POSIX_ONLY) return;
-    const dry = run(tmp, PATH, [...argv, "--dry-run"], "rev-list --count", "fail");
-    const real = run(tmp, PATH, argv, "rev-list --count", "fail");
-    assert.deepEqual(refusalOf(dry), { status: 4, code: "git-unavailable" }, said(dry));
-    assert.deepEqual(refusalOf(dry), refusalOf(real), said(real));
   });
 });

@@ -1,18 +1,12 @@
 // docs/architecture.md §The gate (the pack job died with CI and its claims went
-// unenforced) · docs/architecture.md §The invariants · docs/extending.md §Declaring a module · docs/architecture.md §Directories
-// (the shipped artifact is node-builtins-only).
+// unenforced) · docs/architecture.md §The invariants · docs/architecture.md
+// §Directories.
 //
 // The engine, as a consumer installs it. Everything else in this suite runs the
 // CLI from source in the monorepo, where `@wikiwright/core` resolves by
 // workspace link and `dist/` may be stale in ways nobody notices. This one packs
 // both packages, installs the tarballs into a throwaway consumer, and drives the
-// installed binary — under NODE, because the shipped artifact is node's.
-//
-// It also packs the conformance module and installs it as a TARBALL, which is
-// the third of the three local shapes `docs/extending.md §Declaring a module` names (workspace link,
-// `file:` dependency, packed tarball) and the one with a real installation
-// boundary: the bytes are copied, not linked, so nothing resolves back into this
-// repository by accident.
+// installed binary under Bun.
 //
 // Nothing here publishes and nothing reaches a registry for a wikiwright-owned
 // package. The tarballs are built locally and installed by path.
@@ -38,7 +32,6 @@ import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
-const CONFORMANCE = join(REPO, "fixtures", "conformance");
 
 /** Packing is slow; one workspace serves every case in this file. */
 let WORKSPACE: string | undefined;
@@ -78,7 +71,7 @@ function tarballIn(dir: string, prefix: string): string {
 }
 
 /**
- * Pack the engine and the conformance module and install the engine into a
+ * Pack the engine and install it into a
  * throwaway consumer, once for the file, on the first case that needs it. A
  * case rather than a hook does it, because a case can be given the time the
  * install takes: the install fetches the packed core's dependencies into an
@@ -91,7 +84,6 @@ function packAndInstall(): void {
   // `bun run build` has already run in the gate; pack what it produced.
   sh("bun", ["pm", "pack", "--destination", workspace], join(REPO, "packages", "core"));
   sh("bun", ["pm", "pack", "--destination", workspace], join(REPO, "packages", "cli"));
-  sh("bun", ["pm", "pack", "--destination", workspace], join(CONFORMANCE, "module-fixture"));
 
   const consumer = join(workspace, "consumer");
   mkdirSync(consumer, { recursive: true });
@@ -162,14 +154,14 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
   );
 
   it(
-    "the tarball carries dist/, the skills and the starters, and no source",
+    "the tarball carries dist/ and the skills, and no source",
     () => {
       packAndInstall();
       const installed = join(CONSUMER ?? "", "node_modules", "wikiwright");
       assert.equal(existsSync(join(installed, "dist", "main.js")), true, "the binary");
       assert.equal(existsSync(join(installed, "dist", "bin.js")), true, "the executable");
       assert.equal(existsSync(join(installed, "skills")), true, "the shipped skills");
-      assert.equal(existsSync(join(installed, "constitutions")), true, "the starters");
+      assert.equal(existsSync(join(installed, "constitutions")), false, "no starters");
       // The package root is no plugin: its manifest and hook scripts left (v2 step 6).
       assert.equal(existsSync(join(installed, ".claude-plugin")), false, "no plugin manifest");
       assert.equal(existsSync(join(installed, "hooks")), false, "no plugin hooks");
@@ -230,78 +222,11 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
     () => {
       packAndInstall();
       const bundle = join(WORKSPACE ?? "", "minimal");
-      cpSync(join(REPO, "fixtures", "v1", "minimal-vault"), bundle, { recursive: true });
-      const envelope = run(["lint", "--all", "--root", bundle], CONSUMER ?? REPO);
+      cpSync(join(REPO, "fixtures", "minimal-vault"), bundle, { recursive: true });
+      const envelope = run(["check", "--all", "--root", bundle], CONSUMER ?? REPO);
       // The minimal vault ships with a known verdict (`docs/architecture.md §The invariants`); what
       // matters here is that the PACKED engine produces one at all.
       assert.equal(typeof envelope.data?.["summary"], "object", JSON.stringify(envelope));
-    },
-    INSTALLS,
-  );
-});
-
-describe("a module installs as a tarball, and governs (docs/extending.md §Declaring a module)", () => {
-  it(
-    "the packed module resolves, pins, and is judged with — with no link home",
-    () => {
-      packAndInstall();
-      const workspace = WORKSPACE ?? "";
-      const bundle = join(workspace, "tarball-bundle");
-      // Copy the PAGES and the CONFIG only. A `file:` install links each of the
-      // module's files back into this repository at an absolute path, and a copy
-      // that carried those links would let this case write through to the shipped
-      // fixture — which is exactly what happened the first time.
-      cpSync(join(CONFORMANCE, "bundle-a", "wiki"), join(bundle, "wiki"), { recursive: true });
-      cpSync(join(CONFORMANCE, "bundle-a", "config"), join(bundle, "config"), { recursive: true });
-      // The third local shape: a packed tarball, whose bytes are COPIED. A
-      // workspace link or a `file:` directory could resolve back into this
-      // repository; this cannot.
-      writeFileSync(
-        join(bundle, "package.json"),
-        `${JSON.stringify(
-          {
-            name: "wikiwright-tarball-bundle",
-            private: true,
-            version: "0.0.0",
-            dependencies: {
-              "@wikiwright-fixture/probe": `file:${tarballIn(workspace, "wikiwright-fixture-probe-")}`,
-            },
-          },
-          null,
-          2,
-        )}\n`,
-      );
-      install(bundle);
-
-      // Installed is loaded: the module is proved by its load, with no other step.
-      const listed = run(["modules", "list", "--root", bundle], CONSUMER ?? REPO);
-      const loaded = (listed.data?.["loaded"] ?? []) as Record<string, unknown>[];
-      assert.equal(loaded.length, 1, JSON.stringify(listed));
-      assert.equal(loaded[0]?.["version"], "1.0.0");
-
-      const linted = run(["lint", "--all", "--root", bundle], CONSUMER ?? REPO);
-      assert.equal(linted.ok, true, JSON.stringify(linted));
-      const found = (linted.data?.["findings"] ?? []) as { ruleId: string }[];
-      assert.equal(
-        found.some((f) => f.ruleId === "@wikiwright-fixture/probe/measured"),
-        true,
-        "the tarball-installed module governed the vault",
-      );
-    },
-    INSTALLS,
-  );
-
-  it(
-    "the generated brief carries the module's own skill fragment",
-    () => {
-      packAndInstall();
-      const bundle = join(WORKSPACE ?? "", "tarball-bundle");
-      const envelope = run(["brief", "--root", bundle], CONSUMER ?? REPO);
-      assert.equal(envelope.ok, true, JSON.stringify(envelope));
-      const text = String(envelope.data?.["brief"] ?? "");
-      assert.match(text, /## What the loaded modules add/u);
-      assert.match(text, /### Measures \(`@wikiwright-fixture\/probe`\)/u);
-      assert.match(text, /A `Measures` item is/u);
     },
     INSTALLS,
   );

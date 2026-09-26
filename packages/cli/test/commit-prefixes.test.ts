@@ -1,28 +1,20 @@
-// docs/cli.md: a registered prefix set refuses an unknown prefix with
-// one line naming the valid set; `hook install` writes the commit-msg hook
-// only when the key is declared.
-// e2e:commit_prefixes — the declared set in config/engine.json decides which
-// commit messages the hook refuses.
+// docs/cli.md §gate: a registered prefix set refuses an unknown prefix with
+// one line naming the valid set, through `gate --commit-msg` and through the
+// documented commit-msg one-liner.
+// e2e:commit_prefixes — the declared list in config/engine.json decides which
+// commit messages the gate refuses.
 
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import {
-  chmodSync,
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeNoteBundle } from "./fixtures/note-bundle.ts";
 import { BUN, runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const FIXTURE = fileURLToPath(new URL("../../../fixtures/v1/minimal-vault", import.meta.url));
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8" });
@@ -43,16 +35,14 @@ function run(cwd: string, args: string[]): Run {
   };
 }
 
-function vault(commitPrefixes?: unknown): string {
+/** A committed note bundle, `commit_prefixes` declared when given. */
+function vault(commitPrefixes?: string[]): string {
   const tmp = mkdtempSync(join(tmpdir(), "ww-prefix-"));
-  cpSync(FIXTURE, tmp, { recursive: true });
-  rmSync(join(tmp, "wiki/test-execution/broken-case.md"));
-  const engine: Record<string, unknown> = {
-    content_roots: ["wiki"],
-    folder_tags: { mode: "validate" },
-  };
-  if (commitPrefixes !== undefined) engine["commit_prefixes"] = commitPrefixes;
-  writeFileSync(join(tmp, "config/engine.json"), JSON.stringify(engine));
+  writeNoteBundle(
+    tmp,
+    ["Clean"],
+    commitPrefixes === undefined ? {} : { commit_prefixes: commitPrefixes },
+  );
   git(tmp, "init", "-q");
   git(tmp, "config", "user.email", "test@example.com");
   git(tmp, "config", "user.name", "Test");
@@ -67,16 +57,20 @@ function message(tmp: string, text: string): string {
   return "MSG";
 }
 
+/** The commit-msg stage's `commit_prefixes` block. */
+function prefixOf(r: Run): unknown {
+  return (r.envelope["data"] as Record<string, unknown>)["commit_prefixes"];
+}
+
 const PREFIXES = ["spec", "test", "feat", "fix"];
 
 /**
- * POSIX-only, like hook.test.ts: the arm drives a real `git commit`
- * through a `sh` hook and an extensionless PATH launcher, neither of which means
- * anything on Windows. The hook script itself runs under the bundled sh there.
+ * POSIX-only: these arms drive a real `git commit` through a `sh` hook and an
+ * extensionless PATH launcher, neither of which means anything on Windows.
  */
 const POSIX_ONLY = process.platform === "win32";
 
-/** A `wikiwright` on PATH — the "engine is present" arm of the hook contract. */
+/** A `wikiwright` on PATH, as the documented one-liner expects. */
 function shimPath(tmp: string): string {
   const bin = join(tmp, ".bin");
   mkdirSync(bin, { recursive: true });
@@ -86,58 +80,54 @@ function shimPath(tmp: string): string {
   return `${bin}${delimiter}${process.env["PATH"] ?? ""}`;
 }
 
-describe("without the key the commit-msg gate judges nothing", () => {
+/** docs/cli.md §gate's commit-msg one-liner, installed by hand as the docs say. */
+function installCommitMsg(tmp: string): void {
+  const hook = join(tmp, ".git", "hooks", "commit-msg");
+  writeFileSync(hook, `#!/bin/sh\nexec wikiwright gate --root '${tmp}' --commit-msg "$1"\n`);
+  chmodSync(hook, 0o755);
+}
+
+describe("without the key the commit-msg gate holds no prefix", () => {
   it("answers commit_prefixes: null and refuses no message", () => {
     const tmp = vault();
     try {
       const r = run(tmp, ["gate", "--commit-msg", message(tmp, "chore: tidy"), "--root", "."]);
-      assert.equal(r.status, 0);
-      assert.deepEqual(r.envelope["data"], { commit_prefixes: null });
+      assert.equal(r.status, 0, JSON.stringify(r.envelope));
+      assert.equal(prefixOf(r), null);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
 });
 
-describe("a registered prefix set refuses an unknown prefix (docs/cli.md)", () => {
+describe("a registered prefix set refuses an unknown prefix (docs/cli.md §gate)", () => {
   it("one line on stderr naming the valid set; a known prefix passes", () => {
-    const tmp = vault({ prefixes: PREFIXES });
+    const tmp = vault(PREFIXES);
     try {
       const bad = run(tmp, ["gate", "--commit-msg", message(tmp, "chore: tidy"), "--root", "."]);
       assert.equal(bad.status, 5, JSON.stringify(bad.envelope));
-      const stderrLines = bad.stderr.trim().split("\n");
-      assert.equal(stderrLines.length, 1, `one line, not an envelope: ${bad.stderr}`);
-      for (const prefix of PREFIXES) {
-        assert.match(stderrLines[0] ?? "", new RegExp(prefix));
-      }
-      const good = run(tmp, ["gate", "--commit-msg", message(tmp, "fix: it"), "--root", "."]);
+      assert.equal(bad.stderr.trim().split("\n").length, 1);
+      assert.match(bad.stderr, /use one of: feat, fix, spec, test/u);
+      const good = run(tmp, ["gate", "--commit-msg", message(tmp, "spec: ok"), "--root", "."]);
       assert.equal(good.status, 0, JSON.stringify(good.envelope));
-      assert.equal(good.stderr, "");
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
 
-  it("blocks a real commit through the installed commit-msg hook", () => {
+  it("blocks a real commit through the documented commit-msg one-liner", () => {
     if (POSIX_ONLY) return;
-    const tmp = vault({ prefixes: PREFIXES });
+    const tmp = vault(PREFIXES);
     try {
-      const install = run(tmp, ["hook", "install", "--root", "."]);
-      assert.equal(install.status, 0, JSON.stringify(install.envelope));
-      assert.equal(existsSync(join(tmp, ".git/hooks/commit-msg")), true);
-
+      installCommitMsg(tmp);
       const env = { ...process.env, PATH: shimPath(tmp) } as Record<string, string>;
-      // An empty commit: the pre-commit gate has nothing to judge, so what
-      // blocks here is the commit-msg hook and only the commit-msg hook.
       const blocked = spawnSync("git", ["commit", "-q", "--allow-empty", "-m", "chore: tidy"], {
         cwd: tmp,
         encoding: "utf8",
         env,
       });
       assert.notEqual(blocked.status, 0, "an unknown prefix blocks the commit");
-      assert.match(blocked.stderr, /not registered/);
-      assert.match(blocked.stderr, /spec/);
-
+      assert.match(blocked.stderr, /not registered/u);
       const allowed = spawnSync("git", ["commit", "-q", "--allow-empty", "-m", "spec: ok"], {
         cwd: tmp,
         encoding: "utf8",
@@ -152,7 +142,7 @@ describe("a registered prefix set refuses an unknown prefix (docs/cli.md)", () =
 
 describe("a Conventional Commits scope and breaking marker carry the prefix (docs/cli.md §gate)", () => {
   it("docs(wiki):, fix!: and fix(cli)!: pass; the envelope carries scope and breaking", () => {
-    const tmp = vault({ prefixes: ["docs", "fix"] });
+    const tmp = vault(["docs", "fix"]);
     try {
       const cases: ReadonlyArray<readonly [string, Record<string, unknown>]> = [
         [
@@ -169,7 +159,7 @@ describe("a Conventional Commits scope and breaking marker carry the prefix (doc
         const r = run(tmp, ["gate", "--commit-msg", message(tmp, text), "--root", "."]);
         assert.equal(r.status, 0, JSON.stringify(r.envelope));
         assert.equal(r.stderr, "");
-        assert.deepEqual(r.envelope["data"], data);
+        assert.deepEqual(prefixOf(r), data);
       }
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -177,7 +167,7 @@ describe("a Conventional Commits scope and breaking marker carry the prefix (doc
   });
 
   it("no opening is refused as none; an unregistered scoped word is refused as that word", () => {
-    const tmp = vault({ prefixes: ["docs", "fix"] });
+    const tmp = vault(["docs", "fix"]);
     try {
       const none = run(tmp, [
         "gate",
@@ -208,14 +198,12 @@ describe("a Conventional Commits scope and breaking marker carry the prefix (doc
   });
 });
 
-describe("the commit-msg gate in a linked worktree (docs/cli.md §hook)", () => {
-  // docs/cli.md §hook — git passes the message path RELATIVE at a top level and
-  // ABSOLUTE in a linked worktree. Joining the absolute form onto --root made
-  // every commit in a linked worktree a message-not-found refusal, printed
-  // nowhere because the hook discarded the verb's stdout. This repository runs
-  // six linked worktrees.
+describe("the commit-msg gate in a linked worktree (docs/cli.md §gate)", () => {
+  // git passes the message path RELATIVE at a top level and ABSOLUTE in a
+  // linked worktree; joining the absolute form onto --root made every commit
+  // in a linked worktree a message-not-found refusal.
   it("takes an absolute message path as given", () => {
-    const tmp = vault({ prefixes: PREFIXES });
+    const tmp = vault(PREFIXES);
     try {
       message(tmp, "chore: tidy");
       const r = run(tmp, ["gate", "--commit-msg", join(tmp, "MSG"), "--root", "."]);
@@ -229,24 +217,21 @@ describe("the commit-msg gate in a linked worktree (docs/cli.md §hook)", () => 
 
   it("blocks the unregistered prefix and passes the registered one", () => {
     if (POSIX_ONLY) return;
-    const tmp = vault({ prefixes: PREFIXES });
+    const tmp = vault(PREFIXES);
     const linked = `${tmp}-wt`;
     try {
-      const install = run(tmp, ["hook", "install", "--root", "."]);
-      assert.equal(install.status, 0, JSON.stringify(install.envelope));
-      // A linked worktree shares the common hooks directory, so the gate
-      // installed above is the gate that runs here.
+      // A linked worktree shares the common hooks directory, so the hook
+      // installed here is the one that runs there.
+      installCommitMsg(tmp);
       git(tmp, "worktree", "add", "-q", "-b", "wt", linked);
       const env = { ...process.env, PATH: shimPath(tmp) } as Record<string, string>;
-
       const blocked = spawnSync("git", ["commit", "-q", "--allow-empty", "-m", "chore: tidy"], {
         cwd: linked,
         encoding: "utf8",
         env,
       });
       assert.notEqual(blocked.status, 0, "an unknown prefix blocks the commit");
-      assert.match(blocked.stderr, /not registered/);
-
+      assert.match(blocked.stderr, /not registered/u);
       const allowed = spawnSync("git", ["commit", "-q", "--allow-empty", "-m", "spec: ok"], {
         cwd: linked,
         encoding: "utf8",
@@ -261,49 +246,29 @@ describe("the commit-msg gate in a linked worktree (docs/cli.md §hook)", () => 
 
   it("a failure that is not a prefix refusal still reaches the operator", () => {
     if (POSIX_ONLY) return;
-    const tmp = vault({ prefixes: PREFIXES });
+    const tmp = vault(PREFIXES);
     try {
-      run(tmp, ["hook", "install", "--root", "."]);
-      // Isolate the commit-msg hook: without this the pre-commit gate would
-      // report the same constitution failure first.
-      rmSync(join(tmp, ".git/hooks/pre-commit"));
-      writeFileSync(
-        join(tmp, "config/engine.json"),
-        JSON.stringify({
-          content_roots: ["wiki"],
-          folder_tags: { mode: "validate" },
-          commit_prefixes: { prefixes: PREFIXES },
-          no_such_key: true,
-        }),
-      );
+      installCommitMsg(tmp);
+      writeNoteBundle(tmp, [], { commit_prefixes: PREFIXES, no_such_key: true });
+      git(tmp, "add", "-A");
       const env = { ...process.env, PATH: shimPath(tmp) } as Record<string, string>;
-      const blocked = spawnSync("git", ["commit", "-q", "--allow-empty", "-m", "spec: ok"], {
+      const blocked = spawnSync("git", ["commit", "-q", "-m", "spec: ok"], {
         cwd: tmp,
         encoding: "utf8",
         env,
       });
-      assert.notEqual(blocked.status, 0, "a broken constitution blocks the commit");
-      assert.notEqual(blocked.stderr.trim(), "", "and never silently — the envelope is the reason");
-      assert.match(blocked.stderr, /constitution|no_such_key/);
+      assert.notEqual(blocked.status, 0, "a law that does not load blocks the commit");
+      assert.notEqual(blocked.stderr.trim(), "", "and never silently: the refusal is the reason");
+      assert.match(blocked.stderr, /constitution-invalid|engine-invalid/u);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
 });
 
-describe("hook install and the message file (docs/cli.md)", () => {
-  it("installs commit-msg only when the key is declared", () => {
-    const without = vault();
-    try {
-      run(without, ["hook", "install", "--root", "."]);
-      assert.equal(existsSync(join(without, ".git/hooks/commit-msg")), false);
-    } finally {
-      rmSync(without, { recursive: true, force: true });
-    }
-  });
-
+describe("the message file (docs/cli.md §gate)", () => {
   it("a missing message file is a not_found refusal, never a pass", () => {
-    const tmp = vault({ prefixes: PREFIXES });
+    const tmp = vault(PREFIXES);
     try {
       const r = run(tmp, ["gate", "--commit-msg", "NOPE", "--root", "."]);
       assert.equal(r.status, 3, JSON.stringify(r.envelope));

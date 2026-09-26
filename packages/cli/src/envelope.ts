@@ -16,7 +16,6 @@ export const EXIT = {
   not_found: 3,
   conflict: 4,
   findings: 5,
-  confirm_required: 10,
 } as const;
 
 export type ErrorType = Exclude<keyof typeof EXIT, "ok">;

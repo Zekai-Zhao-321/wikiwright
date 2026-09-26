@@ -1,40 +1,32 @@
-// docs/roadmap.md: check reads each content page once per invocation for its
-// verdict; the artifacts, brief and judge use that snapshot. The envelope's
-// bundle block reads each page's bytes once more, unparsed, for the content
-// digest (docs/cli.md §The envelope), so a page is read exactly twice: a third
+// docs/roadmap.md, v2 contracts §11: check reads the working tree as one
+// state, each content page read twice — the capture and the capture that
+// confirms nothing moved between — and the judge, the generated artifacts
+// and the envelope's bundle block all take that one state's bytes. A third
 // read is the verb reading the tree again. Count reads, not wall time.
 
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { documentOf } from "../../core/test/helpers/constitution.ts";
+import { notePage, writeAt, writeNoteBundle } from "./fixtures/note-bundle.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
-describe("check shares its content snapshot (docs/roadmap.md)", () => {
-  it("reads each page once for the verdict and once for the content digest, preserving the original bytes", () => {
+describe("check reads the tree as one state (docs/roadmap.md)", () => {
+  it("reads each page twice, once to capture and once to confirm, preserving the original bytes", () => {
     const root = realpathSync(mkdtempSync(join(tmpdir(), "ww-check-reads-")));
     try {
-      mkdirSync(join(root, "config"));
-      mkdirSync(join(root, "wiki"));
-      writeFileSync(
-        join(root, "config/constitution.json"),
-        JSON.stringify(
-          documentOf({ types: { note: { extends: "concept", description: "A note." } } }),
-        ),
-      );
-      writeFileSync(join(root, "config/engine.json"), JSON.stringify({ content_roots: ["wiki"] }));
+      writeNoteBundle(root);
       const page = (title: string, target: string): string =>
-        `---\ntype: note\ntitle: ${title}\ndescription: A note.\ntags: []\n---\n\n# ${title}\n\nSee [[${target}]].\n`;
+        notePage(title, `\nSee [[${target}]].\n`);
       const source = new Map([
         [join(root, "wiki/Alpha.md"), page("Alpha", "热重启")],
-        [join(root, "wiki/热重启.md"), `\uFEFF${page("热重启", "Alpha").replaceAll("\n", "\r\n")}`],
+        [join(root, "wiki/热重启.md"), `﻿${page("热重启", "Alpha").replaceAll("\n", "\r\n")}`],
       ]);
-      for (const [path, text] of source) writeFileSync(path, text);
+      for (const [path, text] of source) writeAt(root, path.slice(root.length + 1), text);
       const log = join(root, "reads.json");
       const preload = join(root, "count-reads.cjs");
       writeFileSync(

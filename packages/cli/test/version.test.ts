@@ -312,7 +312,7 @@ describe("version — the binary names its build (docs/cli.md §version)", () =>
   it("the verb is a consumer-role entry of the generated registry", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-version-"));
     try {
-      const schema = runIn(tmp, ["schema"]);
+      const schema = runIn(tmp, ["--help", "--json"]);
       const commands = dataOf(schema)["commands"] as Array<{ name: string; role: string }>;
       assert.equal(commands.find((c) => c.name === "version")?.role, "consumer");
     } finally {

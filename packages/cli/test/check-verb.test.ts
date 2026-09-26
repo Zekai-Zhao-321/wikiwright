@@ -3,21 +3,11 @@
 // generated files compared and written, queue.md a function of the law and
 // the content only, the pins measured against the local repository, the
 // `okf-missing-type` row, `engine-mismatch`, a law that does not load, the
-// folder-tag fixer — and the table that answers a root: the §9 verbs for a
-// bundle on schema version 4, the old ones for any other root.
+// folder-tag fixer.
 import { afterAll, describe, expect, it } from "bun:test";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { contentDigest, parseTypeLawQueue } from "@wikiwright/core";
 import {
   cleanBundles,
@@ -34,8 +24,6 @@ afterAll(() => {
   cleanBundles();
   for (const dir of clones) rmSync(dir, { recursive: true, force: true });
 });
-
-const MINIMAL = fileURLToPath(new URL("../../../fixtures/v1/minimal-vault", import.meta.url));
 
 const GENERATED = [
   "generated/BRIEF.md",
@@ -371,25 +359,5 @@ describe("the dry-run law (docs/cli.md §The dry-run law)", () => {
     const planned = ((dry.envelope.data?.["ops"] ?? []) as { path: string }[]).map((o) => o.path);
     cli(argv, dir);
     expect(delta(before, snapshot(dir))).toEqual([...planned].sort());
-  });
-});
-
-describe("the table that answers a root (v2 contracts §12 step 4)", () => {
-  it("answers a schema-version-4 bundle with the §9 table, where lint is no verb", () => {
-    const dir = gardenBundle();
-    const r = cli(["lint"], dir);
-    expect(r.status).toBe(2);
-    expect(r.envelope.error?.code).toBe("unknown-command");
-    const valid = r.envelope.error?.details?.["valid_commands"] as string[];
-    expect(valid).toContain("check");
-    for (const gone of ["lint", "fix", "freshness", "okf"]) expect(valid).not.toContain(gone);
-  });
-
-  it("answers any other root with the old table, lint included", () => {
-    const tmp = gardenBundle();
-    mkdirSync(join(tmp, "old"));
-    const r = cli(["lint"], MINIMAL, { cwd: tmp });
-    expect(r.envelope.metadata.command).toBe("lint");
-    expect(r.envelope.error?.code).not.toBe("unknown-command");
   });
 });

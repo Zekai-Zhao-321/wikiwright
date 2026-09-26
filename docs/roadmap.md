@@ -9,50 +9,38 @@ that would close the gap, rather than left for a reader to discover.
 ## Status
 
 wikiwright 0.1.0 is two packages and a kit. `@wikiwright/core` is the
-kernel and the standard library (claims, relations, entries), a pure
-library over bytes. `wikiwright` is the binary, one JSON envelope per
-invocation, with two tables while the v2 delivery lands: a bundle on schema
-version 4 is answered by the command table of the v2 contracts, eight verbs
-over the type-document law (`check`, `gate`, `write`, `rule`, `read`,
-`search`, `type`, `version`), and any other root by the old table, 24 verbs,
-one module each, which this paragraph and most of this page describe;
-`docs/cli.md` lists both (§The v2 verbs answer a bundle on schema version 4).
-Every envelope of a verb that reads a vault's law names the bundle it read —
-its label, real root, head, whether it is dirty, and digests of its law and
-its content, and `read` returns a page's sections
-verbatim with the page's digest, under a byte budget. A bundle declares its
-exports in `config/engine.json`, read-only copies of itself or of part of it
-that a host installs as skills: `check --write` renders them into its own
-`skills/`, `check` and the staged gate hold them to a fresh render, `export`
-writes one into another repository, and a plain copy of one answers every
-reader under the identity its marker gives it. Three skills ship
-beside the binary, for using, writing and maintaining a bundle, and each role
-prints its own brief. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
-a code repository, consumed by the `code` starter and by this repository's
-own `devwiki`.
+kernel, a pure library over bytes. `wikiwright` is the binary, one JSON
+envelope per invocation, answered by one table, the command table of the v2
+contracts: eight verbs over the type-document law (`check`, `gate`, `write`,
+`rule`, `read`, `search`, `type`, `version`), one module each under
+`packages/cli/src/verbs/`. The 24 verbs of the old tree left in step 6 of the
+v2 delivery (§The old verbs left in step 6). Every envelope of a verb that
+reads a bundle's law names the bundle it read — its label, real root, head,
+whether it is dirty, and digests of its law and its content — and `read`
+returns a page's sections verbatim with the page's bytes digest and its
+status, under a byte budget. Step 6 is removing the old tree's mechanisms one
+commit each; until each has left, its code is in the tree and reached by no
+verb: the old registry and its standard library, the exports and their
+marker, the git hook installer, the module loader and the v1 kit
+`@wikiwright/kit-code`, which `devwiki` no longer imports.
 
 The engine runs on Bun only, the version `.bun-version` pins; the test
 files and the CLI they spawn run under it (`tools/run-suite.ts`), and every
-test file is written to `bun:test`. The suite is 2,237 tests across 153
+test file is written to `bun:test`. The suite is 1,506 tests across 103
 files, and the gate, `bun run check`, passed all of them three times in a
-row on 2026-09-26, after the review fixes of the v2 delivery's fifth step,
-which moved every corpus onto the type-document law (§The v2 verbs answer a bundle on
-schema version 4). It judges five corpora (`devwiki`, `fixtures/memory-synth`,
-`fixtures/minimal-vault`, and the two gardening handbooks under
-`fixtures/handbooks`, which the two-bundle tests read end to end) and proves
-the module ladder end to end twice: with a neutral module fixture under
-`fixtures/conformance` and with the shipped kit. `devwiki` is a bundle whose pages are pinned to
-this repository; since step 5 it is on the v2 law, over `libraries/kit-code`,
-and `check --root devwiki` reports no error, its warnings the pins below. The runtime and
-transport slice of the v2 delivery (the asynchronous git transport, Bun only,
-remote freshness removed, the binary) and its review fixes changed code 21
-of the 27 pinned pages cover: measured at the last of them, `freshness`
-reads 21 `stale` and 6
-`unchanged`, with `stale-capture` and `stale-source-cited` findings and no
-`citation-unresolved`. Those pages still describe the transport before the
-slice (a synchronous spawn, the Node runner, `freshness --fetch`); they are
-re-read and re-pinned in the documentation step of the delivery, and until
-then `freshness` names each.
+row on 2026-09-26, after the old verbs left. It judges five corpora
+(`devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`, and the two
+gardening handbooks under `fixtures/handbooks`), every one on the v2 law.
+`devwiki` is a bundle whose pages are pinned to this repository, over
+`libraries/kit-code`, and `check --root devwiki` reports no error, its
+warnings the pins below. The runtime and transport slice of the v2 delivery
+(the asynchronous git transport, Bun only, remote freshness removed, the
+binary) and its review fixes changed code 21 of the 27 pinned pages cover:
+measured by `check` at the last of them, 21 pins read `stale` and 6
+`unchanged`, with `pin-stale` and `stale-source-cited` findings and no
+`citation-unresolved`. Those pages still describe the engine before the v2
+delivery; they are re-read and re-pinned in its documentation step, and until
+then `check` names each.
 A citation into a file its page does not cover is held to the pin but not
 to the file's later changes, so such a reference either is covered or goes
 through the page that covers the file.
@@ -69,40 +57,38 @@ unverified.
 Each entry names what is missing and the command or declaration a user
 would want.
 
-### `init` does not load a starter's declared modules
+### No starter
 
-The module preload runs once in `main.ts`, before the verb, keyed on the
-target root's existing `engine.json`, so a starter's modules are not loaded
-by the `init` that copies them. So `init --constitution code` always lands
-without artifacts and brief, even when the kit is already installed, and its
-envelope names the steps to run next (`bun install`, the first load that
-proves the kit, `check --write`).
+`init`, which copied a starter constitution (`base`, or `code` over the v1
+kit) into a directory and installed the hooks and the shipped skills, left
+with the old verbs in step 6, and the starters under
+`packages/cli/constitutions/` with it: both were on the v1 law. A new bundle
+is written by hand: a `config/engine.json` at schema version 4 and one type
+document under `constitution/types/`, the shape `fixtures/minimal-vault`
+has; `check --write` renders its `generated/`. The loss: no command lays a
+bundle down, and nothing checks that a hand-made one is complete until its
+first `check`.
 
-Wanted: `wikiwright init --constitution code`, in a directory where the
-install already happened, rendering `generated/` and the brief in that one
-run. A verb's `plan` may now be asynchronous, so what is missing is `init`
-loading the starter's declared modules itself.
+Wanted: a documented starter directory, copied by hand (the v2 contracts, §1),
+which the documentation step of the delivery writes.
 
 ### A capture of another repository is not measured
 
-`freshness` reads only the repository the vault sits in. A pin whose origin
-is a git URL is reported `unmeasured`, reason `remote-origin: …`, and the
-origin is never contacted: remote freshness — the `ls-remote` depth, the
+`check` measures a pin only against the repository the bundle sits in. A
+pin whose origin is a git URL is reported `pin-unmeasured` (info), reason
+`remote-origin`, and the origin is never contacted: remote freshness — the `ls-remote` depth, the
 `--fetch` cache under `.wikiwright/origins/` — was removed with the
 network-reaching git calls, so the engine's git transport reads local
 repositories only. The loss: a source page that captures another
 repository is not held to that repository's history; when the source
 moves, nothing marks the page stale or its citations unresolved, and its
-reader is not told. The `freshness` verb reports such a pin `unmeasured`
-with no finding; the v2 contracts' `pin-unmeasured` info finding belongs to
-`check`, which absorbs pin measurement when `freshness` leaves with the
-old verbs, and `freshness` does not gain it before then.
+reader is told only that the pin is unmeasured.
 
 Wanted: a way to measure a remote capture without the engine reaching the
 network, for example a local clone the bundle names as the origin, measured
 as the enclosing repository is.
 
-### `freshness` holds a citation to its pin, not to what the lines say
+### `check` holds a citation to its pin, not to what the lines say
 
 A code span is a citation when it is a repository path whose first segment
 is an entry at the root of the tree at the pin (`packages/cli/src/pages.ts:75`,
@@ -114,8 +100,8 @@ What is not checked is whether the cited lines still say what the sentence
 says they do, and when covered paths move, the shift of a page's citations
 is done by content, outside the engine; no verb offers it.
 
-Wanted: `freshness --shift`, a writer over pages that relocates each
-citation by content and re-pins. It belongs to a verb that writes.
+Wanted: a `write` operation that relocates each citation by content and
+re-pins. It belongs to the verb that writes.
 
 ### A page-wide append-only law and a dated append-only ledger cannot coexist
 
@@ -634,12 +620,6 @@ Each stays unbuilt until a bundle needs it.
 
 ## Behaviour that reads as a defect and is not
 
-- **A finding's argv names its state.** `gate` and `lint --staged` hand out
-  `fix … --staged`; `check` and `lint` do not. Running one in the other
-  state is `expect-mismatch` with the switch named in the hint, never a
-  silent no-op.
-- **`hook-stale` fires on every bundle whose hook an older build wrote.**
-  Its argv reinstalls the hook, chain kept; a foreign hook is not listed.
 - **A devwiki pin's clean state is `unchanged`, never `current`.** A page
   pinned inside the repository it documents is one commit past its pin as
   soon as the pin is committed. `check --root devwiki` holds it to the
@@ -675,25 +655,16 @@ stamp compiled in, and `binary.test.ts` holds its `--help`, a verb's
 `--help`, a `check` envelope and `version`'s build to `bun dist/main.js`,
 byte for byte. Nothing else the package ships is compiled in: inside the
 binary, `import.meta.url` names Bun's embedded file system (`/$bunfs/`), so
-no shipped file resolves, on the machine that built the binary or any other.
-What follows, each held by `binary.test.ts`:
+no shipped file resolves, and no verb reads one since `init` and `skills`
+left with the old verbs. What follows, held by `binary.test.ts`:
 
-- `init` (the starters) and `skills` (the shipped skills) refuse as
-  `shipped-files-absent` (exit 2) and write nothing. Before, `init` failed
-  with `unexpected-error` on the missing directory and `skills status`
-  answered ok with no skills. Both verbs leave in the v2 delivery's
-  deletions, so the shipped files are not embedded for them.
-- `check` compares no installed skill: with no shipped skill to compare
-  against, a bundle's `.claude/skills/` drift raises no `skills-stale` or
-  `skills-missing` from the binary, where the script raises them.
 - `version`'s `checkout_commit` and `checkout_dirty` are null: the
   binary's code sits in no checkout. `commit` and `dirty` name the build.
 
 The binary is not published; the pipe probes build one under the temporary
 directory and read its envelopes through a pipe.
 
-Wanted: the shipped files the surviving verbs need, embedded in the binary,
-when a binary is distributed.
+Wanted: nothing while no verb reads a shipped file.
 
 ### An envelope over 1 MiB is refused, not spilled
 
@@ -706,35 +677,33 @@ often enough that `--out` is a burden. The pipe probes cover the refusal
 beside a default, a 70,000-byte and an error envelope. `--out` refuses a
 file inside the bundle the invocation reads (`out-inside-bundle`).
 
-### The v2 verbs answer a bundle on schema version 4; the corpora are still on the old law
+### The old verbs left in step 6
 
-The second step of the v2 delivery built the type-document loader beside the
-old one: `config/engine.json` schema version 4 and its libraries, the type,
-fragment and vocabulary documents under `constitution/` and each library,
-shapes compiled by Ajv with RE2, the fixed grammar's records, the page
-interface, rules in CEL under the profile and its static bound, and the
-digests (`packages/core/src/law/`, `schema/`, `records/`, `interface/`,
-`rules/`, `digest/`; the adapters in `packages/cli/src/lawfiles.ts`). The
-third step built the judge over it (`packages/core/src/verdict/`,
-`judgeTypeLaw`), its four states (`packages/cli/src/lawstate.ts`: the
-working tree, drafts over the disk, the index over HEAD, a revision), the
-rule tests and examples, and the law diff. The fourth step rewrites the
-verbs over them, one commit each, under `packages/cli/src/verbs/`; each old
-verb moved to `packages/cli/src/legacy/` and leaves the command table when
-its replacement lands.
+The second step of the v2 delivery built the type-document loader:
+`config/engine.json` schema version 4 and its libraries, the type, fragment
+and vocabulary documents under `constitution/` and each library, shapes
+compiled by Ajv with RE2, the fixed grammar's records, the page interface,
+rules in CEL under the profile and its static bound, and the digests
+(`packages/core/src/law/`, `schema/`, `records/`, `interface/`, `rules/`,
+`digest/`; the adapters in `packages/cli/src/lawfiles.ts`). The third step
+built the judge over it (`packages/core/src/verdict/`, `judgeTypeLaw`), its
+four states (`packages/cli/src/lawstate.ts`: the working tree, drafts over
+the disk, the index over HEAD, a revision), the rule tests and examples, and
+the law diff. The fourth step rewrote the verbs over them, one commit each,
+under `packages/cli/src/verbs/`, and step 5 migrated every corpus of this
+repository onto the v2 law with `tools/migrate-spellings.ts`: `minimal-vault`,
+`memory-synth`, the two handbooks, and `devwiki`, which imports
+`libraries/kit-code`, the code wiki's type library, in place of the v1 kit.
 
-There are two tables. A root whose `config/engine.json` is schema version 4
-is answered by the command table (`COMMANDS`); any other root — a bundle on
-`config/constitution.json`, or no bundle — by the old table, whole
-(`LEGACY_COMMANDS`). Step 5 migrated every corpus of this
-repository onto the v2 law with `tools/migrate-spellings.ts`, one commit
-each: `minimal-vault`, `memory-synth`, the two handbooks, and `devwiki`,
-which imports `libraries/kit-code`, the code wiki's type library, in place
-of the v1 kit. The old table's tests read frozen v1 copies of the corpora
-under `fixtures/v1/`, and step 6 deletes the old verbs with their table and
-those copies. A verb that left the
-command table answers `unknown-command` over a schema-version-4 bundle, and
-its old self over any other root. What the rewritten verbs leave, so far:
+Step 6 deleted the old table and its 24 verbs under `packages/cli/src/legacy/`,
+with their tests. Every root is answered by the command table: a verb of the
+old tree is `unknown-command`, a directory with no `config/engine.json` is
+`bundle-not-found` (exit 3), and a bundle on the old
+`config/constitution.json` is `constitution-invalid`, its engine.json not
+schema version 4; `tools/migrate-spellings.ts` rewrites one. The old tree's
+mechanisms leave one commit each after the verbs (contracts §12 step 6); the
+old registry's core tests read frozen v1 copies of the corpora under
+`fixtures/v1/` until the registry leaves. What the rewritten verbs leave:
 
 - `check` absorbs `lint`, `fix`, `freshness` and `okf` (contracts §1). Not
   carried: `lint --since`, the replay of each commit against its parent
@@ -744,9 +713,8 @@ its old self over any other root. What the rewritten verbs leave, so far:
   uncommitted `generated/freshness.json` report (the pins are in `check`'s
   envelope under `pins`); every fixer but the folder-tag materializer and the
   generated files; base OKF's other checks, duplicates of the judge's
-  frontmatter codes. `check` over a schema-version-4 bundle judges no
-  template, export, installed skill or installed hook: each leaves with its
-  mechanism (contracts §1).
+  frontmatter codes. `check` judges no template, export, installed skill or
+  installed hook: each left with its mechanism (contracts §1).
 - The queue (`generated/queue.md`) is cut from a judge run with no base, so
   a transition (`claims-transition`, `entry-edited`, `relation-removed`) is
   never in it: without a base each is `unevaluated`, which routes nowhere.
@@ -791,13 +759,10 @@ its old self over any other root. What the rewritten verbs leave, so far:
   have no place in the command table (contracts §1): the skill discovery,
   the exports, the graph query, the starters, the modules and the installed
   skills leave with their mechanisms, and `<verb> --help --json` replaces
-  `schema`. Each still answers a root not on schema version 4. So nothing
-  scaffolds a schema-version-4 bundle yet: its starter directory, copied by
-  hand, and the libraries of step 5 are what a new bundle starts from.
-- `WIKIWRIGHT_ROLE` still bounds every verb of both tables by its declared
-  role (`check` and `write` a writer's, `gate` and `rule` a maintainer's,
-  the others a consumer's); the bound leaves with the deletions of step 6
-  (contracts §1).
+  `schema`. Nothing scaffolds a bundle (§No starter).
+- `WIKIWRIGHT_ROLE` still bounds every verb by its declared role (`check`
+  and `write` a writer's, `gate` and `rule` a maintainer's, the others a
+  consumer's); the bound leaves in its own commit of step 6 (contracts §1).
 - Every v4 key names the function that reads it, of core or of the shell
   (`ENGINE_V4_CONSUMERS`), and a test holds the function to exist and to
   read the key.
@@ -1006,8 +971,8 @@ its old self over any other root. What the rewritten verbs leave, so far:
 
 1. Run the release matrix by hand before calling a build a release, and
    carry the gate to Windows, which nothing reaches.
-2. Close the limitations above in the order a bundle asks for them: the
-   asynchronous plan for `init`, `freshness --shift`, the ledger layout
+2. Close the limitations above in the order a bundle asks for them: a
+   documented starter, a `write` operation that shifts citations, the ledger layout
    for `code/decision`, a published kit; for installed bundles, a declared
    dependency between bundles, `references` and `outline`, a report type a
    proposal is written in, and a filter by applicability.
@@ -1028,10 +993,8 @@ its old self over any other root. What the rewritten verbs leave, so far:
 
 - **`check --root devwiki` needs nothing installed.** devwiki imports
   `libraries/kit-code` by its path from the repository's top level, and the
-  library is data read from the tree. The v1 kit is still installed by the
-  tests of the old verbs and the `code` starter, into copies under
-  `os.tmpdir()` (`packages/cli/test/fixtures/kit-code.ts`), never the
-  shipped tree.
+  library is data read from the tree. Nothing installs the v1 kit any more:
+  the verbs that loaded it left in step 6.
 - **Bun's per-test budget is five seconds.** A case that installs a kit and
   drives a dozen verbs exceeds it: build the bundle in `before` and keep one
   `it` per verb, or state `{ timeout }` on a deliberately sequential walk.
@@ -1040,7 +1003,7 @@ its old self over any other root. What the rewritten verbs leave, so far:
   longer under that load than alone; write against the five seconds a single
   `bun test ./<file>` keeps, and the case holds under both.
 - **A test that stamps a date reads the clock.** Set `WIKIWRIGHT_TODAY` in
-  any test that spawns `write` or `new`, or the stamp moves with the day.
+  any test that spawns `write`, or the stamp moves with the day.
 - **The corpora are fixtures, all on the v2 law.** A change to `devwiki`'s
   pages or constitution is judged by `fixture-verdicts` (no error under
   `check` and `gate`, its warnings only its pins), `routing-xor`,

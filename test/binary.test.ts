@@ -3,12 +3,11 @@
 // (`tools/build-binary.ts`) and must answer as `bun dist/main.js` does, byte
 // for byte: `--help`, a verb's `--help`, and a `check` envelope over a copy
 // of a gardening handbook. `version` names the build the binary was cut from,
-// the stamp compiled in, with no file beside it. What it cannot answer it
-// refuses by name: the binary carries none of the files the package ships, so
-// `init` and `skills` are `shipped-files-absent` (docs/roadmap.md §The
-// compiled binary), and `version` has no checkout to report.
+// the stamp compiled in, with no file beside it, and no checkout to report.
+// No verb reads a file the package ships beside its code, so the binary
+// answers every verb the script does.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { cpSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,7 +16,7 @@ import { buildBinary } from "./fixtures/binary.ts";
 
 const REPO = fileURLToPath(new URL("../", import.meta.url));
 const CLI = join(REPO, "packages", "cli", "dist", "main.js");
-const ORCHARD = join(REPO, "fixtures", "v1", "handbooks", "orchard");
+const ORCHARD = join(REPO, "fixtures", "handbooks", "orchard");
 
 let dir = "";
 let binary = "";
@@ -77,31 +76,5 @@ describe("the compiled binary answers as bun dist/main.js does", () => {
     // The binary's code sits in no checkout, so it reports none.
     expect(compiled.data.checkout_commit).toBeNull();
     expect(compiled.data.checkout_dirty).toBeNull();
-  });
-});
-
-describe("the compiled binary refuses by name what it cannot answer", () => {
-  const cases: [string, string[]][] = [
-    ["init --dry-run", ["init", "--dry-run"]],
-    ["init", ["init"]],
-    ["skills status", ["skills", "status"]],
-    ["skills update --dry-run", ["skills", "update", "--dry-run"]],
-  ];
-  it.each(cases)("%s is shipped-files-absent, and writes nothing", (_, args) => {
-    const root = mkdtempSync(join(dir, "empty-"));
-    const r = runCommand(binary, [...args, "--root", root], { cwd: REPO, encoding: "utf8" });
-    expect(r.status).toBe(2);
-    const envelope = JSON.parse(r.stdout) as { ok: boolean; error: { code: string } };
-    expect(envelope.ok).toBe(false);
-    expect(envelope.error.code).toBe("shipped-files-absent");
-    expect(readdirSync(root)).toEqual([]);
-    // The script, which has the package beside it, answers the same call
-    // (as a dry run, so it too leaves the directory as it was).
-    const dry = args.includes("--dry-run") ? args : [...args, "--dry-run"];
-    const script = runCli([CLI, ...dry, "--root", root], {
-      cwd: REPO,
-      encoding: "utf8",
-    });
-    expect(script.status).toBe(0);
   });
 });

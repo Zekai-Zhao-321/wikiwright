@@ -2,8 +2,7 @@
 // judged where it stands, and copied under os.tmpdir() into a repository of
 // its own — the corpus at its repository-relative path, beside the
 // libraries it imports (§2: a library path resolves against the top level)
-// — for a verb that writes, or that reads an index. Their v1 forms, frozen
-// under fixtures/v1, are the old table's tests' until the old verbs leave.
+// — for a verb that writes, or that reads an index.
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";

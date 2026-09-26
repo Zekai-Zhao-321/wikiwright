@@ -1,13 +1,12 @@
-// v2 contracts §9, §12 step 4: the command table is the eight verbs of §9,
-// each a module under src/verbs/; every example a verb documents parses
-// under the table; a reader refuses --dry-run and a writer plans; and the
-// old table answers a root not on schema version 4 with every old verb,
-// until the deletions of step 6.
+// v2 contracts §9: the command table is the eight verbs of §9, each a
+// module under src/verbs/; every example a verb documents parses under the
+// table; a reader refuses --dry-run and a writer plans; and every verb of
+// the old tree that left in step 6 is no verb (`unknown-command`).
 import { afterAll, describe, expect, it } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { parseInvocation } from "../src/argv.ts";
-import { COMMANDS, LEGACY_COMMANDS } from "../src/commands.ts";
+import { COMMANDS } from "../src/commands.ts";
 import { flagsOf } from "../src/spec.ts";
 import { cleanBundles, cli, gardenBundle } from "./fixtures/garden-cli.ts";
 import { SRC } from "./fixtures/verb-module.ts";
@@ -68,14 +67,14 @@ describe("the command table (v2 contracts §9)", () => {
     }
   });
 
-  it("leaves every old verb in the old table, which answers any other root", () => {
-    expect(LEGACY_COMMANDS.map((c) => c.name).sort()).toEqual([
+  it("answers every verb of the old tree with unknown-command", () => {
+    const garden = gardenBundle();
+    for (const gone of [
       "brief",
-      "check",
+      "bundles",
       "export",
       "fix",
       "freshness",
-      "gate",
       "graph",
       "hook",
       "init",
@@ -84,18 +83,11 @@ describe("the command table (v2 contracts §9)", () => {
       "move",
       "new",
       "okf",
-      "read",
       "retire",
       "schema",
-      "search",
       "skills",
-      "type",
-      "version",
       "vocabulary",
-      "write",
-    ]);
-    const garden = gardenBundle();
-    for (const gone of ["bundles", "export", "graph", "init", "modules", "skills", "schema"]) {
+    ]) {
       expect([gone, cli([gone], garden).envelope.error?.code]).toEqual([gone, "unknown-command"]);
     }
   });

@@ -21,7 +21,6 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
 import { writeNoteBundle } from "./fixtures/note-bundle.ts";
 import { runCli } from "./fixtures/runtime.ts";
@@ -47,41 +46,36 @@ function run(cwd: string, args: string[]): Run {
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Run["envelope"] };
 }
 
-const GOOD_TYPES = JSON.stringify(
-  documentOf({ types: { note: { extends: "concept", description: "A note." } } }),
-);
+/** A note type that extends nothing that exists: a law that does not load. */
+const BAD_TYPE = "type: note\nrole: concept\ndescription: A note.\nextends: no-such-type\n";
 
-/** A constitution whose type extends nothing that exists — a load-time family. */
-const BAD_TYPES = JSON.stringify(
-  documentOf({ types: { note: { extends: "no-such-type", description: "A note." } } }),
-);
-
-function vault(types: string, engine: Record<string, unknown> = {}): string {
+/** A note bundle with one clean page; `engine` laid over its engine.json. */
+function vault(engine: Record<string, unknown> = {}): string {
   const tmp = mkdtempSync(join(tmpdir(), "ww-exit-"));
-  mkdirSync(join(tmp, "config"));
-  mkdirSync(join(tmp, "wiki"));
-  writeFileSync(join(tmp, "config", "constitution.json"), types);
-  writeFileSync(
-    join(tmp, "config", "engine.json"),
-    JSON.stringify({ content_roots: ["wiki"], ...engine }),
-  );
-  writeFileSync(
-    join(tmp, "wiki", "clean.md"),
-    "---\ntype: note\ntitle: Clean\ndescription: A clean page.\ntags: []\n---\n\n# Clean\n\nBody.\n",
-  );
+  writeNoteBundle(tmp, ["Clean"], engine);
   return tmp;
 }
 
+/** Every verb that reads a bundle's working-tree law, as one invocation each; `write` from an empty draft directory under `tmp`. */
+function lawReaders(tmp: string): string[][] {
+  const drafts = join(tmp, "drafts");
+  mkdirSync(drafts, { recursive: true });
+  return [
+    ["check"],
+    ["search", "clean"],
+    ["read", "Clean"],
+    ["type", "list"],
+    ["rule", "try", "--type", "note", "--expr", "true"],
+    ["write", "--from", drafts],
+  ];
+}
+
 describe("exit 2 vs exit 5 never blur (docs/cli.md §The envelope)", () => {
-  it("an invalid registry exits 2 with type constitution under lint, check, new, search", () => {
-    const tmp = vault(BAD_TYPES);
+  it("a law that does not load exits 2 with type constitution under every verb that reads it", () => {
+    const tmp = vault();
     try {
-      for (const args of [
-        ["lint"],
-        ["check"],
-        ["new", "note", "Draft", "--dest", "wiki/draft.md"],
-        ["search", "clean"],
-      ]) {
+      writeFileSync(join(tmp, "constitution", "types", "note.yaml"), BAD_TYPE);
+      for (const args of lawReaders(tmp)) {
         const r = run(tmp, args);
         assert.equal(r.status, 2, `${args[0]}: ${JSON.stringify(r.envelope)}`);
         assert.equal(r.envelope.error?.type, "constitution", `${args[0]} carries the type`);
@@ -93,9 +87,9 @@ describe("exit 2 vs exit 5 never blur (docs/cli.md §The envelope)", () => {
   });
 
   it("an unknown engine.json key is a constitution failure, not a page verdict", () => {
-    const tmp = vault(GOOD_TYPES, { no_such_key: true });
+    const tmp = vault({ no_such_key: true });
     try {
-      const r = run(tmp, ["lint"]);
+      const r = run(tmp, ["check"]);
       assert.equal(r.status, 2, JSON.stringify(r.envelope));
       assert.equal(r.envelope.error?.type, "constitution");
     } finally {
@@ -103,11 +97,11 @@ describe("exit 2 vs exit 5 never blur (docs/cli.md §The envelope)", () => {
     }
   });
 
-  it("unparseable registry JSON is a constitution failure too", () => {
-    const tmp = vault(GOOD_TYPES);
+  it("an engine.json that is not JSON is a constitution failure too", () => {
+    const tmp = vault();
     try {
-      writeFileSync(join(tmp, "config", "constitution.json"), "{ not json");
-      const r = run(tmp, ["lint"]);
+      writeFileSync(join(tmp, "config", "engine.json"), "{ not json");
+      const r = run(tmp, ["check"]);
       assert.equal(r.status, 2, JSON.stringify(r.envelope));
       assert.equal(r.envelope.error?.type, "constitution");
     } finally {
@@ -115,34 +109,37 @@ describe("exit 2 vs exit 5 never blur (docs/cli.md §The envelope)", () => {
     }
   });
 
-  it("a valid registry with a failing page still exits 5 with type findings", () => {
-    const tmp = vault(GOOD_TYPES);
+  it("a law that loads with a failing page still exits 5 with type findings", () => {
+    const tmp = vault();
     try {
       writeFileSync(
         join(tmp, "wiki", "rogue.md"),
-        "---\ntype: no-such-type\ntitle: Rogue\ndescription: x.\ntags: []\n---\n\n# Rogue\n",
+        "---\ntype: no-such-type\ntitle: Rogue\n---\n\n# Rogue\n",
       );
-      const r = run(tmp, ["lint"]);
+      const r = run(tmp, ["check"]);
       assert.equal(r.status, 5, JSON.stringify(r.envelope));
       assert.equal(r.envelope.error?.type, "findings");
+      const findings = (r.envelope.data as { findings: { rule: string; path: string }[] }).findings;
+      assert.ok(findings.some((f) => f.rule === "type-unknown" && f.path === "wiki/rogue.md"));
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
 
-  it("a missing constitution stays not_found (3) — absent is not malformed", () => {
+  it("a directory with no engine.json is not_found (3) under every verb: absent is not malformed", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-exit-"));
     try {
-      const r = run(tmp, ["lint"]);
-      assert.equal(r.status, 3, JSON.stringify(r.envelope));
-      assert.equal(r.envelope.error?.type, "not_found");
+      for (const args of lawReaders(tmp)) {
+        const r = run(tmp, args);
+        assert.equal(r.status, 3, `${args[0]}: ${JSON.stringify(r.envelope)}`);
+        assert.equal(r.envelope.error?.type, "not_found");
+        assert.equal(r.envelope.error?.code, "bundle-not-found");
+      }
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
-});
 
-describe("a state with no engine.json holds no bundle (docs/cli.md §Exit codes)", () => {
   it("the gate over an index that holds no config/engine.json is bundle-not-found, exit 3", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-exit-"));
     try {
@@ -197,74 +194,30 @@ describe("the error-code taxonomy: one code, one meaning (docs/cli.md §The enve
   });
 });
 
-// docs/cli.md §Exit codes: a vault path that resolves outside the vault is
-// refused by its own name, wherever a read reaches it.
-describe("a config linked out of the vault is linked-outside-vault (docs/cli.md §Exit codes)", () => {
-  it("exits 4 as conflict from every verb that reads the law, never as a parse failure", () => {
-    const tmp = vault(GOOD_TYPES);
+// v2 contracts §2: the law is read through no link. An engine.json linked
+// out of the bundle is not read, and the law does not load.
+describe("a config linked out of the bundle is not read (docs/cli.md §Exit codes)", () => {
+  it("exits 2 as constitution from every verb that reads the law, naming config/engine.json", () => {
+    const tmp = vault();
     const outside = mkdtempSync(join(tmpdir(), "ww-exit-outside-"));
     try {
       const engine = join(tmp, "config", "engine.json");
       writeFileSync(join(outside, "engine.json"), readFileSync(engine, "utf8"));
       rmSync(engine);
       symlinkSync(join(outside, "engine.json"), engine);
-      for (const argv of [["type", "list"], ["check"], ["search", "clean"], ["lint"]]) {
+      for (const argv of lawReaders(tmp)) {
         const r = run(tmp, argv);
-        assert.equal(r.status, 4, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
-        assert.equal(r.envelope.error?.type, "conflict");
-        assert.equal(r.envelope.error?.code, "linked-outside-vault");
+        assert.equal(r.status, 2, `${argv.join(" ")}: ${JSON.stringify(r.envelope)}`);
+        assert.equal(r.envelope.error?.code, "constitution-invalid");
+        const issues = (r.envelope.data as { issues: { code: string; where: string }[] }).issues;
+        assert.deepEqual(
+          issues.map((i) => [i.code, i.where]),
+          [["engine-invalid", "bundle:config/engine.json"]],
+        );
       }
     } finally {
       rmSync(tmp, { recursive: true, force: true });
       rmSync(outside, { recursive: true, force: true });
-    }
-  });
-});
-
-// docs/cli.md §Notes per verb (`export`) · §The envelope (a copy's marker): the
-// codes the exports added, each at the exit its type names.
-describe("the export codes exit as their types (docs/cli.md §Exit codes)", () => {
-  const EXTERNAL = {
-    name: "garden-notes",
-    select: { kind: "all" },
-    output: "external",
-    repository: "https://example.invalid/garden",
-    contribution: { mode: "none" },
-  };
-  const SKILLS = { name: "garden", select: { kind: "all" }, contribution: { mode: "none" } };
-
-  it("export refuses by name, and a marker that is not one is a conflict", () => {
-    const tmp = vault(GOOD_TYPES, { exports: [EXTERNAL, SKILLS] });
-    try {
-      mkdirSync(join(tmp, "out", "skills", "garden-notes"), { recursive: true });
-      mkdirSync(join(tmp, "linked", "skills"), { recursive: true });
-      symlinkSync(join(tmp, "out"), join(tmp, "linked", "skills", "garden-notes"));
-      const cases: [string[], number, string, string][] = [
-        [["export", "no-such-export", "--to", "out"], 2, "usage", "export-not-declared"],
-        [["export", "garden", "--to", "out"], 2, "usage", "export-output-skills"],
-        [
-          ["export", "garden-notes", "--to", "wiki"],
-          2,
-          "usage",
-          "export-destination-inside-bundle",
-        ],
-        [["export", "garden-notes", "--to", "absent"], 3, "not_found", "directory-not-found"],
-        [["export", "garden-notes", "--to", "out"], 4, "conflict", "export-destination-occupied"],
-        [["export", "garden-notes", "--to", "linked"], 4, "conflict", "export-destination-linked"],
-      ];
-      for (const [argv, exit, type, code] of cases) {
-        const r = run(tmp, argv);
-        assert.equal(r.status, exit, `${code}: ${JSON.stringify(r.envelope)}`);
-        assert.equal(r.envelope.error?.type, type, code);
-        assert.equal(r.envelope.error?.code, code);
-      }
-      writeFileSync(join(tmp, "config", "export.json"), "{}\n");
-      const marked = run(tmp, ["search", "clean"]);
-      assert.equal(marked.status, 4, JSON.stringify(marked.envelope));
-      assert.equal(marked.envelope.error?.type, "conflict");
-      assert.equal(marked.envelope.error?.code, "export-marker-invalid");
-    } finally {
-      rmSync(tmp, { recursive: true, force: true });
     }
   });
 });

@@ -13,7 +13,7 @@
 
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadModules, type ModuleManifest } from "../src/modules/index.ts";
@@ -23,8 +23,6 @@ import { STANDARD_LIBRARY } from "../src/stdlib/index.ts";
 import { constitutionOf, type Doc, documentOf, loadOf } from "./helpers/constitution.ts";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
-const CORE_SRC = fileURLToPath(new URL("../src/", import.meta.url));
-const CLI_SRC = fileURLToPath(new URL("../../cli/src/", import.meta.url));
 
 /** A registry as one deterministic string: Maps become sorted entry lists. */
 function serialize(value: unknown): string {
@@ -495,20 +493,11 @@ describe("5. one `where` spelling, over every code a document can make the load 
 });
 
 describe("6. every shipped constitution loads clean (docs/cli.md §init)", () => {
-  // devwiki (its frozen v1 copy: devwiki itself is on the v2 law) and the
-  // `code` starter are bundles over the code kit
-  // (docs/extending.md §The code kit); the rest load under the standard
-  // library alone.
-  const OVER_KIT = [
-    join(REPO, "fixtures", "v1", "devwiki"),
-    join(REPO, "packages", "cli", "constitutions", "code"),
-  ];
-  const STDLIB = [
-    join(REPO, "fixtures", "v1", "minimal-vault"),
-    ...readdirSync(join(REPO, "packages", "cli", "constitutions"))
-      .filter((s) => s !== "code")
-      .map((s) => join(REPO, "packages", "cli", "constitutions", s)),
-  ];
+  // devwiki's frozen v1 copy (devwiki itself is on the v2 law) is a bundle
+  // over the code kit (docs/extending.md §The code kit); minimal-vault's
+  // loads under the standard library alone. The starters left with `init`.
+  const OVER_KIT = [join(REPO, "fixtures", "v1", "devwiki")];
+  const STDLIB = [join(REPO, "fixtures", "v1", "minimal-vault")];
   const stdlib = () => {
     const loaded = loadModules(STANDARD_LIBRARY);
     if (!loaded.ok) throw new Error("the standard library loads");
@@ -556,65 +545,6 @@ describe("6. every shipped constitution loads clean (docs/cli.md §init)", () =>
   }
   // A bundle outside this repository is not judged here; the two conformance
   // bundles above are the ones the suite holds.
-});
-
-describe("7. effective-model closure: every field of the effective model has a reader (docs/architecture.md §The invariants)", () => {
-  const MODEL = join(CORE_SRC, "registry", "model.ts");
-  const INTERFACES = [
-    "EffectiveType",
-    "EffectiveSectionEntry",
-    "EffectiveSections",
-    "EffectiveBody",
-    "EffectiveInstances",
-    "EffectiveCheck",
-    "EffectiveVocabulary",
-    "VocabularyEntry",
-    "EffectiveFragment",
-    "FlattenedRegistry",
-    "Attributed",
-  ];
-
-  function fieldsOf(name: string): string[] {
-    const text = readFileSync(MODEL, "utf8");
-    const at = text.search(new RegExp(`^export interface ${name}(<[^>]*>)? \\{$`, "mu"));
-    assert.notEqual(at, -1, `model.ts declares ${name}`);
-    const end = text.indexOf("\n}", at);
-    const block = text.slice(at, end);
-    return [...block.matchAll(/^ {2}(?:readonly )?([a-zA-Z_]+)\??:/gmu)].map((m) => m[1] ?? "");
-  }
-
-  function readers(): string {
-    const out: string[] = [];
-    const walk = (dir: string, skip: (p: string) => boolean): void => {
-      for (const entry of readdirSync(dir, { withFileTypes: true, encoding: "utf8" })) {
-        const path = join(dir, entry.name);
-        if (entry.isDirectory()) {
-          if (!skip(path)) walk(path, skip);
-          continue;
-        }
-        if (entry.name.endsWith(".ts")) out.push(readFileSync(path, "utf8"));
-      }
-    };
-    walk(CORE_SRC, (p) => p === join(CORE_SRC, "registry"));
-    walk(CLI_SRC, () => false);
-    return out.join("\n");
-  }
-
-  it("is read by name outside registry/ — the test that would have caught `rules: []`", () => {
-    const text = readers();
-    const unread: string[] = [];
-    for (const name of INTERFACES) {
-      for (const field of fieldsOf(name)) {
-        const byDot = new RegExp(`\\.${field}\\b`, "u");
-        const byKey = new RegExp(`\\["${field}"\\]`, "u");
-        const byDestructure = new RegExp(`[{,]\\s*${field}\\s*[,}:]`, "u");
-        if (!byDot.test(text) && !byKey.test(text) && !byDestructure.test(text)) {
-          unread.push(`${name}.${field}`);
-        }
-      }
-    }
-    assert.deepEqual(unread, [], "a field nothing reads is a lie the model tells its author");
-  });
 });
 
 describe("9. determinism: two loads of one document are one registry", () => {

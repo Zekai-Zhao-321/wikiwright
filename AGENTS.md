@@ -103,20 +103,19 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
 ## Where things live
 
 - `packages/core`: the kernel and the standard library.
-- `packages/cli`: the binary, one module per verb: the verbs of the v2
-  contracts under `src/verbs/`, and each old verb under `src/legacy/` until
-  the deletions of the v2 delivery; the starters under `constitutions/`; the
-  skills under `skills/`.
+- `packages/cli`: the binary, one module per verb under `src/verbs/`, the
+  eight verbs of the v2 contracts; the skills under `skills/`.
 - `packages/kit-code`: `@wikiwright/kit-code`, the v1 domain kit — a
   code wiki's types, `anchored` fragment, relation labels, templates and
-  discipline — consumed by the `code` starter until the old verbs leave.
-  Nothing code-specific enters the kernel or the CLI.
+  discipline — which nothing loads since the old verbs left; it leaves in
+  its own commit of step 6. Nothing code-specific enters the kernel or the
+  CLI.
 - `devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`,
   `fixtures/handbooks/{orchard,allotment}`: the corpora every change is
   judged against, all on the v2 law. `devwiki` imports `libraries/kit-code`
   by path; the tests judge each corpus where it stands and in copies under
   `os.tmpdir()`. `fixtures/v1` holds their frozen v1 forms, read only by the
-  old verbs' tests.
+  old registry's core tests until it leaves.
 - `libraries/`: the type libraries of the v2 law, data only — type,
   fragment and vocabulary documents with their rule tests and examples.
   `kit-code` (id `code`) is a code wiki's page kinds, the `anchored`
@@ -128,7 +127,7 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
 - `tools/`: the build-info writer, the binary builder (`bun run binary`), the
   playbook renderer, the v2 disposition-table generator, the case-fold table
   generator, the uncovered-directory lister, the suite runner the gate uses,
-  and the benchmark of `check` and `lint --staged`.
+  and the benchmark of `check` and `gate`.
 - `test/`: the tests of the built CLI as a whole — the pipe probes and the
   compiled binary.
 - `docs/`: the documentation, and the CLI reference renderer.

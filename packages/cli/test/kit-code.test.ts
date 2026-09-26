@@ -1,31 +1,21 @@
 // docs/extending.md §The code kit · docs/extending.md §Declaring a module
 //
-// The shipped domain kit, `@wikiwright/kit-code`, as a bundle consumes it: the
-// manifest registers declarations only, composes with the standard library,
-// installs from the bundle's own node_modules, is proved by its fixture at the
-// load, and then governs the bundle — its labels range, its `require` rows fire, its
-// templates render, and a bundle's subtype tightens what the kit left open.
+// The v1 domain kit, `@wikiwright/kit-code`: its manifest registers
+// declarations only and composes with the standard library. The verbs that
+// installed and ran it left with the old table; `libraries/kit-code` is its
+// v2 form, and the kit itself leaves in the next commits of step 6.
 
-import { afterAll, describe, it } from "bun:test";
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { loadModules, type ModuleManifest, STANDARD_LIBRARY } from "@wikiwright/core";
-import { installKit, KIT_CODE, KIT_PACKAGE, runKit } from "./fixtures/kit-code.ts";
+import { KIT_CODE } from "./fixtures/kit-code.ts";
 
 const manifest = (await import(pathToFileURL(join(KIT_CODE, "index.js")).href)) as {
   default: ModuleManifest;
 };
 const KIT = manifest.default;
-
-interface Fixture {
-  constitution: Record<string, unknown>;
-  pages: Record<string, string>;
-  expected: string[];
-}
-const FIXTURE = JSON.parse(readFileSync(join(KIT_CODE, "fixture.json"), "utf8")) as Fixture;
 
 const TYPES = [
   "architecture-overview",
@@ -50,32 +40,6 @@ interface TypeEntry {
   sections?: { list: { heading: string; require?: { labels: string[]; min: number }[] }[] };
 }
 const typeOf = (name: string): TypeEntry => KIT.types?.[name] as TypeEntry;
-
-/** A bundle under os.tmpdir() built from the kit's own fixture, with the kit installed. */
-function fixtureBundle(): string {
-  const root = mkdtempSync(join(tmpdir(), "ww-kit-code-"));
-  mkdirSync(join(root, "config"), { recursive: true });
-  writeFileSync(
-    join(root, "config", "constitution.json"),
-    `${JSON.stringify(FIXTURE.constitution, null, 2)}\n`,
-  );
-  writeFileSync(
-    join(root, "config", "engine.json"),
-    `${JSON.stringify({ content_roots: ["wiki"], modules: [{ package: KIT_PACKAGE, version: "^0.1.0" }] })}\n`,
-  );
-  for (const [path, text] of Object.entries(FIXTURE.pages)) {
-    mkdirSync(dirname(join(root, path)), { recursive: true });
-    writeFileSync(join(root, path), text);
-  }
-  installKit(root);
-  return root;
-}
-
-const BUNDLE = fixtureBundle();
-afterAll(() => rmSync(BUNDLE, { recursive: true, force: true }));
-
-const shape = (f: { ruleId: string; path: string; line?: number; severity: string }): string =>
-  `${f.ruleId}|${f.path}|${f.line ?? 0}|${f.severity}`;
 
 describe("the code kit registers declarations only (docs/extending.md §The code kit)", () => {
   it("nine abstract types under code/, one template each rendering the title", () => {
@@ -177,125 +141,4 @@ describe("the code kit registers declarations only (docs/extending.md §The code
     const decision = typeOf("code/decision") as TypeEntry & { body?: { lifecycle: string } };
     assert.equal(decision.body?.lifecycle, "append-only");
   });
-});
-
-describe("a bundle over the code kit: install, load, judge (docs/extending.md §Declaring a module)", () => {
-  it("installed, the kit loads with no approval step, proved by its fixture, and judges under its law", () => {
-    const listed = runKit(BUNDLE, ["modules", "list"]);
-    assert.equal(listed.status, 0, JSON.stringify(listed.envelope));
-    const row = ((listed.envelope.data?.["loaded"] ?? []) as Record<string, unknown>[])[0];
-    assert.deepEqual(row?.["fixture"], { package: KIT_PACKAGE, pages: 7, findings: 4 });
-    assert.equal(row?.["package"], KIT_PACKAGE);
-    const contributes = row?.["contributes"] as Record<string, string[]>;
-    assert.deepEqual(contributes["types"], [...TYPES].sort());
-    assert.deepEqual(contributes["fragments"], ["code/anchored"]);
-    assert.deepEqual(contributes["lanes"], []);
-    assert.deepEqual(contributes["checks"], []);
-    // The fixture is the bundle's law too: lint over the same pages says the same.
-    const linted = runKit(BUNDLE, ["lint", "--all"]);
-    const findings = (linted.envelope.data?.["findings"] ?? []) as Parameters<typeof shape>[0][];
-    assert.deepEqual(findings.map(shape).sort(), [...FIXTURE.expected].sort());
-  }, 60_000);
-
-  it("new renders the kit's template — the title, the sections in the template's order, the seeded origin", () => {
-    const pin = "0123456789abcdef0123456789abcdef01234567";
-    // The template seeds `origin: .`, so `--set` names only the pin and the paths;
-    // without those two, the refusal's hint lists exactly them.
-    const stubbed = runKit(BUNDLE, ["new", "fx-subsystem", "Stub", "--dest", "wiki/Stub.md"]);
-    assert.equal(stubbed.status, 5, JSON.stringify(stubbed.envelope));
-    const details = stubbed.envelope.error?.["details"] as { set: { field: string }[] } | undefined;
-    assert.deepEqual(
-      (details?.set ?? []).map((f) => f.field),
-      ["covers", "pin"],
-      "the seeded origin is not stubbed, so it is not hinted",
-    );
-    const r = runKit(BUNDLE, [
-      "new",
-      "fx-subsystem",
-      "Probe",
-      "--dest",
-      "wiki/Probe.md",
-      "--set",
-      `pin=${pin}`,
-      "--set",
-      'covers=["src/probe/"]',
-      "--item",
-      "Relations: mapped_in [[Map]]",
-    ]);
-    assert.equal(r.status, 0, JSON.stringify(r.envelope));
-    const text = readFileSync(join(BUNDLE, "wiki", "Probe.md"), "utf8");
-    const headings = text.split("\n").filter((line) => line.startsWith("#"));
-    assert.deepEqual(headings, [
-      "# Probe",
-      "## Responsibilities",
-      "## Entry points",
-      "## State",
-      "## Invariants",
-      "## Failure modes",
-      "## Relations",
-    ]);
-    assert.match(text, /^- mapped_in \[\[Map\]\]$/mu);
-    assert.match(text, /^origin: \.$/mu, "seeded from the kit's template, not from --set");
-    // `type show --brief` prints the same skeleton from the same template, and
-    // the seed beside the field it fills.
-    const shown = runKit(BUNDLE, ["type", "show", "fx-subsystem", "--brief"]);
-    const fields = shown.envelope.data?.["fields"] as Record<string, { seed?: unknown }>;
-    assert.equal(fields["origin"]?.seed, ".");
-    assert.equal(fields["pin"]?.seed, undefined, "an empty template value seeds nothing");
-    assert.equal(fields["covers"]?.seed, undefined, "an empty list seeds nothing");
-    const skeleton = String(shown.envelope.data?.["skeleton"]);
-    assert.deepEqual(
-      skeleton.split("\n").filter((line) => line.startsWith("#")),
-      ["# <title>", ...headings.slice(1)],
-    );
-  });
-
-  it("a subtype tightens origin to the enclosing repository; re-pasting the fragment its parent carries is refused", () => {
-    const constitution = join(BUNDLE, "config", "constitution.json");
-    const before = readFileSync(constitution, "utf8");
-    try {
-      const document = JSON.parse(before) as { types: Record<string, unknown> };
-      // The kit's overview is anchored already: a subtype that pastes
-      // `code/anchored` again redeclares the fragment's fields, and the
-      // loader says so — which is why the starter's and devwiki's own pastes
-      // went.
-      document.types["fx-overview"] = {
-        extends: "code/architecture-overview",
-        description: "An overview that pastes what it already inherits.",
-        fragments: ["code/anchored"],
-      };
-      writeFileSync(constitution, `${JSON.stringify(document, null, 2)}\n`);
-      const doubled = runKit(BUNDLE, ["lint", "--all"]);
-      assert.equal(doubled.status, 2, JSON.stringify(doubled.envelope));
-      const issues = (doubled.envelope.data?.["issues"] ?? []) as { code: string; where: string }[];
-      assert.equal(
-        issues.some((i) => i.code === "field-schema-redeclared" && i.where === "type:fx-overview"),
-        true,
-        JSON.stringify(issues),
-      );
-      document.types["fx-overview"] = {
-        extends: "code/architecture-overview",
-        description: "An anchored overview: this wiki lives in the repository it documents.",
-        fields: { origin: { kind: "string", pattern: "^\\.$" } },
-      };
-      writeFileSync(constitution, `${JSON.stringify(document, null, 2)}\n`);
-      const page = (title: string, origin: string) =>
-        `---\ntype: fx-overview\ntitle: ${title}\ndescription: An overview.\ntags: []\npin: 0123456789abcdef0123456789abcdef01234567\norigin: ${origin}\ncovers: [src/]\n---\n\n# ${title}\n\n## System shape\n\nOne.\n\n## Layers\n\nOne.\n`;
-      writeFileSync(join(BUNDLE, "wiki", "Here.md"), page("Here", "."));
-      writeFileSync(join(BUNDLE, "wiki", "Far.md"), page("Far", "https://example.invalid/x.git"));
-      const linted = runKit(BUNDLE, ["lint", "--all"]);
-      assert.notEqual(linted.status, 2, JSON.stringify(linted.envelope));
-      const shapes = (
-        (linted.envelope.data?.["findings"] ?? []) as { ruleId: string; path: string }[]
-      )
-        .filter((f) => f.ruleId === "field-shape")
-        .map((f) => f.path)
-        .sort();
-      assert.deepEqual(shapes, ["wiki/Escaped.md", "wiki/Far.md"], "`.` passes, a URL is refused");
-    } finally {
-      writeFileSync(constitution, before);
-      rmSync(join(BUNDLE, "wiki", "Here.md"), { force: true });
-      rmSync(join(BUNDLE, "wiki", "Far.md"), { force: true });
-    }
-  }, 60_000);
 });

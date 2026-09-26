@@ -35,10 +35,9 @@ chmod +x ~/.local/bin/wikiwright
 by its path from the repository's top level, so `check --root devwiki` needs
 nothing installed: the library is data, read from the tree. The tests judge
 it where it stands and in copies under `os.tmpdir()`. The v1 kit,
-`@wikiwright/kit-code` under `packages/kit-code`, is still what the `code`
-starter and the old verbs' tests install; they read a frozen v1 copy of
-devwiki, `fixtures/v1/devwiki`, and every copy a test judges installs the
-kit from the shipped package, never into the shipped tree.
+`@wikiwright/kit-code` under `packages/kit-code`, is loaded by nothing since
+the old verbs left; the old registry's core tests read a frozen v1 copy of
+devwiki, `fixtures/v1/devwiki`, until the registry leaves.
 
 ## The gate
 
@@ -100,7 +99,7 @@ else is not covered.
   every run fetches the packed core's dependencies from the registry: the
   gate needs the network for that one test, as a fresh clone's
   `bun install` does.
-- A test that spawns a verb that stamps a date (`write`, `new`) sets
+- A test that spawns a verb that stamps a date (`write`) sets
   `WIKIWRIGHT_TODAY`, or the stamp moves with the day.
 - Bun's per-test budget is five seconds. A case that installs a kit and
   drives a dozen verbs exceeds it: build the bundle in `before` and keep one
@@ -111,19 +110,15 @@ else is not covered.
   or constitution is judged by `fixture-verdicts` (no error under `check`
   and `gate`; its warnings only the pins measured live), `routing-xor`,
   `coverage-coherence` and `generated-tracked` (its `generated/` must be
-  what this build renders). `starter-fixtures` holds the v1 `code` starter
-  against the frozen v1 copy under `fixtures/v1/devwiki`. The two handbooks
-  under `fixtures/handbooks` are held at zero findings of any severity under
-  `check` and `gate` by `fixture-verdicts` and their tracked `generated/` by
-  `generated-tracked`; the old table's two-bundle scenario (`multi-bundle`)
-  and its export copy (`export-copy`) read their frozen v1 copies under
-  `fixtures/v1/handbooks`.
+  what this build renders). The two handbooks under `fixtures/handbooks` are
+  held at zero findings of any severity under `check` and `gate` by
+  `fixture-verdicts` and their tracked `generated/` by `generated-tracked`.
 
 ## Measuring command performance
 
 After `bun run build`, run `bun tools/benchmark-check.ts` for 1,000, 5,000
 and 10,000 synthetic pages, three fresh processes per command (`check`,
-`check --write`, `lint --staged`). The first two positional arguments
+`check --write`, `gate`). The first two positional arguments
 override the comma-separated page counts and the repetition count:
 
 ```sh

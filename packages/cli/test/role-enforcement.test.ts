@@ -6,7 +6,7 @@
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { LEGACY_COMMANDS } from "../src/commands.ts";
+import { COMMANDS } from "../src/commands.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -29,10 +29,10 @@ function run(args: string[], env?: Record<string, string>): Run {
 }
 
 describe("WIKIWRIGHT_ROLE=consumer bounds the surface (docs/cli.md §brief)", () => {
-  const consumerVerbs = LEGACY_COMMANDS.filter((c) => c.role === "consumer").map((c) => c.name);
+  const consumerVerbs = COMMANDS.filter((c) => c.role === "consumer").map((c) => c.name);
 
   it("a maintainer verb exits 2 with role-forbidden and the consumer surface", () => {
-    const r = run(["lint"], { WIKIWRIGHT_ROLE: "consumer" });
+    const r = run(["gate"], { WIKIWRIGHT_ROLE: "consumer" });
     assert.equal(r.status, 2, JSON.stringify(r.envelope));
     assert.equal(r.envelope.error?.["code"], "role-forbidden");
     assert.equal(r.envelope.error?.["type"], "usage");
@@ -42,13 +42,13 @@ describe("WIKIWRIGHT_ROLE=consumer bounds the surface (docs/cli.md §brief)", ()
   });
 
   it("a consumer verb runs unchanged", () => {
-    const r = run(["schema"], { WIKIWRIGHT_ROLE: "consumer" });
+    const r = run(["version"], { WIKIWRIGHT_ROLE: "consumer" });
     assert.equal(r.status, 0, JSON.stringify(r.envelope));
   });
 
   it("the default and an explicit maintainer are unchanged", () => {
     for (const env of [{}, { WIKIWRIGHT_ROLE: "maintainer" }]) {
-      const r = run(["lint", "--help"], env);
+      const r = run(["gate", "--help"], env);
       assert.equal(r.status, 0, JSON.stringify(r.envelope));
     }
   });
@@ -57,7 +57,7 @@ describe("WIKIWRIGHT_ROLE=consumer bounds the surface (docs/cli.md §brief)", ()
     // `writer` was added between the two, so the unrecognised value here is
     // one that is still not a role — the point of the case is the refusal, not
     // the particular spelling.
-    const r = run(["lint", "--help"], { WIKIWRIGHT_ROLE: "editor" });
+    const r = run(["gate", "--help"], { WIKIWRIGHT_ROLE: "editor" });
     assert.equal(r.status, 2, JSON.stringify(r.envelope));
     assert.equal(r.envelope.error?.["code"], "role-unknown");
     const details = (r.envelope.error?.["details"] ?? {}) as Record<string, unknown>;

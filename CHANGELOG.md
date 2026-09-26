@@ -165,11 +165,6 @@ version` prints the engine version and the commit a binary was built from.
   entries and the values the vault uses that it does not declare. `type
   list` lists every type with its role, whether it is abstract, its parent
   and its case.
-- **Two command tables.** A root whose `config/engine.json` is schema
-  version 4 is answered by the command table of the v2 contracts; any other
-  root, and any `--bundle` invocation, by the old table whole, until the
-  corpora migrate and the old verbs are deleted.
-
 - **The envelope's bound, `--out` and `--help --json`** (v2 contracts §9).
   An envelope over 1 MiB is refused as `envelope-too-large` (exit 2) with a
   hint naming `--out <file>`; `--out`, a global flag, writes the whole
@@ -782,6 +777,28 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- The old command table (v2 contracts §1, §12 step 6): the 24 verbs of the
+  old tree under `packages/cli/src/legacy/`, which answered every root not
+  on schema version 4, and their tests. One table answers every root now:
+  a verb of the old tree is `unknown-command`; a directory that is not
+  there, or that holds no `config/engine.json`, is `bundle-not-found`
+  (exit 3), where the old verbs answered `vault-not-found` and
+  `registry-not-found`; a bundle still on `config/constitution.json` is
+  `constitution-invalid` (its engine.json is not schema version 4), and
+  `tools/migrate-spellings.ts` rewrites it. Gone with the verbs: the
+  starters under `packages/cli/constitutions/` (`base` and `code`, both on
+  the v1 law) that `init` copied, and the package's `constitutions` entry;
+  the shipped skills' installer and its stamps (`skills.ts`);
+  `shipped-files-absent`, which only `init` and `skills` raised from the
+  compiled binary; exit code 10, `confirm_required`, which only the old
+  `write`'s identity gate raised (`identity-candidates`,
+  `open-claim-of-category`); and the old verbs' shared modules
+  (`artifacts.ts`, `pages.ts`, `staged.ts`, `state.ts`). The loss beyond
+  what the entries below already state: no command lays a bundle down
+  (`docs/roadmap.md` §No starter). The tests of what survives — the git
+  transport, the envelope, the exit taxonomy, the bundle block, commit
+  prefixes, the path law, the dry-run law, the pipe probes, the binary and
+  the packed install — run through the eight verbs.
 - The discovery of installed bundle skills (v2 contracts §1, §12 step 6):
   the global flag `--bundle <name>`, which named any verb's target by the
   name of a bundle skill in the skill directories, the `bundles` verb
@@ -804,29 +821,25 @@ version` prints the engine version and the commit a binary was built from.
   from the command table, which is now the eight verbs of the v2 contracts
   (§9): the discovery of installed bundle skills, the exports, the graph
   query, the starters, the modules and the installed skills leave with
-  their mechanisms (§1), and `<verb> --help --json` replaces `schema`. Each
-  still answers a root not on schema version 4.
+  their mechanisms (§1), and `<verb> --help --json` replaces `schema`.
 - `vocabulary` and `brief` from the command table: `type show --brief`
   lists a vocabulary's entries with their live counts, and the three roles'
   briefs are the sections of `generated/BRIEF.md`, which `check --write`
   renders. Not carried: `vocabulary show --label` and `--target` (one entry,
   and the labels a target type admits), and a brief printed on demand per
-  role. Each still answers a root not on schema version 4.
+  role.
 - `move`, `retire` and `new` from the command table, absorbed by `write
   --from` over a schema-version-4 bundle (a move and a retirement are
   operations in `ops.json`; a new page is a draft written from `type show
   --brief`'s skeleton); `write`'s stdin form, `--section --append`,
   `--retract`, `--replace-core`, `--correct` and `--not-any-of` go with the
   old `write`, and so do the identity gate's stem tier and `near` list, the
-  retirement banner, and `new`'s templates, `--item` and `--set`. Each
-  still answers a root not on schema version 4.
+  retirement banner, and `new`'s templates, `--item` and `--set`.
 - `hook`, from the command table: the published hook definition and the
   documented one-liners invoke `gate` instead, and nothing installs a hook
-  or logs a `WIKIWRIGHT_BYPASS`; `hook-stale` goes with it. It still answers
-  a root not on schema version 4.
+  or logs a `WIKIWRIGHT_BYPASS`; `hook-stale` goes with it.
 - `lint`, `fix`, `freshness` and `okf`, absorbed by `check` (and `lint
-  --staged` by `gate`) over a schema-version-4 bundle; each still answers any
-  other root. Not carried:
+  --staged` by `gate`). Not carried:
   `lint --since` (the replay, deferred), `lint --stdin` and `--explain`,
   `freshness --fast-forward` and `generated/freshness.json`, every fixer
   but the folder tags and the generated files (`frontmatter-set`,

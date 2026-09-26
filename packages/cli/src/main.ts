@@ -6,7 +6,7 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { replaceFile } from "./atomicwrite.ts";
 import { bundleIdentity } from "./bundle.ts";
-import { COMMANDS, LEGACY_COMMANDS } from "./commands.ts";
+import { COMMANDS } from "./commands.ts";
 import {
   type BundleIdentity,
   type CommandResult,
@@ -20,7 +20,6 @@ import { GitInconsistentRead, GitShortRead, GitTimedOut, gitTimeoutSetting } fro
 import { type ExportMarker, MARKER_PATH, markerAt } from "./marker.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import { LinkedOutsideVault } from "./paths.ts";
-import { insideCompiledBinary } from "./shipped.ts";
 import {
   type CommandSpec,
   commandSchema,
@@ -31,7 +30,6 @@ import {
   type Role,
   usageOf,
 } from "./spec.ts";
-import { isTypeLawBundle } from "./typelaw.ts";
 
 /** Where an envelope goes: stdout, or the file `--out` names. */
 interface Sink {
@@ -297,17 +295,6 @@ async function runCommand(
   const { args } = parsed;
   const refused = markedRootRefusal(spec, args.root);
   if (refused !== undefined) return refused;
-  if (spec.readsShippedFiles === true && insideCompiledBinary()) {
-    return fail(
-      spec.name,
-      "usage",
-      "shipped-files-absent",
-      `"${spec.name}" reads the files the package ships, and the compiled binary carries none of them`,
-      {
-        hint: `run it from the package instead: bun packages/cli/dist/main.js ${spec.name}`,
-      },
-    );
-  }
   let result: CommandResult;
   try {
     // docs/extending.md §Declaring a module: the declared modules load HERE —
@@ -392,17 +379,6 @@ function rootOf(rest: readonly string[]): string {
   return ".";
 }
 
-/**
- * v2 contracts §12 step 4: which table answers. A root holding a bundle on
- * schema version 4 is answered by the command table of §9; any other root by
- * the old table, until the corpora migrate (step 5) and the old verbs leave
- * (step 6).
- */
-function tableFor(rest: readonly string[]): readonly CommandSpec[] {
-  const root = rootOf(rest);
-  return isTypeLawBundle(root) ? COMMANDS : LEGACY_COMMANDS;
-}
-
 const argv = process.argv.slice(2);
 const commandName = argv[0];
 if (commandName === undefined || commandName === "help" || commandName === "--help") {
@@ -413,13 +389,12 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
   const resolvedName = VERSION_ALIASES.has(commandName) ? "version" : commandName;
   const rest = argv.slice(1);
   invocationRoot = rootOf(rest);
-  const table = tableFor(rest);
-  const spec = table.find((c) => c.name === resolvedName);
+  const spec = COMMANDS.find((c) => c.name === resolvedName);
   const sink = scanInvocation(spec, rest);
   if (spec === undefined) {
     emit(
       fail("wikiwright", "usage", "unknown-command", `unknown command "${commandName}"`, {
-        details: { valid_commands: table.map((c) => c.name) },
+        details: { valid_commands: COMMANDS.map((c) => c.name) },
       }),
       sink,
     );
@@ -449,11 +424,11 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
     } else {
       // Before --help and before parsing: a bounded caller cannot learn the
       // shape of a verb it may not run, and no maintainer path is reached.
-      const refusal = roleRefusal(spec, role, table);
+      const refusal = roleRefusal(spec, role, COMMANDS);
       if (refusal !== undefined) emit(refusal, sink);
       else if (sink.wantsHelp && sink.wantsJson) emit(ok(spec.name, commandSchema(spec)), sink);
       else if (sink.wantsHelp) emit(commandHelp(spec), sink);
-      else emit(await runCommand(spec, rest, table), sink);
+      else emit(await runCommand(spec, rest, COMMANDS), sink);
     }
   }
 }

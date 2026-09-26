@@ -5,13 +5,13 @@
 import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { COMMANDS, LEGACY_COMMANDS } from "../src/commands.ts";
+import { COMMANDS } from "../src/commands.ts";
 import { flagsOf } from "../src/spec.ts";
 import { cleanBundles, gardenBundle } from "./fixtures/garden-cli.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const FIXTURE = fileURLToPath(new URL("../../../fixtures/v1/minimal-vault", import.meta.url));
+const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
 
 interface Run {
   status: number;
@@ -35,15 +35,9 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
   // not the runner's five-second default. Nothing about the assertion changes —
   // a verb that fails to answer still fails, on any machine.
   it("every registered verb answers --help with ok and its own spec", () => {
-    // The command table answers a schema-version-4 bundle, the old table any
-    // other root: each verb is asked where its table answers.
     const garden = gardenBundle();
-    const asked = [
-      ...LEGACY_COMMANDS.map((command) => ({ command, root: [] as string[] })),
-      ...COMMANDS.map((command) => ({ command, root: ["--root", garden] })),
-    ];
-    for (const { command, root } of asked) {
-      const r = run([command.name, "--help", ...root]);
+    for (const command of COMMANDS) {
+      const r = run([command.name, "--help", "--root", garden]);
       assert.equal(r.status, 0, `${command.name} --help: ${JSON.stringify(r.envelope)}`);
       assert.equal(r.envelope.ok, true);
       const data = r.envelope.data ?? {};
@@ -63,7 +57,7 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
   }, 120_000);
 
   it("--help never becomes a usage error, even beside flags the verb rejects", () => {
-    const r = run(["lint", "--help", "--no-such-flag"]);
+    const r = run(["check", "--help", "--no-such-flag"]);
     assert.equal(r.status, 0, JSON.stringify(r.envelope));
   });
 
@@ -77,13 +71,13 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
   });
 
   it("a bare -- ends the scan", () => {
-    const r = run(["schema", "--", "--help"]);
+    const r = run(["version", "--", "--help"]);
     assert.equal(r.status, 2, JSON.stringify(r.envelope));
     assert.equal(r.envelope.error?.["code"], "unexpected-argument");
   });
 
   it("an unknown verb still exits 2 — --help is not a way to make a typo succeed", () => {
-    const r = run(["lintt", "--help"]);
+    const r = run(["checkk", "--help"]);
     assert.equal(r.status, 2);
     assert.equal(r.envelope.error?.["code"], "unknown-command");
   });
