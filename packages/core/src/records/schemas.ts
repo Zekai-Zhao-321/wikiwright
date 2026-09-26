@@ -63,7 +63,7 @@ export const RECORD_SCHEMAS: Readonly<Record<string, Record<string, unknown>>> =
             type: "object",
             properties: {
               date: { type: "string", format: "date" },
-              by: NULLABLE_STRING,
+              by: { anyOf: [{ type: "string", pattern: "^#[0-9a-f]{8}$" }, { type: "null" }] },
               valid_from: { anyOf: [{ type: "string", pattern: DAY }, { type: "null" }] },
               valid_to: { type: "string", format: "date" },
             },

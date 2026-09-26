@@ -60,7 +60,9 @@ version` prints the engine version and the commit a binary was built from.
     is today's, kept as the one canonical form, spelled exactly as `write`
     renders it: a trailing `(retracted YYYY-MM-DD)`, or `(valid
     YYYY-MM-DD→YYYY-MM-DD, superseded YYYY-MM-DD)` with the first date
-    optional (`(valid →YYYY-MM-DD, superseded YYYY-MM-DD)`), after the
+    optional (`(valid →YYYY-MM-DD, superseded YYYY-MM-DD)`) and, after the
+    supersession date, an optional ` by #xxxxxxxx` naming the claim that
+    replaced it by its handle (the navigator's ruling 5), after the
     provenance; `->` for `→`, a bare `(superseded D)`, a clause split in two
     parentheticals, another letter case, and a clause before the
     provenance do not parse. A parenthetical is taken for the clause only

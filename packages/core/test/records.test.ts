@@ -78,6 +78,16 @@ describe("claims", () => {
       "- [observed] Beans need six weeks. (valid →2026-04-30, superseded 2026-05-01)",
     );
     expect("record" in open && open.record.superseded?.valid_from).toBe(null);
+    // Ruling 5: the claim that replaced it, by handle, optionally.
+    const named = claim(
+      "- [observed] Beans need six weeks. (valid 2026-03-01→2026-04-30, superseded 2026-05-01 by #0a1b2c3d)",
+    );
+    expect("record" in named && named.record.superseded).toEqual({
+      date: "2026-05-01",
+      by: "#0a1b2c3d",
+      valid_from: "2026-03-01",
+      valid_to: "2026-04-30",
+    });
   });
 
   it("refuse every other variant of the lifecycle clause", () => {
@@ -89,6 +99,10 @@ describe("claims", () => {
       "- [observed] Beans need six weeks. (retracted 2026-5-1)",
       "- [observed] Beans need six weeks. (retracted 2026-02-30)",
       "- [observed] Beans need six weeks. (retracted 2026-05-01) ([[Bean notes]])",
+      "- [observed] Beans need six weeks. (valid →2026-04-30, superseded 2026-05-01 by 0a1b2c3d)",
+      "- [observed] Beans need six weeks. (valid →2026-04-30, superseded 2026-05-01 by #0A1B2C3D)",
+      "- [observed] Beans need six weeks. (valid →2026-04-30, superseded 2026-05-01 by #0a1b2c)",
+      "- [observed] Beans need six weeks. (valid →2026-04-30, superseded 2026-05-01 by [[Beans]])",
     ]) {
       expect("reason" in claim(line)).toBe(true);
     }

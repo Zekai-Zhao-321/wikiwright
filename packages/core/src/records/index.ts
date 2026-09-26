@@ -10,8 +10,11 @@
 // supersedeClause) and the old parser reads (stdlib/claims-parse.ts,
 // RETRACTED and VALID_WHOLE): a trailing `(retracted YYYY-MM-DD)` or
 // `(valid YYYY-MM-DD→YYYY-MM-DD, superseded YYYY-MM-DD)`, the first date
-// optional. The handle is today's too: `#` and the first eight hex digits of
-// sha256 over the core's normalised identity, computed, never written.
+// optional, and after the supersession date an optional ` by #xxxxxxxx`
+// naming the claim that replaced it (the navigator's ruling 5; `write`'s
+// `supersede` operation writes it from step 4). The handle is today's too:
+// `#` and the first eight hex digits of sha256 over the core's normalised
+// identity, computed, never written on the claim itself.
 import { sha256Hex } from "../hash/index.ts";
 import { normalizeIdentity } from "../identity/index.ts";
 import { isDate } from "../schema/formats.ts";
@@ -75,7 +78,10 @@ export type ResolveTarget = (name: string) => { path: string; type: string } | u
 
 const DAY = "\\d{4}-\\d{2}-\\d{2}";
 const RETRACTED = new RegExp(`^retracted (${DAY})$`, "u");
-const SUPERSEDED = new RegExp(`^valid (${DAY})?→(${DAY}), superseded (${DAY})$`, "u");
+const SUPERSEDED = new RegExp(
+  `^valid (${DAY})?→(${DAY}), superseded (${DAY})(?: by (#[0-9a-f]{8}))?$`,
+  "u",
+);
 /**
  * A parenthetical shaped like a lifecycle clause: one of its three words, in
  * any letter case, then a date or an arrow. One that is not the canonical
@@ -138,10 +144,15 @@ export function parseClaimLine(line: string, sourceRoots: readonly string[]): Pa
     const s = SUPERSEDED.exec(last.body);
     if (r !== null) retracted = { date: r[1] ?? "" };
     else if (s !== null) {
-      superseded = { date: s[3] ?? "", by: null, valid_from: s[1] ?? null, valid_to: s[2] ?? "" };
+      superseded = {
+        date: s[3] ?? "",
+        by: s[4] ?? null,
+        valid_from: s[1] ?? null,
+        valid_to: s[2] ?? "",
+      };
     } else {
       return {
-        reason: `"(${last.body})" is not the lifecycle clause: \`(retracted YYYY-MM-DD)\` or \`(valid YYYY-MM-DD→YYYY-MM-DD, superseded YYYY-MM-DD)\``,
+        reason: `"(${last.body})" is not the lifecycle clause: \`(retracted YYYY-MM-DD)\` or \`(valid YYYY-MM-DD→YYYY-MM-DD, superseded YYYY-MM-DD)\`, optionally \` by #xxxxxxxx\` after the supersession date`,
       };
     }
     const dates = [retracted?.date, superseded?.date, superseded?.valid_to, superseded?.valid_from];
