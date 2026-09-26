@@ -30,7 +30,7 @@ import { normalizeIdentity } from "../identity/index.ts";
 import type { ParsedPage } from "../interface/index.ts";
 import type { LawType } from "../law/compose.ts";
 import type { ClaimRecord, RelationRecord } from "../records/index.ts";
-import { boundedLevenshtein, trigramJaccard } from "../text/index.ts";
+import { trigramJaccard } from "../text/index.ts";
 import { declaredOccurrences, indexed } from "./grammar.ts";
 import { PAGE_LOCATION, type Unrouted } from "./page.ts";
 import type { FindingLocation } from "./table.ts";
@@ -117,13 +117,16 @@ const NEGATION_WORDS = new Set("not no never none nor without cannot un non anti
 const NEGATION_PREFIXES = "un non dis in im ir il anti".split(" ");
 const NEGATION_CHARS = [..."不没無无非未勿别"];
 
+/** The tokens of `from` that `other` does not hold, as a multiset: a counted pool, linear. */
 function tokensOnlyIn(from: string, other: string): string[] {
-  const pool = [...other.toLowerCase().matchAll(/[\p{L}\p{N}]+/gu)].map((m) => m[0]);
+  const pool = new Map<string, number>();
+  for (const [token] of other.toLowerCase().matchAll(/[\p{L}\p{N}]+/gu))
+    pool.set(token, (pool.get(token) ?? 0) + 1);
   const out: string[] = [];
   for (const [token] of from.toLowerCase().matchAll(/[\p{L}\p{N}]+/gu)) {
-    const at = pool.indexOf(token);
-    if (at < 0) out.push(token);
-    else pool.splice(at, 1);
+    const left = pool.get(token) ?? 0;
+    if (left === 0) out.push(token);
+    else pool.set(token, left - 1);
   }
   return out;
 }
@@ -135,11 +138,52 @@ function polarityChanged(before: string, after: string): boolean {
   const onlyBefore = tokensOnlyIn(before, after);
   const onlyAfter = tokensOnlyIn(after, before);
   if ([...onlyBefore, ...onlyAfter].some((t) => NEGATION_WORDS.has(t))) return true;
-  const prefixed = (longer: string[], shorter: string[]): boolean =>
+  const prefixed = (longer: string[], shorter: ReadonlySet<string>): boolean =>
     longer.some((t) =>
-      NEGATION_PREFIXES.some((p) => t.startsWith(p) && shorter.includes(t.slice(p.length))),
+      NEGATION_PREFIXES.some((p) => t.startsWith(p) && shorter.has(t.slice(p.length))),
     );
-  return prefixed(onlyAfter, onlyBefore) || prefixed(onlyBefore, onlyAfter);
+  return prefixed(onlyAfter, new Set(onlyBefore)) || prefixed(onlyBefore, new Set(onlyAfter));
+}
+
+/**
+ * Whether two strings are at most `max` edits apart, by code point: the
+ * edit distance over the band of cells `max` either side of the diagonal,
+ * since no cell outside it can be `max` or less. Linear in the length for a
+ * fixed `max`, where the full table text/index.ts's `boundedLevenshtein`
+ * fills is quadratic — two long cores a typo apart would fill all of it.
+ * That one stays as the old verbs read it until they leave (§12 step 6).
+ */
+function withinEdits(a: string, b: string, max: number): boolean {
+  const A = [...a];
+  const B = [...b];
+  const n = A.length;
+  const m = B.length;
+  if (Math.abs(n - m) > max) return false;
+  const over = max + 1;
+  let prev = new Array<number>(m + 1).fill(over);
+  let row = new Array<number>(m + 1).fill(over);
+  for (let j = 0; j <= Math.min(m, max); j += 1) prev[j] = j;
+  for (let i = 1; i <= n; i += 1) {
+    const lo = Math.max(1, i - max);
+    const hi = Math.min(m, i + max);
+    row[lo - 1] = lo === 1 && i <= max ? i : over;
+    let best = row[lo - 1] ?? over;
+    for (let j = lo; j <= hi; j += 1) {
+      const cost = A[i - 1] === B[j - 1] ? 0 : 1;
+      const value = Math.min(
+        (row[j - 1] ?? over) + 1,
+        (prev[j] ?? over) + 1,
+        (prev[j - 1] ?? over) + cost,
+        over,
+      );
+      row[j] = value;
+      if (value < best) best = value;
+    }
+    if (hi < m) row[hi + 1] = over;
+    if (best > max) return false;
+    [prev, row] = [row, prev];
+  }
+  return (prev[m] ?? over) <= max;
 }
 
 /**
@@ -161,7 +205,7 @@ function isCorrection(before: ClaimRecord, after: ClaimRecord): boolean {
   if (
     a.length >= CORRECTED_MIN_CORE &&
     b.length >= CORRECTED_MIN_CORE &&
-    boundedLevenshtein(a, b, CORRECTED_MAX_EDITS) <= CORRECTED_MAX_EDITS
+    withinEdits(a, b, CORRECTED_MAX_EDITS)
   ) {
     return true;
   }
@@ -170,15 +214,20 @@ function isCorrection(before: ClaimRecord, after: ClaimRecord): boolean {
 
 const wordish = (ch: string): boolean => ch !== "" && /[\p{L}\p{N}_]/u.test(ch);
 
-/** `text` quotes `core` as a whole segment: bounded by the edge or a non-letter, non-digit. */
+/**
+ * `text` quotes `core` as a whole segment: bounded by the edge or a
+ * non-letter, non-digit. The neighbours are read where they stand, a
+ * surrogate pair whole, so each occurrence costs its own length.
+ */
 function quotes(text: string, core: string): boolean {
   if (core === "") return false;
   let from = 0;
   for (;;) {
     const at = text.indexOf(core, from);
     if (at < 0) return false;
-    const before = at === 0 ? "" : ([...text.slice(0, at)].at(-1) ?? "");
-    const after = [...text.slice(at + core.length)][0] ?? "";
+    const before = at === 0 ? "" : codePointBefore(text, at);
+    const next = text.codePointAt(at + core.length);
+    const after = next === undefined ? "" : String.fromCodePoint(next);
     if (!wordish(before) && !wordish(after)) return true;
     from = at + 1;
   }

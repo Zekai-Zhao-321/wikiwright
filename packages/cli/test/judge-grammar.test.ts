@@ -300,6 +300,34 @@ describe("the kernel transitions, against the disk (ruling 3)", () => {
     expect(only(unquoted, "relation-removed")).toHaveLength(1);
   });
 
+  it("checks a long landing entry and a long corrected claim in linear time", async () => {
+    const claim = "- [observed] Basil bolts above thirty degrees. ([[Herb bed]])";
+    const over = async (base: string, text: string) => {
+      const dir = vaultDir({ "wiki/Basil.md": base });
+      return judgeState(await overlayState(dir, [draft("wiki/Basil.md", text)]));
+    };
+    // A removed claim whose core recurs in a long entry, never as a whole segment.
+    const short = BASIL.replace(claim, "- [observed] ab");
+    let started = performance.now();
+    const landed = await over(
+      short,
+      short
+        .replace("- [observed] ab\n", "")
+        .replace(
+          "- 2026-04-12 — sown",
+          `- 2026-04-12 — sown\n- 2026-05-01 — ${"ab".repeat(400_000)}`,
+        ),
+    );
+    expect(performance.now() - started).toBeLessThan(5_000);
+    expect(only(landed, "claims-transition")).toHaveLength(1);
+    // A long claim corrected by one letter: the same claim.
+    const long = BASIL.replace(claim, `- [observed] Basil ${"leaf ".repeat(40_000)}bolts.`);
+    started = performance.now();
+    const corrected = await over(long, long.replace("leaf bolts.", "leef bolts."));
+    expect(performance.now() - started).toBeLessThan(5_000);
+    expect(only(corrected, "claims-transition")).toEqual([]);
+  });
+
   it("reads a History line of a mebibyte in linear time", async () => {
     const long = `- 2026-05-01 — ${"a".repeat(1_000_000)} [[Herb bed]] ${"b ".repeat(20_000)}[[x`;
     const draft = BASIL.replace("- grows-in [[Herb bed]]", "").replace(
