@@ -799,10 +799,10 @@ Global flags, accepted by every verb:
 | [`graph`](#graph) | consumer | no | Query the graph's edges by kind, label and the type on either side — or list the pages on one side that carry none (coverage, derived). |
 | [`init`](#init) | maintainer | yes | Scaffold a vault from a starter constitution — only what is missing, unless --force; installs the hook when git exists. |
 | [`modules`](#modules) | maintainer | no | List the modules this bundle declares, or plan the delta of adopting another version. |
-| [`read`](#read) | consumer | no | Return a page's sections verbatim, with its digest and the bundle it came from, under a byte budget. |
+| [`read`](#read) | consumer | no | Return a page's sections verbatim under a byte budget, with its bytes digest and its status: stale pins, and the queue's unresolved rules. |
 | [`rule`](#rule) | maintainer | no | Try a candidate CEL rule over the pages of a type before it is law: what it would refuse and pass, under the working tree and at a base revision. |
 | [`schema`](#schema) | consumer | no | Print the generated command registry: names, roles, flags, examples. |
-| [`search`](#search) | consumer | no | Deterministic lexical search with match reasons and a coverage block. |
+| [`search`](#search) | consumer | no | Deterministic lexical search with match reasons and a coverage block; each result carries its page's status. |
 | [`skills`](#skills) | maintainer | yes | Reinstall the shipped skills into .claude/skills/, or compare installed vs shipped. |
 | [`type`](#type) | consumer | no | Introspect the type registry: show one effective contract, or list all types. |
 | [`version`](#version) | consumer | no | Report the engine version and the commit this binary was BUILT from (--version / -v alias it). |
@@ -969,7 +969,7 @@ wikiwright modules plan --package @acme/kit --candidate ../bundle-with-the-new-v
 
 `wikiwright read <page>`
 
-Return a page's sections verbatim, with its digest and the bundle it came from, under a byte budget.
+Return a page's sections verbatim under a byte budget, with its bytes digest and its status: stale pins, and the queue's unresolved rules.
 
 Role: `consumer`. Writes: no.
 
@@ -979,9 +979,9 @@ Role: `consumer`. Writes: no.
 | `--budget <value>` | the most bytes of section text to return; the rest are listed by address |
 
 ```text
-wikiwright read wiki/pruning-roses.md
-wikiwright read pruning-roses --section Steps
-wikiwright read "Pruning roses" --budget 800
+wikiwright read wiki/Basil.md
+wikiwright read Basil --section History
+wikiwright read "Herb bed" --budget 800
 ```
 
 ### rule
@@ -1021,30 +1021,30 @@ wikiwright schema
 
 `wikiwright search [query]`
 
-Deterministic lexical search with match reasons and a coverage block.
+Deterministic lexical search with match reasons and a coverage block; each result carries its page's status.
 
 Role: `consumer`. Writes: no.
 
 | Flag | Meaning |
 |---|---|
-| `--type <value>` | restrict to one type |
+| `--type <value>` | restrict to one type and every type below it |
 | `--tag <value>` | restrict to pages carrying a tag |
 | `--title-contains <value>` | restrict by title substring |
 | `--limit <value>` | result cap (default 20) |
 | `--all` | lift the result cap |
 | `--near` | add the advisory name:near candidate list (never changes ranks) |
-| `--items` | rank the grammar items themselves — claims, relations, entries — with their line, section and fields |
+| `--items` | rank the grammar records themselves — claims, relations, entries — with their line, section and fields |
 | `--files` | every page with a match, by path with its reasons: unranked, uncapped |
 | `--band <value>` | keep only the results of one band: identity \| relevance |
 
 ```text
-wikiwright search 张伟
-wikiwright search --tag reset
-wikiwright search parser --type subsystem
-wikiwright search "Zhang Wei" --near
-wikiwright search "aphids roses" --items
-wikiwright search "aphids codling" --files
-wikiwright search pruning-roses --band identity
+wikiwright search basil
+wikiwright search --tag herbs
+wikiwright search bolts --type garden/planting
+wikiwright search "sweet basil" --near
+wikiwright search "thirty degrees" --items
+wikiwright search "herb bed" --files
+wikiwright search basil --band identity
 ```
 
 ### skills

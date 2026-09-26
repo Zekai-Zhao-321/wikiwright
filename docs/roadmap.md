@@ -776,6 +776,13 @@ its old self over any other root. What the rewritten verbs leave, so far:
   (an existing page a draft collides with is the judge's
   `identity-collision`), the retirement banner, and `new`'s templates,
   `--item` and `--set`.
+- A page's status (`read`, and each `search` result) keeps its two reasons
+  apart: `reason` says why `stale` is true or null, and `unresolved_reason`
+  why `unresolved` is null (`queue-stale`, or `queue-missing` when there is
+  no queue.md to read), where the contracts' §9.5 names one `reason` for
+  both. `search` measures the pins of every page it returns and of the pages
+  each one links, per invocation: the git work grows with the results, and
+  `--limit` bounds it. A tag alias no longer resolves under `--tag`.
 - `commit_prefixes` is validated and carried with no reader until the gate
   lands (`ENGINE_V4_CONSUMERS` names it `null`; every other key names the
   function that reads it, of core or of the shell, and a test holds the

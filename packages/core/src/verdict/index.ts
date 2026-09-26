@@ -32,6 +32,7 @@ export {
   lawDiff,
 } from "./lawdiff.ts";
 export type { VaultNameEntry, VaultNames } from "./names.ts";
+export { titleOf as titleOfPage } from "./names.ts";
 export type { Unrouted } from "./page.ts";
 export { locationAt, PAGE_LOCATION } from "./page.ts";
 export type { JudgeState, PageRename, SkippedPath, StateKind } from "./state.ts";

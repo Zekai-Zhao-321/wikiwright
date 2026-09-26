@@ -243,7 +243,7 @@ export type {
   ItemOutcome,
   ItemResult,
 } from "./search/items.ts";
-export { collectItems, searchItems } from "./search/items.ts";
+export { collectItems, rankItemCandidates, searchItems } from "./search/items.ts";
 export type { NearCandidate, NearIndex } from "./search/near.ts";
 export { buildNearIndex, nameFormsOf, nearCandidates, stripQualifier } from "./search/near.ts";
 export { TOKENIZATION_MODE, tokenize } from "./search/tokenize.ts";

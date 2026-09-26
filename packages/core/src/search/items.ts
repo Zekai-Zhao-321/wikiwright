@@ -141,7 +141,21 @@ export function searchItems(
   const keeps = pageFilter(filters, options);
   const kept = pages.filter(keeps);
   const all = collectItems(pages, registry, options?.parseOptions);
-  const keptPaths = new Set(kept.map((p) => p.path));
+  return rankItemCandidates(all, new Set(kept.map((p) => p.path)), query, limit, pages.length);
+}
+
+/**
+ * Rank the candidates of the kept pages: the ranking `searchItems` applies,
+ * over candidates any reader collected — the old grammars' or the v2
+ * records (v2 contracts §9.6) — with statistics from every candidate.
+ */
+export function rankItemCandidates(
+  all: readonly ItemCandidate[],
+  keptPaths: ReadonlySet<string>,
+  query: string,
+  limit: number,
+  corpusSize: number,
+): ItemOutcome {
   const candidates = all.filter((item) => keptPaths.has(item.path));
   const byKey = new Map(candidates.map((item) => [keyOf(item), item]));
   const index = buildTextIndex(all.map((item) => ({ key: keyOf(item), text: textOf(item) })));
@@ -196,8 +210,8 @@ export function searchItems(
     results: results.slice(0, limit),
     coverage: {
       tiers_executed: [LEXICAL_TIER, CONTAINS_TIER],
-      corpus_size: pages.length,
-      pages_considered: kept.length,
+      corpus_size: corpusSize,
+      pages_considered: keptPaths.size,
       items_considered: candidates.length,
       tokenization: TOKENIZATION_MODE,
       caps: { limit, found: results.length, hit: results.length > limit },

@@ -29,10 +29,10 @@ import { modulesCommand } from "./legacy/modules.ts";
 import { moveCommand } from "./legacy/move.ts";
 import { newCommand } from "./legacy/new.ts";
 import { okfCommand } from "./legacy/okf.ts";
-import { readCommand } from "./legacy/read.ts";
+import { readCommand as legacyReadCommand } from "./legacy/read.ts";
 import { retireCommand } from "./legacy/retire.ts";
 import { schemaCommand } from "./legacy/schema.ts";
-import { searchCommand } from "./legacy/search.ts";
+import { searchCommand as legacySearchCommand } from "./legacy/search.ts";
 import { skillsCommand } from "./legacy/skills.ts";
 import { typeCommand } from "./legacy/type.ts";
 import { versionCommand } from "./legacy/version.ts";
@@ -41,7 +41,9 @@ import { writeCommand as legacyWriteCommand } from "./legacy/write.ts";
 import type { CommandSpec } from "./spec.ts";
 import { checkCommand } from "./verbs/check.ts";
 import { gateCommand } from "./verbs/gate.ts";
+import { readCommand } from "./verbs/read.ts";
 import { ruleCommand } from "./verbs/rule.ts";
+import { searchCommand } from "./verbs/search.ts";
 import { writeCommand } from "./verbs/write.ts";
 
 /** The command table: the verbs a schema-version-4 bundle is answered by. */
@@ -82,10 +84,10 @@ export const LEGACY_COMMANDS: CommandSpec[] = [
   moveCommand,
   newCommand,
   okfCommand,
-  readCommand,
+  legacyReadCommand,
   retireCommand,
   schemaCommand,
-  searchCommand,
+  legacySearchCommand,
   skillsCommand,
   typeCommand,
   versionCommand,

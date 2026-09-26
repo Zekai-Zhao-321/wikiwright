@@ -92,6 +92,23 @@ version` prints the engine version and the commit a binary was built from.
   (path, kind, message). Exit 0 whatever the counts; nothing is written.
   The id `candidate` is reserved: a declared rule taking it is
   `rule-collision`, `details.kind: reserved`.
+- **`read` and `search` over the v2 law, with each page's status** (v2
+  contracts §9.5, §9.6). Over a bundle on schema version 4, `read` answers
+  as before — a page by path, name, alias or title, its sections cut at its
+  type's depth under `--budget`, `--section` — with the type's `role` and
+  `ancestry`, `data.bytes` (the page's bytes digest, where the old verb had
+  `page.digest`) and `data.status`: `stale` (true when a pin of the page is
+  stale, reason `pin-stale`, or a page it links carries one, reason
+  `stale-source-cited`; null when a pin of its own is unmeasured, reason
+  `remote-origin`, `no-repository` or `no-head`, or not on HEAD's history,
+  reason `pin-unknown`; false otherwise), and `unresolved`, the rule ids
+  `generated/queue.md` holds for the page while its recorded law and
+  content digests are the current ones, else null with `unresolved_reason`
+  `queue-stale` or `queue-missing`. `search` answers as before and every
+  result — a page, a record under `--items`, a file under `--files` — carries
+  its page's `status`; its pins and its linked pages' pins are measured per
+  result returned. `--items` ranks the §4 records; `--type` matches a type
+  and every type below it.
 - **Two command tables.** A root whose `config/engine.json` is schema
   version 4 is answered by the command table of the v2 contracts; any other
   root, and any `--bundle` invocation, by the old table whole, until the

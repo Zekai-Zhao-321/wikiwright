@@ -89,4 +89,4 @@ export {
   resolveLibraries,
 } from "./snapshot.ts";
 export { utf8Text } from "./text.ts";
-export { isMapping, readYaml } from "./yaml.ts";
+export { isMapping, jsonNumbers, readYaml } from "./yaml.ts";
