@@ -783,7 +783,10 @@ library under the temporary directory. What that leaves, until the verbs
   working tree reads through it, and the one rule all four can keep is to
   read none. Such a page is not judged and nothing reports it.
 - A page reference in frontmatter is a bare page name (`origin: Herb
-  bed`); `[[Herb bed]]` there names no page and is `wikilink-unresolved`.
+  bed`); `[[Herb bed]]` there names no page, and a reference that names no
+  page is `page-ref-type` (`details.kind: unresolved`), an error as v1's
+  `field-shape` was; one written as a path is `page-ref-type`
+  (`details.kind: path`) with the canonical name.
   Only a top-level property's `target_type` and `target_root` are read.
 - `instances` counts the pages of exactly the type, not its descendants, as
   v1 did.

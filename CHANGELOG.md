@@ -120,8 +120,9 @@ version` prints the engine version and the commit a binary was built from.
   - Per page: `page-too-large`, `page-not-utf8`, `malformed-frontmatter`,
     `duplicate-key`, `frontmatter-not-mapping` (with the line),
     `type-unknown`, `abstract-type`, `page-shape-invalid` (one per Ajv
-    error), `page-ref-type` (`target_type`, ancestry counted, and
-    `target_root`), `vocabulary-unknown` and `vocabulary-retired` (the
+    error), `page-ref-type` (a reference that names no page or
+    is written as a path, `target_type`, ancestry counted, and
+    `target_root`; an error, as v1's `field-shape` was), `vocabulary-unknown` and `vocabulary-retired` (the
     bundle's `tags` vocabulary, a claim's category, a relation's label),
     `wikilink-unresolved`, `wikilink-alias-target`, `renamed-without-alias`,
     `section-count`, `section-order`, `section-undeclared` (a heading

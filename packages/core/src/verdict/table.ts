@@ -108,7 +108,13 @@ export const VERDICT_TABLE: readonly VerdictRow[] = [
     ],
     scope: "page",
   },
-  { id: "page-ref-type", severity: "error", lane: "link-review", carries: [], scope: "page" },
+  {
+    id: "page-ref-type",
+    severity: "error",
+    lane: "link-review",
+    carries: ["field-shape"],
+    scope: "page",
+  },
   // --- vocabularies ------------------------------------------------------------
   {
     id: "vocabulary-unknown",

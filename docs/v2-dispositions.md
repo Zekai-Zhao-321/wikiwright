@@ -23,7 +23,7 @@ Every row of the composed pass table (`passRows(standardLibrary())`): the kernel
 | `unknown-type` | kernel | the judge: `type-unknown`, `details.kind` `missing` or `unknown` (verdict/page.ts) |
 | `tombstone` | dropped | `tombstone` removed with type `status` and `replaced_by`: a type leaves by removal, which `law-changed` reports (§8). |
 | `missing-required-field` | kernel | the judge: `page-shape-invalid`, keyword `required`, against the effective shape (verdict/page.ts) |
-| `field-shape` | kernel | the judge: `page-shape-invalid`, the effective shape's keywords |
+| `field-shape` | kernel | the judge: `page-shape-invalid`, the effective shape's keywords; `page-ref-type` for a page reference that names no page, is written as a path, or names a page of another type or root |
 | `unknown-frontmatter-key` | kernel | the judge: `page-shape-invalid`, keyword `unevaluatedProperties`, under `extensions.mode: registered` |
 | `invalid-tags-field` | kernel | the judge: `page-shape-invalid` against the reserved `tags` schema (schema/reserved.ts) |
 | `unknown-tag` | kernel | the judge: `vocabulary-unknown`, a `tags` value outside the bundle's registered `tags` vocabulary |
@@ -34,7 +34,7 @@ Every row of the composed pass table (`passRows(standardLibrary())`): the kernel
 | `section-depth` | kernel | the judge: `section-depth`, carried by id (§3) |
 | `max-chars` | dropped | `max-chars` removed with `max_chars`: a size bound is a section rule over `section.raw`. |
 | `wikilink-alias-target` | kernel | the judge: `wikilink-alias-target`, carried by id (verdict/page.ts) |
-| `wikilink-unresolved` | kernel | the judge: `wikilink-unresolved`, carried by id; a page reference that names no page too |
+| `wikilink-unresolved` | kernel | the judge: `wikilink-unresolved`, carried by id |
 | `generated-drift` | kernel | `check` and `gate` over `generated/*` (§9) |
 | `okf-missing-type` | kernel | the `okf-missing-type` rule inside `check` (§1, §9.1) |
 | `template-placeholder-unknown` | dropped | `template-placeholder-unknown` removed with templates: the skeleton is derived (§3.3). |

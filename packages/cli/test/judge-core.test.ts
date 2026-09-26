@@ -136,8 +136,26 @@ describe("page references", () => {
       },
     ]);
     const nowhere = await judgeVault({ "wiki/Basil.md": withOrigin("Pond") });
-    expect(only(nowhere, "wikilink-unresolved")).toMatchObject([
-      { path: "wiki/Basil.md", details: { field: "origin", target: "Pond" } },
+    expect(only(nowhere, "page-ref-type")).toMatchObject([
+      {
+        path: "wiki/Basil.md",
+        severity: "error",
+        queue: "link-review",
+        details: { kind: "unresolved", field: "origin", target: "Pond" },
+      },
+    ]);
+    expect(only(nowhere, "wikilink-unresolved")).toEqual([]);
+  });
+
+  it("refuses a page reference written as a path, naming the canonical name", async () => {
+    const verdict = await judgeVault({
+      "wiki/Basil.md": BASIL.replace("bed: herb\n", "bed: herb\norigin: wiki/Herb bed.md\n"),
+    });
+    expect(only(verdict, "page-ref-type")).toMatchObject([
+      {
+        severity: "error",
+        details: { kind: "path", target: "wiki/Herb bed.md", canonical: "Herb bed" },
+      },
     ]);
   });
 
@@ -155,8 +173,8 @@ describe("page references", () => {
     const verdict = await judgeVault({
       "wiki/Basil.md": BASIL.replace("bed: herb\n", "bed: herb\nsuperseded_by: Sweet basil\n"),
     });
-    expect(only(verdict, "wikilink-unresolved")).toMatchObject([
-      { details: { field: "superseded_by", target: "Sweet basil" } },
+    expect(only(verdict, "page-ref-type")).toMatchObject([
+      { details: { kind: "unresolved", field: "superseded_by", target: "Sweet basil" } },
     ]);
   });
 });

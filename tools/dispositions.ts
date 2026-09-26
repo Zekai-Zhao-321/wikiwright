@@ -143,7 +143,11 @@ export const RULES: readonly Row[] = [
     "kernel",
     "the judge: `page-shape-invalid`, keyword `required`, against the effective shape (verdict/page.ts)",
   ],
-  ["field-shape", "kernel", "the judge: `page-shape-invalid`, the effective shape's keywords"],
+  [
+    "field-shape",
+    "kernel",
+    "the judge: `page-shape-invalid`, the effective shape's keywords; `page-ref-type` for a page reference that names no page, is written as a path, or names a page of another type or root",
+  ],
   [
     "unknown-frontmatter-key",
     "kernel",
@@ -186,11 +190,7 @@ export const RULES: readonly Row[] = [
     "kernel",
     "the judge: `wikilink-alias-target`, carried by id (verdict/page.ts)",
   ],
-  [
-    "wikilink-unresolved",
-    "kernel",
-    "the judge: `wikilink-unresolved`, carried by id; a page reference that names no page too",
-  ],
+  ["wikilink-unresolved", "kernel", "the judge: `wikilink-unresolved`, carried by id"],
   ["generated-drift", "kernel", "`check` and `gate` over `generated/*` (§9)"],
   ["okf-missing-type", "kernel", "the `okf-missing-type` rule inside `check` (§1, §9.1)"],
   [

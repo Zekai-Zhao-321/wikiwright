@@ -188,10 +188,10 @@ function chainOf(law: TypeLaw, type: string): string[] {
 }
 
 /**
- * §3.1 `target_type` and `target_root` against the vault's names: a page
- * reference that names no page is a link that does not resolve; one that
- * resolves to a page of another type, or under another root, is
- * `page-ref-type`.
+ * §3.1 a page reference against the vault's names, and its `target_type`
+ * and `target_root`: one that names no page, one written as a path, one
+ * that resolves to a page of another type, and one under another root are
+ * each `page-ref-type`, an error, as v1's `field-shape` was.
  */
 export function pageRefFindings(ctx: PageContext, page: ParsedPage, type: LawType): Unrouted[] {
   const out: Unrouted[] = [];
@@ -208,13 +208,25 @@ export function pageRefFindings(ctx: PageContext, page: ParsedPage, type: LawTyp
       const pointer = field.list ? `/${field.key}/${index}` : `/${field.key}`;
       const target = ctx.names.resolve(name);
       if (target === undefined) {
+        // A path breaks on the next move while the name survives it, which
+        // is why a page reference, like a wikilink, is the canonical name.
+        const path = name.includes("/") || name.endsWith(".md");
+        const canonical = (name.split("/").pop() ?? name).replace(/\.md$/u, "");
         out.push({
-          rule: "wikilink-unresolved",
-          severity: "warning",
+          rule: "page-ref-type",
+          severity: "error",
           path: page.path,
           location: PAGE_LOCATION,
-          message: `${field.key}: "${name}" names no page`,
-          details: { target: name, field: field.key, pointer },
+          message: path
+            ? `${field.key}: "${name}" is a path; a page reference is the page's canonical name (here "${canonical}")`
+            : `${field.key}: "${name}" names no page; a page reference is a page's canonical name`,
+          details: {
+            kind: path ? "path" : "unresolved",
+            field: field.key,
+            pointer,
+            target: name,
+            ...(path ? { canonical } : {}),
+          },
         });
         return;
       }
