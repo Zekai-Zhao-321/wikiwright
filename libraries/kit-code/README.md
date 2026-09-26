@@ -34,6 +34,16 @@ the consuming bundle (`devwiki/rule-tests/relation-range/`). For the same
 reason only the three kinds a page may write without a relation —
 architecture-overview, source-map and decision — ship an example.
 
+**Every importer carries `rule-tests/relation-range/`.** The gate holds a
+rule its law diff adds to a test set as an error, so the commit that adds
+this library to a bundle with a HEAD is refused (`rule-untested`, error, exit
+5) unless the bundle carries its own test set of `relation-range` — a
+negative, a repaired twin and a positive page, with `expect.json`, whose
+relations name the bundle's own pages; devwiki's is the model. Only a
+bundle's first commit, which has no HEAD to diff against, imports it with a
+warning, as `check` always reports it. `docs/roadmap.md` names the change
+that would let the library ship the set itself.
+
 ## The discipline
 
 What the v1 kit shipped as skill fragments of the brief, kept here as prose:

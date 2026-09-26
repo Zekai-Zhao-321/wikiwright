@@ -921,11 +921,20 @@ its old self over any other root. What the rewritten verbs leave, so far:
 - A rule test's or an example's page resolves its links and relation
   targets against the vault that judges it, and §8 counts every warning on
   a negative, repaired or positive page. A library's test that names a
-  target — as step 5's `relation-range` test will — therefore fails as
-  `rule-test-fails` in every bundle that holds no page of that name. Open
-  for the navigator before step 5: whether a test page resolves against the
-  pages of its own test set and its owner's `examples/` rather than the
-  vault, or a library's test may not link.
+  target would fail as `rule-test-fails` in every bundle that holds no page
+  of that name, so library `code` ships no test set for `relation-range`,
+  whose negative must point a relation at a page of the wrong type, and
+  ships examples of only the three kinds a page may write without a
+  relation; devwiki carries the set under its own `rule-tests/`. The cost
+  falls on every importer: the gate holds a rule its law diff adds to its
+  test set as an error, so a bundle that imports `libraries/kit-code` in
+  any commit after its first is refused (`rule-untested`, error, exit 5)
+  unless it carries `rule-tests/relation-range/` of its own, naming its own
+  pages; a first commit has no HEAD and no law diff, and `check` only
+  warns. `libraries.test.ts` holds both. Open for the navigator: whether a
+  test page and an example resolve first against their own test set and
+  their owner's `examples/`, then the vault, which would let a library ship
+  the set and an example of every type.
 - A type's `examples` names paths relative to the root of the bundle or
   library that declares it, under its `examples/`; every page under an
   `examples/` directory is judged as a page of its type whether a type

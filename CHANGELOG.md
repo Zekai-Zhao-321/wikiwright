@@ -24,7 +24,10 @@ version` prints the engine version and the commit a binary was built from.
   `body.lifecycle`, as a transition rule. Rule tests for
   `covers-repository-path` and `body-append-only` and examples of the three
   kinds a page may write without a relation ship with it; `relation-range`'s
-  test set lives with its consumer, whose pages its negative names. Not
+  test set lives with its consumer, whose pages its negative names, so
+  every bundle importing the library must carry `rule-tests/relation-range/`
+  of its own: the gate refuses an import commit after a bundle's first
+  (`rule-untested`, error), and `check` warns. Not
   carried: the v1 kit's templates (the skeleton is derived) and its skill
   fragments, which the brief no longer prints; the library's README keeps
   them as prose. `packages/kit-code` stays until the old verbs leave.
