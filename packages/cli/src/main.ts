@@ -3,12 +3,10 @@
 // strict under the command registry; generated help) · JSON-only v1.
 import { existsSync, realpathSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
-import { isSkillName, SKILL_NAME, SKILL_NAME_MAX } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { replaceFile } from "./atomicwrite.ts";
 import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS, LEGACY_COMMANDS } from "./commands.ts";
-import { resolveBundle } from "./discovery.ts";
 import {
   type BundleIdentity,
   type CommandResult,
@@ -24,7 +22,6 @@ import { declaredModulesOf, preloadModules } from "./moduleload.ts";
 import { LinkedOutsideVault } from "./paths.ts";
 import { insideCompiledBinary } from "./shipped.ts";
 import {
-  type CommandArgs,
   type CommandSpec,
   commandSchema,
   declaredRole,
@@ -182,11 +179,7 @@ function helpResult(json: boolean): CommandResult {
  * it resolves outside) is left off rather than half-stated; the reads that
  * refuse it are the same ones every verb makes.
  */
-async function withBundle(
-  result: CommandResult,
-  root: string,
-  shadowed: readonly { root: string; tier: string }[],
-): Promise<CommandResult> {
+async function withBundle(result: CommandResult, root: string): Promise<CommandResult> {
   let bundle: BundleIdentity | undefined;
   try {
     bundle = await bundleIdentity(root);
@@ -194,15 +187,9 @@ async function withBundle(
     return result;
   }
   if (bundle === undefined) return result;
-  // docs/cli.md §bundles: the copies of the same bundle a nearer one shadowed.
-  if (shadowed.length > 0) bundle = { ...bundle, shadowed: [...shadowed] };
   const metadata = { ...result.envelope.metadata, bundle };
   return { ...result, envelope: { ...result.envelope, metadata } };
 }
-
-type Target =
-  | { ok: true; args: CommandArgs; shadowed: { root: string; tier: string }[] }
-  | { ok: false; result: CommandResult };
 
 /**
  * docs/cli.md §Exit codes: what a thrown error becomes. A vault path that
@@ -243,90 +230,6 @@ function thrown(command: string, e: unknown): CommandResult {
   return fail(command, "internal", "unexpected-error", e instanceof Error ? e.message : String(e));
 }
 
-/**
- * docs/cli.md §bundles: `--bundle <name>` names the target by the name of a
- * bundle skill installed in the skill directories (`discovery.ts`), resolved
- * here, before any module loads or the verb runs, into the root `--root` would
- * have named. Each refusal comes before anything of the bundle is read: both
- * flags at once (`one-target`), a name outside the skill grammar
- * (`bundle-name-invalid`), a name nothing answers (`bundle-not-found`, with the
- * directories searched and the names the scan saw), and a name two different
- * bundles answer (`bundle-ambiguous`, with each candidate). What it finds is a
- * copy, and a copy is guarded as every marked root is (`markedRootRefusal`).
- */
-async function targetOf(spec: CommandSpec, args: CommandArgs): Promise<Target> {
-  const name = args.flags["bundle"];
-  if (typeof name !== "string") return { ok: true, args, shadowed: [] };
-  const root = args.flags["root"];
-  if (typeof root === "string") {
-    return {
-      ok: false,
-      result: fail(spec.name, "usage", "one-target", "--bundle and --root both name the target", {
-        details: { bundle: name, root },
-        hint: "pass one: --bundle names an installed bundle skill, --root names a directory",
-      }),
-    };
-  }
-  if (!isSkillName(name)) {
-    return {
-      ok: false,
-      result: fail(spec.name, "usage", "bundle-name-invalid", `"${name}" is not a bundle name`, {
-        details: { name, pattern: SKILL_NAME.source, max_length: SKILL_NAME_MAX },
-        hint: "a bundle is named as its skill is: lower-case letters and digits in hyphen-separated runs, at most 64 characters",
-      }),
-    };
-  }
-  const resolution = await resolveBundle(name);
-  const skipped = resolution.skipped.map(({ root: at, tier, reason }) => ({
-    root: at,
-    tier,
-    reason,
-  }));
-  if (resolution.kind === "none") {
-    return {
-      ok: false,
-      result: fail(
-        spec.name,
-        "not_found",
-        "bundle-not-found",
-        `no bundle skill named "${name}" is installed in the skill directories`,
-        {
-          details: { searched: resolution.searched, names: resolution.names, skipped },
-          hint: "details.names are the bundle skills the scan saw; --root names a directory the scan does not reach",
-        },
-      ),
-    };
-  }
-  if (resolution.kind === "ambiguous") {
-    return {
-      ok: false,
-      result: fail(
-        spec.name,
-        "usage",
-        "bundle-ambiguous",
-        `${resolution.candidates.length} different bundles are installed as "${name}"`,
-        {
-          details: {
-            candidates: resolution.candidates.map((c) => ({
-              root: c.root,
-              tier: c.tier,
-              repository: c.marker.source.repository,
-            })),
-            skipped,
-          },
-          hint: "name the copy you mean with --root <one of details.candidates' roots>",
-        },
-      ),
-    };
-  }
-  const chosen = resolution.chosen;
-  return {
-    ok: true,
-    args: { ...args, root: chosen.root },
-    shadowed: resolution.shadowed.map((c) => ({ root: c.root, tier: c.tier })),
-  };
-}
-
 /** docs/cli.md §bundles: where a problem with a copy goes, in the words of its contribution mode. */
 function contributionHint(marker: ExportMarker): string {
   const { contribution } = marker;
@@ -345,7 +248,7 @@ function contributionHint(marker: ExportMarker): string {
 
 /**
  * docs/cli.md §bundles: a root that carries a marker is a copy, however it was
- * named — `--bundle`, `--root` or the working directory — and it is checked
+ * named — `--root` or the working directory — and it is checked
  * before any module preloads or the verb reads a page. A marker that is not one
  * is refused as a config the loader cannot read is: the copy is not loaded
  * (`export-marker-invalid`). A verb that can write is refused over a copy,
@@ -391,14 +294,7 @@ async function runCommand(
 ): Promise<CommandResult> {
   const parsed = parseInvocation(spec, rest, table);
   if (!parsed.ok) return parsed.result;
-  let target: Target;
-  try {
-    target = await targetOf(spec, parsed.args);
-  } catch (e) {
-    return thrown(spec.name, e);
-  }
-  if (!target.ok) return target.result;
-  const { args, shadowed } = target;
+  const { args } = parsed;
   const refused = markedRootRefusal(spec, args.root);
   if (refused !== undefined) return refused;
   if (spec.readsShippedFiles === true && insideCompiledBinary()) {
@@ -419,7 +315,7 @@ async function runCommand(
     // and refuses a bundle whose declared modules did not load, so a verb that
     // never reaches this line cannot be judged under a quieter law.
     // Only for a verb that reads the vault's law: `version` and `schema` answer
-    // about the engine, and `bundles` about the skill directories.
+    // about the engine.
     if (spec.needsVaultModules) {
       const declarations = declaredModulesOf(args.root);
       if (declarations.length > 0) await preloadModules(args.root, declarations);
@@ -430,7 +326,7 @@ async function runCommand(
   }
   // The same switch decides it: a verb that reads the vault's law names the
   // bundle it read, and one that answers about the engine names none.
-  return spec.needsVaultModules ? withBundle(result, args.root, shadowed) : result;
+  return spec.needsVaultModules ? withBundle(result, args.root) : result;
 }
 
 // The conventional spellings reach the `version` verb — one
@@ -484,14 +380,12 @@ function roleRefusal(
 
 /**
  * The root an invocation names, read before its verb is chosen: `--root`'s
- * value, or the working directory. `--bundle` names an installed copy through
- * the old skill discovery, so it is answered by the old table.
+ * value, or the working directory.
  */
-function rootOf(rest: readonly string[]): string | undefined {
+function rootOf(rest: readonly string[]): string {
   for (let i = 0; i < rest.length; i += 1) {
     const token = rest[i] ?? "";
     if (token === "--") break;
-    if (token === "--bundle" || token.startsWith("--bundle=")) return undefined;
     if (token.startsWith("--root=")) return token.slice("--root=".length);
     if (token === "--root") return rest[i + 1] ?? ".";
   }
@@ -506,7 +400,7 @@ function rootOf(rest: readonly string[]): string | undefined {
  */
 function tableFor(rest: readonly string[]): readonly CommandSpec[] {
   const root = rootOf(rest);
-  return root !== undefined && isTypeLawBundle(root) ? COMMANDS : LEGACY_COMMANDS;
+  return isTypeLawBundle(root) ? COMMANDS : LEGACY_COMMANDS;
 }
 
 const argv = process.argv.slice(2);

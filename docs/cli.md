@@ -8,15 +8,14 @@ whose `config/engine.json` is schema version 4 — a bundle of type documents
 (docs/v2-dispositions.md) — is answered by the **command table**, eight verbs:
 `check`, `gate`, `write`, `rule`, `read`, `search`, `type` and `version`
 (§The command table). Any other root — a bundle on `config/constitution.json`,
-or none — and any invocation that names its target by `--bundle` is answered
-by the **old table**, the 24 verbs of the old tree, unchanged (§The old
+or none — is answered by the **old table**, the 24 verbs of the old tree, unchanged (§The old
 table), until step 5 of the delivery migrates this repository's corpora and
 step 6 deletes the old verbs. Over a schema-version-4 bundle the verbs the old
 table alone holds are no verb (`unknown-command`): `check` absorbs `lint`,
 `fix`, `freshness` and `okf`; `gate` absorbs `lint --staged`, and the
 published hook definition replaces `hook`; `write --from` absorbs `move`,
 `retire` and `new`; `type show --brief` absorbs `vocabulary` and `brief`;
-`<verb> --help --json` replaces `schema`; `bundles`, `export`, `graph`,
+`<verb> --help --json` replaces `schema`; `export`, `graph`,
 `init`, `modules` and `skills` leave with their mechanisms (contracts §1).
 
 The verb reference at the end is rendered from the command table by
@@ -44,8 +43,8 @@ the verdict in `data` beside `error`.
 
 Every verb that reads a vault's law names the bundle it read in
 `metadata.bundle`, when its root holds `config/constitution.json`, on an ok
-envelope and a refusal alike. `version` and `schema` answer about the engine
-and `bundles` about the skill directories, so they carry none; a `bundles list` row carries each copy's identity from its marker instead.
+envelope and a refusal alike. `version` and `schema` answer about the engine,
+so they carry none.
 
 ```json
 "bundle": {
@@ -86,7 +85,7 @@ left. It is absent when the root holds no constitution, and when a file the
 identity reads resolves outside the root, which every read of a vault refuses;
 the engine states no partial identity. An envelope answered before the verb
 runs names no bundle either: `--help`, a refusal of the arguments, a
-`role-forbidden`, a refusal of `--bundle`, a refused marker.
+`role-forbidden`, a refused marker.
 
 A root that holds `config/export.json` is a copy (docs/constitution.md
 §exports), and its block says so. `label` is the bundle the marker names,
@@ -114,10 +113,6 @@ or unknown, another schema or version — is refused `export-marker-invalid`
 (exit 4) before any module loads or a page is read, with the first reason in
 `details.reason`: the copy is not loaded. The brief's header over a copy names
 the export and the bundle it was cut from.
-
-A root named by `--bundle` whose name other, farther copies of the same
-bundle also answer adds `shadowed`, a list of `{root, tier}`, one per copy
-not chosen (§Notes per verb, `--bundle`).
 
 `lint`, `check` and `gate` answer with this verdict block, whole:
 
@@ -165,9 +160,7 @@ directory, or the nearest ancestor of it carrying `config/engine.json` or
 `config/constitution.json`, every link resolved — is `out-inside-bundle`
 (exit 2) on stdout, the same `details.exit_code` beside `out` and `bundle`:
 the envelope never overwrites a page, a law file or a generated file, which
-no writing verb's checks and no `WIKIWRIGHT_ROLE` bound would see. Under the
-old table's `--bundle`, whose bundle is found only once the verb runs, the
-check is not made.
+no writing verb's checks and no `WIKIWRIGHT_ROLE` bound would see.
 
 The writing verbs judge with the same judge and answer in their own shapes.
 `write` and `new` report the page they wrote: its `path`, `findings`,
@@ -245,8 +238,6 @@ the report it always writes.
 | `WIKIWRIGHT_TODAY` | `write`, `new`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_GIT_TIMEOUT_MS` | the shell, before parsing; every git child | how long one git child may run, a whole number of milliseconds from 1 to 2147483647; 60000 when unset or empty. A child still running then is killed and the verb refused as `git-timeout` (exit 1); any other value is `git-timeout-invalid` (exit 2) before any verb runs |
 | `WIKIWRIGHT_BYPASS` | the installed hooks | skips the gate for one commit and logs the reason into the git directory |
-| `WIKIWRIGHT_SYSTEM_SKILL_DIR` | `--bundle`, `bundles list` | the machine's skill directory, probed after the user's two; `/etc/codex/skills` when unset, and none when empty. The suite sets it, over any value it inherits, to a directory under the temporary directory, and runs every scan with `HOME` there and its project tier inside a temporary repository, so no test probes a real machine's skill directories |
-| `WIKIWRIGHT_SKILL_DIRS` | `--bundle`, `bundles list` | more skill directories to probe after the project's, the user's and the system's, colon-separated, in order |
 
 ## The command table
 
@@ -736,8 +727,8 @@ against a root not on schema version 4, prints those rows.
   brief that carries the verbs: `wikiwright-consume`, the runtime skill every
   bundle skill requires — how to run the engine (the one route today: clone,
   `bun install`, `bun run build`, then `bun <clone>/packages/cli/dist/main.js`
-  by its absolute path from the caller's own directory, since `--bundle`
-  resolves from where a command runs), what a
+  by its absolute path from the caller's own directory, naming the bundle
+  with `--root`), what a
   bundle skill is and how to find one, the consumer's commands, each of which
   must parse, with their discipline (which bundle answered, the section rather
   than the sentence, a child handed the words with their source), where a
@@ -761,52 +752,9 @@ against a root not on schema version 4, prints those rows.
   There is no approval step: installing a module is the consent to run it,
   and every load proves it (a purity scan of its bytes and its determinism
   fixture, once per digest in each process) before it judges anything.
-- **`bundles list`** walks the skill directories `--bundle` probes, in the
-  same order, one directory listing each, and prints one row per directory
-  that holds a marker: `name`, `bundle`, `tier` (`project`, `user` or
-  `extra`), `root` as found and its `realpath`, `linked` (the found path is a
-  symbolic link), `source` (`repository`, and the `law` and `content`
-  digests the marker recorded), `select`, `pages`, `contribution`,
-  `provenance` — every key of the copy's `SKILL.md` frontmatter outside the
-  generated `name`, `description`, `license` and `metadata`, each as a string,
-  as an installer wrote it — and `shadowed_by`, the root `--bundle <name>`
-  would choose instead, `null` for the one it chooses and for every copy of a
-  name two different bundles answer. A directory whose marker does not parse,
-  or names another name, is a row of its own with `code`
-  `export-marker-invalid` and its `reason`. It loads no law, runs no kit and
-  hashes no page: the digests are the marker's, so a copy changed since it
-  was cut lists as it was cut; its envelope over `--root` says
-  `intact: false`. Nothing registers a bundle: installing one is copying its
-  directory.
-- **`--bundle <name>`** names the target of any verb by the name of a bundle
-  skill installed in a skill directory, in place of `--root`; nothing is
-  registered. The shell resolves it before any module loads, probing
-  `<dir>/<name>/config/export.json` in order: the project's `.claude/skills`
-  and `.agents/skills` at the working directory and at each parent up to the
-  top of its git repository (to the filesystem root outside one); then
-  `~/.claude/skills`, `~/.agents/skills` and the system's directory,
-  `WIKIWRIGHT_SYSTEM_SKILL_DIR` or `/etc/codex/skills` when it is unset (an
-  empty value leaves it out); then each directory of `WIKIWRIGHT_SKILL_DIRS`,
-  colon-separated, in order. Plugin
-  caches are not scanned; a host names one through that variable. A
-  candidate is a directory whose marker parses and names that same name; one
-  that does not is skipped, with its reason. Every candidate is inspected:
-  identity is the marker's `source.repository`, `bundle` and `name`, two
-  paths to one real directory are one candidate, and a copy that names no
-  repository is itself alone. One identity resolves to the nearest candidate,
-  and `metadata.bundle.shadowed` lists the others as `{root, tier}`. It
-  refuses `one-target` beside `--root`; `bundle-name-invalid` (exit 2) for a
-  name outside the skill grammar, before anything is read;
-  `bundle-not-found` (exit 3) with `details.searched`, the directories
-  probed in order, `details.names`, every bundle skill the scan saw, and
-  `details.skipped`; `bundle-ambiguous` (exit 2) when two identities answer,
-  every candidate's `{root, tier, repository}` in `details.candidates`. What
-  it finds is a copy, guarded as every marked root is (below). With a name
-  the cost is one `stat` per probed directory and one marker read per
-  candidate, never a page read.
 - **A marked root is read only.** A root that holds `config/export.json` is
-  an installed copy, however it was named — `--bundle`, `--root` or the
-  working directory — and its marker is checked before any module preloads:
+  an installed copy, however it was named — `--root` or the working
+  directory — and its marker is checked before any module preloads:
   a marker that is not one is `export-marker-invalid` (exit 4), and a verb
   that can write is refused `bundle-readonly` (exit 2), `--dry-run` included,
   with `details` `{export, contribution, root}` and a hint that says where a
@@ -875,7 +823,6 @@ Global flags, accepted by every verb:
 | Flag | Meaning |
 |---|---|
 | `--root <value>` | vault root directory (default: current directory) |
-| `--bundle <value>` | the name of a bundle skill installed in a skill directory: the copy found is the target, in place of --root |
 | `--help` | print this command's spec and exit |
 | `--json` | with --help: print the verb's schema, the registry row an agent reads |
 | `--out <value>` | write the whole envelope to this file and print a two-line pointer to it on stdout |

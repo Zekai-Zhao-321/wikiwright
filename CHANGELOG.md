@@ -782,6 +782,15 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- The discovery of installed bundle skills (v2 contracts §1, §12 step 6):
+  the global flag `--bundle <name>`, which named any verb's target by the
+  name of a bundle skill in the skill directories, the `bundles` verb
+  (`bundles list`), `discovery.ts`, the variables `WIKIWRIGHT_SKILL_DIRS` and
+  `WIKIWRIGHT_SYSTEM_SKILL_DIR`, the refusals `one-target`,
+  `bundle-name-invalid` and `bundle-ambiguous`, and `metadata.bundle.shadowed`.
+  `bundle-not-found` stays, for a root that holds no `config/engine.json`. A
+  target is named by `--root`. The loss and the trigger for a scan's return
+  are in `docs/roadmap.md` §No bundle is found by name.
 - The Claude Code plugin (v2 contracts §1, §12 step 6): the package root's
   `.claude-plugin/plugin.json` and `hooks/` — `hooks.json`, the
   session-start hook that listed the installed bundle skills through

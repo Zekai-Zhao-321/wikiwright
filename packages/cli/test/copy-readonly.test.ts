@@ -1,11 +1,11 @@
 // docs/cli.md §bundles: a root that carries a marker is an installed copy, and
-// every verb that can write is refused over it — named by `--bundle`, by
-// `--root` or by the working directory alike, `--dry-run` included — with
+// every verb that can write is refused over it — named by `--root` or by the
+// working directory alike, `--dry-run` included — with
 // where a change goes instead, in the words of the copy's contribution mode. A
 // marker that is not one is refused before anything loads.
 //
 // Every copy is a gardening bundle's rendered export under os.tmpdir(), and
-// every scan runs with HOME there.
+// every run has HOME there.
 
 import { afterAll, beforeAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
@@ -58,7 +58,7 @@ function run(
   const r = runCli([CLI, ...argv], {
     cwd,
     encoding: "utf8",
-    env: { ...process.env, ...PINNED_CLOCK, HOME: home, WIKIWRIGHT_SKILL_DIRS: "", ...extra },
+    env: { ...process.env, ...PINNED_CLOCK, HOME: home, ...extra },
     input,
   });
   assert.equal(typeof r.stdout, "string", `the CLI printed no envelope: ${r.stderr}`);
@@ -184,17 +184,6 @@ describe("a marked root refuses every write path (docs/cli.md §bundles)", () =>
     assert.equal(treeHash(copy), before, "a refused write touched the copy");
   });
 
-  it("a copy found by --bundle is refused the same way", () => {
-    const copy = copyWith({ mode: "none" });
-    const installed = join(home, ".claude", "skills", "garden");
-    mkdirSync(dirname(installed), { recursive: true });
-    cpSync(copy, installed, { recursive: true });
-    const r = run(tmp, [...NEW, "--bundle", "garden"]);
-    assert.equal(r.envelope.error?.code, "bundle-readonly", JSON.stringify(r.envelope));
-    assert.equal(r.envelope.error?.details?.["root"], installed);
-    rmSync(installed, { recursive: true, force: true });
-  });
-
   it("a copy's brief is the consumer's whatever the role, and is the brief the copy carries", () => {
     const copy = copyWith({ mode: "none" });
     const installed = join(home, ".claude", "skills", "garden");
@@ -203,7 +192,6 @@ describe("a marked root refuses every write path (docs/cli.md §bundles)", () =>
     try {
       for (const argv of [
         ["brief", "--root", copy],
-        ["brief", "--bundle", "garden"],
         ["brief", "--role", "maintainer", "--root", copy],
       ]) {
         const r = run(tmp, argv, "", { WIKIWRIGHT_ROLE: "writer" });

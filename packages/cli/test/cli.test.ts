@@ -192,12 +192,6 @@ describe("schema declares the global flags the parser accepts (docs/cli.md §sch
         summary: "vault root directory (default: current directory)",
       },
       {
-        name: "bundle",
-        type: "string",
-        summary:
-          "the name of a bundle skill installed in a skill directory: the copy found is the target, in place of --root",
-      },
-      {
         name: "help",
         type: "boolean",
         summary: "print this command's spec and exit",

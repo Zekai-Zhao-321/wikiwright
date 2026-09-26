@@ -84,9 +84,3 @@ export function runCommand(
     if (inPath !== undefined) unlinkSync(inPath);
   }
 }
-
-// No test probes a real machine's system skill directory: whatever the
-// caller's environment names, the CLI a test spawns reads a directory under
-// os.tmpdir() that nothing creates. Every spawn inherits it through
-// process.env; a case that means another passes it in its own spawn.
-process.env["WIKIWRIGHT_SYSTEM_SKILL_DIR"] = join(tmpdir(), "ww-no-system-skills");

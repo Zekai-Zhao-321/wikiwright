@@ -71,7 +71,6 @@ describe("the command table (v2 contracts §9)", () => {
   it("leaves every old verb in the old table, which answers any other root", () => {
     expect(LEGACY_COMMANDS.map((c) => c.name).sort()).toEqual([
       "brief",
-      "bundles",
       "check",
       "export",
       "fix",

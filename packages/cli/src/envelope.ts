@@ -43,8 +43,6 @@ export interface BundleIdentity {
   content: string;
   /** Over a copy, the export it is, read off its marker (docs/constitution.md §exports). */
   export?: BundleExport;
-  /** Named by `--bundle`, the farther copies of the same bundle the chosen one shadowed. */
-  shadowed?: { root: string; tier: string }[];
 }
 
 /**

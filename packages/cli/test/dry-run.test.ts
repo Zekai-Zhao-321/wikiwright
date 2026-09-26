@@ -183,7 +183,6 @@ function run(
     ...process.env,
     ...PINNED_CLOCK,
     HOME,
-    WIKIWRIGHT_SKILL_DIRS: "",
   };
   const r = runCli([CLI, ...args, "--root", "."], {
     cwd,

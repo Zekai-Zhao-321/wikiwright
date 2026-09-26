@@ -121,7 +121,7 @@ describe("shipped skills exist with honest frontmatter (docs/cli.md §brief, 23)
     assert.match(text, /generated\/BRIEF\.md/u);
     assert.match(
       text,
-      /the engine prints that same brief\s+for it from the copy or from anywhere/u,
+      /the engine prints that same brief\s+for it from the copy's directory, named by `--root`/u,
     );
     // The engine runs from the caller's directory, never the clone's.
     assert.match(text, /`bun <clone>\/packages\/cli\/dist\/main\.js`/u);

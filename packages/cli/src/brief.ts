@@ -31,8 +31,6 @@ export const BRIEF_PATH = "generated/BRIEF.md";
  */
 export const WORKFLOW_SLOTS: Readonly<Record<string, string>> = {
   brief: "once per session: read this file",
-  bundles:
-    "which bundle skills are installed in the skill directories, and which one --bundle would read",
   read: "a page by path, name, alias or title — the sections a task needs, with its digest, under a budget; never `find` or `rg` for a path",
   search:
     "before creating anything: search both scripts; `--type <t>` alone lists a type's pages; results carry `band` and `match_reasons`; `--items` for the claims and relations themselves; `--files` for every page that mentions a term",

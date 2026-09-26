@@ -19,8 +19,7 @@ one module each, which this paragraph and most of this page describe;
 `docs/cli.md` lists both (§The v2 verbs answer a bundle on schema version 4).
 Every envelope of a verb that reads a vault's law names the bundle it read —
 its label, real root, head, whether it is dirty, and digests of its law and
-its content. `bundles list` lists the bundle skills installed in the skill
-directories, `--bundle` names one as the target of any verb, and `read` returns a page's sections
+its content, and `read` returns a page's sections
 verbatim with the page's digest, under a byte budget. A bundle declares its
 exports in `config/engine.json`, read-only copies of itself or of part of it
 that a host installs as skills: `check --write` renders them into its own
@@ -360,8 +359,7 @@ Wanted: a declaration naming which fields state applicability, and a flag on
 ### A problem is reported to a destination the engine only names
 
 An export declares where a problem with a copy is reported (its
-`contribution`); a `bundle-readonly` refusal, the post-edit hook and
-`bundles list` say it. The engine sends nothing, and no bundle declares the shape a proposal must take.
+`contribution`); a `bundle-readonly` refusal says it. The engine sends nothing, and no bundle declares the shape a proposal must take.
 
 Wanted: a report type a bundle declares in its constitution, and a verb that
 writes a proposal in it where the export's contribution says.
@@ -392,6 +390,21 @@ Wanted, when host writes bypass the workflow repeatedly or several bundles
 cause targeting mistakes (the first delivery's trigger for host
 guardrails): a hook that runs `check` over an edited page, and one that
 names the bundles a session can reach, each run inside a host and recorded.
+
+### No bundle is found by name
+
+The discovery of installed bundle skills left in step 6 of the v2 delivery:
+the `--bundle <name>` flag, which named a verb's target by the name of a
+bundle skill found in the project's, the user's and the machine's skill
+directories and those `WIKIWRIGHT_SKILL_DIRS` named, and the `bundles list`
+verb that listed them. A verb's target is named by `--root`, or is the
+working directory. The loss: an agent that has several bundles installed
+finds each by its directory, and nothing tells it that two copies of one
+bundle shadow each other.
+
+Wanted, when several installed bundles cause targeting mistakes (the first
+delivery's trigger for the discovery scan): a scan of the host's skill
+directories, verified against each host's layout first.
 
 ### What installed bundles have not been evaluated for
 
@@ -460,23 +473,12 @@ named here, needs gh 2.90.0 or later; where each host caches a plugin;
 whether every host sets the skill-directory variable a `SKILL.md` names; how
 the two hosts' skill stores list a generated plugin; whether a host follows a
 skill directory that is a symbolic link; and which keys an installer writes
-into a copy's `SKILL.md`, which `bundles list` reports verbatim and the
-session-start hook reads by the shape of each value. That the loader accepts
+into a copy's `SKILL.md`. That the loader accepts
 a copy whose declared source roots are absent is verified (`export-copy`).
 
 Wanted: each of these run once on a host and recorded beside the suite, the
 "requires" line first, since the runtime skill's discipline reaches a
 session only when the host loads it.
-
-### Plugin caches are not scanned
-
-`--bundle` and `bundles list` read the project's skill directories, the
-user's, the machine's and those `WIKIWRIGHT_SKILL_DIRS` names. A bundle skill a host keeps
-in its plugin cache is not found by name unless the host, or the user, names
-that directory in the variable; `--root` reaches it either way.
-
-Wanted: nothing until a host's cache layout is verified; then, perhaps, the
-layout as a tier of its own.
 
 ### `bundle-readonly` is a guardrail on the CLI
 
@@ -702,10 +704,7 @@ preview of the refused envelope and no report directory the engine manages:
 the first delivery defers them until host limits reject ordinary results
 often enough that `--out` is a burden. The pipe probes cover the refusal
 beside a default, a 70,000-byte and an error envelope. `--out` refuses a
-file inside the bundle the invocation reads (`out-inside-bundle`), except
-under the old table's `--bundle`, which names an installed copy the
-discovery resolves only once the verb runs; that flag leaves with the
-discovery (step 6).
+file inside the bundle the invocation reads (`out-inside-bundle`).
 
 ### The v2 verbs answer a bundle on schema version 4; the corpora are still on the old law
 
@@ -727,8 +726,7 @@ its replacement lands.
 There are two tables. A root whose `config/engine.json` is schema version 4
 is answered by the command table (`COMMANDS`); any other root — a bundle on
 `config/constitution.json`, or no bundle — by the old table, whole
-(`LEGACY_COMMANDS`), and so is every invocation naming its target by
-`--bundle`, the old skill discovery. Step 5 migrated every corpus of this
+(`LEGACY_COMMANDS`). Step 5 migrated every corpus of this
 repository onto the v2 law with `tools/migrate-spellings.ts`, one commit
 each: `minimal-vault`, `memory-synth`, the two handbooks, and `devwiki`,
 which imports `libraries/kit-code`, the code wiki's type library, in place

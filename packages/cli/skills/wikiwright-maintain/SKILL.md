@@ -109,7 +109,7 @@ must live.
   that repository's discipline, and this gate cannot hold it.
 
 Declare the distribution `repository` on an external export: it is the copy's
-identity, the one `--bundle` compares, and the default address its
+identity, and the default address its
 contribution reports to, and the only repository the copy names: this one's
 address is never written into it.
 A pull request against the generated tree is overwritten by the next export;

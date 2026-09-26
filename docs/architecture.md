@@ -64,13 +64,12 @@ packages/cli/src/
   atomicwrite.ts   the one staged replace every non-page write lands through
   moduleload.ts, modulefixture.ts   the module ladder: resolve, digest, scan, load, prove
   sha256.ts    the shell's sha256 over bytes: a module's files, a page, a shipped skill
-  discovery.ts the skill directories `--bundle` and `bundles list` scan: a name to the nearest copy of one bundle, reading markers only
   hooks.ts, staged.ts, stagedkits.ts   the installed hooks, the staged gate, and a path kit it loads from the index
   verbs/<name>.ts   one CommandSpec per verb of the v2 command table, over the type-document law (the v2 delivery, step 4)
   typelaw.ts   v2: which table answers a root, the law a state carries loaded or refused, the engine range, the bundle block
   generated.ts v2: generated/ — the brief and the kernel's four files, rendered, compared and written
   pins.ts      v2: every pin measured against the local repository, and the stale sources a page links
-  legacy/<name>.ts  one CommandSpec per old verb, waiting for its replacement under verbs/ (the v2 delivery, step 4); legacy/bundles.ts lists the scan, legacy/read.ts is the consumer's read
+  legacy/<name>.ts  one CommandSpec per old verb, waiting for its replacement under verbs/ (the v2 delivery, step 4); legacy/read.ts is the consumer's read
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit
 packages/cli/skills/          the three shipped skills (consume, write, maintain) and the generated playbook
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
@@ -124,8 +123,6 @@ by name when it breaks. Test files live under `packages/core/test`,
 | Identity is Unicode-aware | NFC and full case folding through one seam, with CJK cases; unique basenames, aliases and titles | `identity`, `names-graph` |
 | Every vault envelope names its bundle | a verb that reads a vault's law adds `metadata.bundle` — label, real root, head, dirty, the law digest over the constitution, `engine.json` and each installed module, the content digest over every page's bytes — on an ok envelope and a refusal alike, and none to an envelope answered before the verb runs; over a copy, the export its marker names, with no head; the brief's header prints the same law digest | `bundle-identity` |
 | A copy is a vault | an export is planned by one function behind `check --write`, `check`, the staged gate and `export`, and carries its resource closure — its pages, `config/` verbatim, the templates and examples the loader validates, each declared kit at its declared location, the files its pages embed — so every reader answers over a plain copy of it with nothing installed, under the identity its marker gives it; two renders are byte-identical, a rendered copy is held to a fresh render, and a copy never carries a symbolic link: the working tree is read through its links, so a kit installed as links travels as files under its source's law digest, and a link the index tracks is refused | `export-copy` (end to end), `export-plan`, `export-check`, `export-verb`, `generated-tracked`, `bundle-identity` |
-| Discovery reads markers only | `--bundle` resolves a name by one `stat` per probed skill directory and one marker read per candidate, never a page and never a kit; identity is the marker's repository, bundle and name, one real path is one candidate and a copy with no repository is itself alone; `bundles list` prints the same scan with the marker's digests; nothing registers a bundle, and every marked root, however named, refuses a verb that can write | `discovery`, `bundles`, `copy-readonly` |
-| Two bundles are told apart | from a directory that is no vault, two bundle skills found by name hold one page path with different guidance, and every answer carries the bundle that gave it and the page's digest; an installed copy refuses every write to it, a consumer session reads and is refused a write, and a child handed a section's address, while the page is unchanged, reads the same bytes under the same digest — an address names the current tree, not a revision, so a child compares the digest it reads with the one it was handed | `multi-bundle` (the scenario, end to end), `bundles`, `read-verb`, `bundle-identity` |
 
 Two more properties are stated rather than tested, so a reader meets them:
 the purity scan on a module narrows and does not sandbox (a byte scan cannot

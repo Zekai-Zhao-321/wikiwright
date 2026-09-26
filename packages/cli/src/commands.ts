@@ -15,7 +15,6 @@
 // verbs in step 6.
 
 import { briefCommand } from "./legacy/brief.ts";
-import { bundlesCommand } from "./legacy/bundles.ts";
 import { checkCommand as legacyCheckCommand } from "./legacy/check.ts";
 import { exportCommand } from "./legacy/export.ts";
 import { fixCommand } from "./legacy/fix.ts";
@@ -65,7 +64,6 @@ export const COMMANDS: CommandSpec[] = [
 /** The old table, whole: what answers a root with no schema-version-4 bundle. */
 export const LEGACY_COMMANDS: CommandSpec[] = [
   briefCommand,
-  bundlesCommand,
   legacyCheckCommand,
   exportCommand,
   freshnessCommand,

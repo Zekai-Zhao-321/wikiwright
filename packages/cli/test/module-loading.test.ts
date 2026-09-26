@@ -91,16 +91,13 @@ describe("a verb declares whether it reads the vault's law (docs/extending.md)",
   });
 
   it("the verbs that read no vault are named, so adding one is a decision", () => {
-    // `bundles` reads a connected bundle's files for its identity and loads no
-    // law and no module: listing is discovery, and a bundle whose modules do
-    // not load still lists (docs/cli.md §bundles).
     // A verb of the command table reads its law through the type-document
     // loader, which loads no module: none of them preloads one.
     assert.deepEqual(
       LEGACY_COMMANDS.filter((c) => !c.needsVaultModules)
         .map((c) => c.name)
         .sort(),
-      ["bundles", "schema", "version"],
+      ["schema", "version"],
     );
     assert.deepEqual(
       COMMANDS.filter((c) => !LEGACY_COMMANDS.includes(c) && c.needsVaultModules).map(
