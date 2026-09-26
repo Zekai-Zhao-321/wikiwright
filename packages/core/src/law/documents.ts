@@ -18,7 +18,7 @@ export const GRAMMARS: readonly Grammar[] = ["claims", "relations", "entries"];
 
 /** §4: the parameters each grammar admits; any other key on a section entry is `sections-grammar-params`. */
 export const GRAMMAR_PARAMS: Readonly<Record<Grammar, readonly string[]>> = {
-  claims: ["provenance", "categories"],
+  claims: ["provenance", "categories", "closed"],
   relations: ["require", "history"],
   entries: ["lifecycle"],
 };
@@ -31,6 +31,12 @@ export interface RequireRow {
 export interface SectionParams {
   provenance?: "required" | "optional" | "none";
   categories?: string[];
+  /**
+   * Ruling 4: whether a claim here may be closed (retracted or superseded):
+   * `allowed` (the default), `refused` (every claim open), `required`
+   * (every claim closed: a History section of claims).
+   */
+  closed?: "allowed" | "refused" | "required";
   require?: RequireRow[];
   history?: string;
   lifecycle?: "append-only";
@@ -299,6 +305,12 @@ function readSection(r: Reader, value: unknown, pointer: string): SectionDeclara
     if (provenance === "required" || provenance === "optional" || provenance === "none") {
       out.params.provenance = provenance;
     } else r.invalid(`${pointer}/provenance`, '"required", "optional" or "none"');
+  }
+  const closed = value["closed"];
+  if (closed !== undefined && admitted.includes("closed")) {
+    if (closed === "allowed" || closed === "refused" || closed === "required") {
+      out.params.closed = closed;
+    } else r.invalid(`${pointer}/closed`, '"allowed", "refused" or "required"');
   }
   if (value["categories"] !== undefined && admitted.includes("categories")) {
     const categories = r.names(value["categories"], `${pointer}/categories`, false);

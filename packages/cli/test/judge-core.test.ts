@@ -276,7 +276,8 @@ describe("the finding and its route (§6)", () => {
   it("filters by rule and by path, and caps error-first", async () => {
     const extra = {
       "wiki/Odd.md": "---\ntype: pond\n---\n",
-      "wiki/Start.md": "---\ntype: guide\ntitle: Start\n---\n\nSee [[Pond]] and [[Lake]].\n",
+      "wiki/Start.md":
+        "---\ntype: guide\ntitle: Start\n---\n\n## Start here\n\nSee [[Pond]] and [[Lake]].\n",
     };
     const byRule = await judgeVault(extra, { rule: "wikilink-unresolved" });
     expect(new Set(byRule.findings.map((f) => f.rule))).toEqual(new Set(["wikilink-unresolved"]));

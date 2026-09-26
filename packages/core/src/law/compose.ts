@@ -528,7 +528,7 @@ function mergeSections(
         continue;
       }
       let clash = false;
-      for (const key of ["provenance", "categories", "history", "lifecycle"] as const) {
+      for (const key of ["provenance", "categories", "closed", "history", "lifecycle"] as const) {
         const mine = entry.params[key];
         const theirs = prior.params[key];
         if (mine === undefined || theirs === undefined || same(mine, theirs)) continue;
@@ -542,7 +542,7 @@ function mergeSections(
       if (clash) continue;
       if (entry.grammar !== undefined) prior.grammar = entry.grammar;
       if (vocabulary !== undefined) prior.vocabulary = vocabulary;
-      for (const key of ["provenance", "categories", "history", "lifecycle"] as const) {
+      for (const key of ["provenance", "categories", "closed", "history", "lifecycle"] as const) {
         const mine = entry.params[key];
         if (mine !== undefined)
           (prior.params as Record<string, unknown>)[key] = structuredCopy(mine);

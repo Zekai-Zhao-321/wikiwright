@@ -16,6 +16,7 @@
 import { codeUnitCompare } from "../identity/index.ts";
 import { type PageRead, type ParsedPage, parsePage } from "../interface/index.ts";
 import type { TypeLaw } from "../law/load.ts";
+import { grammarRows, itemFindings, sectionFindings } from "./grammar.ts";
 import { buildNames, identityCollisions, type NamedPage, type VaultNames } from "./names.ts";
 import {
   linkFindings,
@@ -28,8 +29,9 @@ import {
   tagFindings,
   type Unrouted,
 } from "./page.ts";
-import type { JudgeState } from "./state.ts";
+import { type JudgeState, sameBytes } from "./state.ts";
 import { routeVerdictFinding, VERDICT_TABLE, type VerdictFinding } from "./table.ts";
+import { transitionFindings, transitionRows } from "./transitions.ts";
 
 export interface TypeLawJudgeOptions {
   /** At most this many findings, errors first (default 50). */
@@ -51,12 +53,19 @@ export interface CoverageCell {
   unevaluated: number;
 }
 
+/**
+ * Why a pass a page is governed by was not judged there: the state has no
+ * base (§5), or the base's bytes do not read as a page (over 1 MiB, or not
+ * UTF-8).
+ */
+export type UnevaluatedReason = "no-base" | "base-unreadable";
+
 export interface TypeLawVerdict {
   findings: VerdictFinding[];
   /** Every row of the table and every CEL rule, by id. */
   coverage: Record<string, CoverageCell>;
-  /** The transitions this state could not judge, by id. */
-  unevaluated: Record<string, { count: number; reason: "no-base" }>;
+  /** The transitions this state could not judge, by id, with every reason it could not. */
+  unevaluated: Record<string, { count: number; reasons: UnevaluatedReason[] }>;
   summary: {
     pages: number;
     errors: number;
@@ -103,40 +112,66 @@ function capBySeverity(sorted: readonly VerdictFinding[], limit: number): Verdic
 /** Coverage by id: the table's page rows and every rule of the law. */
 export class Coverage {
   readonly cells = new Map<string, CoverageCell>();
+  readonly reasons = new Map<string, Set<UnevaluatedReason>>();
   constructor(ids: Iterable<string>) {
-    for (const id of ids) this.cells.set(id, { evaluated: 0, not_applicable: 0, unevaluated: 0 });
+    for (const id of ids) this.add(id);
   }
 
-  /** One page's outcome for every page row: judged, not governed, or governed and not judged. */
-  page(judged: ReadonlySet<string>, unjudged: ReadonlySet<string>): void {
+  add(id: string): void {
+    if (!this.cells.has(id))
+      this.cells.set(id, { evaluated: 0, not_applicable: 0, unevaluated: 0 });
+  }
+
+  /** One page's outcome for every row: judged, not governed, or governed and not judged. */
+  page(judged: ReadonlySet<string>, unjudged: ReadonlyMap<string, UnevaluatedReason>): void {
     for (const [id, cell] of this.cells) {
-      if (unjudged.has(id)) cell.unevaluated += 1;
-      else if (judged.has(id)) cell.evaluated += 1;
+      const reason = unjudged.get(id);
+      if (reason !== undefined) {
+        cell.unevaluated += 1;
+        const reasons = this.reasons.get(id) ?? new Set<UnevaluatedReason>();
+        reasons.add(reason);
+        this.reasons.set(id, reasons);
+      } else if (judged.has(id)) cell.evaluated += 1;
       else cell.not_applicable += 1;
     }
   }
 }
 
-/** A page of the state, read. */
+/** A page of the state, read, and its base. */
 export interface ReadPage {
   path: string;
   read: PageRead;
+  /**
+   * §5: `undefined` when the state has no base; `null` when the base does
+   * not hold the page; its base version otherwise.
+   */
+  base: PageRead | null | undefined;
 }
 
 /** Every page of a state read under the law, relation targets resolved against the vault. */
 export function readPages(
-  pages: ReadonlyMap<string, Uint8Array>,
+  state: Pick<JudgeState, "pages" | "base">,
   law: TypeLaw,
 ): { pages: ReadPage[]; names: VaultNames; named: NamedPage[] } {
-  const read: ReadPage[] = [...pages].map(([path, bytes]) => ({
-    path,
-    read: parsePage(path, bytes, law),
-  }));
+  const read: ReadPage[] = [...state.pages].map(([path, bytes]) => {
+    const current = parsePage(path, bytes, law);
+    if (state.base === undefined) return { path, read: current, base: undefined };
+    const was = state.base.get(path) ?? null;
+    if (was === null) return { path, read: current, base: null };
+    return {
+      path,
+      read: current,
+      base: sameBytes(was, bytes) ? current : parsePage(path, was, law),
+    };
+  });
   const named: NamedPage[] = read.flatMap((p) =>
     p.read.ok ? [{ path: p.path, frontmatter: p.read.page.frontmatter }] : [],
   );
   const names = buildNames(named);
-  for (const page of read) if (page.read.ok) resolveRelations(page.read.page, names);
+  for (const page of read) {
+    if (page.read.ok) resolveRelations(page.read.page, names);
+    if (page.base?.ok === true && page.base !== page.read) resolveRelations(page.base.page, names);
+  }
   return { pages: read, names, named };
 }
 
@@ -160,13 +195,32 @@ const PAGE_ROWS = VERDICT_TABLE.filter((row) => row.scope === "page").map((row) 
 export interface PageJudgment {
   findings: Unrouted[];
   judged: Set<string>;
-  unjudged: Set<string>;
+  unjudged: Map<string, UnevaluatedReason>;
+}
+
+/** §5: a transition this state could not judge on this page, reported, never passed. */
+export function unevaluatedFinding(
+  path: string,
+  rule: string,
+  reason: UnevaluatedReason,
+): Unrouted {
+  return {
+    rule: "unevaluated",
+    severity: "info",
+    path,
+    location: PAGE_LOCATION,
+    message:
+      reason === "no-base"
+        ? `${rule} compares the page with its base, and this state has none`
+        : `${rule} compares the page with its base, and the base does not read as a page`,
+    details: { rule, reason },
+  };
 }
 
 /** Judge one read page under the context: the kernel's checks, in order. */
 export function judgePage(ctx: PageContext, page: ReadPage): PageJudgment {
   const judged = new Set<string>(["page-too-large", "page-not-utf8"]);
-  const unjudged = new Set<string>();
+  const unjudged = new Map<string, UnevaluatedReason>();
   const out: PageJudgment = { findings: [], judged, unjudged };
   if (!page.read.ok) {
     out.findings.push({
@@ -211,6 +265,22 @@ export function judgePage(ctx: PageContext, page: ReadPage): PageJudgment {
   out.findings.push(...linkFindings(ctx, parsed));
   if (ctx.renamedFrom.has(page.path)) judged.add("renamed-without-alias");
   out.findings.push(...renameFindings(ctx, parsed));
+  for (const id of grammarRows(type)) judged.add(id);
+  out.findings.push(...sectionFindings(parsed, type), ...itemFindings(ctx.law, parsed, type));
+  const transitions = transitionRows(type);
+  const reason: UnevaluatedReason | undefined =
+    page.base === undefined ? "no-base" : page.base?.ok === false ? "base-unreadable" : undefined;
+  if (reason !== undefined) {
+    for (const id of transitions) {
+      unjudged.set(id, reason);
+      out.findings.push(unevaluatedFinding(page.path, id, reason));
+    }
+  } else {
+    for (const id of transitions) judged.add(id);
+    // A page new to the base has nothing to compare: every transition holds.
+    if (page.base !== null && page.base?.ok === true && page.base !== page.read)
+      out.findings.push(...transitionFindings(parsed, page.base.page, type));
+  }
   return out;
 }
 
@@ -284,14 +354,17 @@ export function verdictOf(
   for (const f of filtered) byRule.set(f.rule, (byRule.get(f.rule) ?? 0) + 1);
   const by_rule: Record<string, number> = {};
   for (const id of [...byRule.keys()].sort(codeUnitCompare)) by_rule[id] = byRule.get(id) ?? 0;
-  const unevaluated: Record<string, { count: number; reason: "no-base" }> = {};
+  const unevaluated: Record<string, { count: number; reasons: UnevaluatedReason[] }> = {};
   const coverageOut: Record<string, CoverageCell> = {};
   let unevaluatedTotal = 0;
   for (const id of [...coverage.cells.keys()].sort(codeUnitCompare)) {
     const cell = coverage.cells.get(id) as CoverageCell;
     coverageOut[id] = { ...cell };
     if (cell.unevaluated > 0) {
-      unevaluated[id] = { count: cell.unevaluated, reason: "no-base" };
+      unevaluated[id] = {
+        count: cell.unevaluated,
+        reasons: [...(coverage.reasons.get(id) ?? [])].sort(codeUnitCompare),
+      };
       unevaluatedTotal += cell.unevaluated;
     }
   }
@@ -322,7 +395,7 @@ export function judgeTypeLaw(
   law: TypeLaw,
   options: TypeLawJudgeOptions = {},
 ): TypeLawVerdict {
-  const { pages, names, named } = readPages(state.pages, law);
+  const { pages, names, named } = readPages(state, law);
   const ctx = pageContext(state, law, names);
   const coverage = new Coverage(PAGE_ROWS);
   const found: Unrouted[] = [];
