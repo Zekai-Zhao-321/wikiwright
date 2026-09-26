@@ -11,6 +11,7 @@
 // field shapes as a closed kind table (a field is JSON Schema, §3.1).
 
 import { RESERVED_KEYS } from "../schema/reserved.ts";
+import { VERDICT_TABLE } from "../verdict/table.ts";
 import {
   type FragmentDocument,
   GRAMMAR_PARAMS,
@@ -21,7 +22,7 @@ import {
   type TypeDocument,
   type VocabularyDocument,
 } from "./documents.ts";
-import type { LawIssue } from "./issues.ts";
+import { LAW_ISSUE_CODES, type LawIssue } from "./issues.ts";
 import { resolveReference } from "./names.ts";
 import { setOwn } from "./yaml.ts";
 
@@ -115,6 +116,12 @@ export interface Composition {
 }
 
 const DEFAULT_DEPTH = 2;
+
+/** The judge's codes and the loader's: no rule may take one as its id. */
+const KERNEL_CODES: ReadonlySet<string> = new Set([
+  ...VERDICT_TABLE.map((row) => row.id),
+  ...LAW_ISSUE_CODES,
+]);
 
 function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(a, bigints) === JSON.stringify(b, bigints);
@@ -227,10 +234,21 @@ export function compose(
   }
   const vocabularies = composeVocabularies(vocabularyDocs, issues);
 
-  // §3: rule ids are global across the bundle and every library.
+  // §3: rule ids are global across the bundle and every library, and none
+  // is a code the engine reports: a finding, a coverage cell, an exception
+  // and `--rule` name a rule and a kernel code alike.
   const ruleSites = new Map<string, string>();
   for (const doc of [...fragmentDocs, ...typeDocs]) {
     for (const rule of doc.rules) {
+      if (KERNEL_CODES.has(rule.id)) {
+        issues.push({
+          code: "rule-collision",
+          where: doc.where,
+          message: `${rule.pointer}/id: "${rule.id}" is a code the engine reports; a rule id names no kernel code`,
+          details: { pointer: `${rule.pointer}/id`, rule: rule.id, kind: "kernel-code" },
+        });
+        continue;
+      }
       const prior = ruleSites.get(rule.id);
       if (prior !== undefined) {
         issues.push({

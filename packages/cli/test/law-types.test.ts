@@ -4,7 +4,16 @@
 // contribution, the skeleton, and every load-time code the type documents
 // raise.
 import { afterAll, describe, expect, it } from "bun:test";
-import { loadTypeLaw, skeletonOf, type TypeLaw, type TypeLawResult } from "@wikiwright/core";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  LAW_ISSUE_CODES,
+  loadTypeLaw,
+  skeletonOf,
+  type TypeLaw,
+  type TypeLawResult,
+} from "@wikiwright/core";
 import { workingTreeLawSnapshot } from "../src/lawfiles.ts";
 import { gardenTree, removeTree, type Tree, writeTree } from "./fixtures/garden-law.ts";
 
@@ -366,6 +375,43 @@ describe("load-time codes of the type documents", () => {
     expect(codes(await load(edit(PLANTING, "id: source-host-allowed", "id: known-bed")))).toEqual([
       "rule-collision",
     ]);
+  });
+
+  it.each([
+    ["an info row's", "unevaluated"],
+    ["a lane row's", "claim-provenance"],
+    ["a law row's", "law-changed"],
+    ["the loader's", "type-invalid"],
+  ])("refuses a rule id that is %s code (rule-collision)", async (_what, id) => {
+    const result = await load(edit(PLANTING, "id: source-host-allowed", `id: ${id}`));
+    expect(result.ok ? [] : result.issues).toMatchObject([
+      {
+        code: "rule-collision",
+        where: "bundle:constitution/types/planting.yaml",
+        details: { pointer: "/rules/0/id", rule: id, kind: "kernel-code" },
+      },
+    ]);
+  });
+
+  it("names every code the loader reports, so none can be a rule id", () => {
+    const root = fileURLToPath(new URL("../../", import.meta.url));
+    const dirs = ["core/src/law", "core/src/schema", "core/src/rules", "core/src/records"];
+    const found = new Set<string>();
+    for (const dir of dirs) {
+      for (const name of readdirSync(join(root, dir))) {
+        if (!name.endsWith(".ts")) continue;
+        const text = readFileSync(join(root, dir, name), "utf8");
+        for (const m of text.matchAll(/code: "([a-z0-9-]+)"|report\(\s*"([a-z-]+)"/gu))
+          found.add(m[1] ?? m[2] ?? "");
+        // The document kinds' codes are written once, as templates.
+        if (/code: `\$\{this\.kind\}-invalid`/u.test(text))
+          for (const kind of ["type", "fragment", "vocabulary"]) found.add(`${kind}-invalid`);
+        if (/code: `\$\{this\.kind\}-key-unknown`/u.test(text))
+          for (const kind of ["type", "fragment", "vocabulary"]) found.add(`${kind}-key-unknown`);
+      }
+    }
+    found.delete("re2");
+    expect([...found].sort()).toEqual([...LAW_ISSUE_CODES].sort());
   });
 
   it("refuses a section rule on a heading the effective sections do not declare", async () => {

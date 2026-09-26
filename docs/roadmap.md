@@ -842,6 +842,9 @@ library under the temporary directory. What that leaves, until the verbs
   it stamps `created` on a new page and `updated` on a changed one where the
   effective shape declares the key, through the clock seam
   (`WIKIWRIGHT_TODAY`). Until then nothing in the v2 path stamps either.
+- A rule id may not be a code the judge or the loader reports
+  (`rule-collision`); the id `rule try` gives its candidate (`candidate`,
+  contracts §9.4) is not reserved yet, and arrives with that verb.
 - A library's `library.yaml` has its own line in the law digest, beside
   the five law directories the contracts list, because it can change the
   library's id and with it every qualified name.

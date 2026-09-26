@@ -9,6 +9,39 @@
 // `details` is added so a limit or a keyword reaches a machine reader as data.
 import { codeUnitCompare } from "../identity/index.ts";
 
+/**
+ * Every code the loader reports, the adapters' included. A rule id may not
+ * be one (compose.ts, `rule-collision`): findings, coverage, exceptions and
+ * `--rule` share one name space with the codes the engine names.
+ */
+export const LAW_ISSUE_CODES: readonly string[] = [
+  "configure-narrows",
+  "constitution-collision",
+  "default-conflict",
+  "engine-invalid",
+  "fragment-invalid",
+  "fragment-key-unknown",
+  "law-foreign-file",
+  "law-too-large",
+  "library-invalid",
+  "library-missing",
+  "library-outside-repository",
+  "meta-unknown",
+  "role-conflict",
+  "rule-collision",
+  "rule-invalid",
+  "rule-section-unknown",
+  "sections-conflict",
+  "sections-grammar-params",
+  "shape-invalid",
+  "shape-relaxed",
+  "type-invalid",
+  "type-key-unknown",
+  "vocabulary-collision",
+  "vocabulary-invalid",
+  "vocabulary-key-unknown",
+];
+
 export interface LawIssue {
   code: string;
   where: string;

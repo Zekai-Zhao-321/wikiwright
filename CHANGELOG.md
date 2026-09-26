@@ -37,7 +37,11 @@ version` prints the engine version and the commit a binary was built from.
     `vocabulary-invalid`); names qualified as `<library id>/<name>`;
     `role-conflict`, `sections-conflict`, `sections-grammar-params`,
     `rule-collision`, `rule-section-unknown`, `configure-narrows`,
-    `meta-unknown`, `vocabulary-collision`, `constitution-collision`.
+    `meta-unknown`, `vocabulary-collision`, `constitution-collision`. A
+    rule whose id is a code the judge or the loader reports (`unevaluated`,
+    `claim-provenance`, `law-changed`, `type-invalid`, …) is
+    `rule-collision` too, `details.kind: kernel-code`: a finding, a coverage
+    cell, an exception and `--rule` name a rule and a code alike.
   - `fields` as JSON Schema 2020-12, compiled by Ajv in strict mode with
     `pattern` on RE2 (no lookaround, no backreferences), `format` asserted
     for `date`, `date-time` and `uri` only by the engine's own validators,
