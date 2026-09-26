@@ -26,6 +26,7 @@ import { canonicalJson } from "../digest/index.ts";
 import { codeUnitCompare } from "../identity/index.ts";
 import type { LawRule, LawType } from "../law/compose.ts";
 import type { TypeLaw } from "../law/load.ts";
+import { jsonNumbers } from "../law/yaml.ts";
 import { PAGE_LOCATION, type Unrouted } from "./page.ts";
 import { sameBytes } from "./state.ts";
 import { routeVerdictFinding, type VerdictFinding } from "./table.ts";
@@ -127,11 +128,13 @@ export function lawDiff(head: TypeLaw, index: TypeLaw): LawChange[] {
     for (const rule of type.rules) {
       const was = prior.rules.find((r) => r.id === rule.id);
       if (was === undefined || same(was.config, rule.config)) continue;
+      // The config as YAML read it holds integers as bigint; a finding's
+      // details are JSON, as the envelope writes them.
       add("rule-config", type.where, `rule ${rule.id}'s config under ${name} changed`, {
         rule: rule.id,
         type: name,
-        before: was.config,
-        after: rule.config,
+        before: jsonNumbers(was.config),
+        after: jsonNumbers(rule.config),
       });
     }
   }

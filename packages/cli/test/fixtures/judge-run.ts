@@ -39,11 +39,18 @@ export function lawOf(state: JudgeState): TypeLaw {
   return loaded.law;
 }
 
+/**
+ * Judge a state. Every verdict a test produces is held to be JSON, as the
+ * envelope will write it: a `bigint` or a cycle in a finding's details
+ * throws here.
+ */
 export async function judgeState(
   state: JudgeState,
   options: TypeLawJudgeOptions = {},
 ): Promise<TypeLawVerdict> {
-  return judgeTypeLaw(state, lawOf(state), { all: true, ...options });
+  const verdict = judgeTypeLaw(state, lawOf(state), { all: true, ...options });
+  JSON.stringify(verdict);
+  return verdict;
 }
 
 /** The working tree of a vault with `extra` over it, judged. */

@@ -55,7 +55,11 @@ async function diff(
   base: Record<string, string | null> = {},
 ): Promise<LawChange[]> {
   const { head, index } = await laws(edits, base);
-  return lawDiff(head, index);
+  const changes = lawDiff(head, index);
+  // The diff and its findings are JSON, as the envelope will write them.
+  JSON.stringify(changes);
+  JSON.stringify(lawChangeFindings(changes, { kind: "commit-msg", message: "fix: x\n" }));
+  return changes;
 }
 
 const kinds = (changes: readonly LawChange[]) => changes.map((c) => [c.kind, c.path]);
@@ -92,6 +96,33 @@ describe("a rule changed or removed", () => {
     });
     expect(kinds(changes)).toEqual([["rule-config", "bundle:constitution/types/planting.yaml"]]);
     expect(changes[0]?.details).toMatchObject({ rule: "known-bed", type: "planting" });
+  });
+
+  it("reports a config's integers as JSON numbers", async () => {
+    const changes = await diff(
+      {
+        "libraries/kit-garden/types/planting.yaml": PLANTING_LIB.replace(
+          "    severity: warning\n",
+          "    severity: warning\n    config: { min: 0 }\n",
+        ),
+        "constitution/types/planting.yaml": PLANTING.replace(
+          "configure:\n",
+          "configure:\n  history-dated: { min: 2 }\n",
+        ),
+      },
+      {
+        "libraries/kit-garden/types/planting.yaml": PLANTING_LIB.replace(
+          "    severity: warning\n",
+          "    severity: warning\n    config: { min: 1 }\n",
+        ),
+      },
+    );
+    const configs = changes.filter((c) => c.kind === "rule-config");
+    expect(configs.map((c) => [c.details["before"], c.details["after"]])).toContainEqual([
+      { min: 1 },
+      { min: 0 },
+    ]);
+    expect(JSON.parse(JSON.stringify(configs[0]?.details))).toEqual(configs[0]?.details);
   });
 
   it("reports a rule removed", async () => {
