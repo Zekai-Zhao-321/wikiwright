@@ -282,6 +282,9 @@ export const VERDICT_TABLE: readonly VerdictRow[] = [
   { id: "rule-untested", severity: "declared", lane: RULE_LANE, carries: [], scope: "law" },
   { id: "rule-test-fails", severity: "error", lane: RULE_LANE, carries: [], scope: "law" },
   { id: "example-fails", severity: "error", lane: RULE_LANE, carries: [], scope: "law" },
+  // --- the law diff (§8) ---------------------------------------------------------------
+  { id: "law-changed", severity: "info", carries: [], scope: "law" },
+  { id: "law-relaxed", severity: "error", lane: LAW_LANE, carries: [], scope: "law" },
 ];
 
 const BY_ID = new Map(VERDICT_TABLE.map((row) => [row.id, row] as const));

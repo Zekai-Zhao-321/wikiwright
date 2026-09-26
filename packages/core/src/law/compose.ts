@@ -94,6 +94,8 @@ export interface LawType {
   /** §3: frontmatter keys left out of the page digest (§7). */
   meta: string[];
   examples: string[];
+  /** The fragments the type's own document names, qualified, in its order. */
+  fragments: string[];
 }
 
 export interface LawVocabulary {
@@ -403,6 +405,10 @@ export function compose(
       rules,
       meta,
       examples: doc.examples,
+      fragments: doc.fragments.flatMap((written) => {
+        const name = resolveReference(doc.namespace, written);
+        return name === undefined ? [] : [name];
+      }),
     };
     if (doc.use_when !== undefined) type.use_when = doc.use_when;
     if (doc.avoid_when !== undefined) type.avoid_when = doc.avoid_when;
