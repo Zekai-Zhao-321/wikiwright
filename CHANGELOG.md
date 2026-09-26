@@ -58,6 +58,10 @@ version` prints the engine version and the commit a binary was built from.
 - Pin citation checks now stay inside each pin's actual blob or tree covers.
   Out-of-scope code spans and their bare-line context are counted as
   unverified; missing paths and lines within explicit coverage still warn.
+- CEL relation targets in `before.section`, `before.sections`, and
+  `before.page.sections` now resolve against the base page names. Current
+  targets use current names; projection leaves parsed records and internal
+  relation transition matching unchanged.
 
 ### Changed
 

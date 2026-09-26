@@ -274,11 +274,16 @@ is `null`. The name index applies Unicode NFC and full case folding; CEL
 rules can read `i.provenance.page.type` without reconstructing a
 `facts.links` key. In `before`, the source resolves against the base's page
 names; current records resolve against the accepted state's page names.
+Relation records follow the same rule for `target.resolved`, `target.path`
+and `target.type` in current `section.items` and `page.sections`, and in
+`before.section`, `before.sections` and `before.page.sections`. Their authored
+target name, heading and display alias stay lexical. This projection does
+not rewrite a parsed record or change relation transition matching.
 The low-level claim parser returns a lexical record with an unresolved page
-slot. `resolvedClaim`, `celOccurrence`, `buildPageInterface`, and
+slot. `resolvedClaim`, `resolvedRelation`, `celOccurrence`, `buildPageInterface`, and
 `buildBefore` need a supplied `ResolveTarget` to project resolved sources
 outside `judgeTypeLaw`; their default resolver leaves page citations
-unresolved. `readPages` builds the accepted and base name indexes for the
+and relation targets unresolved. `readPages` builds the accepted and base name indexes for the
 judge, so consumers of its states use coherent snapshots.
 An alias still triggers `wikilink-alias-target`, and an identity collision
 still triggers `identity-collision`. Page resolution does not check a heading,

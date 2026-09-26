@@ -218,24 +218,29 @@ function status(
   };
 }
 
+function localOriginFixture(): { dir: string; origin: string; pinned: string } {
+  const origin = mkdtempSync(join(tmpdir(), "ww-local-origin-"));
+  made.push(origin);
+  put(origin, "notes/seeds.txt", "basil\n");
+  commitAll(origin);
+  const pinned = git(origin, "rev-parse", "HEAD").trim();
+  const dir = gardenBundle({
+    "constitution/types/source.yaml": SOURCE_TYPE,
+    "wiki/Start.md":
+      "---\ntype: guide\ntitle: Start\n---\n\n# Start\n\n## Start here\n\nRead [[Seed list]].\n",
+    "wiki/Seed list.md": capture(pinned, "local-code"),
+  });
+  put(
+    dir,
+    "config/engine.json",
+    engineJson({ local_origins: [{ name: "local-code", path: relative(dir, origin) }] }),
+  );
+  return { dir, origin, pinned };
+}
+
 describe("declared local Git origins", () => {
-  it("measures immutable captured heads and exposes stale or unverified evidence to citing consumers", () => {
-    const origin = mkdtempSync(join(tmpdir(), "ww-local-origin-"));
-    made.push(origin);
-    put(origin, "notes/seeds.txt", "basil\n");
-    commitAll(origin);
-    const pinned = git(origin, "rev-parse", "HEAD").trim();
-    const dir = gardenBundle({
-      "constitution/types/source.yaml": SOURCE_TYPE,
-      "wiki/Start.md":
-        "---\ntype: guide\ntitle: Start\n---\n\n# Start\n\n## Start here\n\nRead [[Seed list]].\n",
-      "wiki/Seed list.md": capture(pinned, "local-code"),
-    });
-    put(
-      dir,
-      "config/engine.json",
-      engineJson({ local_origins: [{ name: "local-code", path: relative(dir, origin) }] }),
-    );
+  it("measures current and changed local heads and propagates stale status", () => {
+    const { dir, origin, pinned } = localOriginFixture();
     const initial = cli(["check", "--all"], dir);
     expect(initial.status).toBe(5); // generated artifacts still need rendering
     expect(
@@ -247,6 +252,23 @@ describe("declared local Git origins", () => {
     ).toMatchObject({ state: "current", commit: pinned });
     expect(status(dir, "Seed list")).toMatchObject({ stale: false, reason: null });
     expect(status(dir, "Seed list").observations?.[0]?.head).toBe(pinned);
+    put(origin, "notes/other.txt", "unrelated\n");
+    commitAll(origin, "unrelated source change");
+    expect(status(dir, "Seed list")).toMatchObject({ stale: false, reason: null });
+    put(origin, "notes/seeds.txt", "basil\nmint\n");
+    commitAll(origin, "covered source change");
+    expect(status(dir, "Seed list")).toMatchObject({ stale: true, reason: "pin-stale" });
+    expect(status(dir, "Start")).toMatchObject({ stale: true, reason: "stale-source-cited" });
+    const searched = cli(["search", "Read", "--all"], dir);
+    const results = (searched.envelope.data?.["results"] ?? []) as {
+      path: string;
+      status: { stale: boolean | null };
+    }[];
+    expect(results.find((row) => row.path === "wiki/Start.md")?.status.stale).toBe(true);
+  }, 15_000);
+
+  it("keeps invalid coverage and citations visible beside another pin's result", () => {
+    const { dir, origin, pinned } = localOriginFixture();
     const single = readFileSync(join(dir, "wiki/Seed list.md"), "utf8");
     put(
       dir,
@@ -265,19 +287,8 @@ describe("declared local Git origins", () => {
     expect(coverage["pin-coverage-invalid"]).toMatchObject({ evaluated: 0, unevaluated: 1 });
     expect(status(dir, "Seed list")).toMatchObject({ stale: null, reason: "pin-unknown" });
     put(dir, "wiki/Seed list.md", single);
-    put(origin, "notes/other.txt", "unrelated\n");
-    commitAll(origin, "unrelated source change");
-    expect(status(dir, "Seed list")).toMatchObject({ stale: false, reason: null });
     put(origin, "notes/seeds.txt", "basil\nmint\n");
     commitAll(origin, "covered source change");
-    expect(status(dir, "Seed list")).toMatchObject({ stale: true, reason: "pin-stale" });
-    expect(status(dir, "Start")).toMatchObject({ stale: true, reason: "stale-source-cited" });
-    const searched = cli(["search", "Read", "--all"], dir);
-    const results = (searched.envelope.data?.["results"] ?? []) as {
-      path: string;
-      status: { stale: boolean | null };
-    }[];
-    expect(results.find((row) => row.path === "wiki/Start.md")?.status.stale).toBe(true);
     put(dir, "wiki/Seed list.md", capture(pinned, "local-code", "notes/missing.txt"));
     const invalid = cli(["check", "--all"], dir);
     expect(findingsOf(invalid.envelope, "pin-coverage-invalid")).toHaveLength(1);
@@ -292,6 +303,10 @@ describe("declared local Git origins", () => {
     expect(findingsOf(cli(["check", "--all"], dir).envelope, "citation-unresolved")).toHaveLength(
       1,
     );
+  }, 15_000);
+
+  it("marks URL, malformed and duplicate bindings unmeasured", () => {
+    const { dir, origin, pinned } = localOriginFixture();
     put(dir, "wiki/Seed list.md", capture(pinned, "https://example.invalid/repo.git"));
     expect(status(dir, "Seed list")).toMatchObject({ stale: null, reason: "remote-origin" });
     expect(status(dir, "Start")).toMatchObject({ stale: null, reason: "source-unverified-cited" });

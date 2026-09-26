@@ -24,6 +24,7 @@ import {
   parseClaimLine,
   parseEntryLine,
   parseRelationLine,
+  type RelationRecord,
   type ResolveTarget,
 } from "../records/index.ts";
 import { recordValidators } from "../records/schemas.ts";
@@ -509,8 +510,27 @@ export function resolvedClaim(record: ClaimRecord, resolve: ResolveTarget): Clai
   };
 }
 
+/** Resolve a relation at binding time, without changing its authored target or parsed record. */
+export function resolvedRelation(record: RelationRecord, resolve: ResolveTarget): RelationRecord {
+  const found = resolve(record.target.name);
+  return {
+    ...record,
+    target: {
+      ...record.target,
+      resolved: found !== undefined,
+      path: found?.path ?? null,
+      type: found?.type ?? null,
+    },
+  };
+}
+
 function celRecord(record: GrammarRecord, resolve: ResolveTarget): Record<string, unknown> {
-  const projected = record.kind === "claim" ? resolvedClaim(record, resolve) : record;
+  const projected =
+    record.kind === "claim"
+      ? resolvedClaim(record, resolve)
+      : record.kind === "relation"
+        ? resolvedRelation(record, resolve)
+        : record;
   return { ...projected, location: celLocation(record.location) };
 }
 

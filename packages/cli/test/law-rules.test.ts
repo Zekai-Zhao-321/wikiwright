@@ -253,7 +253,7 @@ async function verdicts(
     throw new Error(`${ruleId} is not on ${type.name}`);
   const bindings = {
     base: false,
-    page: buildPageInterface(read.page, type),
+    page: buildPageInterface(read.page, type, resolve),
     config: declared.config,
     facts: buildFacts(loaded, read.page, resolve),
     before: { present: false },
@@ -261,7 +261,7 @@ async function verdicts(
   if (declared.section === undefined) return [compiled.evaluate(bindings)];
   return read.page.occurrences
     .filter((o) => o.heading === declared.section && o.depth === type.sections?.depth)
-    .map((o) => compiled.evaluate({ ...bindings, section: celOccurrence(o) }));
+    .map((o) => compiled.evaluate({ ...bindings, section: celOccurrence(o, resolve) }));
 }
 
 const VAULT = { "wiki/herb-bed.md": HERB_BED, "wiki/tomato.md": TOMATO };
