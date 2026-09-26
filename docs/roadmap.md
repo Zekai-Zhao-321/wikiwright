@@ -808,6 +808,14 @@ library under the temporary directory. What that leaves, until the verbs
   page reference, one applied in place, one in a `$def`.
 - `instances` counts the pages of exactly the type, not its descendants, as
   v1 did.
+- A rule test's or an example's page resolves its links and relation
+  targets against the vault that judges it, and §8 counts every warning on
+  a negative, repaired or positive page. A library's test that names a
+  target — as step 5's `relation-range` test will — therefore fails as
+  `rule-test-fails` in every bundle that holds no page of that name. Open
+  for the navigator before step 5: whether a test page resolves against the
+  pages of its own test set and its owner's `examples/` rather than the
+  vault, or a library's test may not link.
 - A type's `examples` names paths relative to the root of the bundle or
   library that declares it, under its `examples/`; every page under an
   `examples/` directory is judged as a page of its type whether a type
