@@ -5,7 +5,7 @@ description: "Historical name for the v1 state map; the v2 judge receives four s
 tags: [kernel, cli]
 status: retired
 pin:
-  commit: 11ee47eee1fca13918497685bd0e4f8dc4d35163
+  commit: 9d54ace7339b76c54caee757cd82f4991836ebff
   origin: .
   covers: ["packages/cli/src/lawstate.ts", "packages/core/src/verdict/judge.ts", "CHANGELOG.md"]
 ---
