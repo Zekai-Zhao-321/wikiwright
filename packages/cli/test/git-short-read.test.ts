@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { GitShortRead, terminated } from "../src/git.ts";
 import { spawnWithStdoutFile } from "../src/stdoutfile.ts";
+import { notePage, writeAt, writeNoteBundle } from "./fixtures/note-bundle.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -366,6 +367,70 @@ describe("two git answers that disagree are git-inconsistent-read (docs/roadmap.
         run(tmp, PATH, ["lint", "--since", head], "rev-list --first-parent --reverse", mode),
         "rev-list --first-parent --reverse",
       );
+    }
+  });
+});
+
+/**
+ * The v2 law's index read (lawstate.ts `indexState`): a note bundle of four
+ * pages, committed, two staged as modified and one added whose type no law
+ * declares, sorting last in the index.
+ */
+function typeLawRepo(): string {
+  const tmp = mkdtempSync(join(tmpdir(), "ww-short-read-v2-"));
+  writeNoteBundle(tmp, ["Fern", "Moss", "Reed", "Sedge"]);
+  git(tmp, "init", "-q", "-b", "main");
+  git(tmp, "config", "user.email", "test@example.com");
+  git(tmp, "config", "user.name", "Test");
+  git(tmp, "add", "-A");
+  git(tmp, "commit", "-q", "-m", "base");
+  writeAt(tmp, "wiki/Moss.md", notePage("Moss", "\nA staged line.\n"));
+  writeAt(tmp, "wiki/Reed.md", notePage("Reed", "\nA staged line.\n"));
+  writeAt(tmp, "wiki/Yarrow.md", "---\ntype: shrub\ntitle: Yarrow\n---\n\n# Yarrow\n");
+  git(tmp, "add", "-A");
+  return tmp;
+}
+
+describe("the v2 gate's index listing is held to the staged diff (docs/roadmap.md)", () => {
+  let tmp = "";
+  let PATH = "";
+  beforeAll(() => {
+    if (POSIX_ONLY) return;
+    tmp = typeLawRepo();
+    PATH = cuttingGit(tmp);
+  });
+  afterAll(() => {
+    if (tmp !== "") rmSync(tmp, { recursive: true, force: true });
+  });
+
+  function assertInconsistent(r: Run): void {
+    assert.equal(r.status, 1, said(r));
+    const error = r.envelope["error"] as { code: string; details: { commands: string[] } };
+    assert.equal(error.code, "git-inconsistent-read", said(r));
+    assert.ok(
+      error.details.commands.some((c) => c.startsWith("git ls-files")),
+      said(r),
+    );
+  }
+
+  it("the whole index fails the added page's unknown type", () => {
+    if (POSIX_ONLY) return;
+    const r = run(tmp, PATH, ["gate"]);
+    assert.equal(r.status, 5, said(r));
+    const findings = (r.envelope["data"] as { findings: Array<{ rule: string; path: string }> })
+      .findings;
+    assert.ok(
+      findings.some((f) => f.path === "wiki/Yarrow.md" && f.rule === "type-unknown"),
+      said(r),
+    );
+  });
+
+  it("a listing cut before its last record, or empty, while the diff names pages, is refused", () => {
+    if (POSIX_ONLY) return;
+    // The listing still ends in NUL: well formed, one record short, and judged
+    // it would be a clean index without the failing page.
+    for (const mode of ["record", "empty"]) {
+      assertInconsistent(run(tmp, PATH, ["gate"], "ls-files -s -z", mode));
     }
   });
 });

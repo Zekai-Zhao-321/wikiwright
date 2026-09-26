@@ -853,6 +853,13 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
+- The v2 gate holds the index listing to the staged diff, as the old
+  gate's index read did: a path the diff names as added, modified, retyped,
+  renamed or copied that the listing does not hold is
+  `git-inconsistent-read` (exit 1), naming both commands. `indexState` read
+  the listing alone for its pages, so a listing cut at a record boundary —
+  well formed, one page short, or empty — judged as a smaller index and
+  passed; the page the listing lost was never judged.
 - `rule-untested` counts a rule's negative, repaired and positive pages
   across every owner's test set of the rule (a library's and the bundle's),
   as §8 words it, each page still judged within its own set. A set split

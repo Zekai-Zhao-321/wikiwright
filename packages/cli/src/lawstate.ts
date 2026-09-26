@@ -38,6 +38,7 @@ import {
   touchesContentRoot,
 } from "@wikiwright/core";
 import {
+  GitInconsistentRead,
   gitHasHead,
   gitHeadBlobs,
   gitIndexEntries,
@@ -344,6 +345,21 @@ export async function indexState(root: string): Promise<JudgeState> {
     return rel !== undefined && regular(e.mode) && isContentPath(rel, roots);
   });
   const changes = hasHead ? await gitStagedChanges(top) : [];
+  // The two answers describe one index. A path the staged diff says is in it
+  // — added, modified, retyped, or the new name of a rename or copy — that
+  // the listing does not hold means one of them is not whole, and a listing
+  // cut at a record boundary is well formed: judged, it would be fewer pages.
+  const listedPaths = new Set(entries.map((e) => e.path));
+  for (const change of changes) {
+    if (!IN_INDEX.has(change.status)) continue;
+    const path = change.path.normalize("NFC");
+    if (!listedPaths.has(path)) {
+      throw new GitInconsistentRead(
+        ["diff --cached --name-status -z -M --relative", "ls-files -s -z"],
+        `the staged diff names "${path}" (${change.status}) and the index listing does not hold it`,
+      );
+    }
+  }
   const changeOf = new Map(changes.map((c) => [c.path.normalize("NFC"), c] as const));
   const headPaths: string[] = [];
   for (const entry of content) {
@@ -418,6 +434,9 @@ export async function indexState(root: string): Promise<JudgeState> {
   if (removed.size > 0) state.removed = pageMap(removed);
   return state;
 }
+
+/** The staged-diff statuses whose path the index holds. */
+const IN_INDEX: ReadonlySet<string> = new Set(["A", "M", "T", "R", "C"]);
 
 /** A revision's tree, its law and its pages, with no base (§10: `rule try --base`). */
 export async function revisionState(root: string, rev: string): Promise<JudgeState> {
