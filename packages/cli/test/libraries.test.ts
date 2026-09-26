@@ -31,7 +31,8 @@ interface Expected {
   types: string[];
   /**
    * The rules whose test set the library cannot carry, each `rule-untested`
-   * when the library is imported alone, and why.
+   * when the library is imported alone — a warning under `check`, an error
+   * at the gate once the bundle has a HEAD — and why.
    */
   untested: Record<string, string>;
 }
@@ -77,18 +78,23 @@ function importing(dir: string): string {
   }
   mkdirSync(join(top, "bundle", "config"), { recursive: true });
   mkdirSync(join(top, "bundle", "wiki"), { recursive: true });
+  engine(join(top, "bundle"), dir);
+  git(top, "init", "-q");
+  return join(top, "bundle");
+}
+
+/** The importing bundle's engine.json, naming `libraries/<dir>`, or no library. */
+function engine(root: string, dir: string | null): void {
   writeFileSync(
-    join(top, "bundle", "config", "engine.json"),
+    join(root, "config", "engine.json"),
     `${JSON.stringify({
       schema: "wikiwright/engine",
       schema_version: 4,
       label: "importer",
       content_roots: ["wiki"],
-      libraries: [{ path: `libraries/${dir}` }],
+      ...(dir === null ? {} : { libraries: [{ path: `libraries/${dir}` }] }),
     })}\n`,
   );
-  git(top, "init", "-q");
-  return join(top, "bundle");
 }
 
 describe("every library under libraries/ holds on its own", () => {
@@ -111,6 +117,37 @@ describe("every library under libraries/ holds on its own", () => {
       expect(blocking.map((f) => [f.rule, f.details["rule"]])).toEqual(
         Object.keys(expected.untested).map((rule) => ["rule-untested", rule]),
       );
+    });
+  }
+});
+
+describe("the gate over the commit that imports a library (§8)", () => {
+  // A rule the law diff adds is held to its test set at the gate: untested,
+  // it is an error, not the warning check gives. A library that cannot
+  // carry a rule's test set therefore cannot be imported into a bundle with
+  // a HEAD until the bundle carries that set under its own rule-tests/.
+  for (const [dir, expected] of Object.entries(LIBRARIES)) {
+    it(`${dir}: refused for each rule it ships no test set of, and only after a first commit`, () => {
+      const root = importing(dir);
+      const top = dirname(root);
+      engine(root, null);
+      git(top, "add", "-A", "--", "bundle");
+      git(top, "commit", "-q", "--no-verify", "-m", "an empty bundle");
+      engine(root, dir);
+      expect(cli(["check", "--write"], root).status).toBe(0);
+      git(top, "add", "-A");
+      const gate = cli(["gate"], root);
+      const errors = (gate.envelope.data?.findings ?? []).filter((f) => f.severity === "error");
+      expect(errors.map((f) => [f.rule, f.details["rule"]])).toEqual(
+        Object.keys(expected.untested).map((rule) => ["rule-untested", rule]),
+      );
+      expect(gate.status).toBe(Object.keys(expected.untested).length > 0 ? 5 : 0);
+
+      // With no HEAD there is no law diff: the same import is a warning.
+      const first = importing(dir);
+      expect(cli(["check", "--write"], first).status).toBe(0);
+      git(dirname(first), "add", "-A");
+      expect(cli(["gate"], first).status).toBe(0);
     });
   }
 });
