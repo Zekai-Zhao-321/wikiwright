@@ -62,6 +62,30 @@ describe("a page as bytes and as YAML", () => {
   });
 });
 
+describe("the line of a frontmatter finding", () => {
+  it("names the line of the key a finding is about, and none for a key that is missing", async () => {
+    const verdict = await judgeVault({
+      "wiki/Basil.md":
+        "---\ntype: planting\ntitle: Basil\nbed: pond\ncolour: green\norigin: Pond\ntags: [weeds]\n---\n",
+      "wiki/Pond.md": "---\ntitle: Pond\ntype: pond\n---\n",
+    });
+    const lines = verdict.findings
+      .filter((f) => f.location.kind === "page")
+      .map((f) => [f.path, f.rule, f.details["keyword"] ?? null, f.details["line"] ?? null]);
+    expect(lines).toContainEqual(["wiki/Basil.md", "page-shape-invalid", "enum", 4]);
+    expect(lines).toContainEqual([
+      "wiki/Basil.md",
+      "page-shape-invalid",
+      "unevaluatedProperties",
+      5,
+    ]);
+    expect(lines).toContainEqual(["wiki/Basil.md", "page-ref-type", null, 6]);
+    expect(lines).toContainEqual(["wiki/Basil.md", "vocabulary-unknown", null, 7]);
+    expect(lines).toContainEqual(["wiki/Basil.md", "page-shape-invalid", "required", null]);
+    expect(lines).toContainEqual(["wiki/Pond.md", "type-unknown", null, 3]);
+  });
+});
+
 describe("the type", () => {
   it("reports a page with no type, and one whose type the law does not declare", async () => {
     const verdict = await judgeVault({

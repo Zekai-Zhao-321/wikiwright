@@ -7,10 +7,15 @@
 // integer and a float the author wrote stay distinguishable to CEL. A
 // consumer that needs JSON numbers (Ajv, the key tables) converts with
 // `jsonNumbers`.
-import { isScalar, parseDocument, visit } from "yaml";
+import { isMap, isScalar, parseDocument, visit } from "yaml";
 
 export type YamlResult =
-  | { ok: true; value: unknown }
+  | {
+      ok: true;
+      value: unknown;
+      /** Each top-level key of a mapping, and the line of the text it is written on (from 1). */
+      keyLines: Map<string, number>;
+    }
   | {
       ok: false;
       message: string;
@@ -74,7 +79,25 @@ export function readYaml(text: string): YamlResult {
   } catch (error) {
     return { ok: false, message: (error as Error).message };
   }
-  return { ok: true, value: int64(value) };
+  return { ok: true, value: int64(value), keyLines: keyLinesOf(doc.contents, text) };
+}
+
+/** The line each top-level key starts on, counted forward once through the text. */
+function keyLinesOf(contents: unknown, text: string): Map<string, number> {
+  const out = new Map<string, number>();
+  if (!isMap(contents)) return out;
+  let line = 1;
+  let at = 0;
+  for (const pair of contents.items) {
+    const key = pair.key;
+    const offset = isScalar(key) ? key.range?.[0] : undefined;
+    if (!isScalar(key) || offset === undefined || offset < at) continue;
+    for (let i = text.indexOf("\n", at); i !== -1 && i < offset; i = text.indexOf("\n", i + 1))
+      line += 1;
+    at = offset;
+    out.set(String(key.value), line);
+  }
+  return out;
 }
 
 /**

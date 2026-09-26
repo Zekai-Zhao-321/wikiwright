@@ -64,6 +64,8 @@ export interface ParsedPage {
   frontmatterCode?: "malformed-frontmatter" | "duplicate-key" | "frontmatter-not-mapping";
   /** The page line the YAML reader names, the opening fence as line 1, when it names one. */
   frontmatterLine?: number;
+  /** Each top-level frontmatter key and the page line it is written on, the opening fence as line 1. */
+  keyLines: ReadonlyMap<string, number>;
   /** The raw bytes between the fences, when there are fences. */
   frontmatterBytes: Uint8Array | null;
   body: string;
@@ -188,6 +190,7 @@ export function parsePage(
   let frontmatterError: string | undefined;
   let frontmatterCode: ParsedPage["frontmatterCode"];
   let frontmatterLine: number | undefined;
+  const keyLines = new Map<string, number>();
   let frontmatterBytes: Uint8Array | null = null;
   let bodyLine = 0;
   if (first === "---") {
@@ -206,7 +209,11 @@ export function parsePage(
       else if (!isMapping(read.value)) {
         frontmatterError = "the frontmatter is not a mapping";
         frontmatterCode = "frontmatter-not-mapping";
-      } else frontmatter = read.value;
+      } else {
+        frontmatter = read.value;
+        // The text between the fences starts on the page's second line.
+        for (const [key, line] of read.keyLines) keyLines.set(key, line + 1);
+      }
       bodyLine = close + 1;
     }
   }
@@ -387,6 +394,7 @@ export function parsePage(
     path,
     frontmatter,
     frontmatterBytes,
+    keyLines,
     body,
     bodyBytes,
     occurrences,

@@ -59,6 +59,38 @@ export interface PageContext {
   rules: RuleContext;
 }
 
+/** The frontmatter key a JSON pointer names first: `/tags/1` is `tags`. */
+function pointerKey(pointer: string): string | undefined {
+  if (!pointer.startsWith("/")) return undefined;
+  const first = pointer.slice(1).split("/")[0] ?? "";
+  return first.replaceAll("~1", "/").replaceAll("~0", "~");
+}
+
+/**
+ * Each page-located finding about a frontmatter key, given the line the key
+ * is written on (`details.line`), as the body's findings carry theirs: the
+ * key its `details.pointer` names first, or the key Ajv names for an
+ * undeclared property. A missing key has no line, and neither has a finding
+ * about the page as a whole; the gate treats such a finding as touched
+ * whenever the frontmatter changed.
+ */
+export function withFrontmatterLines(page: ParsedPage, found: readonly Unrouted[]): Unrouted[] {
+  return found.map((finding) => {
+    if (finding.location.kind !== "page" || finding.details["line"] !== undefined) return finding;
+    const pointer = finding.details["pointer"];
+    const params = finding.details["params"] as Record<string, unknown> | undefined;
+    const named = params?.["unevaluatedProperty"] ?? params?.["additionalProperty"];
+    const key =
+      typeof pointer === "string" && pointer !== ""
+        ? pointerKey(pointer)
+        : typeof named === "string" && pointer === ""
+          ? named
+          : undefined;
+    const line = key === undefined ? undefined : page.keyLines.get(key);
+    return line === undefined ? finding : { ...finding, details: { ...finding.details, line } };
+  });
+}
+
 /** The findings of a page that did not reach its type: `undefined` when it did. */
 export function readFindings(page: ParsedPage, path: string): Unrouted[] | undefined {
   if (page.frontmatterCode !== undefined) {
@@ -100,7 +132,7 @@ export function readFindings(page: ParsedPage, path: string): Unrouted[] | undef
         path,
         location: PAGE_LOCATION,
         message: `type "${declared}" is no type the bundle or its libraries declare`,
-        details: { kind: "unknown", type: declared },
+        details: { kind: "unknown", type: declared, pointer: "/type" },
       },
     ];
   }

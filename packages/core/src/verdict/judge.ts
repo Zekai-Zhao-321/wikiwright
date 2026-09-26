@@ -30,6 +30,7 @@ import {
   shapeFindings,
   tagFindings,
   type Unrouted,
+  withFrontmatterLines,
 } from "./page.ts";
 import { ruleFindings } from "./rules.ts";
 import { type JudgeState, sameBytes } from "./state.ts";
@@ -255,7 +256,7 @@ export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): P
   judged.add("type-unknown");
   const refused = readFindings(parsed, page.path);
   if (refused !== undefined) {
-    out.findings.push(...refused);
+    out.findings.push(...withFrontmatterLines(parsed, refused));
     return out;
   }
   const type = parsed.type;
@@ -269,7 +270,7 @@ export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): P
       path: page.path,
       location: PAGE_LOCATION,
       message: `${type.name} is abstract: a page under the content roots is one of its descendants`,
-      details: { type: type.name },
+      details: { type: type.name, pointer: "/type" },
     });
   }
   judged.add("page-shape-invalid");
@@ -305,9 +306,13 @@ export function judgePage(ctx: PageContext, page: ReadPage, overlaid = false): P
   // A test page or an example shows the law as it stands: its own
   // exceptions waive nothing, or a repaired twin could pass by waiving the
   // rule under test.
+  out.findings = withFrontmatterLines(parsed, out.findings);
   if (!overlaid && hasExceptions(parsed)) {
     judged.add("exception-applied").add("exception-stale").add("exception-illegal");
-    out.findings = applyExceptions(ctx.law, parsed, out.findings, new Set(unjudged.keys()));
+    out.findings = withFrontmatterLines(
+      parsed,
+      applyExceptions(ctx.law, parsed, out.findings, new Set(unjudged.keys())),
+    );
   }
   return out;
 }

@@ -136,7 +136,9 @@ version` prints the engine version and the commit a binary was built from.
     under `additional: refused`), `section-depth`, `item-unparsed`, `category-not-allowed`,
     `claim-provenance`, `claim-closed` and `claim-open` (the claims grammar
     gains `closed: allowed | refused | required`, ruling 4),
-    `relation-target-unresolved`, `require-unmet` (ruling 2); for the vault,
+    `relation-target-unresolved`, `require-unmet` (ruling 2); a finding
+    about a frontmatter key carries the key's line in `details.line`, as
+    v1's did; for the vault,
     `identity-collision`, `instances-min` and `instances-max`.
   - The kernel transitions (ruling 3), against the base: `entry-edited`
     (`lifecycle: append-only`), `claims-transition` (an open claim, by

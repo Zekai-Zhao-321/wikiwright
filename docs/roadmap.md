@@ -737,6 +737,11 @@ library under the temporary directory. What that leaves, until the verbs
   queued error on an inherited line, and the gate's change-scoping to the
   pages a commit touches, arrive with the `gate` verb, as the commit-message
   stage that turns the law diff into `law-changed` or `law-relaxed` does.
+  A finding about a frontmatter key carries the key's page line in
+  `details.line`, as a body finding carries its line in its location, so
+  the demotion can scope it; one with no line (a missing key, or a finding
+  about the page as a whole) is to count as touched whenever the
+  frontmatter block changed.
   No finding of the new judge is fix-routed: the fixers the kernel ran on a
   page (`frontmatter-set`, `frontmatter-delete`, `tag-rename`,
   `section-stub`, `heading-depth`, `link-rewrite`, `retype`,
