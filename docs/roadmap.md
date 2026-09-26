@@ -787,7 +787,9 @@ library under the temporary directory. What that leaves, until the verbs
   page is `page-ref-type` (`details.kind: unresolved`), an error as v1's
   `field-shape` was; one written as a path is `page-ref-type`
   (`details.kind: path`) with the canonical name.
-  Only a top-level property's `target_type` and `target_root` are read.
+  Only a top-level property's `target_type` and `target_root` are read, so
+  the loader refuses either one anywhere else (`shape-invalid`): a nested
+  page reference, one applied in place, one in a `$def`.
 - `instances` counts the pages of exactly the type, not its descendants, as
   v1 did.
 - A type's `examples` names paths relative to the root of the bundle or

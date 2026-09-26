@@ -198,6 +198,18 @@ describe("load-time codes of a shape", () => {
       "  type: object\n  properties:\n    bed: { $ref: '#/$defs/page-ref', target_type: 5 }\n",
     ],
     [
+      "target_type on a nested page reference",
+      "  type: object\n  properties:\n    origin: { type: object, properties: { bed: { $ref: '#/$defs/page-ref', target_type: garden/bed } } }\n",
+    ],
+    [
+      "target_root on a page reference applied in place",
+      "  type: object\n  allOf:\n    - { properties: { seed: { $ref: '#/$defs/page-ref', target_root: content } } }\n",
+    ],
+    [
+      "target_type on a $def",
+      "  type: object\n  properties:\n    bed: { $ref: '#/$defs/bedref' }\n  $defs:\n    bedref: { $ref: '#/$defs/page-ref', target_type: garden/bed }\n",
+    ],
+    [
       "target_root naming an undeclared root",
       "  type: object\n  properties:\n    seed: { $ref: '#/$defs/page-ref', target_root: sources }\n",
     ],

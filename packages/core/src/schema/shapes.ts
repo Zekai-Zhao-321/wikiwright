@@ -104,7 +104,11 @@ export function authoredShapeIssues(
   // Ruling 8: the closing keywords are refused where they would close the
   // page's frontmatter itself — the top of `fields` and the subschemas
   // applied in place there — and admitted on a nested object.
-  const walk = (node: unknown, pointer: string, top: boolean): void => {
+  // `property`: a direct member of the document's top-level `properties`,
+  // the one place the judge reads `target_type` and `target_root` from
+  // (verdict/page.ts); anywhere else they would be declared and read by
+  // nothing.
+  const walk = (node: unknown, pointer: string, top: boolean, property = false): void => {
     if (node === null || typeof node !== "object" || Array.isArray(node)) return;
     const record = node as Record<string, unknown>;
     for (const key of ["additionalProperties", "unevaluatedProperties"]) {
@@ -139,6 +143,13 @@ export function authoredShapeIssues(
         );
         continue;
       }
+      if (!property) {
+        invalid(
+          `${pointer}/${keyword}`,
+          `${keyword} is read on a property of the frontmatter's top level only; a nested page reference is not checked against its target`,
+        );
+        continue;
+      }
       if (keyword === "target_type") {
         const name = typeof value === "string" ? resolveReference(namespace, value) : undefined;
         if (name === undefined || !context.types.has(name)) {
@@ -157,8 +168,9 @@ export function authoredShapeIssues(
     for (const [key, value] of Object.entries(record)) {
       const inPlace = top && IN_PLACE_KEYWORDS.has(key);
       if (MAP_KEYWORDS.has(key) && value !== null && typeof value === "object") {
+        const members = pointer === "" && key === "properties";
         for (const [name, sub] of Object.entries(value))
-          walk(sub, `${pointer}/${key}/${name}`, inPlace);
+          walk(sub, `${pointer}/${key}/${name}`, inPlace, members);
       } else if (LIST_KEYWORDS.has(key) && Array.isArray(value)) {
         value.forEach((sub, i) => {
           walk(sub, `${pointer}/${key}/${i}`, inPlace);
