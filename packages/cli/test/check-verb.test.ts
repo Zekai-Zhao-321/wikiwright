@@ -342,6 +342,21 @@ describe("check --fix: the folder tags (v2 contracts §2, §9.1)", () => {
       findingsOf(r.envelope, "folder-segment-registered").map((f) => f.details["segment"]),
     ).toEqual(["sheds"]);
   });
+
+  it.each(["constructor", "__proto__"])(
+    "treats the folder name %s as a literal segment, not an inherited alias",
+    (segment) => {
+      const dir = gardenBundle({
+        "config/engine.json": engineJson({ folder_tags: { mode: "validate" } }),
+        [`wiki/${segment}/North bed.md`]: BED,
+      });
+      const result = cli(["check", "--all"], dir);
+      expect(result.envelope.error?.code).toBe("findings");
+      expect(
+        findingsOf(result.envelope, "folder-segment-registered").map((f) => f.details["segment"]),
+      ).toEqual([segment]);
+    },
+  );
 });
 
 describe("the dry-run law (docs/cli.md §The dry-run law)", () => {

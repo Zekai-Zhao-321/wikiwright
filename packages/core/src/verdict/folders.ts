@@ -53,11 +53,13 @@ export function missingFolderTags(
   const carried = pageTags(page);
   if (carried === undefined) return [];
   const aliases = engine.folder_tag_aliases;
+  const aliasOf = (segment: string): string =>
+    Object.hasOwn(aliases, segment) ? (aliases[segment] ?? segment) : segment;
   const entries = [...(tags?.entries.keys() ?? [])];
   const registered = (segment: string): string =>
     entries.find((e) => segmentIdentity(e) === segmentIdentity(segment)) ?? segment;
   return folderSegments(path, engine.content_roots)
-    .map((segment) => aliases[segment] ?? segment)
+    .map(aliasOf)
     .filter((segment) => !carried.some((t) => segmentIdentity(t) === segmentIdentity(segment)))
     .map(registered);
 }
@@ -75,7 +77,7 @@ export function folderFindings(
   const aliases = engine.folder_tag_aliases;
   const known = new Set([...(tags?.entries.keys() ?? [])].map(segmentIdentity));
   for (const raw of folderSegments(path, engine.content_roots)) {
-    const segment = aliases[raw] ?? raw;
+    const segment = Object.hasOwn(aliases, raw) ? (aliases[raw] ?? raw) : raw;
     if (known.has(segmentIdentity(segment))) continue;
     out.push({
       rule: "folder-segment-registered",
