@@ -35,6 +35,7 @@ import {
   type PageRename,
   pageMap,
   type SkippedPath,
+  type StagedChange,
   touchesContentRoot,
 } from "@wikiwright/core";
 import {
@@ -45,6 +46,7 @@ import {
   gitReadBlobBytes,
   gitShowHead,
   gitStagedChanges,
+  type IndexEntry,
   inArgumentOrder,
 } from "./git.ts";
 import {
@@ -320,6 +322,21 @@ function headPathOf(change: {
 }
 
 /**
+ * One read of the index, and what the gate reads beside its state: the
+ * repository's top level and the bundle's place in it, the listing, the
+ * staged diff and whether HEAD exists. The gate's law diff, change-scoping
+ * and generated files read these rather than asking git again.
+ */
+export interface IndexRead {
+  state: JudgeState;
+  top: string;
+  bundle: string;
+  entries: readonly IndexEntry[];
+  changes: readonly StagedChange[];
+  hasHead: boolean;
+}
+
+/**
  * The index, with HEAD as its base (§5): the pages and the law as they would
  * be committed, one listing and one batch read by blob id. A page the commit
  * does not change has its own bytes as its base; a changed page has HEAD's
@@ -327,6 +344,11 @@ function headPathOf(change: {
  * With no HEAD the base is empty: every page is new.
  */
 export async function indexState(root: string): Promise<JudgeState> {
+  return (await readIndex(root)).state;
+}
+
+/** `indexState`, with the reads it was made from. */
+export async function readIndex(root: string): Promise<IndexRead> {
   const { top, bundle } = await repositoryPlace(root);
   const [listed, hasHead] = await inArgumentOrder([gitIndexEntries(top), gitHasHead(top)]);
   const unmerged = listed.find((e) => e.stage !== 0);
@@ -432,7 +454,7 @@ export async function indexState(root: string): Promise<JudgeState> {
     if (blob !== undefined) removed.set(rel, bytesOf(blob, path));
   }
   if (removed.size > 0) state.removed = pageMap(removed);
-  return state;
+  return { state, top, bundle, entries: listed, changes, hasHead };
 }
 
 /** The staged-diff statuses whose path the index holds. */

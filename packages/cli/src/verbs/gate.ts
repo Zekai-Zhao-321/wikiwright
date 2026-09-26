@@ -27,7 +27,6 @@ import {
   commitPrefixVerdict,
   gateScope,
   headLawDiff,
-  type JudgeState,
   type LawChange,
   lawChangeFindings,
   lawDigest,
@@ -49,15 +48,9 @@ import {
   ok,
 } from "../envelope.ts";
 import { driftFindings, GENERATED_PATHS, generatedPlans } from "../generated.ts";
-import {
-  GitAnswerRefused,
-  gitHasHead,
-  gitIndexEntries,
-  gitReadBlobBytes,
-  gitStagedChanges,
-} from "../git.ts";
-import { repositoryPlace, revisionLawSnapshot } from "../lawfiles.ts";
-import { indexState } from "../lawstate.ts";
+import { GitAnswerRefused, gitReadBlobBytes } from "../git.ts";
+import { lawSnapshotOfEntries, revisionEntries } from "../lawfiles.ts";
+import { type IndexRead, readIndex } from "../lawstate.ts";
 import type { CommandArgs, CommandSpec } from "../spec.ts";
 import {
   engineMismatch,
@@ -70,9 +63,9 @@ import {
 type Read<T> = { ok: true; value: T } | { ok: false; result: CommandResult };
 
 /** The index as one state, or the refusal: no repository, or a merge in progress. */
-async function readIndex(root: string): Promise<Read<JudgeState>> {
+async function indexOf(root: string): Promise<Read<IndexRead>> {
   try {
-    return { ok: true, value: await indexState(root) };
+    return { ok: true, value: await readIndex(root) };
   } catch (e) {
     // A cut or contradicted answer is refused as itself.
     if (e instanceof GitAnswerRefused) throw e;
@@ -105,10 +98,11 @@ async function readIndex(root: string): Promise<Read<JudgeState>> {
 }
 
 /** §8: HEAD's law as it loaded, or null with no HEAD. */
-async function headLaw(root: string): Promise<TypeLawResult | null> {
-  const { top } = await repositoryPlace(root);
-  if (!(await gitHasHead(top))) return null;
-  return loadTypeLaw(await revisionLawSnapshot(root, "HEAD"));
+async function headLaw(index: IndexRead): Promise<TypeLawResult | null> {
+  if (!index.hasHead) return null;
+  return loadTypeLaw(
+    await lawSnapshotOfEntries(index.top, index.bundle, await revisionEntries(index.top, "HEAD")),
+  );
 }
 
 /**
@@ -116,14 +110,14 @@ async function headLaw(root: string): Promise<TypeLawResult | null> {
  * `constitution/`, `rule-tests/`, `examples/` or a declared library — the
  * index's or HEAD's — changes the law, and the whole vault is then judged.
  */
-async function lawStaged(root: string, law: TypeLaw, head: TypeLawResult | null): Promise<boolean> {
-  const { top, bundle } = await repositoryPlace(root);
-  if (!(await gitHasHead(top))) return true;
+function lawStaged(index: IndexRead, law: TypeLaw, head: TypeLawResult | null): boolean {
+  const { bundle } = index;
+  if (!index.hasHead) return true;
   const libraries = [
     ...law.libraries.map((l) => l.root),
     ...(head?.ok === true ? head.law.libraries.map((l) => l.root) : []),
   ];
-  for (const change of await gitStagedChanges(top)) {
+  for (const change of index.changes) {
     for (const path of [change.path, change.oldPath]) {
       if (path !== undefined && changesLaw(path.normalize("NFC"), bundle, libraries)) return true;
     }
@@ -135,14 +129,12 @@ async function lawStaged(root: string, law: TypeLaw, head: TypeLawResult | null)
  * The staged bytes of each generated file, by bundle-relative path: `null`
  * when the index tracks none of them, and the gate then judges none.
  */
-async function stagedGenerated(root: string): Promise<Map<string, string> | null> {
-  const { top, bundle } = await repositoryPlace(root);
+async function stagedGenerated(index: IndexRead): Promise<Map<string, string> | null> {
+  const { top, bundle } = index;
   const wanted = new Map(
     GENERATED_PATHS.map((p) => [(bundle === "" ? p : `${bundle}/${p}`).normalize("NFC"), p]),
   );
-  const entries = (await gitIndexEntries(top)).filter(
-    (e) => e.stage === 0 && wanted.has(e.path.normalize("NFC")),
-  );
+  const entries = index.entries.filter((e) => e.stage === 0 && wanted.has(e.path.normalize("NFC")));
   if (entries.length === 0) return null;
   const blobs = await gitReadBlobBytes(
     top,
@@ -212,12 +204,13 @@ function refusedOrOk(verdict: TypeLawVerdict, data: Record<string, unknown>): Co
 /** The pre-commit stage: the index judged with HEAD as its base. */
 async function preCommit(
   args: CommandArgs,
-  state: JudgeState,
+  index: IndexRead,
   law: TypeLaw,
   head: TypeLawResult | null,
 ): Promise<CommandResult> {
+  const { state } = index;
   const diff = headLawDiff(head, law);
-  const configChanged = await lawStaged(args.root, law, head);
+  const configChanged = lawStaged(index, law, head);
   const read = readPages(state, law);
   const collected = collectTypeLaw(state, law, { read, rulesChanged: diff.rulesChanged });
   const plans = generatedPlans({
@@ -227,7 +220,7 @@ async function preCommit(
     digests: { law: lawDigest(law, ENGINE_VERSION), content: stateContentDigest(state) },
     commands: args.commands,
   });
-  const staged = await stagedGenerated(args.root);
+  const staged = await stagedGenerated(index);
   const drift: Unrouted[] =
     staged === null ? [] : driftFindings(plans, (path) => staged.get(path), "index");
   const found = [
@@ -318,9 +311,10 @@ export function commitMessageStage(
 }
 
 async function run(args: CommandArgs): Promise<CommandResult> {
-  const index = await readIndex(args.root);
-  if (!index.ok) return withRefusalText(index.result);
-  const state = index.value;
+  const read = await indexOf(args.root);
+  if (!read.ok) return withRefusalText(read.result);
+  const index = read.value;
+  const { state } = index;
   const loaded = lawOf("gate", state);
   if (!loaded.ok) return withRefusalText(loaded.result);
   const law = loaded.law;
@@ -328,12 +322,12 @@ async function run(args: CommandArgs): Promise<CommandResult> {
   const identity = await typeLawIdentity(args.root, state, law);
   const mismatch = engineMismatch("gate", law);
   if (mismatch !== undefined) return withIdentity(withRefusalText(mismatch), identity);
-  const head = await headLaw(args.root);
+  const head = await headLaw(index);
   const file = args.flags["commit-msg"];
   const result =
     typeof file === "string" && file.length > 0
       ? commitMessageStage(args, law, head, file)
-      : await preCommit(args, state, law, head);
+      : await preCommit(args, index, law, head);
   return withIdentity(withRefusalText(result), identity);
 }
 

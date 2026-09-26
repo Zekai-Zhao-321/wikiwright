@@ -18,6 +18,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { documentOf } from "../../core/test/helpers/constitution.ts";
+import { notePage, writeAt, writeNoteBundle } from "./fixtures/note-bundle.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -209,6 +210,36 @@ describe("the gate reads the index once (docs/cli.md §gate)", () => {
       const count = (prefix: string): number => calls.filter((c) => c.startsWith(prefix)).length;
       assert.equal(count("diff --cached"), 1, `${argv.join(" ")}:\n${calls.join("\n")}`);
       assert.equal(count("ls-files"), 1, `${argv.join(" ")}:\n${calls.join("\n")}`);
+    }
+  });
+});
+
+describe("the v2 gate reads the index once (docs/cli.md §gate)", () => {
+  it("spawns the staged diff, the index listing and HEAD's existence once each", () => {
+    if (POSIX_ONLY) return;
+    // The law diff, the change-scoping and the generated files read the one
+    // listing and the one diff the state was made from.
+    const tmp = mkdtempSync(join(tmpdir(), "ww-reads-v2-"));
+    try {
+      writeNoteBundle(tmp, ["Fern", "Moss"]);
+      git(tmp, "init", "-q", "-b", "main");
+      git(tmp, "config", "user.email", "test@example.com");
+      git(tmp, "config", "user.name", "Test");
+      git(tmp, "add", "-A");
+      git(tmp, "commit", "-q", "-m", "base");
+      writeAt(tmp, "wiki/Fern.md", notePage("Fern", "\nA staged line.\n"));
+      git(tmp, "add", "-A");
+      const { env, log } = countingGit(tmp);
+      const r = run(tmp, ["gate"], env);
+      assert.equal(r.status, 0, said(r));
+      const all = calls(log);
+      const count = (prefix: string): number => all.filter((c) => c.startsWith(prefix)).length;
+      assert.equal(count("diff --cached"), 1, all.join("\n"));
+      assert.equal(count("ls-files"), 1, all.join("\n"));
+      assert.equal(count("rev-parse --verify"), 1, all.join("\n"));
+      assert.equal(count("rev-parse --show-toplevel"), 1, all.join("\n"));
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
     }
   });
 });

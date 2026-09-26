@@ -853,6 +853,12 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Fixed
 
+- The v2 gate reads the index once: the law diff, the change-scoping and
+  the staged generated files read the listing, the staged diff and HEAD's
+  existence the state was made from, where each asked git again. A
+  one-page commit spawned 21 git processes, the listing and the diff twice
+  each and the repository's top level four times, and spawns 13, as the
+  old gate held its two index reads to one snapshot.
 - The v2 gate refuses a git read that fails while it reads the index as
   `git-unavailable` (exit 4, `conflict`), with git's own message, as the old
   gate did. It answered `unexpected-error` (exit 1), the code for the engine
