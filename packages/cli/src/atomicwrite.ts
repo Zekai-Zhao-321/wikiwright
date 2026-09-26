@@ -6,7 +6,9 @@
 // loop can still leave a mix across files, so that window is stated.
 import { randomBytes } from "node:crypto";
 import {
+  accessSync,
   closeSync,
+  constants,
   fchmodSync,
   lstatSync,
   mkdirSync,
@@ -64,7 +66,10 @@ export class ReplacementTargetRefused extends Error {
 }
 
 /** Every target is checked before the first write, including on a dry run. */
-export function preflightReplacements(entries: readonly { path: string }[]): void {
+export function preflightReplacements(
+  entries: readonly { path: string }[],
+  options: { writable?: boolean } = {},
+): void {
   const seen = new Set<string>();
   for (const { path } of entries) {
     if (seen.has(path)) throw new ReplacementTargetRefused(path, "the batch names it twice");
@@ -75,6 +80,13 @@ export function preflightReplacements(entries: readonly { path: string }[]): voi
         const stat = lstatSync(parent);
         if (!stat.isDirectory()) {
           throw new ReplacementTargetRefused(parent, "an existing parent is not a directory");
+        }
+        if (options.writable !== false) {
+          try {
+            accessSync(parent, constants.W_OK | constants.X_OK);
+          } catch {
+            throw new ReplacementTargetRefused(parent, "the parent directory is not writable");
+          }
         }
         break;
       } catch (error) {
@@ -105,7 +117,10 @@ export function preflightReplacements(entries: readonly { path: string }[]): voi
  * that needs privilege this process does not ask for — so a file replaced by
  * another user changes hands, and the umask sets the mode of a new file.
  */
-export function replaceFiles(entries: readonly Replacement[]): void {
+export function stageReplacements(entries: readonly Replacement[]): {
+  commit: () => void;
+  discard: () => void;
+} {
   preflightReplacements(entries);
   const staged: { temp: string; target: string }[] = [];
   try {
@@ -125,21 +140,32 @@ export function replaceFiles(entries: readonly Replacement[]): void {
     for (const { temp } of staged) rmSync(temp, { force: true });
     throw error;
   }
-  let renamed = 0;
-  try {
-    // A target may have changed while temp files were staged. Do not land
-    // the first replacement if another target is now known to be unsafe.
-    preflightReplacements(entries);
-    for (const { temp, target } of staged) {
-      renameSync(temp, target);
-      renamed += 1;
-    }
-  } catch (error) {
-    // What landed stays; the temp files not yet renamed go, so a refused rename
-    // leaves the old bytes and no debris beside them.
-    for (const { temp } of staged.slice(renamed)) rmSync(temp, { force: true });
-    throw error;
-  }
+  const discard = (): void => {
+    for (const { temp } of staged) rmSync(temp, { force: true });
+  };
+  return {
+    discard,
+    commit: () => {
+      let renamed = 0;
+      try {
+        // A target may have changed while temp files were staged. Do not land
+        // the first replacement if another target is now known to be unsafe.
+        preflightReplacements(entries);
+        for (const { temp, target } of staged) {
+          renameSync(temp, target);
+          renamed += 1;
+        }
+      } catch (error) {
+        // What landed stays; the temp files not yet renamed go.
+        for (const { temp } of staged.slice(renamed)) rmSync(temp, { force: true });
+        throw error;
+      }
+    },
+  };
+}
+
+export function replaceFiles(entries: readonly Replacement[]): void {
+  stageReplacements(entries).commit();
 }
 
 /** One file, through the same staging. */

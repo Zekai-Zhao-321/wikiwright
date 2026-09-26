@@ -1,7 +1,15 @@
 // A mechanical folder-tag fix must pass the type law before the first write.
 // An invalid proposed fix refuses both the dry run and the real invocation.
 import { afterAll, describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cli, findingsOf } from "./fixtures/garden-cli.ts";
@@ -13,6 +21,41 @@ afterAll(() => {
 });
 
 describe("check --fix validates its proposed page bytes", () => {
+  it("refuses an unwritable generated directory before changing a page", () => {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), "ww-fix-staging-")));
+    made.push(dir);
+    writeNoteBundle(dir, ["Basil"], { folder_tags: { mode: "materialize-add-only" } });
+    writeAt(
+      dir,
+      "constitution/vocabularies/tags.yaml",
+      "vocabulary: tags\nmode: registered\nentries:\n  bed: {}\n",
+    );
+    const page = join(dir, "wiki/bed/Basil.md");
+    writeAt(dir, "wiki/bed/Basil.md", notePage("Basil"));
+    rmSync(join(dir, "wiki/Basil.md"));
+    const generated = join(dir, "generated");
+    mkdirSync(generated);
+    chmodSync(generated, 0o555);
+    const before = readFileSync(page, "utf8");
+    try {
+      const readOnly = cli(["check"], dir);
+      expect(readOnly.status).toBe(5);
+      expect(readOnly.envelope.error?.code).toBe("findings");
+      for (const args of [
+        ["check", "--fix", "--dry-run"],
+        ["check", "--fix"],
+      ]) {
+        const result = cli(args, dir);
+        expect(result.status).toBe(4);
+        expect(result.envelope.error?.code).toBe("replacement-target-refused");
+        expect(readFileSync(page, "utf8")).toBe(before);
+        expect(existsSync(join(generated, "BRIEF.md"))).toBe(false);
+      }
+    } finally {
+      chmodSync(generated, 0o755);
+    }
+  });
+
   it("does not land a folder tag that exceeds the effective tags shape", () => {
     const dir = realpathSync(mkdtempSync(join(tmpdir(), "ww-fix-shape-")));
     made.push(dir);

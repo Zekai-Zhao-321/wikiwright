@@ -29,7 +29,7 @@ import {
   type Unrouted,
   verdictOfCollected,
 } from "@wikiwright/core";
-import { preflightReplacements, replaceFiles } from "../atomicwrite.ts";
+import { preflightReplacements } from "../atomicwrite.ts";
 import { type CommandResult, capOptions, ENGINE_VERSION, fail, ok } from "../envelope.ts";
 import { driftFindings, GENERATED_PATHS, generatedPlans } from "../generated.ts";
 import { fsState } from "../lawstate.ts";
@@ -50,12 +50,12 @@ import {
   typeLawIdentity,
   withIdentity,
 } from "../typelaw.ts";
-import { commitWrites } from "../writer.ts";
+import { commitWritesWithArtifacts } from "../writer.ts";
 
 /** The bytes `generated/` holds on disk for one planned path, or undefined when absent. */
 function onDisk(root: string, path: string): string | undefined {
   const abs = join(realpathSync(root), path);
-  preflightReplacements([{ path: abs }]);
+  preflightReplacements([{ path: abs }], { writable: false });
   return existsSync(abs) ? readFileSync(abs, "utf8") : undefined;
 }
 
@@ -63,18 +63,6 @@ function onDisk(root: string, path: string): string | undefined {
 function preflightGenerated(root: string): void {
   const real = realpathSync(root);
   preflightReplacements(GENERATED_PATHS.map((path) => ({ path: join(real, path) })));
-}
-
-/**
- * `--write`: every planned file lands through the shell's staged replace,
- * all staged before the first rename (atomicwrite.ts): a failure while
- * staging leaves every old file; a crash inside the rename loop can leave
- * some old and some new, and the next `check --write` converges them.
- */
-function writeGenerated(root: string, plans: readonly TypeLawArtifact[]): string[] {
-  const real = realpathSync(root);
-  replaceFiles(plans.map((plan) => ({ path: join(real, plan.path), contents: plan.content })));
-  return plans.map((plan) => plan.path);
 }
 
 /** A page `--fix` rewrites, and the bytes it would hold. */
@@ -268,19 +256,18 @@ async function run(args: CommandArgs): Promise<CommandResult> {
   if (isDryRun(args)) {
     return withIdentity(ok("check", planOf(opsOf(args.root, prepared, writing(args)))), identity);
   }
-  if (fixes.length > 0) {
-    commitWrites(
+  const changedPlans = writing(args)
+    ? plans.filter((plan) => onDisk(args.root, plan.path) !== plan.content)
+    : [];
+  if (fixes.length > 0 || changedPlans.length > 0) {
+    commitWritesWithArtifacts(
       args.root,
       fixes.map((fix) => ({ path: fix.path, text: fix.text })),
+      changedPlans,
     );
   }
   const fixed = fixes.map((fix) => ({ path: fix.path, added: fix.added }));
-  const written = writing(args)
-    ? writeGenerated(
-        args.root,
-        plans.filter((plan) => onDisk(args.root, plan.path) !== plan.content),
-      )
-    : [];
+  const written = changedPlans.map((plan) => plan.path);
   const drift = driftFindings(plans, (path) => onDisk(args.root, path), "working-tree");
   const graph = typeLawGraph(law, read);
   const pins = await measurePins(args.root, read, graph.edges);

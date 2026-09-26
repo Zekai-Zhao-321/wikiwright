@@ -61,7 +61,7 @@ import {
   planOf,
 } from "../spec.ts";
 import { engineMismatch, lawOf, stateRefusal, typeLawIdentity, withIdentity } from "../typelaw.ts";
-import { landBatch, preflightBatch } from "../writer.ts";
+import { preflightBatch, stageBatch } from "../writer.ts";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -740,11 +740,42 @@ async function run(args: CommandArgs): Promise<CommandResult> {
       await typeLawIdentity(args.root, prepared.disk, prepared.law),
     );
   }
-  landBatch(
+  const staged = stageBatch(
     args.root,
     prepared.changed.map((path) => ({ path, bytes: prepared.batch.pages.get(path) as Uint8Array })),
     removed,
   );
+  try {
+    // Staging itself may take time or trigger another writer. Check the same
+    // accepted state after all temp files are complete, just before renaming.
+    let afterStaging: JudgeState;
+    try {
+      afterStaging = await fsState(args.root);
+    } catch (error) {
+      const refused = stateRefusal("write", error);
+      if (refused === undefined) throw error;
+      return withIdentity(refused, await typeLawIdentity(args.root, prepared.disk, prepared.law));
+    }
+    const stagedState = workingTreeDigest(afterStaging);
+    if (stagedState !== expectedState) {
+      return withIdentity(
+        fail(
+          "write",
+          "conflict",
+          "state-changed-before-write",
+          "the bundle's pages or law changed after the draft base was read; nothing landed",
+          {
+            details: { expected: expectedState, actual: stagedState },
+            hint: "read the bundle again, re-apply the draft to its current bytes and law, then retry",
+          },
+        ),
+        await typeLawIdentity(args.root, prepared.disk, prepared.law),
+      );
+    }
+    staged.commit();
+  } finally {
+    staged.discard();
+  }
   return withIdentity(
     ok("write", { ops: plan, wrote: true, ...data }),
     await typeLawIdentity(args.root, prepared.overlay, prepared.law),

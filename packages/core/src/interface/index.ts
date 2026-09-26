@@ -352,7 +352,14 @@ export function parsePage(
     let items = 0;
     for (let n = contentFrom; n <= directEnd; n += 1) {
       const line = lines[n - 1];
-      if (line === undefined || opaque.has(n)) continue;
+      if (line === undefined) continue;
+      if (opaque.has(n)) {
+        // Fences, comments and thematic breaks end the preceding list item.
+        // A later indented bullet is a new top-level candidate, not rationale
+        // attached across an intervening block.
+        flush();
+        continue;
+      }
       if (line.text.trim() === "") continue;
       const spaces = /^( *)/u.exec(line.text)?.[1]?.length ?? 0;
       const listText = line.text.slice(spaces);

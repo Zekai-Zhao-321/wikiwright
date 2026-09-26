@@ -7,7 +7,12 @@
 // before they call this.
 import { createHash } from "node:crypto";
 import { lstatSync, rmSync, statSync } from "node:fs";
-import { preflightReplacements, ReplacementTargetRefused, replaceFiles } from "./atomicwrite.ts";
+import {
+  preflightReplacements,
+  ReplacementTargetRefused,
+  replaceFiles,
+  stageReplacements,
+} from "./atomicwrite.ts";
 import { vaultAbsolute } from "./paths.ts";
 
 /** git's own blob identity: `sha1("blob <len>\0" + bytes)` — what a write envelope reports. */
@@ -33,6 +38,21 @@ export function commitWrites(
     pages.map((page) => ({ path: vaultAbsolute(root, page.path), contents: page.text })),
   );
   return pages.map((page) => blobSha(page.text));
+}
+
+/** Stage page fixes and generated artifacts as one batch before any rename. */
+export function commitWritesWithArtifacts(
+  root: string,
+  pages: readonly { path: string; text: string }[],
+  artifacts: readonly { path: string; content: string }[],
+): void {
+  replaceFiles([
+    ...pages.map((page) => ({ path: vaultAbsolute(root, page.path), contents: page.text })),
+    ...artifacts.map((artifact) => ({
+      path: vaultAbsolute(root, artifact.path),
+      contents: artifact.content,
+    })),
+  ]);
 }
 
 /** One page, through the same path. */
@@ -73,17 +93,45 @@ export function landBatch(
   pages: readonly { path: string; bytes: Uint8Array }[],
   removed: readonly string[],
 ): void {
+  stageBatch(root, pages, removed).commit();
+}
+
+/** Stage all pages, then permit one last state validation before landing. */
+export function stageBatch(
+  root: string,
+  pages: readonly { path: string; bytes: Uint8Array }[],
+  removed: readonly string[],
+): { commit: () => void; discard: () => void } {
   preflightBatch(
     root,
     pages.map((page) => page.path),
     removed,
   );
-  replaceFiles(
+  const staged = stageReplacements(
     pages.map((page) => ({
       path: vaultAbsolute(root, page.path),
       contents: Buffer.from(page.bytes),
     })),
   );
+  return {
+    discard: staged.discard,
+    commit: () => {
+      preflightBatch(
+        root,
+        pages.map((page) => page.path),
+        removed,
+      );
+      staged.commit();
+      removeMovedPaths(root, pages, removed);
+    },
+  };
+}
+
+function removeMovedPaths(
+  root: string,
+  pages: readonly { path: string; bytes: Uint8Array }[],
+  removed: readonly string[],
+): void {
   const landed = new Set(
     pages.map((page) => {
       const stat = statSync(vaultAbsolute(root, page.path));

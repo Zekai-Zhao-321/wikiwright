@@ -13,6 +13,32 @@ afterAll(() => {
 });
 
 describe("top-level list indentation under a grammar", () => {
+  it("does not carry a list item across a separate opaque block", () => {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), "ww-grammar-separator-")));
+    made.push(dir);
+    writeNoteBundle(dir, ["Basil"]);
+    writeAt(
+      dir,
+      "constitution/types/note.yaml",
+      `${NOTE_TYPE}sections:\n  list:\n    - heading: Facts\n      grammar: claims\n      provenance: required\n`,
+    );
+    for (const separator of ["```text\nblock\n```", "<!-- separated -->", "---"]) {
+      writeAt(
+        dir,
+        "wiki/Basil.md",
+        notePage(
+          "Basil",
+          `\n## Facts\n\n- [observation] Basil is growing. ([[Basil]])\n\n${separator}\n\n  - [observation] An unsupported claim.\n`,
+        ),
+      );
+      const result = cli(["check", "--all"], dir);
+      expect(result.status).toBe(5);
+      expect(findingsOf(result.envelope, "item-unparsed").map((f) => f.path)).toEqual([
+        "wiki/Basil.md",
+      ]);
+    }
+  });
+
   it("judges every CommonMark top-level bullet and retains nested rationale", () => {
     const dir = realpathSync(mkdtempSync(join(tmpdir(), "ww-grammar-indent-")));
     made.push(dir);
