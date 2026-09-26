@@ -5,7 +5,7 @@
 Every rule id, constitution key and engine key of the v1 tree, with what the
 v2 delivery does with it (contracts §1). `kernel`: kept by the engine, and
 where. `rule`: re-expressed as a CEL rule, in which library and under which
-id; the rule and its test set land with the library (contracts §12 step 5).
+id; each landed with its library and its test set (contracts §12 step 5).
 `dropped`: removed, with the line `CHANGELOG.md` carries for it. The ids are
 enumerated from the v1 tree by the generator, which fails when one has no row
 or a row names nothing, so the table cannot fall behind the code it describes.
@@ -57,7 +57,7 @@ Every row of the composed pass table (`passRows(standardLibrary())`): the kernel
 | `tag-form` | kernel | the judge: `page-shape-invalid` against the reserved `tags` schema's name pattern |
 | `tag-requires-link` | dropped | `tag-requires-link` removed with the `requires_link` entry property: a page rule over `page.fields.tags` and `facts.links` expresses it. |
 | `instances` | kernel | the judge: `instances-min` and `instances-max`, at the type document (§3) |
-| `body-append-only` | rule | library `code`, rule `body-append-only`: a transition rule over `before.page.body` (code/decision); its rule test lands with the library (contracts §12 step 5) |
+| `body-append-only` | rule | library `code`, rule `body-append-only` on `code/decision`: a transition rule over `before.page.body`, its test set under `libraries/kit-code/rule-tests/`; `tools/migrate-spellings.ts` wrote the same rule into a migrated bundle's `append-only` fragment (`fixtures/minimal-vault`, `fixtures/memory-synth`), each with its test set |
 | `vocabulary-alias-target` | dropped | `vocabulary-alias-target` removed with vocabulary entry aliases. |
 | `vocabulary-retired` | kernel | the judge: `vocabulary-retired`, a value the vocabulary lists under `retired` |
 | `skills-stale` | dropped | `skills-stale` removed with the `skills` verb and installed-skill comparison (§1). |
@@ -91,7 +91,7 @@ Every row of the composed pass table (`passRows(standardLibrary())`): the kernel
 | `claims-transition` | kernel | the judge, by id (ruling 3): an open claim of the base, matched by category and handle, closed, corrected or recorded by a dated entry quoting it (verdict/transitions.ts) |
 | `claim-landing` | dropped | `claim-landing` removed: a census of where closed claims land, which no rule reads. |
 | `unknown-label` | kernel | the judge: `vocabulary-unknown`, a relation's label against the section's vocabulary (§4) |
-| `relation-range` | rule | library `code`, rule `relation-range`, the ranges as its config (the spike's rule, in the admitted form); its rule test lands with the library (contracts §12 step 5) |
+| `relation-range` | rule | library `code`, rule `relation-range` on the `anchored` fragment's Relations: the ranges as its config, a target matched through `facts.ancestry`; its test set under `devwiki/rule-tests/`, since its negative names a page of the importing vault (§8) |
 | `relation-target-unresolved` | kernel | the judge: `relation-target-unresolved`, the target from the vault's names (§4) |
 | `relation-removed` | kernel | the judge, by id (ruling 3): a relation that left its section, recorded in its `history` heading (verdict/transitions.ts) |
 | `relation-retired` | dropped | `relation-retired` removed: a census of retired labels; a retired label in use is `vocabulary-retired`. |
@@ -143,7 +143,7 @@ Every key the v3 `config/constitution.json` schema declares; a type's and a frag
 | `types.*.avoid_when` | kernel | a type document's `avoid_when` |
 | `types.*.fragments` | kernel | a type document's `fragments`, bare or qualified |
 | `types.*.fields` | kernel | a type document's `fields`, JSON Schema (§3.1) |
-| `types.*.body` | rule | library `code`, rule `body-append-only` (the page-wide append-only law); its rule test lands with the library (contracts §12 step 5) |
+| `types.*.body` | rule | library `code`, rule `body-append-only` (the page-wide append-only law), and the rule of that id a migrated bundle's `append-only` fragment carries |
 | `types.*.body.lifecycle` | rule | library `code`, rule `body-append-only`: `append-only` is what the rule states |
 | `types.*.body.severity` | kernel | the rule's `severity` (§3) |
 | `types.*.template` | dropped | type `template` removed: `type show --brief` prints the derived skeleton (§3.3). |
@@ -184,7 +184,7 @@ The four keys every entry shares (`*.`) and each registered vocabulary's own ent
 | `tags.requires_link` | dropped | the tags entry property `requires_link` removed: a page rule over `page.fields.tags` and `facts.links` expresses it. |
 | `categories.class` | dropped | the category entry property `class` (supersede, accumulate, journal-only) removed with the claims transition classes. |
 | `categories.owned_by` | dropped | the category entry property `owned_by` removed. |
-| `relations.range` | rule | library `code`, rule `relation-range`: the ranges move into the rule's `config` |
+| `relations.range` | rule | library `code`, rule `relation-range`: the ranges move into the rule's `config.ranges` |
 
 ## Field shape kinds and keys
 
@@ -196,7 +196,7 @@ Every field-shape kind and the keys it admits, and the keys every kind admits (`
 | `string` | kernel | `type: string` |
 | `string.min_length` | kernel | `minLength` |
 | `string.max_length` | kernel | `maxLength` |
-| `string.pattern` | kernel | `pattern`, compiled by RE2 (no lookaround, no backreferences) |
+| `string.pattern` | kernel | `pattern`, compiled by RE2 (no lookaround, no backreferences); a v1 pattern RE2 refuses is a CEL rule: the code kit's lookahead on `covers` is library `code`'s `covers-repository-path` |
 | `dated-string` | kernel | `type: string` with an RE2 `pattern` for the date prefix |
 | `integer` | kernel | `type: integer` |
 | `integer.min` | kernel | `minimum` |

@@ -109,8 +109,6 @@ function shapeKeys(): string[] {
 // ---------------------------------------------------------------------------
 // the table
 
-const STEP5 = "its rule test lands with the library (contracts §12 step 5)";
-
 export const RULES: readonly Row[] = [
   [
     "module-failure",
@@ -296,7 +294,7 @@ export const RULES: readonly Row[] = [
   [
     "body-append-only",
     "rule",
-    `library \`code\`, rule \`body-append-only\`: a transition rule over \`before.page.body\` (code/decision); ${STEP5}`,
+    "library `code`, rule `body-append-only` on `code/decision`: a transition rule over `before.page.body`, its test set under `libraries/kit-code/rule-tests/`; `tools/migrate-spellings.ts` wrote the same rule into a migrated bundle's `append-only` fragment (`fixtures/minimal-vault`, `fixtures/memory-synth`), each with its test set",
   ],
   [
     "vocabulary-alias-target",
@@ -414,7 +412,7 @@ export const RULES: readonly Row[] = [
   [
     "relation-range",
     "rule",
-    `library \`code\`, rule \`relation-range\`, the ranges as its config (the spike's rule, in the admitted form); ${STEP5}`,
+    "library `code`, rule `relation-range` on the `anchored` fragment's Relations: the ranges as its config, a target matched through `facts.ancestry`; its test set under `devwiki/rule-tests/`, since its negative names a page of the importing vault (§8)",
   ],
   [
     "relation-target-unresolved",
@@ -526,7 +524,7 @@ const CONSTITUTION: readonly Row[] = [
   [
     "types.*.body",
     "rule",
-    `library \`code\`, rule \`body-append-only\` (the page-wide append-only law); ${STEP5}`,
+    "library `code`, rule `body-append-only` (the page-wide append-only law), and the rule of that id a migrated bundle's `append-only` fragment carries",
   ],
   [
     "types.*.body.lifecycle",
@@ -611,7 +609,7 @@ const ENTRY_PROPERTIES: readonly Row[] = [
   [
     "relations.range",
     "rule",
-    "library `code`, rule `relation-range`: the ranges move into the rule's `config`",
+    "library `code`, rule `relation-range`: the ranges move into the rule's `config.ranges`",
   ],
 ];
 
@@ -620,7 +618,11 @@ const SHAPES: readonly Row[] = [
   ["string", "kernel", "`type: string`"],
   ["string.min_length", "kernel", "`minLength`"],
   ["string.max_length", "kernel", "`maxLength`"],
-  ["string.pattern", "kernel", "`pattern`, compiled by RE2 (no lookaround, no backreferences)"],
+  [
+    "string.pattern",
+    "kernel",
+    "`pattern`, compiled by RE2 (no lookaround, no backreferences); a v1 pattern RE2 refuses is a CEL rule: the code kit's lookahead on `covers` is library `code`'s `covers-repository-path`",
+  ],
   ["dated-string", "kernel", "`type: string` with an RE2 `pattern` for the date prefix"],
   ["integer", "kernel", "`type: integer`"],
   ["integer.min", "kernel", "`minimum`"],
@@ -816,7 +818,7 @@ export function renderDispositions(): string {
     "Every rule id, constitution key and engine key of the v1 tree, with what the",
     "v2 delivery does with it (contracts §1). `kernel`: kept by the engine, and",
     "where. `rule`: re-expressed as a CEL rule, in which library and under which",
-    "id; the rule and its test set land with the library (contracts §12 step 5).",
+    "id; each landed with its library and its test set (contracts §12 step 5).",
     "`dropped`: removed, with the line `CHANGELOG.md` carries for it. The ids are",
     "enumerated from the v1 tree by the generator, which fails when one has no row",
     "or a row names nothing, so the table cannot fall behind the code it describes.",
