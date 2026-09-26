@@ -4,9 +4,9 @@ title: "Testing the engine"
 description: "Bun gate, synthetic corpora, temporary fixtures and end-to-end CLI probes."
 tags: [repo]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
   origin: .
-  covers: ["tools/run-suite.ts", "packages/cli/test/fixtures/garden-cli.ts", "packages/cli/test/fixture-verdicts.test.ts", "test/episode.test.ts", "scripts/release-matrix.sh"]
+  covers: ["tools/run-suite.ts", "packages/cli/test/fixtures/garden-cli.ts", "packages/cli/test/fixture-verdicts.test.ts", "packages/cli/test/source-policy.test.ts", "test/episode.test.ts", "scripts/release-matrix.sh"]
 ---
 
 # Testing the engine
@@ -15,9 +15,9 @@ pin:
 
 Bun run check runs Biome, the build, test-project typecheck and the whole suite. The runner starts one Bun test process per file with a wider timeout under parallel load.
 
-Current source at this pin: `tools/run-suite.ts`, `packages/cli/test/fixtures/garden-cli.ts`, `packages/cli/test/fixture-verdicts.test.ts`, `test/episode.test.ts`, `scripts/release-matrix.sh`.
+Current source at this pin: `tools/run-suite.ts`, `packages/cli/test/fixtures/garden-cli.ts`, `packages/cli/test/fixture-verdicts.test.ts`, `packages/cli/test/source-policy.test.ts`, `test/episode.test.ts`, `scripts/release-matrix.sh`.
 
-The CLI tests use temporary gardening bundles and read the spawned CLI envelope from a file. Fixture-verdicts judges the five checked-in corpora; the episode runs the correction loop twice.
+The CLI tests use temporary gardening bundles and read the spawned CLI envelope from a file. Fixture-verdicts judges the six checked-in corpora; the episode runs the correction loop twice. The source-policy fixture tests Unicode page names, source-only retyping, staged disagreement, deletion and moves.
 
 ## Writing tests
 

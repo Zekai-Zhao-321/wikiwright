@@ -4,7 +4,7 @@ title: "Search"
 description: "Deterministic page, record and file retrieval with per-result evidence status."
 tags: [kernel, cli]
 pin:
-  commit: 103376a247d7df103132abded5c579a7e432459d
+  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
   origin: .
   covers: ["packages/core/src/search/index.ts", "packages/core/src/search/bm25.ts", "packages/core/src/search/tokenize.ts", "packages/cli/src/verbs/search.ts"]
 updated: 2026-09-26
@@ -23,6 +23,9 @@ Current source at this pin: `packages/core/src/search/index.ts`, `packages/core/
 ## State
 
 The search index is rebuilt for each invocation from the selected working tree. Each returned result gets the same staleness and queue status that read would compute for its page.
+With `--items`, a claim result also carries its current resolved source-page
+path and nominal type in `fields.provenance.page`; URL and path sources carry
+`null` there. The item's `raw` retains the authored link spelling.
 
 ## Invariants
 

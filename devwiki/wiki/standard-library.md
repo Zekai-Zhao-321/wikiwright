@@ -5,9 +5,9 @@ description: "Historical v1 code standard library, replaced by kernel grammar an
 tags: [stdlib]
 status: retired
 pin:
-  commit: 103376a247d7df103132abded5c579a7e432459d
+  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
   origin: .
-  covers: ["packages/core/src/records/index.ts", "libraries/kit-code/types/subsystem.yaml", "libraries/kit-garden/types/planting.yaml", "CHANGELOG.md"]
+  covers: ["packages/core/src/records/index.ts", "libraries/kit-code/types/subsystem.yaml", "libraries/kit-garden/types/planting.yaml", "libraries/source-kit/types/observation.yaml", "libraries/source-kit/types/field-note.yaml", "CHANGELOG.md"]
 updated: 2026-09-26
 ---
 
@@ -19,11 +19,15 @@ The v1 claims, relations and entries code modules left. Their fixed record gramm
 
 ## Entry points
 
-Current disposition at this pin: `packages/core/src/records/index.ts`, `libraries/kit-code/types/subsystem.yaml`, `libraries/kit-garden/types/planting.yaml`, `CHANGELOG.md`.
+Current disposition at this pin: `packages/core/src/records/index.ts`, `libraries/kit-code/types/subsystem.yaml`, `libraries/kit-garden/types/planting.yaml`, `libraries/source-kit/types/observation.yaml`, `libraries/source-kit/types/field-note.yaml`, `CHANGELOG.md`.
 
 ## State
 
-Kit-code is a code-wiki library, and kit-garden is a neutral gardening library. A bundle imports either by path and contributes its own types, vocabulary entries and tested CEL rules.
+Kit-code is a code-wiki library, kit-garden is a neutral gardening library,
+and source-kit is a synthetic gardening source-policy example. A bundle
+imports a library by path and contributes its own types, vocabulary entries
+and tested CEL rules. Source-kit's rule requires field-note pages for
+selected claim categories; it is no engine-wide evidence taxonomy.
 
 ## Invariants
 

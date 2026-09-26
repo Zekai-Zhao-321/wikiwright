@@ -4,7 +4,7 @@ title: "The parser and the names it binds"
 description: "Markdown and YAML parsing, Unicode page identity and name resolution."
 tags: [kernel]
 pin:
-  commit: 103376a247d7df103132abded5c579a7e432459d
+  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
   origin: .
   covers: ["packages/core/src/parse/index.ts", "packages/core/src/names/index.ts", "packages/core/src/identity/index.ts", "packages/core/src/interface/index.ts"]
 updated: 2026-09-26
@@ -23,6 +23,9 @@ Current source at this pin: `packages/core/src/parse/index.ts`, `packages/core/s
 ## State
 
 Names, aliases and titles are indexed from the selected pages. Unicode NFC and full case folding decide identity; search adds ranked retrieval without changing which page a name resolves to.
+A claim's lexical provenance keeps its authored page name. The rule interface
+projects the resolved page path and nominal type from the name index, so a
+Unicode citation needs no CEL reconstruction of a normalized map key.
 
 ## Invariants
 

@@ -4,7 +4,7 @@ title: wikiwright architecture
 description: "Kernel, data-library and bundle layers and the four adapters that reach one judge."
 tags: [kernel, stdlib, cli, kit]
 pin:
-  commit: 103376a247d7df103132abded5c579a7e432459d
+  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
   origin: .
   covers: ["packages/core/src/index.ts", "packages/cli/src/main.ts", "packages/cli/src/lawstate.ts", "docs/architecture.md"]
 updated: 2026-09-26
@@ -15,6 +15,9 @@ updated: 2026-09-26
 ## System shape
 
 WikiWright is a pure core over bytes plus an imperative Bun CLI. Type documents in libraries and bundles declare law, including section scope and exact child paths; the kernel fixes grammar, schemas, CEL profile, judge and artifacts.
+Claims expose a source page's resolved path and nominal type to bounded CEL;
+a data library can require particular source types for selected categories.
+The kernel defines the reference, while the library declares the policy.
 
 Current source at this pin: `packages/core/src/index.ts`, `packages/cli/src/main.ts`, `packages/cli/src/lawstate.ts`, `docs/architecture.md`.
 
