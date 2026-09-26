@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { briefCommand } from "../src/legacy/brief.ts";
 import { fixCommand } from "../src/legacy/fix.ts";
 import { freshnessCommand } from "../src/legacy/freshness.ts";
 import { lintCommand } from "../src/legacy/lint.ts";
@@ -15,6 +16,7 @@ import { moveCommand } from "../src/legacy/move.ts";
 import { newCommand } from "../src/legacy/new.ts";
 import { okfCommand } from "../src/legacy/okf.ts";
 import { retireCommand } from "../src/legacy/retire.ts";
+import { vocabularyCommand } from "../src/legacy/vocabulary.ts";
 import type { CommandSpec } from "../src/spec.ts";
 import { cleanBundles, cli, commitAll, gardenBundle } from "./fixtures/garden-cli.ts";
 
@@ -161,6 +163,37 @@ const ABSORBED: { spec: CommandSpec; rows: Absorbed[] }[] = [
         loss: "the retirement banner",
       },
     ],
+  },
+  {
+    spec: vocabularyCommand,
+    rows: [
+      {
+        example: "wikiwright vocabulary show relations",
+        replacement: ["type", "show", "planting", "--brief"],
+      },
+      {
+        example: "wikiwright vocabulary show relations --label part_of",
+        replacement: ["type", "show", "planting", "--brief"],
+        loss: "one entry alone: the brief lists every entry with its count",
+      },
+      {
+        example: "wikiwright vocabulary show relations --target source-map",
+        replacement: ["type", "show", "planting", "--brief"],
+        loss: "the labels whose range admits a target type: a range is the `relation-range` rule's config",
+      },
+      {
+        example: "wikiwright vocabulary show tags",
+        replacement: ["type", "show", "planting", "--brief"],
+      },
+    ],
+  },
+  {
+    spec: briefCommand,
+    rows: ["writer", "maintainer", "consumer"].map((role) => ({
+      example: `wikiwright brief --role ${role}`,
+      replacement: ["check", "--write", "--dry-run"],
+      loss: "a brief per role printed on demand: the three roles are sections of generated/BRIEF.md, which check --write renders",
+    })),
   },
   {
     spec: okfCommand,

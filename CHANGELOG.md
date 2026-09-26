@@ -109,6 +109,20 @@ version` prints the engine version and the commit a binary was built from.
   its page's `status`; its pins and its linked pages' pins are measured per
   result returned. `--items` ranks the §4 records; `--type` matches a type
   and every type below it.
+- **`type show` and `type list` over the v2 law** (v2 contracts §3.3,
+  §9.7). Over a bundle on schema version 4, `type show <name>` prints the
+  effective contract with attribution: the role, ancestry and fragments,
+  every top-level property of the effective shape with the documents that
+  declare it (`reserved`, `fragment:<name>`, `type:<name>`) and the shape
+  as compiled, the sections with the types and fragments that declare each
+  heading, every rule with its declaring document and its config after
+  `configure`, `meta` and `examples`. `--brief` adds the skeleton (§3.3),
+  the writing instruction (a line per section: grammar, bounds, the item's
+  spelling, the parameters, the vocabulary and its size) and every
+  vocabulary the type reads with each entry's live count, its retired
+  entries and the values the vault uses that it does not declare. `type
+  list` lists every type with its role, whether it is abstract, its parent
+  and its case.
 - **Two command tables.** A root whose `config/engine.json` is schema
   version 4 is answered by the command table of the v2 contracts; any other
   root, and any `--bundle` invocation, by the old table whole, until the
@@ -655,6 +669,12 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- `vocabulary` and `brief` from the command table: `type show --brief`
+  lists a vocabulary's entries with their live counts, and the three roles'
+  briefs are the sections of `generated/BRIEF.md`, which `check --write`
+  renders. Not carried: `vocabulary show --label` and `--target` (one entry,
+  and the labels a target type admits), and a brief printed on demand per
+  role. Each still answers a root not on schema version 4.
 - `move`, `retire` and `new` from the command table, absorbed by `write
   --from` over a schema-version-4 bundle (a move and a retirement are
   operations in `ops.json`; a new page is a draft written from `type show

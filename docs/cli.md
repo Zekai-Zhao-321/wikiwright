@@ -16,7 +16,8 @@ time; the reference below is that table's. Any other root — a bundle on
 `config/constitution.json`, or none — and any invocation that names its target
 by `--bundle` is answered by the old table whole, whose verbs the notes below
 still describe. Over a schema-version-4 bundle `check` absorbs `lint`, `fix`,
-`freshness` and `okf`; `write --from` absorbs `move`, `retire` and `new`; and
+`freshness` and `okf`; `write --from` absorbs `move`, `retire` and `new`;
+`type show --brief` absorbs `vocabulary` and `brief`; and
 the published hook definition, invoking `gate`, replaces `hook`: each of these
 is no verb there, and still answers any other root.
 
@@ -791,7 +792,6 @@ Global flags, accepted by every verb:
 
 | Verb | Role | Writes | Summary |
 |---|---|---|---|
-| [`brief`](#brief) | consumer | no | Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/. |
 | [`bundles`](#bundles) | consumer | no | List every bundle skill installed in the skill directories, as --bundle finds them, with its identity and what its installer recorded. |
 | [`check`](#check) | writer | yes | Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first. |
 | [`export`](#export) | maintainer | yes | Write one declared external export into another repository, as skills/<name>/. |
@@ -804,28 +804,9 @@ Global flags, accepted by every verb:
 | [`schema`](#schema) | consumer | no | Print the generated command registry: names, roles, flags, examples. |
 | [`search`](#search) | consumer | no | Deterministic lexical search with match reasons and a coverage block; each result carries its page's status. |
 | [`skills`](#skills) | maintainer | yes | Reinstall the shipped skills into .claude/skills/, or compare installed vs shipped. |
-| [`type`](#type) | consumer | no | Introspect the type registry: show one effective contract, or list all types. |
+| [`type`](#type) | consumer | no | Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type. |
 | [`version`](#version) | consumer | no | Report the engine version and the commit this binary was BUILT from (--version / -v alias it). |
-| [`vocabulary`](#vocabulary) | consumer | no | Show one vocabulary: its entries and what they admit, the sections that bind it, and the vault's own census. |
 | [`write`](#write) | writer | yes | Land a directory of drafts and its ops.json (bases, move, retire, retract, supersede) as one batch, judged together with the disk as its base. |
-
-### brief
-
-`wikiwright brief`
-
-Print the role's brief: every verb it may run, the types, the vocabularies, the names. `check --write` lands the writer's under generated/.
-
-Role: `consumer`. Writes: no.
-
-| Flag | Meaning |
-|---|---|
-| `--role <value>` | consumer \| writer \| maintainer (default: WIKIWRIGHT_ROLE when set, else writer); an installed copy's is always the consumer's |
-
-```text
-wikiwright brief --role writer
-wikiwright brief --role maintainer
-wikiwright brief --role consumer
-```
 
 ### bundles
 
@@ -1069,17 +1050,17 @@ wikiwright skills update
 
 `wikiwright type <list|show> [name]`
 
-Introspect the type registry: show one effective contract, or list all types.
+Show one type's effective contract with the documents each part comes from — with --brief its skeleton and the writing instruction with live vocabulary counts — or list every type.
 
 Role: `consumer`. Writes: no.
 
 | Flag | Meaning |
 |---|---|
-| `--brief` | print the contract as the writing instruction, with live counts |
+| `--brief` | add the skeleton to write from and the writing instruction, with the vocabularies' live counts |
 
 ```text
-wikiwright type show subsystem
-wikiwright type show code-concept --brief
+wikiwright type show planting
+wikiwright type show planting --brief
 wikiwright type list
 ```
 
@@ -1094,26 +1075,6 @@ Role: `consumer`. Writes: no.
 ```text
 wikiwright version
 wikiwright --version
-```
-
-### vocabulary
-
-`wikiwright vocabulary <show> [name]`
-
-Show one vocabulary: its entries and what they admit, the sections that bind it, and the vault's own census.
-
-Role: `consumer`. Writes: no.
-
-| Flag | Meaning |
-|---|---|
-| `--label <value>` | narrow the entries block to one entry |
-| `--target <value>` | the inbound view: every entry whose declared type-valued property names this type or an ancestor of it (a vocabulary whose module declares no such property has no inbound view) |
-
-```text
-wikiwright vocabulary show relations
-wikiwright vocabulary show relations --label part_of
-wikiwright vocabulary show relations --target source-map
-wikiwright vocabulary show tags
 ```
 
 ### write
