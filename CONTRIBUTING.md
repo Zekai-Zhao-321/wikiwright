@@ -57,7 +57,8 @@ git config core.hooksPath scripts/hooks
 
 The hook covers the machine that commits. The workflow under
 `.github/workflows/check.yml` runs the same command, under the Bun
-`.bun-version` names, on every push and pull request on Linux and macOS.
+`.bun-version` names, on every push and pull request on Linux and macOS,
+over a checkout of the whole history so devwiki's pins are measured.
 Before a release, run the release matrix by hand:
 
 ```sh
