@@ -1,11 +1,8 @@
 {
-  "content_roots": ["wiki"],
-  "exports": [
-    {
-      "name": "allotment",
-      "select": { "kind": "all" },
-      "guide": "wiki/start-here.md",
-      "contribution": { "mode": "none" }
-    }
+  "schema": "wikiwright/engine",
+  "schema_version": 4,
+  "label": "allotment",
+  "content_roots": [
+    "wiki"
   ]
 }

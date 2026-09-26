@@ -1,0 +1,6 @@
+vocabulary: tags
+mode: registered
+entries:
+  orientation: { description: How to find your way around this handbook. }
+  pruning: { description: Cutting growth back to shape a plant or improve its crop. }
+  vegetables: { description: "Crops grown in beds for their roots, leaves, pods or fruit." }

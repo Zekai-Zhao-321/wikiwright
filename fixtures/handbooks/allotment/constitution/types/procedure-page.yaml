@@ -1,0 +1,21 @@
+type: procedure-page
+role: procedure
+description: "One gardening task as steps, for the climate this handbook covers."
+use_when: A task a gardener carries out from start to finish.
+avoid_when: Background about a plant with nothing to do.
+fields:
+  type: object
+  properties:
+    applies_to: { enum: [arid] }
+  required: [applies_to]
+sections:
+  list:
+    - { heading: Steps, min: 1 }
+    - { heading: Notes }
+    - { heading: History, max: 1, grammar: entries, lifecycle: append-only }
+rules:
+  - id: history-dated
+    section: History
+    expr: section.items.all(i, i.precision == "day")
+    severity: warning
+    message: A History entry is dated to the day, so a reader can set it against a season.

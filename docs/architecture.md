@@ -78,7 +78,7 @@ packages/cli/hooks/           hooks.json and its two scripts, session-start.mjs 
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
 devwiki/                      this repository's own bundle, over the kit, judged by the suite
 fixtures/conformance/         the neutral module fixture and two bundles consuming it
-fixtures/handbooks/           two small gardening handbooks, one page title in both; orchard on the v2 law, allotment with its exports rendered under skills/
+fixtures/handbooks/           two small gardening handbooks on the v2 law, one page title in both, each with a rule of its own
 fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories), on the v2 law
 fixtures/minimal-vault/       the smallest bundle that loads, on the v2 law
 fixtures/v1/                  frozen v1 copies of the migrated corpora, read by the old table's tests until step 6

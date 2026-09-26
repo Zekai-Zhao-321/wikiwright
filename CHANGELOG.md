@@ -572,6 +572,14 @@ version` prints the engine version and the commit a binary was built from.
   `thinning-apples` names its source. The handbook is clean under `check`
   and `gate`. The old table's two-bundle tests read frozen v1 copies of
   both handbooks under `fixtures/v1/handbooks/`.
+- **`fixtures/handbooks/allotment` is on the v2 law** (v2 contracts §12
+  step 5), migrated as the orchard was, its one export and its render under
+  `skills/` leaving with the v4 engine.json. `procedure-page` gains an
+  optional History section (an entries section, append-only) and the rule
+  `history-dated` (warning: every History entry is dated to the day), the
+  spike's other example of a bundle's own rule, with its test set;
+  `watering-beans` carries a History. The handbook is clean under `check`
+  and `gate`.
 - Every git read is an asynchronous spawn (`Bun.spawn`) awaited to the
   child's exit, at most four children at a time, keeping the file-backed
   protocol: the answer read from a file git wrote, a batch request handed

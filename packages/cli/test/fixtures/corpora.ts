@@ -17,6 +17,7 @@ export const V2_CORPORA: readonly string[] = [
   "fixtures/minimal-vault",
   "fixtures/memory-synth",
   "fixtures/handbooks/orchard",
+  "fixtures/handbooks/allotment",
 ];
 
 const copies: string[] = [];

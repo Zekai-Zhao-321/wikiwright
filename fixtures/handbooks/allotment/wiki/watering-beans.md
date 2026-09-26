@@ -20,3 +20,7 @@ the root keeps them setting pods through the hottest weeks.
 ## Notes
 
 A mulch of straw keeps the roots cool and halves the watering.
+
+## History
+
+- 2026-07-14 — Morning watering replaced evening watering after a week of mildew on the leaves.

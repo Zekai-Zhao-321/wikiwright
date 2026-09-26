@@ -1,62 +1,14 @@
 // docs/architecture.md §The invariants (every shipped fixture's EXACT finding set
-// is asserted — both fixtures carry deliberate defects, and a deliberate defect
-// nothing checks is indistinguishable from rot) · docs/constitution.md §Sections (the planted
-// `### Timeline` is `section-depth`'s first measurement: 1 firing across 40
-// pages).
+// is asserted — two fixtures carry deliberate defects, and a deliberate defect
+// nothing checks is indistinguishable from rot; the handbooks carry none, so a
+// finding of any severity there is rot) · docs/constitution.md §Sections (the
+// planted `### Timeline` is `section-depth`'s first measurement: 1 firing
+// across 40 pages).
 
 import { afterAll, describe, expect, it } from "bun:test";
-import assert from "node:assert/strict";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { corpusCopy, REPO, removeCopies } from "./fixtures/corpora.ts";
 import { cli, type Envelope, git } from "./fixtures/garden-cli.ts";
-import { runCli } from "./fixtures/runtime.ts";
-
-const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const FIXTURES = fileURLToPath(new URL("../../../fixtures/", import.meta.url));
-
-interface Finding {
-  ruleId: string;
-  severity: string;
-  path: string;
-}
-
-interface Verdict {
-  status: number;
-  findings: Finding[];
-  summary: Record<string, unknown>;
-}
-
-function lint(fixture: string, verb: "lint" | "check" = "lint"): Verdict {
-  const r = runCli([CLI, verb, "--all", "--root", `${FIXTURES}${fixture}`], {
-    encoding: "utf8",
-  });
-  const envelope = JSON.parse(r.stdout) as {
-    data?: { findings?: Finding[]; summary?: Record<string, unknown> };
-  };
-  return {
-    status: r.status ?? -1,
-    findings: envelope.data?.findings ?? [],
-    summary: envelope.data?.summary ?? {},
-  };
-}
-
-describe("the shipped fixtures lint to the verdict the spec records (docs/architecture.md §The invariants)", () => {
-  // docs/cli.md §bundles: the two handbooks the connection tests read, each one
-  // type with a required climate and the same page under the same title. They
-  // carry no defect, so a finding of any severity is rot; `check` holds their
-  // tracked generated/ too.
-  for (const handbook of ["handbooks/allotment"]) {
-    it(`${handbook}: three pages and no finding of any severity, under lint and check`, () => {
-      for (const verb of ["lint", "check"] as const) {
-        const v = lint(handbook, verb);
-        assert.equal(v.summary["pages"], 3, verb);
-        assert.deepEqual(v.findings, [], `${handbook} under ${verb}`);
-        assert.equal(v.status, 0, verb);
-      }
-    });
-  }
-});
 
 // v2 contracts §12 step 5: the corpora migrated onto the v2 law, judged by
 // the v2 `check` where they stand and by the v2 `gate` over a copy whose
@@ -87,6 +39,9 @@ const V2_VERDICTS: Record<string, Expected> = {
   // A handbook carries no defect: a finding of any severity is rot. Its
   // `source-host-allowed` rule holds the page that names a source.
   "fixtures/handbooks/orchard": { pages: 3, findings: [], unevaluated: {} },
+  // Its `history-dated` rule holds the History of the page that has one;
+  // History is append-only, which a working tree cannot evaluate.
+  "fixtures/handbooks/allotment": { pages: 3, findings: [], unevaluated: { "entry-edited": 2 } },
   // The planted `### Timeline` under `## Notes` is still `section-depth`'s
   // one firing. The migration respelled 98 relations and 52 entries and
   // left nine items no rewrite keeps whole — six undated lines of one
