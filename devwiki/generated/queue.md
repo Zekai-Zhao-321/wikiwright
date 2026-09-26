@@ -7,7 +7,7 @@ function of the law and the content only. What `check` reads from git (pins,
 citations) is reported live and never written here.
 
 Law digest: `52331cd02be580bdcc4079597444148c578bea0445a71bd94bcaad59d37b7b0a`
-Content digest: `0d301dc51306e50fd82ff3aeed715b564fbb0c27b4b6431c9b789fd76a09a123`
+Content digest: `37651dca453d330c1b6abaf1974a605a98652a9ab9837af2c7f8d002b682662c`
 
 0 finding(s).
 
