@@ -68,6 +68,8 @@ const V2_VERDICTS: Record<string, Expected> = {
   // Its `history-dated` rule holds the History of the page that has one;
   // History is append-only, which a working tree cannot evaluate.
   "fixtures/handbooks/allotment": { pages: 3, findings: [], unevaluated: { "entry-edited": 2 } },
+  // The native library rule judges each recorded source's nominal type.
+  "fixtures/source-policy": { pages: 5, findings: [], unevaluated: { "claims-transition": 1 } },
   // The planted `### Timeline` under `## Notes` is still `section-depth`'s
   // one firing. The migration respelled 98 relations and 52 entries and
   // left nine items no rewrite keeps whole — six undated lines of one

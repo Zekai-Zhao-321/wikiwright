@@ -17,6 +17,7 @@ export const V2_CORPORA: readonly string[] = [
   "fixtures/memory-synth",
   "fixtures/handbooks/orchard",
   "fixtures/handbooks/allotment",
+  "fixtures/source-policy",
   "devwiki",
 ];
 

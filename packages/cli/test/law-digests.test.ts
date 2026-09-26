@@ -181,7 +181,7 @@ describe("law", () => {
       "garden:vocabularies/relations.yaml",
     ]);
     expect(lines.slice(files.length)).toEqual([
-      "profile\u0000page-interface/2\n",
+      "profile\u0000page-interface/3\n",
       "profile\u0000cel-profile/1\n",
       "dep\u0000@bufbuild/cel@0.6.1\n",
       "dep\u0000@bufbuild/re2@0.6.1\n",

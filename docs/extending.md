@@ -110,7 +110,7 @@ place a deliberate exclusion in the same document as that policy.
 
 ## Rules are data
 
-A rule is a CEL expression over the documented `page-interface/2`.
+A rule is a CEL expression over the documented `page-interface/3`.
 For example, a section rule can require evidence for a heat observation:
 
 ```yaml
@@ -132,6 +132,29 @@ rule needs a negative page, a repaired twin, a positive page, and
 `gate` refuses a newly changed rule whose test set is incomplete. The
 [synthetic episode](../test/episode.test.ts) exercises that sequence
 through the real pre-commit hook.
+
+The [synthetic source policy](../fixtures/source-policy/config/engine.json)
+imports a data-only library with this section rule:
+
+```yaml
+expr: 'section.items.all(i, !(i.category in config.cited_categories) || (i.provenance.kind == "page" && i.provenance.page.resolved && i.provenance.page.type in config.source_types))'
+config:
+  cited_categories: [observed, measured]
+  source_types: [source-kit/field-note]
+```
+
+It requires a resolvable page of the allowed nominal type for selected
+categories. Other categories can cite a URL or source-root path or have no
+provenance. The kernel resolves the page name with NFC and full case folding;
+the rule never constructs a key in `facts.links`. `provenance.value` keeps the
+authored page name, and `raw` keeps a citation's heading and display label.
+The resolved `path` and `type` say nothing about the source's truth.
+Low-level `parseClaimLine` and `parsePage` return lexical claim records;
+callers outside the judge supply a resolver to `resolvedClaim` or the page
+interface builders. An omitted resolver leaves the page slot unresolved.
+The judge supplies the accepted state's names for current records and the
+base state's names for `before`. Optional rule-test `before/` twins resolve
+both sides against the selected test corpus's names.
 
 The profile admits only bounded expressions. It does not expose files,
 Git history, other pages' bodies, the network, or time. A rule can use

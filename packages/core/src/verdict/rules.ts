@@ -30,6 +30,8 @@ export interface RuleContext {
   law: TypeLaw;
   facts: ReturnType<typeof lawFacts>;
   resolve: ResolveTarget;
+  /** The names in the base state, for `before`'s source references. */
+  resolveBefore: ResolveTarget;
 }
 
 export interface RuleOutcome {
@@ -52,7 +54,7 @@ export function ruleFindings(
 ): RuleOutcome {
   const out: RuleOutcome = { findings: [], judged: new Set(), unjudged: new Map() };
   if (type.rules.length === 0) return out;
-  const pageValue = buildPageInterface(page, type);
+  const pageValue = buildPageInterface(page, type, ctx.resolve);
   const facts = {
     vocabularies: ctx.facts.vocabularies,
     links: pageLinks(page, ctx.resolve),
@@ -62,6 +64,7 @@ export function ruleFindings(
   const basePage = base !== null && base?.ok === true ? base.page : undefined;
   const beforeValue = buildBefore(
     basePage === undefined ? undefined : { parsed: basePage, type: basePage.type ?? type },
+    ctx.resolveBefore,
   );
   const reason = base === undefined ? "no-base" : readable ? undefined : "base-unreadable";
   const occurrences = indexed(page);
@@ -95,11 +98,11 @@ export function ruleFindings(
                   occurrence: a.index,
                   line: a.occurrence.location.line,
                 },
-                section: celOccurrence(a.occurrence),
+                section: celOccurrence(a.occurrence, ctx.resolve),
                 before:
                   was === undefined
                     ? beforeValue
-                    : { ...beforeValue, section: celOccurrence(was.occurrence) },
+                    : { ...beforeValue, section: celOccurrence(was.occurrence, ctx.resolveBefore) },
               };
             });
     for (const site of sites) {

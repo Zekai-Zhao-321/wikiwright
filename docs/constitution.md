@@ -241,7 +241,26 @@ Each parsed record has the engine's `item-claim`, `item-relation`, or
 CEL rules bind `page`, `config`, `facts`, and `before`. A section rule
 also binds `section`. `section: Facts` attaches to that root declaration's
 governed physical headings; `section: [Facts, Timeline]` names a nested
-declaration. The interface identity is `page-interface/2`.
+declaration. The interface identity is `page-interface/3`.
+For a claim record, `provenance` has `kind`, `value`, and `page`.
+`value` retains the written page-name component for a page citation; the
+record's `raw` retains any `#heading` and `|display` spelling. `page` is
+`{resolved: true, path: <bundle-relative page path>, type: <nominal type or null>}`
+when the cited name resolves, or `{resolved: false, path: null, type: null}`
+when it does not. For a URL, source-root path, or absent provenance, `page`
+is `null`. The name index applies Unicode NFC and full case folding; CEL
+rules can read `i.provenance.page.type` without reconstructing a
+`facts.links` key. In `before`, the source resolves against the base's page
+names; current records resolve against the accepted state's page names.
+The low-level claim parser returns a lexical record with an unresolved page
+slot. `resolvedClaim`, `celOccurrence`, `buildPageInterface`, and
+`buildBefore` need a supplied `ResolveTarget` to project resolved sources
+outside `judgeTypeLaw`; their default resolver leaves page citations
+unresolved. `readPages` builds the accepted and base name indexes for the
+judge, so consumers of its states use coherent snapshots.
+An alias still triggers `wikilink-alias-target`, and an identity collision
+still triggers `identity-collision`. Page resolution does not check a heading,
+verify URL or path bytes, or establish the source's truth.
 
 | Variable | Relevant values |
 |---|---|
@@ -294,7 +313,9 @@ Each rule test set contains `negative.md`, `repaired.md`, at least one
 The negative page must produce exactly one finding, this rule at this
 location. The repaired and positive pages must produce none. Optional
 `before/negative.md` and `before/repaired.md` supply a base for transition
-rules. Examples pass as pages of their types. Test and example pages may
+rules. Both sides of a test twin resolve page citations against the selected
+test corpus's names; a staged gate does not substitute its Git HEAD source
+metadata into the twin. Examples pass as pages of their types. Test and example pages may
 use abstract types; they do not count as content pages, identity matches,
 or instances.
 

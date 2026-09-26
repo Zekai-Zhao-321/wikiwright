@@ -26,6 +26,7 @@ export {
   PAGE_INTERFACE,
   pageLinks,
   parsePage,
+  resolvedClaim,
 } from "../interface/index.ts";
 export type {
   ClaimRecord,

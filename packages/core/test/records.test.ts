@@ -7,6 +7,7 @@ import {
   parseEntryLine,
   parseRelationLine,
   RECORD_SCHEMAS,
+  recordValidators,
 } from "../src/index.ts";
 
 const ROOTS = ["raw"];
@@ -20,7 +21,11 @@ describe("claims", () => {
         handle: claimHandle("Basil bolts above 30 degrees."),
         category: "observed",
         core: "Basil bolts above 30 degrees.",
-        provenance: { kind: "page", value: "Growing basil" },
+        provenance: {
+          kind: "page",
+          value: "Growing basil",
+          page: { resolved: false, path: null, type: null },
+        },
         retracted: null,
         superseded: null,
       },
@@ -29,14 +34,53 @@ describe("claims", () => {
     expect("record" in url && url.record.provenance).toEqual({
       kind: "url",
       value: "https://seeds.example/basil",
+      page: null,
     });
     const path = claim("- [measured] Forty leaves a week. (raw/logbook/2026.md)");
     expect("record" in path && path.record.provenance).toEqual({
       kind: "path",
       value: "raw/logbook/2026.md",
+      page: null,
     });
     const none = claim("- [advice] Pinch the tips.");
-    expect("record" in none && none.record.provenance).toEqual({ kind: "none", value: null });
+    expect("record" in none && none.record.provenance).toEqual({
+      kind: "none",
+      value: null,
+      page: null,
+    });
+  });
+
+  it("requires an honest page-resolution shape for every provenance kind", () => {
+    const parsed = claim("- [observed] Six leaves grew. ([[Field log]])");
+    if (!("record" in parsed)) throw new Error("the claim must parse");
+    const candidate = {
+      ...parsed.record,
+      rationale: [],
+      raw: "- [observed] Six leaves grew. ([[Field log]])",
+      location: { line: 1, span: [0, 52] },
+    };
+    const validate = recordValidators().get("item-claim");
+    expect(validate?.(candidate)).toBe(true);
+    expect(
+      validate?.({
+        ...candidate,
+        provenance: {
+          kind: "url",
+          value: "https://garden.example",
+          page: candidate.provenance.page,
+        },
+      }),
+    ).toBe(false);
+    expect(
+      validate?.({
+        ...candidate,
+        provenance: {
+          kind: "page",
+          value: "Field log",
+          page: { resolved: false, path: "wiki/Field log.md", type: null },
+        },
+      }),
+    ).toBe(false);
   });
 
   it("keep any other trailing parenthetical as core text", () => {

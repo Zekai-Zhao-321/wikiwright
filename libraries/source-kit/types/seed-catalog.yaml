@@ -1,0 +1,3 @@
+type: seed-catalog
+role: reference
+description: A supplier's seed catalog, which may inform advice but is not a field record.

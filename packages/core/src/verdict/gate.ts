@@ -45,7 +45,6 @@ import {
   resolveRelations,
   type StateRead,
 } from "./judge.ts";
-import { buildNames, type NamedPage, type VaultNames } from "./names.ts";
 import type { Unrouted } from "./page.ts";
 import type { JudgeState } from "./state.ts";
 import { sameBytes } from "./state.ts";
@@ -107,32 +106,6 @@ export function inheritedLines(base: Uint8Array, current: Uint8Array): Set<numbe
   return out;
 }
 
-/**
- * The names the base held: a renamed page under the path it was renamed
- * from, and a page the commit deletes under its own.
- */
-function baseNames(state: JudgeState, read: StateRead, law: TypeLaw): VaultNames | undefined {
-  if (state.base === undefined) return undefined;
-  const renamedFrom = new Map((state.renames ?? []).map((r) => [r.to, r.from] as const));
-  const current = new Map(read.named.map((p) => [p.path, p] as const));
-  const named: NamedPage[] = [];
-  for (const page of read.pages) {
-    const base = page.base;
-    if (base === undefined || base === null || !base.ok) continue;
-    const path = renamedFrom.get(page.path) ?? page.path;
-    named.push({
-      path,
-      frontmatter:
-        base === page.read ? (current.get(page.path)?.frontmatter ?? {}) : base.page.frontmatter,
-    });
-  }
-  for (const [path, bytes] of state.removed ?? []) {
-    const removed = parsePage(path, bytes, law);
-    if (removed.ok) named.push({ path, frontmatter: removed.page.frontmatter });
-  }
-  return buildNames(named);
-}
-
 /** One finding as a key: its rule, its path, its location and its details. */
 export function findingKey(f: Unrouted): string {
   const at =
@@ -174,8 +147,8 @@ export function gateScope(
     return { findings: [...found], changed, scoped: false };
   }
   const pages = new Map(read.pages.map((p) => [p.path, p] as const));
-  const names = baseNames(state, read, law);
-  const ctx = names === undefined ? undefined : pageContext(state, law, names);
+  const names = read.baseNames;
+  const ctx = pageContext(state, law, names, names);
   // Each page judged again against the base's names, once, and only a page
   // that carries a finding whose verdict reads them.
   const underBaseNames = new Map<string, Set<string>>();
@@ -185,7 +158,7 @@ export function gateScope(
     keys = new Set();
     underBaseNames.set(page.path, keys);
     const bytes = state.pages.get(page.path);
-    if (ctx === undefined || names === undefined || bytes === undefined) return keys;
+    if (bytes === undefined) return keys;
     const current = parsePage(page.path, bytes, law);
     const baseBytes = state.base?.get(page.path);
     const base =

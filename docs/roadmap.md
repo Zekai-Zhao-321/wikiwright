@@ -22,8 +22,8 @@ and pull requests. The published `.pre-commit-hooks.yaml` and
 [CLI one-liners](cli.md#gate) invoke the staged bundle gate and its
 commit-message stage in a consuming repository.
 
-The five synthetic corpora are `devwiki`, `fixtures/memory-synth`,
-`fixtures/minimal-vault` and the orchard and allotment handbooks.
+The six synthetic corpora are `devwiki`, `fixtures/memory-synth`,
+`fixtures/minimal-vault`, `fixtures/source-policy` and the orchard and allotment handbooks.
 `devwiki` imports `libraries/kit-code`. The
 [synthetic episode](../test/episode.test.ts) runs a repaired observation,
 its rule and test set, a real commit-hook refusal, changed evidence
@@ -151,7 +151,7 @@ An envelope over 1 MiB is `envelope-too-large`; `--out <file>` writes it
 whole. There is no automatic spill, preview reserve or report directory.
 Add those only if ordinary host output limits make `--out` burdensome.
 
-The page interface is identified as `page-interface/2` in the law digest
+The page interface is identified as `page-interface/3` in the law digest
 but has no multi-version compatibility protocol. Independently updated
 libraries that need different interfaces would trigger one. There is no
 general assessment scale or configurable `cite_with` qualifier; use a
@@ -167,6 +167,15 @@ body, or aggregate child items into a parent's `section.items` for CEL.
 `read` locates each one. Content before the first document heading is
 counted as an unbound preamble when nonempty. A mixed direct region needs
 an authored heading or list edit before all its bullets can be governed.
+
+A claim's page provenance now gives rules the resolved page path and nominal
+type under the same name index as links. The synthetic source-policy corpus
+uses a library rule to require field-note pages for observed and measured
+claims, with rule tests and a source-only retyping episode. This is an
+example policy, not a built-in evidence taxonomy. Resolution reaches pages
+in the bundle's current content roots; it does not check cited headings,
+URL or path contents, or the truth of a field note. External pin movement
+remains unmeasured.
 
 ### Other knowledge and agent gaps
 

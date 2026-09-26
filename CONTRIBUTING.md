@@ -140,6 +140,7 @@ logical change is one commit).
 |---|---|
 | `devwiki/generated/*`, the brief and the queue included | `wikiwright check --write --root devwiki` |
 | `fixtures/handbooks/*/generated/*`, `fixtures/memory-synth/generated/*` and `fixtures/minimal-vault/generated/*`, the briefs and the queues included | `wikiwright check --write --root <corpus>` |
+| `fixtures/source-policy/generated/*`, the brief and queue included | `wikiwright check --write --root fixtures/source-policy` |
 | `docs/skills/wikiwright-maintain/finding-response.md` | `bun tools/render-playbook.ts` (`--check` verifies) |
 | the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies, and the suite runs it with nothing on PATH) |
 | `packages/core/src/identity/casefold-data.ts` | `bun tools/generate-casefold.ts` |

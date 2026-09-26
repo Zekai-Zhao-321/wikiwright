@@ -292,6 +292,8 @@ read.
   `generated/queue.md` holds for the page while its digests are the current
   law's and content's, else null with `unresolved_reason` `queue-stale` or
   `queue-missing`.
+  `read` keeps the section text authored. `search --items` exposes each
+  parsed claim's resolved page source when an agent needs that projection.
 - **`search <query> [--items] [--files]`** ranks as the old verb did
   (below), over the pages of the working tree, and every result — a page, a
   record under `--items` (a claim, a relation or an entry, its fields the
@@ -299,6 +301,11 @@ read.
   as `read` computes it. The pins measured are the returned pages' and the
   pages they link: the git work grows with the results. `--type` matches a
   type and every type below it.
+  For a claim, `fields.provenance.page` is `{resolved,path,type}` for a page
+  source, or `null` for a URL, source-root path or absent source.
+  `fields.provenance.value` is the authored page-name component; `raw`
+  retains any heading and display label. Resolution does not validate a
+  heading or external source contents.
 - **`type show <name> [--brief]`** prints the effective contract with
   attribution: role, ancestry, fragments, each top-level property of the
   effective shape and the documents declaring it (`reserved`,

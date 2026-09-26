@@ -1,0 +1,15 @@
+type: observation
+role: concept
+description: A garden observation with source requirements for recorded claims.
+sections:
+  list:
+    - { heading: Facts, grammar: claims, vocabulary: source-kit/categories, provenance: optional, scope: descendants }
+rules:
+  - id: observation-source-type
+    section: Facts
+    expr: 'section.items.all(i, !(i.category in config.cited_categories) || (i.provenance.kind == "page" && i.provenance.page.resolved && i.provenance.page.type in config.source_types))'
+    config:
+      cited_categories: [observed, measured]
+      source_types: [source-kit/field-note]
+    severity: error
+    message: An observed or measured claim cites a field-note page.

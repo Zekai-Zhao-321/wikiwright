@@ -63,6 +63,14 @@ const LIBRARIES: Record<string, Expected> = {
     types: ["garden/bed", "garden/planting"],
     untested: {},
   },
+  "source-kit": {
+    id: "source-kit",
+    types: ["source-kit/field-note", "source-kit/observation", "source-kit/seed-catalog"],
+    untested: {
+      // Its rule-test pages resolve their cited sources from the importing bundle.
+      "observation-source-type": "its tests live in fixtures/source-policy",
+    },
+  },
 };
 
 /** An empty bundle importing `libraries/<dir>`, the library's tracked files beside it. */

@@ -30,7 +30,12 @@ export interface ClaimRecord {
   handle: string;
   category: string;
   core: string;
-  provenance: { kind: "page" | "url" | "path" | "none"; value: string | null };
+  /** The lexical source and its page-resolution slot. Resolution never rewrites `value`. */
+  provenance: {
+    kind: "page" | "url" | "path" | "none";
+    value: string | null;
+    page: { resolved: boolean; path: string | null; type: string | null } | null;
+  };
   retracted: { date: string } | null;
   superseded: {
     date: string;
@@ -165,13 +170,18 @@ export function parseClaimLine(line: string, sourceRoots: readonly string[]): Pa
     rest = last.before;
     last = trailingParenthetical(rest);
   }
-  let provenance: ClaimRecord["provenance"] = { kind: "none", value: null };
+  let provenance: ClaimRecord["provenance"] = { kind: "none", value: null, page: null };
   if (last !== undefined) {
     const link = WIKILINK_ONLY.exec(last.body);
-    if (link !== null) provenance = { kind: "page", value: (link[1] ?? "").trim() };
-    else if (URL_ONLY.test(last.body)) provenance = { kind: "url", value: last.body };
+    if (link !== null)
+      provenance = {
+        kind: "page",
+        value: (link[1] ?? "").trim(),
+        page: { resolved: false, path: null, type: null },
+      };
+    else if (URL_ONLY.test(last.body)) provenance = { kind: "url", value: last.body, page: null };
     else if (underSourceRoot(last.body, sourceRoots))
-      provenance = { kind: "path", value: last.body };
+      provenance = { kind: "path", value: last.body, page: null };
     if (provenance.kind !== "none") rest = last.before;
   }
   // A lifecycle clause anywhere but last is not the canonical form either.

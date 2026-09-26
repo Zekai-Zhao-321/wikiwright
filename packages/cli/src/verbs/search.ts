@@ -20,6 +20,7 @@ import {
   parseDoc,
   rankItemCandidates,
   readPages,
+  resolvedClaim,
   SEARCH_BANDS,
   type SearchBand,
   type StateRead,
@@ -43,7 +44,20 @@ function itemCandidates(read: StateRead): ItemCandidate[] {
       const grammar = occurrence.mode;
       if (grammar === "prose" || grammar === "unbound") continue;
       for (const item of occurrence.items) {
-        const { raw, rationale, location, ...fields } = item;
+        const { raw, rationale, location } = item;
+        const projected =
+          item.kind === "claim"
+            ? resolvedClaim(item, (name) => {
+                const found = read.names.resolve(name);
+                return found === undefined ? undefined : { path: found.path, type: found.type };
+              })
+            : item;
+        const {
+          raw: _raw,
+          rationale: _rationale,
+          location: _location,
+          ...resolvedFields
+        } = projected;
         out.push({
           path: page.path,
           line: location.line,
@@ -52,7 +66,7 @@ function itemCandidates(read: StateRead): ItemCandidate[] {
           grammar,
           raw,
           rationale: rationale.map((text, i) => ({ line: location.line + i + 1, text })),
-          fields: JSON.parse(JSON.stringify(fields)) as Record<string, unknown>,
+          fields: JSON.parse(JSON.stringify(resolvedFields)) as Record<string, unknown>,
           retired,
         });
       }

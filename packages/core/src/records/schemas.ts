@@ -41,9 +41,62 @@ export const RECORD_SCHEMAS: Readonly<Record<string, Record<string, unknown>>> =
         properties: {
           kind: { enum: ["page", "url", "path", "none"] },
           value: NULLABLE_STRING,
+          page: {
+            anyOf: [
+              { type: "null" },
+              {
+                type: "object",
+                properties: {
+                  resolved: { type: "boolean" },
+                  path: NULLABLE_STRING,
+                  type: NULLABLE_STRING,
+                },
+                required: ["resolved", "path", "type"],
+                additionalProperties: false,
+                oneOf: [
+                  {
+                    properties: {
+                      resolved: { const: true },
+                      path: { type: "string" },
+                    },
+                  },
+                  {
+                    properties: {
+                      resolved: { const: false },
+                      path: { type: "null" },
+                      type: { type: "null" },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
         },
-        required: ["kind", "value"],
+        required: ["kind", "value", "page"],
         additionalProperties: false,
+        oneOf: [
+          {
+            properties: {
+              kind: { const: "page" },
+              value: { type: "string" },
+              page: { type: "object" },
+            },
+          },
+          {
+            properties: {
+              kind: { enum: ["url", "path"] },
+              value: { type: "string" },
+              page: { type: "null" },
+            },
+          },
+          {
+            properties: {
+              kind: { const: "none" },
+              value: { type: "null" },
+              page: { type: "null" },
+            },
+          },
+        ],
       },
       retracted: {
         anyOf: [

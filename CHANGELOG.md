@@ -13,7 +13,7 @@ version` prints the engine version and the commit a binary was built from.
   fragment and vocabulary documents, data-only libraries imported by
   repository-relative path, JSON Schema 2020-12 shapes with RE2, the fixed
   claims/relations/dated-entries grammar, and bounded CEL rules over
-  `page-interface/2`. Every engine key has a named consumer and a CLI
+  `page-interface/3`. Every engine key has a named consumer and a CLI
   fixture.
 - One `judgeTypeLaw` for the working tree, drafts over disk, the index over
   HEAD and a revision. Every error or warning has one fix or queue route;
@@ -37,6 +37,10 @@ version` prints the engine version and the commit a binary was built from.
 - `docs/v2-dispositions.md`, generated from the frozen v1 enumeration,
   maps every old rule id and key to its kernel, library-rule or dropped
   disposition.
+- Claim records expose the cited page's resolved path and nominal type in
+  `provenance.page`. A data-only synthetic source-policy library requires
+  field-note pages for selected garden claim categories, with Unicode,
+  source-only change, and staged-state tests.
 
 ### Changed
 
@@ -46,15 +50,17 @@ version` prints the engine version and the commit a binary was built from.
   the default. `rule try --section-path` accepts a JSON heading path for a
   nested declaration. `read` exposes physical region ownership, while
   `check` and `gate` count governed, prose and unbound regions. The page
-  interface is `page-interface/2`, with a direct heading span and effective
-  mode; a child policy owns its own section-rule evaluations.
+  interface is `page-interface/3`, with a direct heading span, effective
+  mode, and claim-source page reference; a child policy owns its own
+  section-rule evaluations.
 
 - Bun 1.3.11 is the pinned build, test and CLI runtime. Git children are
   spawned asynchronously, at most four at once, with stdout and batch
   requests on files and a bounded timeout. Short or contradictory answers
   are refused by name. The binary has no Node runtime path.
-- The five corpora (`devwiki`, `fixtures/memory-synth`,
-  `fixtures/minimal-vault` and both handbooks) use the v2 law. Devwiki
+- The six corpora (`devwiki`, `fixtures/memory-synth`,
+  `fixtures/minimal-vault`, `fixtures/source-policy` and both handbooks)
+  use the v2 law. Devwiki
   imports `libraries/kit-code` from the same Git repository. Its pages
   remain pinned to source commits and are re-read when covered paths move.
 - The consume, write and maintain guidance lives under `docs/skills/`;
@@ -228,7 +234,7 @@ version` prints the engine version and the commit a binary was built from.
   package has a no-write regression. Every v4 engine key has an
   end-to-end CLI test guarded against new untested keys.
 - The built CLI, its pipe boundary, binary, law snapshots, write batches,
-  rule tests and all five corpora run through the Bun gate. The synthetic
+  rule tests and all six corpora run through the Bun gate. The synthetic
   episode tests the complete first-delivery correction loop.
 - `write` now binds base checks, proposed pages and law to one capture and
   refuses a changed capture before landing. Dry and real writes preflight

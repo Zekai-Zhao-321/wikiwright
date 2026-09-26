@@ -1,0 +1,9 @@
+type: field-note
+role: reference
+description: A gardener's dated field record.
+use_when: Recording what was seen or counted in the garden.
+fields:
+  type: object
+  properties:
+    recorded_on: { type: string, format: date }
+  required: [recorded_on]

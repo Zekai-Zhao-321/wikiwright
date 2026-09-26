@@ -185,11 +185,16 @@ export interface ReadPage {
 export interface StateRead {
   pages: ReadPage[];
   names: VaultNames;
+  /** The base state's names, or current names when there is no base. */
+  baseNames: VaultNames;
   named: NamedPage[];
 }
 
 /** Every page of a state read under the law, relation targets resolved against the vault. */
-export function readPages(state: Pick<JudgeState, "pages" | "base">, law: TypeLaw): StateRead {
+export function readPages(
+  state: Pick<JudgeState, "pages" | "base" | "renames" | "removed">,
+  law: TypeLaw,
+): StateRead {
   const read: ReadPage[] = [...state.pages].map(([path, bytes]) => {
     const current = parsePage(path, bytes, law);
     if (state.base === undefined) return { path, read: current, base: undefined };
@@ -205,11 +210,31 @@ export function readPages(state: Pick<JudgeState, "pages" | "base">, law: TypeLa
     p.read.ok ? [{ path: p.path, frontmatter: p.read.page.frontmatter }] : [],
   );
   const names = buildNames(named);
+  // `before`'s claim references belong to the base. A move uses its old path,
+  // and a deleted source still belongs to the base's index. The parsed page
+  // may be shared when its bytes are unchanged, so resolution is projected
+  // at rule binding rather than mutating its claim records.
+  const renamedFrom = new Map((state.renames ?? []).map((r) => [r.to, r.from] as const));
+  const beforeNamed: NamedPage[] = [];
+  if (state.base !== undefined) {
+    for (const page of read) {
+      if (page.base?.ok !== true) continue;
+      beforeNamed.push({
+        path: renamedFrom.get(page.path) ?? page.path,
+        frontmatter: page.base.page.frontmatter,
+      });
+    }
+    for (const [path, bytes] of state.removed ?? []) {
+      const removed = parsePage(path, bytes, law);
+      if (removed.ok) beforeNamed.push({ path, frontmatter: removed.page.frontmatter });
+    }
+  }
+  const baseNames = state.base === undefined ? names : buildNames(beforeNamed);
   for (const page of read) {
     if (page.read.ok) resolveRelations(page.read.page, names);
     if (page.base?.ok === true && page.base !== page.read) resolveRelations(page.base.page, names);
   }
-  return { pages: read, names, named };
+  return { pages: read, names, baseNames, named };
 }
 
 /** §4: a relation's target, resolved from the vault's names once every page is read. */
@@ -406,6 +431,7 @@ export function pageContext(
   state: Pick<JudgeState, "renames">,
   law: TypeLaw,
   names: VaultNames,
+  beforeNames: VaultNames = names,
 ): PageContext {
   const tags = law.vocabularies.get("tags");
   return {
@@ -420,6 +446,10 @@ export function pageContext(
       facts: lawFacts(law),
       resolve: (name) => {
         const found = names.resolve(name);
+        return found === undefined ? undefined : { path: found.path, type: found.type };
+      },
+      resolveBefore: (name) => {
+        const found = beforeNames.resolve(name);
         return found === undefined ? undefined : { path: found.path, type: found.type };
       },
     },
@@ -506,8 +536,8 @@ export function collectTypeLaw(
   law: TypeLaw,
   options: TypeLawJudgeOptions = {},
 ): Collected {
-  const { pages, names, named } = options.read ?? readPages(state, law);
-  const ctx = pageContext(state, law, names);
+  const { pages, names, baseNames, named } = options.read ?? readPages(state, law);
+  const ctx = pageContext(state, law, names, baseNames);
   const coverage = new Coverage([...PAGE_ROWS, ...law.rules.keys()]);
   const found: Unrouted[] = [];
   const scope: ScopeCoverage = {
@@ -558,12 +588,15 @@ export function collectTypeLaw(
   }
   found.push(...instanceFindings(law, pages));
   if (options.lawTests !== false) {
+    // Test twins are overlaid subjects in this corpus. Their references use
+    // the corpus names, not an unrelated Git HEAD source snapshot.
+    const testCtx = pageContext(state, law, names, names);
     const overlaid: JudgeOverlaid = (path, bytes, base) => {
       const read = parsePage(path, bytes, law);
       const was = base === null ? null : parsePage(path, base, law);
       if (read.ok) resolveRelations(read.page, names);
       if (was?.ok === true) resolveRelations(was.page, names);
-      const judged = judgePage(ctx, { path, read, base: was }, true);
+      const judged = judgePage(testCtx, { path, read, base: was }, true);
       const declared = read.ok ? read.page.frontmatter["type"] : undefined;
       return { findings: judged.findings, type: typeof declared === "string" ? declared : null };
     };

@@ -55,6 +55,7 @@ devwiki/                      this repository's own bundle, on the v2 law, impor
 fixtures/handbooks/           two small gardening handbooks on the v2 law, one page title in both, each with a rule of its own
 fixtures/memory-synth/        a synthesized personal-memory vault (41 pages, claims and categories), on the v2 law
 fixtures/minimal-vault/       the smallest bundle that loads, on the v2 law
+fixtures/source-policy/       a synthetic garden corpus exercising a library's resolved-source type rule
 fixtures/okf-upstream/        the OKF pin: repository, commit, grounding line
 tools/                        write-build-info, build-binary, migrate-spellings, render-playbook, dispositions, generate-casefold, uncovered, run-suite, benchmark-check
 test/                         built-CLI probes, the binary and the synthetic v2 episode

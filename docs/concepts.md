@@ -85,6 +85,12 @@ parse is also reported, never silently reinterpreted.
 
 A claim's provenance is recognized only in its final parenthetical when it
 is a page link, an HTTP(S) URL, or a path below a declared source root.
+A page source keeps its authored page-name component in `provenance.value` and
+exposes `provenance.page` with `resolved`, `path`, and nominal `type` to CEL.
+`raw` keeps the full spelling, including a heading or display label. The
+resolved fields are `null` for URL, path, and absent sources. A resolved page
+means its name answers in this bundle; it does not validate a heading, the
+source's claim, or external bytes.
 A claim may be retracted or superseded. A relation can require labels and
 record a removed relation in a History section. An entries section can be
 append-only. The exact record spellings and parameters are in

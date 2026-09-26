@@ -6,7 +6,7 @@
 // and a UTF-8 byte span, its raw text, and, under a heading the page's type
 // declares with a grammar, the records of §4. From that the page interface
 // is built: `page`, `section` (per occurrence), `facts`, `before`, `config`,
-// the five variables a CEL rule is bound to (identity `page-interface/1`).
+// the five variables a CEL rule is bound to (identity `page-interface/3`).
 //
 // Unavailable to a rule, by construction: git history, another page's body,
 // files, the network, and time.
@@ -18,6 +18,7 @@ import { utf8Text } from "../law/text.ts";
 import { isMapping, readYaml, setOwn } from "../law/yaml.ts";
 import { parseDoc } from "../parse/index.ts";
 import {
+  type ClaimRecord,
   type GrammarRecord,
   type Location,
   parseClaimLine,
@@ -491,12 +492,33 @@ function celLocation(location: Location): Record<string, unknown> {
   return { line: BigInt(location.line), span: location.span.map((n) => BigInt(n)) };
 }
 
-function celRecord(record: GrammarRecord): Record<string, unknown> {
-  return { ...record, location: celLocation(record.location) };
+/** Resolve a claim's page source in one chosen name snapshot; the lexical record is untouched. */
+export function resolvedClaim(record: ClaimRecord, resolve: ResolveTarget): ClaimRecord {
+  const provenance = record.provenance;
+  if (provenance.kind !== "page") return record;
+  const found = resolve(provenance.value ?? "");
+  return {
+    ...record,
+    provenance: {
+      ...provenance,
+      page:
+        found === undefined
+          ? { resolved: false, path: null, type: null }
+          : { resolved: true, path: found.path, type: found.type },
+    },
+  };
+}
+
+function celRecord(record: GrammarRecord, resolve: ResolveTarget): Record<string, unknown> {
+  const projected = record.kind === "claim" ? resolvedClaim(record, resolve) : record;
+  return { ...projected, location: celLocation(record.location) };
 }
 
 /** A section occurrence as CEL binds it (§5 `section`, and each of `page.sections`). */
-export function celOccurrence(occurrence: Occurrence): Record<string, unknown> {
+export function celOccurrence(
+  occurrence: Occurrence,
+  resolve: ResolveTarget = () => undefined,
+): Record<string, unknown> {
   return {
     heading: occurrence.heading,
     path: [...occurrence.path],
@@ -506,7 +528,7 @@ export function celOccurrence(occurrence: Occurrence): Record<string, unknown> {
     raw: occurrence.raw,
     direct: occurrence.direct,
     directLocation: celLocation(occurrence.directLocation),
-    items: occurrence.items.map(celRecord),
+    items: occurrence.items.map((item) => celRecord(item, resolve)),
   };
 }
 
@@ -526,7 +548,11 @@ function declaredKeyword(type: LawType, property: string, keyword: string): unkn
  * shape declares for absent keys; `urls` holds an entry for each field the
  * shape declares `format: uri` whose value the WHATWG parser accepts.
  */
-export function buildPageInterface(parsed: ParsedPage, type: LawType): Record<string, unknown> {
+export function buildPageInterface(
+  parsed: ParsedPage,
+  type: LawType,
+  resolve: ResolveTarget = () => undefined,
+): Record<string, unknown> {
   // Every map here is keyed by what a page or a document wrote, so a key is
   // set as an own property and looked up with Object.hasOwn: `constructor`
   // is a frontmatter key or a page name like any other.
@@ -559,7 +585,7 @@ export function buildPageInterface(parsed: ParsedPage, type: LawType): Record<st
       parsed.bodyBytes,
     ),
     urls,
-    sections: parsed.occurrences.map(celOccurrence),
+    sections: parsed.occurrences.map((occurrence) => celOccurrence(occurrence, resolve)),
   };
 }
 
@@ -622,8 +648,9 @@ export function buildFacts(
  */
 export function buildBefore(
   base: { parsed: ParsedPage; type: LawType } | undefined,
+  resolve: ResolveTarget = () => undefined,
 ): Record<string, unknown> {
   if (base === undefined) return { present: false };
-  const page = buildPageInterface(base.parsed, base.type);
+  const page = buildPageInterface(base.parsed, base.type, resolve);
   return { present: true, page, sections: page["sections"] };
 }

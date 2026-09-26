@@ -1,0 +1,8 @@
+{
+  "schema": "wikiwright/engine",
+  "schema_version": 4,
+  "label": "garden-sources",
+  "content_roots": ["wiki"],
+  "source_roots": ["raw"],
+  "libraries": [{ "path": "libraries/source-kit" }]
+}

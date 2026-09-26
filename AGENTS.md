@@ -60,7 +60,8 @@ run a daemon, or execute code supplied by a bundle. Conformance is not truth.
 - A handbook's `generated/*` from `wikiwright check --write --root
   fixtures/handbooks/<name>`.
 - `fixtures/memory-synth/generated/*` and
-  `fixtures/minimal-vault/generated/*` from their own `check --write`.
+  `fixtures/minimal-vault/generated/*` and
+  `fixtures/source-policy/generated/*` from their own `check --write`.
 - `docs/skills/wikiwright-maintain/finding-response.md` from
   `bun tools/render-playbook.ts`.
 - The verb block in `docs/cli.md` from
