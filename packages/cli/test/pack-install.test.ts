@@ -162,7 +162,7 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
   );
 
   it(
-    "the tarball carries dist/, the skills, the starters and the plugin, and no source",
+    "the tarball carries dist/, the skills and the starters, and no source",
     () => {
       packAndInstall();
       const installed = join(CONSUMER ?? "", "node_modules", "wikiwright");
@@ -170,15 +170,9 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
       assert.equal(existsSync(join(installed, "dist", "bin.js")), true, "the executable");
       assert.equal(existsSync(join(installed, "skills")), true, "the shipped skills");
       assert.equal(existsSync(join(installed, "constitutions")), true, "the starters");
-      // docs/cli.md §The plugin and its hooks: the package root is the plugin root.
-      assert.equal(
-        existsSync(join(installed, ".claude-plugin", "plugin.json")),
-        true,
-        "the plugin manifest",
-      );
-      for (const file of ["hooks.json", "session-start.mjs", "post-edit.mjs"]) {
-        assert.equal(existsSync(join(installed, "hooks", file)), true, `hooks/${file}`);
-      }
+      // The package root is no plugin: its manifest and hook scripts left (v2 step 6).
+      assert.equal(existsSync(join(installed, ".claude-plugin")), false, "no plugin manifest");
+      assert.equal(existsSync(join(installed, "hooks")), false, "no plugin hooks");
       // `files` is a closed list; a package that shipped `src/` would double the
       // artifact and give a consumer two answers to "what is running".
       assert.equal(existsSync(join(installed, "src")), false, "no source in the artifact");

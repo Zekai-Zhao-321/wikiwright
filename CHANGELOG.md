@@ -782,6 +782,15 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
+- The Claude Code plugin (v2 contracts §1, §12 step 6): the package root's
+  `.claude-plugin/plugin.json` and `hooks/` — `hooks.json`, the
+  session-start hook that listed the installed bundle skills through
+  `bundles list`, and the post-edit hook that ran `lint --page` over an
+  edited page — and `hooks-scripts.test.ts`. The package no longer ships
+  either directory. The loss: an edit a host makes through its own tools is
+  judged at the commit, not as it lands, and a session is not told which
+  bundles it can reach; `docs/roadmap.md` §No host plugin names the trigger
+  for bringing host hooks back.
 - `bundles`, `export`, `graph`, `init`, `modules`, `skills` and `schema`
   from the command table, which is now the eight verbs of the v2 contracts
   (§9): the discovery of installed bundle skills, the exports, the graph

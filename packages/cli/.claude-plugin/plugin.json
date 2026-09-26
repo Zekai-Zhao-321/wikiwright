@@ -1,6 +1,0 @@
-{
-  "name": "wikiwright",
-  "version": "0.1.0",
-  "description": "The wikiwright engine as a Claude Code plugin: its three skills for using, writing and maintaining a bundle, and two hooks that name the connected bundles when a session starts and lint a bundle's page after an edit.",
-  "license": "MIT"
-}

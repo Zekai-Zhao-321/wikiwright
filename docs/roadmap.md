@@ -28,8 +28,7 @@ that a host installs as skills: `check --write` renders them into its own
 writes one into another repository, and a plain copy of one answers every
 reader under the identity its marker gives it. Three skills ship
 beside the binary, for using, writing and maintaining a bundle, and each role
-prints its own brief; the package root is also a Claude Code plugin with two
-hook scripts. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
+prints its own brief. `@wikiwright/kit-code` is the shipped domain kit for the wiki of
 a code repository, consumed by the `code` starter and by this repository's
 own `devwiki`.
 
@@ -378,20 +377,21 @@ Wanted, each when a bundle asks for it: an adapter that serves findings and
 names over the language-server protocol, a transaction across verbs, and a
 verb that reads a page as it stood at a revision.
 
-### The plugin runs from a built checkout
+### No host plugin
 
-The package root, `packages/cli`, is the plugin, and each hook runs this
-package's own binary, which imports `@wikiwright/core` as a workspace
-dependency. The supported layout is a checkout with its workspace
-dependencies installed and built (`bun install`, `bun run build`), with the
-plugin loaded from it in place, for example with `--plugin-dir
-packages/cli`. A copy of the plugin directory alone carries no
-`@wikiwright/core`: its binary fails to load, and its hooks print nothing, as
-they do on any failure, so the missing dependency looks like a session with
-nothing to say. Neither layout has been run inside a host here (below).
+The package root is no longer a Claude Code plugin: its manifest
+(`.claude-plugin/plugin.json`) and its two hook scripts, the session-start
+hook that listed the installed bundle skills and the post-edit hook that
+linted an edited page, left in step 6 of the v2 delivery. The first delivery
+defers host integration; the git hook is the one boundary the engine
+publishes (`.pre-commit-hooks.yaml`, `gate`). The loss: an edit a host makes
+through its own tools is judged at the commit, not as it lands, and a
+session is told nothing about the bundles it can reach.
 
-Wanted: a plugin that carries its dependencies, or a supported install that
-provides them, and a hook smoke test from that layout.
+Wanted, when host writes bypass the workflow repeatedly or several bundles
+cause targeting mistakes (the first delivery's trigger for host
+guardrails): a hook that runs `check` over an edited page, and one that
+names the bundles a session can reach, each run inside a host and recorded.
 
 ### What installed bundles have not been evaluated for
 
@@ -404,15 +404,6 @@ bundle's pages, a proposal or a hook's context unasked.
 
 Wanted: an author-and-reader evaluation over synthetic bundles, and synthetic
 privacy-regression scenarios beside the suite.
-
-### The hook scripts are tested against a document, not a host
-
-`hooks-scripts.test.ts` drives both scripts with synthetic stdin and holds
-their output to the input and output shapes the Claude Code hooks reference
-documents, read on 2026-09-24. No host has run them in this repository:
-whether and when a session shows their context is unverified.
-
-Wanted: a recorded run inside a host, kept beside the test.
 
 ### The engine never checks a copy against its source
 
@@ -593,8 +584,7 @@ children at a time, each killed if it runs past `WIKIWRIGHT_GIT_TIMEOUT_MS`
 (`git-timeout`), and no file the packages ship spawns synchronously
 (`no-sync-spawn.test.ts`). The CLI a test spawns runs under Bun with its
 stdout on a file the test reads back (`runCli`,
-`packages/cli/test/fixtures/runtime.ts`), and the plugin's hook scripts read
-the envelope the same way. `judge-property.test.ts`, which judges states it
+`packages/cli/test/fixtures/runtime.ts`). `judge-property.test.ts`, which judges states it
 builds in its own process, asserts each state's pages before any verdict read
 from it, since an empty or short state judges clean.
 
@@ -1023,18 +1013,17 @@ its old self over any other root. What the rewritten verbs leave, so far:
    for `code/decision`, a published kit; for installed bundles, a declared
    dependency between bundles, `references` and `outline`, a report type a
    proposal is written in, and a filter by applicability.
-3. Run the two hook scripts inside a host and record what a session sees.
-4. For bundle skills: publish the engine and the kit, so the runtime skill's
+3. For bundle skills: publish the engine and the kit, so the runtime skill's
    setup and a bundle skill can name an install command; run live on both
    hosts whether a bundle skill's "requires" line loads the runtime skill,
    and how each host's skill store lists a generated plugin; then the thin
    pointer and `propose`, each deferred rather than refused (§Exports not
    built yet, §What a host does with a copy is unverified).
-5. For modules: a proof cache that outlives the process, keyed on the
+4. For modules: a proof cache that outlives the process, keyed on the
    engine version too (§A module's proofs are taken once per process), and
    a `modules list` that reports a declared module without importing it
    (§A module runs because it is installed).
-6. The capture verb, the connector layer, rich-content checks, publication
+5. The capture verb, the connector layer, rich-content checks, publication
    and access control are candidates, none scheduled.
 
 ## Developing against it

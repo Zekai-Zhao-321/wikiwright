@@ -14,8 +14,7 @@ const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
 /**
  * Where a spawn of `node` would hide: the tools, the CLI reference's
- * renderer, the hooks (the repository's and the plugin's), the workflows,
- * and the tests. Built output and installed packages are not the
+ * renderer, the repository's hooks, the workflows, and the tests. Built output and installed packages are not the
  * repository's own.
  */
 const RUNNABLE = [
@@ -23,7 +22,6 @@ const RUNNABLE = [
   "docs",
   "scripts",
   ".github",
-  "packages/cli/hooks",
   "packages/cli/test",
   "packages/core/test",
   "test",

@@ -73,8 +73,6 @@ packages/cli/src/
   legacy/<name>.ts  one CommandSpec per old verb, waiting for its replacement under verbs/ (the v2 delivery, step 4); legacy/bundles.ts lists the scan, legacy/read.ts is the consumer's read
 packages/cli/constitutions/   the base and code starters init scaffolds; code is a bundle over the kit
 packages/cli/skills/          the three shipped skills (consume, write, maintain) and the generated playbook
-packages/cli/.claude-plugin/  the plugin manifest: the package root is a Claude Code plugin
-packages/cli/hooks/           hooks.json and its two scripts, session-start.mjs and post-edit.mjs
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
 libraries/kit-code/           the code wiki's type library of the v2 law, id code: the page kinds, anchored, the relation labels, their rule tests and examples
 libraries/kit-garden/         the neutral test library of the v2 law, id garden: documents, rule tests, examples; the allotment handbook imports it

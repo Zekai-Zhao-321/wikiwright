@@ -388,66 +388,6 @@ read.
 What follows describes the old table, which answers every root not on schema
 version 4; the command table is §The command table.
 
-### The plugin and its hooks
-
-The package root, `packages/cli`, is also a Claude Code plugin.
-`.claude-plugin/plugin.json` names it `wikiwright` at the package's version;
-its skills are the three under `skills/`; `hooks/hooks.json` runs two scripts
-with `bun`, `SessionStart` with no matcher and `PostToolUse` on
-`Edit|Write`. Each reads the hook's JSON on stdin, runs this package's own
-binary with the session's environment (so `HOME`, the two skill-directory variables and
-`WIKIWRIGHT_ROLE` apply), prints at most one JSON
-object whose `hookSpecificOutput` carries `hookEventName` and
-`additionalContext`, and exits 0 whatever happens: on stdin that is not a JSON
-object, a missing binary or any error, it prints nothing.
-
-- `hooks/session-start.mjs` runs `bundles list`, which reads markers only,
-  and prints one line per row: the copy's name, the bundle it was cut from,
-  its tier, and the action that fits how it was installed, read off the row
-  and the provenance its installer recorded — a copy that is a link: "linked
-  to a local checkout; the checkout's own gate keeps it current", and no
-  remote advice; a recorded value shaped like a version tag or a commit id
-  (a tree id aside): "pinned at <key> <value>", reported, not judged; a
-  recorded repository: "update with `gh skill update <name>`"; nothing
-  recorded: "installed by hand; `gh skill install` makes it updatable". A
-  copy another shadows says by which root; a directory whose marker the scan
-  cannot take is named with its reason. A last line names `--bundle <name>`
-  and `--root ${CLAUDE_SKILL_DIR}`. When the hook's `source` is `compact` or
-  `resume`, the first line says they are being re-established from current
-  state. It checks nothing remote: what an installer records names a ref and
-  a tree, not the commit a copy came from, so the installer's update is the
-  comparison, and the hook names it. It prints no page content and no
-  digest, and nothing when no bundle skill is installed.
-- `hooks/post-edit.mjs` takes `tool_input.file_path` (a leading byte order
-  mark on stdin ignored, as the engine ignores it) and finds the bundle by
-  ancestry: the nearest directory above the file's real path that holds
-  `config/constitution.json`. None: it prints nothing. A root that holds
-  `config/export.json` is an installed copy, and it prints one line — "this is
-  an installed copy of <bundle>; edits here are overwritten by the next
-  update;" and the contribution hint `bundle-readonly` gives — and lints
-  nothing. Otherwise the page's vault path is the path below the root as
-  edited — the root is the first of the edited path's ancestors whose real
-  path is the root, so a root reached through a link is followed while a
-  content directory or a page that is itself a link keeps the path it was
-  edited at — and a `.md` path is linted with `lint --page <path> --root
-  <root>`. A path the engine does not take for a page (`invalid-path`: outside
-  every content root, or linked out of the vault) gets nothing. Under a role
-  that may not lint, it says the session may not write the bundle; a lint the
-  engine refuses otherwise is named by its code; else it names the finding
-  count and each finding's rule, line, message and route, a fix's argv quoted
-  for a POSIX shell so a path with a space stays one argument and naming the
-  root with `--root`; then, one line each, the passes the lint's
-  `unevaluated` names — `not evaluated here: <pass> (<count> declaration(s),
-  <reason>)` — which the staged gate judges against HEAD, so an edit to an
-  append-only body can pass here and be refused at commit; and says that this
-  judged the working-tree page against the current law and is not the staged
-  gate's verdict.
-
-`hooks-scripts.test.ts` holds the scripts to the input and output shapes the
-Claude Code hooks reference documents. Host behaviour — whether and how a host
-runs these hooks and uses their output — has not been verified in this
-repository.
-
 ### Notes per verb of the old table
 
 What the old table's registry rows do not say; `wikiwright schema`, run
