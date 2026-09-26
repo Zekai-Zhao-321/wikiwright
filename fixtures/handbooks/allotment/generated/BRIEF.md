@@ -2,7 +2,7 @@
 
 Generated file — do not edit; regenerate with `wikiwright check --write`.
 
-Law digest: `2f4f7d233238414317f1d54bbd9ea043bb343305ed53a3e37df19d0549e7ab36`
+Law digest: `b4552ea47c285fb3778ac68c54bf161c076bfd590bf9a9f2d593ca02bfc04f2f`
 
 ## The loop
 
@@ -105,10 +105,23 @@ wikiwright write --from drafts --dry-run
 
 ## Types
 
+- `garden/bed` (reference) — A bed a planting grows in.
 - `guide-page` (hub) — The handbook's front page, one per handbook.
 - `procedure-page` (procedure) — A task a gardener carries out from start to finish.
 
 ## Vocabularies
+
+### `garden/observations` (registered)
+
+- `advice` — A recommendation from outside the garden.
+- `measured` — Counted or weighed.
+- `observed` — Seen in this garden.
+
+### `garden/relations` (registered)
+
+- `companion-of` — The planting is sown beside the target planting.
+- `grows-in` — The planting grows in the target bed.
+- `planted-in` (retired; use `grows-in`)
 
 ### `tags` (registered)
 

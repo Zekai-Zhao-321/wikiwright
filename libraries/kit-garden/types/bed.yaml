@@ -1,0 +1,9 @@
+type: bed
+role: reference
+description: One bed of the garden, and its size in square metres.
+use_when: A bed a planting grows in.
+fields:
+  type: object
+  properties:
+    size: { type: integer, minimum: 1 }
+examples: [examples/bed.md]

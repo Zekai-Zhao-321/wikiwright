@@ -2,6 +2,10 @@
 // §3): a bundle `constitution/` and one library, `libraries/kit-garden`, id
 // `garden`. Written under os.tmpdir() by the tests that load it, from the
 // working tree and from the index; each test mutates a copy of the file map.
+// Not the library the repository ships under libraries/kit-garden, which the
+// allotment handbook imports: this one is the loader's test data, carries
+// `history-dated` (the shipped one leaves it to the handbook) and changes
+// with the tests that read it.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

@@ -76,6 +76,7 @@ packages/cli/skills/          the three shipped skills (consume, write, maintain
 packages/cli/.claude-plugin/  the plugin manifest: the package root is a Claude Code plugin
 packages/cli/hooks/           hooks.json and its two scripts, session-start.mjs and post-edit.mjs
 packages/kit-code/            @wikiwright/kit-code: the code wiki's types, anchored fragment, labels, templates, skills
+libraries/kit-garden/         the neutral test library of the v2 law, id garden: documents, rule tests, examples; the allotment handbook imports it
 devwiki/                      this repository's own bundle, over the kit, judged by the suite
 fixtures/conformance/         the neutral module fixture and two bundles consuming it
 fixtures/handbooks/           two small gardening handbooks on the v2 law, one page title in both, each with a rule of its own

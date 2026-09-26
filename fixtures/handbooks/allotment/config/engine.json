@@ -4,5 +4,10 @@
   "label": "allotment",
   "content_roots": [
     "wiki"
+  ],
+  "libraries": [
+    {
+      "path": "libraries/kit-garden"
+    }
   ]
 }

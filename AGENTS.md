@@ -116,6 +116,9 @@ by hand; Windows is unverified, and `docs/roadmap.md` says so.
   `bun install`, `check --root devwiki` loads the kit from
   `devwiki/node_modules` and proves it; every test judges a copy under
   `os.tmpdir()`.
+- `libraries/kit-garden`: the neutral test library of the v2 law, id
+  `garden`: type, fragment and vocabulary documents with their rule tests
+  and examples, data only. The allotment handbook imports it.
 - `fixtures/conformance`: the neutral module fixture and the two bundles that
   consume it. Test infrastructure, not a domain model.
 - `tools/`: the build-info writer, the binary builder (`bun run binary`), the

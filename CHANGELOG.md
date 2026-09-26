@@ -9,6 +9,17 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- **`libraries/kit-garden`, the neutral test library** (v2 contracts §1,
+  §12 step 5), id `garden`, data only: the abstract `planting` type (role
+  `procedure`: Observations as claims, an append-only History, Relations
+  whose leaving relation lands in History) and the `bed` type, each with an
+  example page; the `planted` fragment (a bed and a sowing date) with the
+  rule `known-bed` (error: the bed is one of the `beds` its config lists,
+  which a bundle extends with `configure`) and its test set; the
+  `relations` and `observations` vocabularies. The allotment handbook
+  imports it through `libraries[].path`, so its rule tests and examples are
+  judged with that handbook; `libraries.test.ts` also imports it alone into
+  an empty bundle and holds every test of it there.
 - **`check` over the v2 law** (v2 contracts §9.1, step 4). Over a bundle on
   schema version 4, `check [--write] [--fix] [--dry-run]` reads the working
   tree through the v2 state, refuses a law that does not load

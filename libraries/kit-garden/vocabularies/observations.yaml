@@ -1,0 +1,6 @@
+vocabulary: observations
+mode: registered
+entries:
+  observed: { description: Seen in this garden. }
+  measured: { description: Counted or weighed. }
+  advice: { description: A recommendation from outside the garden. }

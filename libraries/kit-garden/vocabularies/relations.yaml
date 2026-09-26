@@ -1,0 +1,7 @@
+vocabulary: relations
+mode: registered
+entries:
+  grows-in: { description: The planting grows in the target bed. }
+  companion-of: { description: The planting is sown beside the target planting. }
+retired:
+  planted-in: { since: 2026-01-01, successor: grows-in }

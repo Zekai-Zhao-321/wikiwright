@@ -1,0 +1,14 @@
+fragment: planted
+description: Where and when a planting went in.
+fields:
+  type: object
+  properties:
+    bed: { type: string, minLength: 1 }
+    sown: { type: string, format: date }
+  required: [bed, sown]
+rules:
+  - id: known-bed
+    expr: '!has(page.fields.bed) || page.fields.bed in config.beds'
+    config: { beds: [north, south, herb] }
+    severity: error
+    message: The bed is not one this garden has; name a bed from the list, or extend the list with configure.
