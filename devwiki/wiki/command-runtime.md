@@ -4,7 +4,7 @@ title: "The command runtime"
 description: "The eight-verb command table, argument parser, JSON envelope and bundle identity of the v2 CLI."
 tags: [cli]
 pin:
-  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
+  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
   origin: .
   covers: ["packages/cli/src/main.ts", "packages/cli/src/commands.ts", "packages/cli/src/argv.ts", "packages/cli/src/envelope.ts", "packages/cli/src/spec.ts", "packages/cli/src/typelaw.ts"]
 ---
@@ -25,7 +25,7 @@ An invocation reads its root and flags, then builds a working-tree, draft, index
 
 ## Invariants
 
-Argument refusals happen before judgment. A successful law load and its page state determine the bundle block, while the envelope writer bounds stdout and preserves one code per refusal meaning.
+Argument refusals happen before judgment. A successful law load and its selected page and source-path state determine the bundle block, while the envelope writer bounds stdout and preserves one code per refusal meaning.
 
 ## Failure modes
 

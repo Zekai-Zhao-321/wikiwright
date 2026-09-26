@@ -4,9 +4,9 @@ title: Repository layout
 description: "Current file-to-purpose map for the v2 engine repository."
 tags: [repo]
 pin:
-  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
+  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
   origin: .
-  covers: ["packages/core/src/index.ts", "packages/cli/src/main.ts", "libraries/kit-code/types/subsystem.yaml", "libraries/source-kit/types/observation.yaml", "devwiki/config/engine.json", "fixtures/handbooks/orchard/config/engine.json", "fixtures/source-policy/config/engine.json", "tools/run-suite.ts", "test/episode.test.ts", "docs/architecture.md", "AGENTS.md"]
+  covers: ["packages/core/src/index.ts", "packages/core/src/verdict/sourcepaths.ts", "packages/cli/src/main.ts", "libraries/kit-code/types/subsystem.yaml", "libraries/source-kit/types/observation.yaml", "devwiki/config/engine.json", "fixtures/handbooks/orchard/config/engine.json", "fixtures/source-policy/config/engine.json", "tools/run-suite.ts", "test/episode.test.ts", "docs/architecture.md", "AGENTS.md"]
 updated: 2026-09-26
 ---
 
@@ -22,6 +22,7 @@ states.
 | Path | Purpose |
 |---|---|
 | packages/core/src/index.ts | Pure kernel export surface |
+| packages/core/src/verdict/sourcepaths.ts | Selected-state source-path existence judgment |
 | packages/cli/src/main.ts | CLI dispatch and envelope writing |
 | libraries/kit-code/types/subsystem.yaml | Example data library type |
 | libraries/source-kit/types/observation.yaml | Synthetic source-type policy |
@@ -33,4 +34,4 @@ states.
 | docs/architecture.md | Package and invariant map |
 | AGENTS.md | Repository operating rules |
 
-Current source at this pin: `packages/core/src/index.ts`, `packages/cli/src/main.ts`, `libraries/kit-code/types/subsystem.yaml`, `libraries/source-kit/types/observation.yaml`, `devwiki/config/engine.json`, `fixtures/handbooks/orchard/config/engine.json`, `fixtures/source-policy/config/engine.json`, `tools/run-suite.ts`, `test/episode.test.ts`, `docs/architecture.md`, `AGENTS.md`.
+Current source at this pin: `packages/core/src/index.ts`, `packages/core/src/verdict/sourcepaths.ts`, `packages/cli/src/main.ts`, `libraries/kit-code/types/subsystem.yaml`, `libraries/source-kit/types/observation.yaml`, `devwiki/config/engine.json`, `fixtures/handbooks/orchard/config/engine.json`, `fixtures/source-policy/config/engine.json`, `tools/run-suite.ts`, `test/episode.test.ts`, `docs/architecture.md`, `AGENTS.md`.

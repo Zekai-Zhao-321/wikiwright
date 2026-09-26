@@ -4,7 +4,7 @@ title: wikiwright architecture
 description: "Kernel, data-library and bundle layers and the four adapters that reach one judge."
 tags: [kernel, stdlib, cli, kit]
 pin:
-  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
+  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
   origin: .
   covers: ["packages/core/src/index.ts", "packages/cli/src/main.ts", "packages/cli/src/lawstate.ts", "docs/architecture.md"]
 updated: 2026-09-26
@@ -17,13 +17,15 @@ updated: 2026-09-26
 WikiWright is a pure core over bytes plus an imperative Bun CLI. Type documents in libraries and bundles declare law, including section scope and exact child paths; the kernel fixes grammar, schemas, CEL profile, judge and artifacts.
 Claims expose a source page's resolved path and nominal type to bounded CEL;
 a data library can require particular source types for selected categories.
-The kernel defines the reference, while the library declares the policy.
+Literal paths under source roots are checked for existence from the same
+selected state without reading raw source bytes. The kernel defines those
+reference facts, while the library declares the policy that interprets them.
 
 Current source at this pin: `packages/core/src/index.ts`, `packages/cli/src/main.ts`, `packages/cli/src/lawstate.ts`, `docs/architecture.md`.
 
 ## Layers
 
-The CLI builds working-tree, draft, index or revision states and loads each state with its matching law. Eight verbs expose the same JSON envelope and closed exit taxonomy.
+The CLI builds working-tree, draft, index or revision states and loads each state with its matching law and source-path facts. Eight verbs expose the same JSON envelope and closed exit taxonomy. Named local Git origins can be observed at captured HEAD ids for pin freshness; URL origins remain unmeasured.
 
 A type system is held at both acceptance boundaries: write judges one captured law and page state, preflights every destination and moved-from parent, then rechecks the state after staging, before the first rename; gate judges what a commit would contain. The engine checks conformance, not truth.
 

@@ -4,7 +4,7 @@ title: "Fields and shapes"
 description: "Effective JSON Schema shapes, reserved fields, RE2 patterns and page-reference checks."
 tags: [kernel]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
   origin: .
   covers: ["packages/core/src/schema/shapes.ts", "packages/core/src/schema/reserved.ts", "packages/core/src/schema/ajv.ts", "packages/core/src/law/engine.ts"]
 ---
@@ -21,7 +21,7 @@ Current source at this pin: `packages/core/src/schema/shapes.ts`, `packages/core
 
 ## State
 
-The loader compiles shapes with strict Ajv and RE2, then the judge validates each page. The engine supplies page-ref, page-ref-list and pin definitions, three formats and target-type and target-root checks.
+The loader compiles shapes with strict Ajv and RE2, then the judge validates each page. The engine supplies page-ref, page-ref-list and pin definitions, three formats and target-type and target-root checks. A pin origin cannot be blank; `local_origins` declares explicit local Git bindings, while source roots cannot overlap generated output.
 
 ## Invariants
 

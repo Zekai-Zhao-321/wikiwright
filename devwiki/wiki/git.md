@@ -4,7 +4,7 @@ title: "Git"
 description: "Asynchronous file-backed Git transport for staged, revision and local-pin reads."
 tags: [cli]
 pin:
-  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
+  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
   origin: .
   covers: ["packages/cli/src/git.ts", "packages/cli/src/stdoutfile.ts", "packages/cli/src/lawstate.ts", "packages/cli/src/lawfiles.ts"]
 ---
@@ -13,17 +13,17 @@ pin:
 
 ## Contract
 
-The shell reads Git index entries, staged differences and blobs, revision trees, and local pin history. Each child writes stdout to a file; batch requests are files too. No child is spawned synchronously by the engine.
+The shell reads Git index entries, staged differences and blobs, revision trees, and history from the enclosing or explicitly named local pin origins. Each child writes stdout to a file; batch requests are files too. No child is spawned synchronously by the engine.
 
 Current source at this pin: `packages/cli/src/git.ts`, `packages/cli/src/stdoutfile.ts`, `packages/cli/src/lawstate.ts`, `packages/cli/src/lawfiles.ts`.
 
-At most four children run at once. The index state uses object ids and HEAD as its base; the law adapter reads constitution and library blobs from the same selected state.
+At most four children run at once. The index state uses object ids and HEAD as its base; the law adapter reads constitution and library blobs from the same selected state. Source-path existence under `source_roots` comes from that state's Git tree entries, including staged deletions, without reading raw source bytes.
 
 A short answer, contradictory index, HEAD and staged-diff listings, or a mismatched batch row is refused before judgment. The first commit is cross-checked as well.
 
 ## Failure modes
 
-Unmerged paths, absent repositories, Git-child failures and timeouts have separate refusals. The transport never fetches a remote origin.
+Unmerged paths, absent repositories, Git-child failures and timeouts have separate refusals. Local pin queries use captured full commit ids and no external diff or text conversion; the transport never fetches a remote origin.
 
 ## Relations
 

@@ -4,7 +4,7 @@ title: "Freshness and pins"
 description: "Local Git pin measurement and evidence status shown by read and search."
 tags: [cli]
 pin:
-  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
+  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
   origin: .
   covers: ["packages/cli/src/pins.ts", "packages/cli/src/verbs/check.ts", "packages/cli/src/verbs/read.ts", "packages/cli/src/verbs/search.ts"]
 updated: 2026-09-26
@@ -14,7 +14,7 @@ updated: 2026-09-26
 
 ## Responsibilities
 
-A pin records a commit, origin and covered paths. Check measures local origins against the enclosing repository; changed covered paths mark the pin stale and linked pages stale-source-cited.
+A pin records a commit, origin and covered paths. Check, read and search observe the enclosing repository (`.`) or a named local Git repository explicitly bound by `local_origins`. Each measurement captures a full HEAD id and uses immutable commit ids for history, coverage and citation comparisons; discovery, capture and final recheck still observe local metadata. Changed covered paths mark the pin stale and linked pages stale-source-cited.
 
 ## Entry points
 
@@ -22,15 +22,15 @@ Current source at this pin: `packages/cli/src/pins.ts`, `packages/cli/src/verbs/
 
 ## State
 
-Read and search compute stale true, false or null with a reason. A remote-origin pin is unmeasured; the engine does not reach the network. The queue's unresolved ids are shown only while its law and content digests match.
+Read and search compute stale true, false or null with a reason. An unbound or URL origin is unmeasured; the engine does not reach the network. A missing source path, invalid cover or unmeasured directly linked source also leaves status unverified. The queue's unresolved ids are shown only while its law and content digests match, including source-path membership.
 
 ## Invariants
 
-A path and cited line are held to the pinned tree. The engine does not infer whether the cited sentence remains semantically true.
+A cover must exist at the pinned commit; deletion after it makes the pin stale. A cited path and line are held to the pinned tree. The engine does not infer whether the cited sentence remains semantically true.
 
 ## Failure modes
 
-Missing history makes a pin unknown or unmeasured, not fresh. A remote capture can change without this engine noticing; re-read and re-pin before claiming freshness.
+Missing history makes a pin unknown or unmeasured, not fresh. A missing pinned cover is invalid; a moving local HEAD is retried once, then refused. A URL origin can change without this engine noticing; re-read and re-pin before claiming freshness.
 
 ## Relations
 

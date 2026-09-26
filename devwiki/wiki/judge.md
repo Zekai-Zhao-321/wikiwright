@@ -4,7 +4,7 @@ title: "The judge and its passes"
 description: "The one v2 judge over page shape, grammar, rules, transitions and law tests."
 tags: [kernel]
 pin:
-  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
+  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
   origin: .
   covers: ["packages/core/src/verdict/judge.ts", "packages/core/src/verdict/grammar.ts", "packages/core/src/verdict/rules.ts", "packages/core/src/verdict/lawtests.ts"]
 updated: 2026-09-26
@@ -22,7 +22,7 @@ Current source at this pin: `packages/core/src/verdict/judge.ts`, `packages/core
 
 ## State
 
-Working-tree, draft, index and revision constructors hand it page bytes and the matching law. A base exists for drafts and the index, so transition checks can compare the prior page.
+Working-tree, draft, index and revision constructors hand it page bytes, source-path existence facts and the matching law. A base exists for drafts and the index, so transition checks can compare the prior page. A recognized source path can be present, missing, wrong-kind or unmeasured; pure-core callers without source facts do not receive a false pass.
 Current claim page citations resolve against the accepted state's names;
 `before` citations resolve against the base's names. This lets a source-only
 retype make a declared rule fail on an unchanged citing page. Rule-test twins use

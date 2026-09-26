@@ -4,7 +4,7 @@ title: "Findings and total routing"
 description: "The verdict table, one route per finding and separate coverage and unevaluated counts."
 tags: [kernel]
 pin:
-  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
+  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
   origin: .
   covers: ["packages/core/src/verdict/table.ts", "packages/core/src/verdict/judge.ts", "packages/cli/src/envelope.ts", "tools/render-playbook.ts"]
 updated: 2026-09-26
@@ -18,10 +18,13 @@ The judge emits findings with rule id, severity, path, location, message and det
 
 The verdict includes a rule census, coverage by id and reasons for unevaluated checks. It separately counts governed, prose and unbound physical heading regions, parsed records and malformed governed items. A prose or unbound region is not a passed claim check. The CLI caps displayed findings without changing the full summary or exit decision.
 
-A pass with evaluated zero cannot sit beside its own finding. A transition without a base is unevaluated, not a green evaluation.
+A page counts as evaluated for a pass only when all its applicable obligations were measured; one unavailable sibling makes the page unevaluated, even when a known failing obligation still emits a finding. Not applicable means the pass did not govern the page. A transition without a base is unevaluated, not a green evaluation.
 A source-only change can make a declared rule fail on an untouched citing
 page. The gate rejudges that page against the base name index before deciding
 whether a new finding is inherited.
+Literal source-path findings distinguish missing, wrong-kind and unmeasured
+selected-state paths. Pin coverage absent at its own commit is a queued
+warning; an unbound origin is informational and never counted as current.
 
 ## Where it lives
 
