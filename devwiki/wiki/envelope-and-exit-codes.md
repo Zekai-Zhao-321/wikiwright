@@ -4,7 +4,7 @@ title: "The envelope and exit codes"
 description: "The CLI JSON envelope, output bound and closed exit-code taxonomy."
 tags: [cli]
 pin:
-  commit: 37eb1f1ddee7cf0a52958e883191695b2947b17b
+  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
   origin: .
   covers: ["packages/cli/src/envelope.ts", "packages/cli/src/main.ts", "packages/cli/src/commands.ts"]
 ---
@@ -17,7 +17,7 @@ Every invocation prints one JSON envelope. A refusal has a machine-readable code
 
 Current source at this pin: `packages/cli/src/envelope.ts`, `packages/cli/src/main.ts`, `packages/cli/src/commands.ts`.
 
-The output writer emits JSON on stdout and human gate text on stderr. An envelope over one MiB is refused unless --out names a file outside the bundle.
+The output writer emits JSON on stdout and human gate text on stderr. An envelope over one MiB is refused unless --out names a file outside the bundle and its selected imported law. The output path resolves parent aliases, refuses a leaf symbolic link, and is conservative inside the enclosing repository before law selection. Check --summary keeps verdict totals and exit; with --out the file receives uncapped detail and stdout a compact view or bounded pointer.
 
 Exit 0 is success; 1 internal, 2 usage or constitution, 3 not found, 4 conflict and 5 findings. A code keeps one meaning and exit type across verbs.
 

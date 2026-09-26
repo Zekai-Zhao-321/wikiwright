@@ -4,7 +4,7 @@ title: "The Writer and the staged gate"
 description: "The judged draft writer and staged Git acceptance boundary."
 tags: [kernel, cli]
 pin:
-  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
+  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
   origin: .
   covers: ["packages/cli/src/verbs/write.ts", "packages/cli/src/verbs/gate.ts", "packages/cli/src/lawstate.ts", "packages/cli/src/writer.ts", "packages/cli/src/ops.ts"]
 updated: 2026-09-26
@@ -22,7 +22,7 @@ Current source at this pin: `packages/cli/src/verbs/write.ts`, `packages/cli/src
 
 ## State
 
-The writer stages complete file replacements, then renames them into place. Gate uses object-id reads, so staged law, pages and source-path existence are judged together even when the working tree differs. A staged raw-source deletion cannot borrow the working-tree file's existence. Gate cross-checks the staged diff against index and HEAD listings, demotes eligible inherited findings and requires a reason for a law change at commit-message time.
+The writer stages complete file replacements, then renames them into place. Gate uses object-id reads, so staged law, pages and source-path existence are judged together even when the working tree differs. A staged raw-source deletion cannot borrow the working-tree file's existence. An envelope --out path cannot overwrite a library named by the staged law, even if the working-tree engine names another. Gate cross-checks the staged diff against index and HEAD listings, demotes eligible inherited findings and requires a reason for a law change at commit-message time.
 
 ## Invariants
 

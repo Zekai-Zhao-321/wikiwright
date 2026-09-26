@@ -4,7 +4,7 @@ title: "Skills and the brief"
 description: "Generated bundle brief and repository-held consume, write and maintain guidance."
 tags: [cli]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
   origin: .
   covers: ["packages/cli/src/generated.ts", "docs/skills/wikiwright-consume/SKILL.md", "docs/skills/wikiwright-write/SKILL.md", "docs/skills/wikiwright-maintain/SKILL.md", "tools/render-playbook.ts"]
 ---
@@ -13,7 +13,7 @@ pin:
 
 ## Responsibilities
 
-Check --write renders generated/BRIEF.md from a bundle's current types, vocabularies and command table. The three hand-written skill documents under docs/skills describe the judgment each role brings.
+Check --write renders generated/BRIEF.md from a bundle's current types, vocabularies and command table. It lists concrete types with inherited use_when and avoid_when guidance. Type list --concrete selects those types; normal type show keeps complete vocabulary values, while --brief gives short writing guidance. The three hand-written skill documents under docs/skills describe the judgment each role brings.
 
 ## Entry points
 

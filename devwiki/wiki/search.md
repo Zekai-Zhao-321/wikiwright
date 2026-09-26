@@ -4,7 +4,7 @@ title: "Search"
 description: "Deterministic page, record and file retrieval with per-result evidence status."
 tags: [kernel, cli]
 pin:
-  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
+  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
   origin: .
   covers: ["packages/core/src/search/index.ts", "packages/core/src/search/bm25.ts", "packages/core/src/search/tokenize.ts", "packages/cli/src/verbs/search.ts"]
 updated: 2026-09-26

@@ -4,7 +4,7 @@ title: "Fixers and routing"
 description: "The surviving mechanical fixes: folder-tag materialization and generated-artifact refresh."
 tags: [kernel, cli]
 pin:
-  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
+  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
   origin: .
   covers: ["packages/cli/src/verbs/check.ts", "packages/core/src/verdict/folders.ts", "packages/cli/src/generated.ts"]
 updated: 2026-09-26
@@ -22,7 +22,7 @@ Current source at this pin: `packages/cli/src/verbs/check.ts`, `packages/core/sr
 
 ## State
 
-The fixer plans changes from the same judged working-tree state and supports --dry-run. Other v1 per-page fixers left with the old fix verb.
+The fixer plans changes from the same judged working-tree state and supports --dry-run. Check --summary reports the fixed-page count and generated files written without hiding the detailed dry-run path plan. Other v1 per-page fixers left with the old fix verb.
 
 ## Invariants
 

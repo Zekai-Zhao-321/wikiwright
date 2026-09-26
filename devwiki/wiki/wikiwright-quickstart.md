@@ -4,7 +4,7 @@ title: wikiwright quickstart
 description: "From-zero Bun setup and the first typed bundle check."
 tags: [repo]
 pin:
-  commit: 1bebda0ca948b352d74c663d205f2963aea26c7f
+  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
   origin: .
   covers: ["README.md", "package.json", "docs/starter/README.md", "packages/cli/src/main.ts", "scripts/hooks/pre-commit"]
 ---
@@ -19,7 +19,7 @@ Current source at this pin: `README.md`, `package.json`, `docs/starter/README.md
 
 ## Run
 
-Run check --write on the copied bundle to render generated output, then check to judge it. Read type show --brief before drafting pages and stage generated output with the pages it describes.
+Run check --write on the copied bundle to render generated output, then check to judge it. Use type list --concrete to choose a writable type, type show --brief for a short skeleton and normal type show for complete vocabulary values before drafting. Stage generated output with the pages it describes.
 
 ## Verify
 

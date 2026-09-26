@@ -4,7 +4,7 @@ title: "Generated artifacts"
 description: "The brief, graph, manifest, tag catalog and queue rendered by check --write."
 tags: [kernel, cli]
 pin:
-  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
+  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
   origin: .
   covers: ["packages/core/src/artifacts/index.ts", "packages/cli/src/generated.ts", "packages/cli/src/verbs/check.ts"]
 updated: 2026-09-26
@@ -14,7 +14,7 @@ updated: 2026-09-26
 
 ## Responsibilities
 
-The five generated files are BRIEF.md, graph.json, manifest.json, tag-catalog.md and queue.md. The brief guides the three ways of working with a bundle; the graph and manifest expose pages and links.
+The five generated files are BRIEF.md, graph.json, manifest.json, tag-catalog.md and queue.md. The brief guides the three ways of working with a bundle and lists concrete types with inherited use and avoid guidance; the graph and manifest expose pages and links.
 
 ## Entry points
 

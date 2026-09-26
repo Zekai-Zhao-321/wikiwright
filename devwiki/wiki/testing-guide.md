@@ -4,7 +4,7 @@ title: "Testing the engine"
 description: "Bun gate, synthetic corpora, temporary fixtures and end-to-end CLI probes."
 tags: [repo]
 pin:
-  commit: 4310263abeb8b8743da8c6b9eed5bcf736b2a200
+  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
   origin: .
   covers: ["tools/run-suite.ts", "packages/cli/test/fixtures/garden-cli.ts", "packages/cli/test/fixture-verdicts.test.ts", "packages/cli/test/source-policy.test.ts", "test/episode.test.ts", "scripts/release-matrix.sh"]
 ---
