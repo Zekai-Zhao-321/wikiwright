@@ -200,3 +200,29 @@ describe("a v1 gardening bundle, migrated, is clean under the v2 check", () => {
     expect(readFileSync(join(dir, "config/engine.json"), "utf8")).toBe(before);
   });
 });
+
+describe("a declared v1 code kit after its package left", () => {
+  it("refuses before writing any migrated file", async () => {
+    const engine = `${JSON.stringify({
+      content_roots: ["wiki"],
+      modules: [{ package: "@wikiwright/kit-code" }],
+    })}\n`;
+    const constitution = `${JSON.stringify(V1_CONSTITUTION)}\n`;
+    const dir = writeTree(
+      {
+        "config/engine.json": engine,
+        "config/constitution.json": constitution,
+        "wiki/Basil.md": BASIL_V1,
+      },
+      "ww-migrate-kit-",
+    );
+    made.push(dir);
+    await expect(migrate(dir, false)).rejects.toThrow(
+      /the module @wikiwright\/kit-code left with packages\/kit-code/u,
+    );
+    expect(readFileSync(join(dir, "config/engine.json"), "utf8")).toBe(engine);
+    expect(readFileSync(join(dir, "config/constitution.json"), "utf8")).toBe(constitution);
+    expect(readFileSync(join(dir, "wiki/Basil.md"), "utf8")).toBe(BASIL_V1);
+    expect(existsSync(join(dir, "constitution"))).toBe(false);
+  });
+});
