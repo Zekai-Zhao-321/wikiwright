@@ -1,0 +1,15 @@
+type: test-case
+role: procedure
+description: One executable validation case with expected results.
+use_when: A single runnable or externally identified case.
+avoid_when: Aggregated results or narrative debugging.
+fragments: [append-only]
+fields:
+  type: object
+  properties:
+    case_id: {}
+  required: [case_id]
+sections:
+  list:
+    - { heading: Purpose, min: 1 }
+    - { heading: Execution, min: 1 }

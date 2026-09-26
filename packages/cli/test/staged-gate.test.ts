@@ -17,7 +17,7 @@ import { documentOf } from "../../core/test/helpers/constitution.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
+const FIXTURE = fileURLToPath(new URL("../../../fixtures/v1/minimal-vault", import.meta.url));
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();

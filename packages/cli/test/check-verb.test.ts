@@ -22,7 +22,7 @@ import { engineJson } from "./fixtures/garden-law.ts";
 
 afterAll(cleanBundles);
 
-const MINIMAL = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
+const MINIMAL = fileURLToPath(new URL("../../../fixtures/v1/minimal-vault", import.meta.url));
 
 const GENERATED = [
   "generated/BRIEF.md",

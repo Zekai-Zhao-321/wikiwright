@@ -20,7 +20,9 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { passRows, standardLibrary } from "@wikiwright/core";
+import { passRows, standardLibrary, VERDICT_TABLE } from "@wikiwright/core";
+import { V2_CORPORA } from "./fixtures/corpora.ts";
+import { cli } from "./fixtures/garden-cli.ts";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { MEMORY_LAW } from "./fixtures/memory-law.ts";
 import { runCli } from "./fixtures/runtime.ts";
@@ -85,7 +87,6 @@ afterAll(() => rmSync(DEVWIKI_COPY, { recursive: true, force: true }));
 const CORPORA: Record<string, string> = {
   "memory-synth": join(REPO, "fixtures/memory-synth"),
   devwiki: DEVWIKI_COPY,
-  "minimal-vault": join(REPO, "fixtures/minimal-vault"),
 };
 
 describe("every emitted finding routes (docs/concepts.md §Findings and routing)", () => {
@@ -105,6 +106,27 @@ describe("every emitted finding routes (docs/concepts.md §Findings and routing)
     it(`check --all over ${name}`, () => {
       const findings = envelopeOf(["check", "--root", root, "--all"], root).data?.findings ?? [];
       assertRouted(findings, `check ${name}`);
+    });
+  }
+
+  // v2 contracts §12 step 5: the corpora on the v2 law, under the v2
+  // `check`: every error and warning names exactly one of a queue lane of the
+  // verdict table and a fix, and an info names neither.
+  const V2_LANES = new Set(VERDICT_TABLE.map((row) => row.lane).filter((l) => l !== undefined));
+  for (const corpus of V2_CORPORA) {
+    it(`check --all over ${corpus} (the v2 law)`, () => {
+      const findings = cli(["check", "--all"], join(REPO, corpus)).envelope.data?.findings ?? [];
+      for (const f of findings) {
+        const routes = (f.fix === undefined ? 0 : 1) + (f.queue === undefined ? 0 : 1);
+        if (f.severity === "info") {
+          assert.equal(routes, 0, `${corpus}: info finding ${f.rule} routes somewhere`);
+          continue;
+        }
+        assert.equal(routes, 1, `${corpus}: ${f.rule} (${f.severity}) carries exactly one route`);
+        if (f.queue !== undefined) assert.equal(V2_LANES.has(f.queue), true, f.queue);
+        if (f.fix !== undefined) assert.equal(f.fix.argv.length > 0, true, f.rule);
+      }
+      assert.equal(findings.length > 0, true, `${corpus} produced findings to judge`);
     });
   }
 
@@ -468,7 +490,7 @@ describe("a vault read refused by the path law routes no finding (docs/cli.md §
     const tmp = mkdtempSync(join(tmpdir(), "ww-xor-linked-"));
     try {
       const root = join(tmp, "vault");
-      cpSync(join(REPO, "fixtures", "minimal-vault"), root, { recursive: true });
+      cpSync(join(REPO, "fixtures", "v1", "minimal-vault"), root, { recursive: true });
       const engine = join(root, "config", "engine.json");
       cpSync(engine, join(tmp, "engine.json"));
       rmSync(engine);

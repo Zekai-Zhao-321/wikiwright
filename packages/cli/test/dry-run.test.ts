@@ -37,7 +37,7 @@ import { everyVerb } from "./fixtures/verb-module.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
-const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
+const FIXTURE = fileURLToPath(new URL("../../../fixtures/v1/minimal-vault", import.meta.url));
 
 /** The `node:fs` write APIs the shell may import. */
 const WRITE_CALLS = [

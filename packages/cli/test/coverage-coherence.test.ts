@@ -16,11 +16,13 @@ import { fileURLToPath } from "node:url";
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
+import { V2_CORPORA } from "./fixtures/corpora.ts";
+import { cli } from "./fixtures/garden-cli.ts";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 /** Every corpus this repository ships, judged under its own constitution. */
-const CORPORA = ["fixtures/memory-synth", "devwiki", "fixtures/minimal-vault"];
+const CORPORA = ["fixtures/memory-synth", "devwiki"];
 
 // devwiki is a bundle over the code kit: judged from an installed copy under
 // os.tmpdir(), never from the shipped tree (docs/extending.md §The code kit).
@@ -79,6 +81,28 @@ describe("the coverage block agrees with the findings beside it (docs/concepts.m
         }
       });
     }
+  }
+
+  // v2 contracts §12 step 5: the corpora on the v2 law, under the v2
+  // `check`, whose coverage is keyed by rule id.
+  for (const corpus of V2_CORPORA) {
+    it(`${corpus}: no rule reports findings while claiming it never applied (the v2 check)`, () => {
+      const data = cli(["check", "--all"], join(REPO, corpus)).envelope.data;
+      const coverage = (data?.["coverage"] ?? {}) as Record<
+        string,
+        { evaluated: number; not_applicable: number; unevaluated: number }
+      >;
+      assert.equal(Object.keys(coverage).length > 20, true, "the coverage block was read");
+      for (const f of data?.findings ?? []) {
+        const row = coverage[f.rule];
+        if (row === undefined || f.rule === "unevaluated") continue;
+        assert.equal(
+          row.evaluated > 0,
+          true,
+          `${f.rule} produced a finding on ${corpus} and reports evaluated: ${row.evaluated}`,
+        );
+      }
+    });
   }
 
   it("the check is non-vacuous: the corpora do produce findings to check against", () => {

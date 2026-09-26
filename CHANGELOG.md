@@ -531,6 +531,18 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Changed
 
+- **`fixtures/minimal-vault` is on the v2 law** (v2 contracts §12 step 5),
+  migrated by `tools/migrate-spellings.ts`: `config/engine.json` at schema
+  version 4, `constitution/` with the `test-case` type (role `procedure`),
+  the `tags` vocabulary and the `append-only` fragment, whose rule
+  `body-append-only` re-expresses the type's v1 `body.lifecycle:
+  append-only` in CEL with its test set under `rule-tests/`; the type's
+  `template` is dropped (the skeleton is derived), and `generated/` is
+  rendered and tracked. Its one broken case keeps its three defects under
+  the v2 names: `page-shape-invalid` (the undeclared `rogue_key`),
+  `section-count` (no Execution) and `vocabulary-unknown` (the tag
+  `mystery`). The old table's tests read a frozen v1 copy,
+  `fixtures/v1/minimal-vault`, until they leave with the old verbs.
 - Every git read is an asynchronous spawn (`Bun.spawn`) awaited to the
   child's exit, at most four children at a time, keeping the file-backed
   protocol: the answer read from a file git wrote, a batch request handed

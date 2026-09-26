@@ -236,7 +236,7 @@ describe("the packed engine runs as a consumer installs it (docs/architecture.md
     () => {
       packAndInstall();
       const bundle = join(WORKSPACE ?? "", "minimal");
-      cpSync(join(REPO, "fixtures", "minimal-vault"), bundle, { recursive: true });
+      cpSync(join(REPO, "fixtures", "v1", "minimal-vault"), bundle, { recursive: true });
       const envelope = run(["lint", "--all", "--root", bundle], CONSUMER ?? REPO);
       // The minimal vault ships with a known verdict (`docs/architecture.md §The invariants`); what
       // matters here is that the PACKED engine produces one at all.

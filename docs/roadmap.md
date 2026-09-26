@@ -739,10 +739,13 @@ There are two tables. A root whose `config/engine.json` is schema version 4
 is answered by the command table (`COMMANDS`); any other root — a bundle on
 `config/constitution.json`, or no bundle — by the old table, whole
 (`LEGACY_COMMANDS`), and so is every invocation naming its target by
-`--bundle`, the old skill discovery. Every corpus of this repository
-(`devwiki`, the handbooks, `memory-synth`, `minimal-vault`) is still on the
-old constitution, so each is judged by the old verbs until step 5 migrates
-it, and step 6 deletes the old verbs with their table. A verb that left the
+`--bundle`, the old skill discovery. Step 5 migrates the corpora of this
+repository onto the v2 law with `tools/migrate-spellings.ts`, one commit
+each: `minimal-vault` is migrated, and `devwiki`, the handbooks and
+`memory-synth` are still on the old constitution, judged by the old verbs
+until their turn. The old table's tests read frozen v1 copies of the
+migrated corpora under `fixtures/v1/`, and step 6 deletes the old verbs
+with their table and those copies. A verb that left the
 command table answers `unknown-command` over a schema-version-4 bundle, and
 its old self over any other root. What the rewritten verbs leave, so far:
 

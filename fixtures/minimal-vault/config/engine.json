@@ -1,4 +1,13 @@
 {
-  "content_roots": ["wiki", "raw", "meta"],
-  "folder_tags": { "mode": "validate" }
+  "schema": "wikiwright/engine",
+  "schema_version": 4,
+  "label": "minimal-vault",
+  "content_roots": [
+    "wiki",
+    "raw",
+    "meta"
+  ],
+  "folder_tags": {
+    "mode": "validate"
+  }
 }

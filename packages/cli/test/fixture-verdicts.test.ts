@@ -4,9 +4,12 @@
 // `### Timeline` is `section-depth`'s first measurement: 1 firing across 40
 // pages).
 
-import { describe, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { corpusCopy, REPO, removeCopies } from "./fixtures/corpora.ts";
+import { cli, type Envelope, git } from "./fixtures/garden-cli.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
@@ -85,23 +88,6 @@ describe("the shipped fixtures lint to the verdict the spec records (docs/archit
     assert.equal(v.status, 5, "a page finding exits 5 (docs/cli.md §The envelope)");
   });
 
-  it("minimal-vault: the three defects of its one broken case, and no others", () => {
-    const v = lint("minimal-vault");
-    assert.equal(v.summary["pages"], 3);
-    assert.deepEqual(
-      v.findings.map((f) => f.ruleId),
-      ["sections", "unknown-tag", "unknown-frontmatter-key"],
-    );
-    for (const finding of v.findings) {
-      assert.equal(
-        finding.path,
-        "wiki/test-execution/broken-case.md",
-        "every defect is the deliberate one; the rest of the fixture is clean",
-      );
-    }
-    assert.equal(v.status, 5);
-  });
-
   // docs/cli.md §bundles: the two handbooks the connection tests read, each one
   // type with a required climate and the same page under the same title. They
   // carry no defect, so a finding of any severity is rot; `check` holds their
@@ -114,6 +100,71 @@ describe("the shipped fixtures lint to the verdict the spec records (docs/archit
         assert.deepEqual(v.findings, [], `${handbook} under ${verb}`);
         assert.equal(v.status, 0, verb);
       }
+    });
+  }
+});
+
+// v2 contracts §12 step 5: the corpora migrated onto the v2 law, judged by
+// the v2 `check` where they stand and by the v2 `gate` over a copy whose
+// every file is staged. A corpus's verdict is the exact set of its
+// deliberate defects; `unevaluated` (info, no route) is the transition
+// rules a working tree cannot evaluate.
+
+afterAll(removeCopies);
+
+type Row = [rule: string, severity: string, path: string];
+
+function rows(envelope: Envelope, severities: readonly string[]): Row[] {
+  return (envelope.data?.findings ?? [])
+    .filter((f) => severities.includes(f.severity))
+    .map((f): Row => [f.rule, f.severity, f.path])
+    .sort((a, b) => (a.join("\0") < b.join("\0") ? -1 : 1));
+}
+
+interface Expected {
+  pages: number;
+  /** Every error and warning finding, sorted. */
+  findings: Row[];
+  /** Every rule `unevaluated` names, and how many pages it names it on. */
+  unevaluated: Record<string, number>;
+}
+
+const V2_VERDICTS: Record<string, Expected> = {
+  // The one broken case keeps its three defects under the v2 names: an
+  // undeclared key, a missing section, a tag the vocabulary does not hold.
+  "fixtures/minimal-vault": {
+    pages: 3,
+    findings: [
+      ["page-shape-invalid", "error", "wiki/test-execution/broken-case.md"],
+      ["section-count", "error", "wiki/test-execution/broken-case.md"],
+      ["vocabulary-unknown", "error", "wiki/test-execution/broken-case.md"],
+    ],
+    unevaluated: { "body-append-only": 3 },
+  },
+};
+
+describe("the corpora on the v2 law judge to the verdict recorded here (contracts §12 step 5)", () => {
+  for (const [corpus, expected] of Object.entries(V2_VERDICTS)) {
+    it(`${corpus}: check --all where it stands`, () => {
+      const r = cli(["check", "--all"], join(REPO, corpus));
+      expect(r.envelope.data?.summary).toMatchObject({ pages: expected.pages });
+      expect(rows(r.envelope, ["error", "warning"])).toEqual(expected.findings);
+      const unevaluated = r.envelope.data?.["unevaluated"] as Record<string, { count: number }>;
+      expect(
+        Object.fromEntries(Object.entries(unevaluated).map(([rule, u]) => [rule, u.count])),
+      ).toEqual(expected.unevaluated);
+      const errors = expected.findings.filter(([, severity]) => severity === "error").length;
+      expect(r.status).toBe(errors > 0 ? 5 : 0);
+    });
+
+    it(`${corpus}: gate over a copy with every file staged gives the same errors`, () => {
+      const { root, top } = corpusCopy(corpus);
+      git(top, "add", "-A");
+      const r = cli(["gate"], root);
+      expect(rows(r.envelope, ["error"])).toEqual(
+        expected.findings.filter(([, severity]) => severity === "error"),
+      );
+      expect(r.status).toBe(expected.findings.some(([, s]) => s === "error") ? 5 : 0);
     });
   }
 });

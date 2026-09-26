@@ -6,7 +6,7 @@
 // vault that renders exports into its own `skills/` tracks them too
 // (docs/constitution.md §exports), and they are rebuilt from nothing the same way.
 
-import { describe, it } from "bun:test";
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import {
   cpSync,
@@ -20,6 +20,8 @@ import {
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { corpusCopy, removeCopies, REPO as TOP, V2_CORPORA } from "./fixtures/corpora.ts";
+import { cli } from "./fixtures/garden-cli.ts";
 import { installedCopy, kitEnv } from "./fixtures/kit-code.ts";
 import { runCli } from "./fixtures/runtime.ts";
 
@@ -101,6 +103,32 @@ describe("the tracked generated/ of every shipped vault is what this build rende
         }
       } finally {
         rmSync(scratch, { recursive: true, force: true });
+      }
+    });
+  }
+});
+
+// v2 contracts §12 step 5: a corpus on the v2 law renders generated/ with
+// the v2 `check --write` — the brief, the graph, the manifest, the queue
+// and the tag catalog — and tracks every file of it, rebuilt from nothing
+// on a copy the same byte for byte.
+afterAll(removeCopies);
+
+describe("the tracked generated/ of every corpus on the v2 law is what this build renders", () => {
+  for (const corpus of V2_CORPORA) {
+    it(`${corpus}: check --write on a copy rebuilds generated/ from nothing`, () => {
+      const { root } = corpusCopy(corpus);
+      rmSync(join(root, "generated"), { recursive: true, force: true });
+      const r = cli(["check", "--write"], root);
+      assert.notEqual(r.status, 2, JSON.stringify(r.envelope.error));
+      const source = join(TOP, corpus, "generated");
+      assert.deepEqual(filesUnder(join(root, "generated")), filesUnder(source));
+      for (const file of filesUnder(source)) {
+        assert.equal(
+          readFileSync(join(root, "generated", file), "utf8"),
+          readFileSync(join(source, file), "utf8"),
+          `${corpus}/generated/${file} moved`,
+        );
       }
     });
   }

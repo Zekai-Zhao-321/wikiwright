@@ -501,7 +501,7 @@ describe("6. every shipped constitution loads clean (docs/cli.md §init)", () =>
   const OVER_KIT = [join(REPO, "devwiki"), join(REPO, "packages", "cli", "constitutions", "code")];
   const STDLIB = [
     join(REPO, "fixtures", "memory-synth"),
-    join(REPO, "fixtures", "minimal-vault"),
+    join(REPO, "fixtures", "v1", "minimal-vault"),
     ...readdirSync(join(REPO, "packages", "cli", "constitutions"))
       .filter((s) => s !== "code")
       .map((s) => join(REPO, "packages", "cli", "constitutions", s)),
