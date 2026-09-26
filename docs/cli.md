@@ -16,7 +16,29 @@ time; the reference below is that table's. Any other root — a bundle on
 `config/constitution.json`, or none — and any invocation that names its target
 by `--bundle` is answered by the old table whole, whose verbs the notes below
 still describe: `lint`, `fix`, `freshness` and `okf` answer such a root and
-are no verb over a schema-version-4 bundle, where `check` absorbs them.
+are no verb over a schema-version-4 bundle, where `check` absorbs them, and
+`hook` is none there either, where the published hook definition invokes
+`gate`.
+
+Over a schema-version-4 bundle the hooks are `gate`'s two stages. The
+pre-commit framework reads `.pre-commit-hooks.yaml` at this repository's root
+(`wikiwright-gate` at `pre-commit`, `wikiwright-commit-msg` at `commit-msg`);
+without the framework, the two one-liners are, in `.git/hooks/pre-commit`,
+
+```sh
+#!/bin/sh
+exec wikiwright gate --root <bundle>
+```
+
+and in `.git/hooks/commit-msg`,
+
+```sh
+#!/bin/sh
+exec wikiwright gate --root <bundle> --commit-msg "$1"
+```
+
+`--commit-msg` reads the message file where git hands it: a relative path
+against the directory the hook runs in, then against the bundle root.
 
 ## The envelope
 
@@ -773,9 +795,8 @@ Global flags, accepted by every verb:
 | [`bundles`](#bundles) | consumer | no | List every bundle skill installed in the skill directories, as --bundle finds them, with its identity and what its installer recorded. |
 | [`check`](#check) | writer | yes | Judge the whole bundle: every page, the rule tests and examples, the pins against the local repository, and the generated files; --write renders generated/, --fix repairs what a fixer may first. |
 | [`export`](#export) | maintainer | yes | Write one declared external export into another repository, as skills/<name>/. |
-| [`gate`](#gate) | maintainer | no | The hooks' entry point: check the engine pin, then judge the staged vault. |
+| [`gate`](#gate) | maintainer | no | Judge what the commit would contain: the index with HEAD as its base, the law diff, and under --commit-msg the message's prefix and its law-change line. |
 | [`graph`](#graph) | consumer | no | Query the graph's edges by kind, label and the type on either side — or list the pages on one side that carry none (coverage, derived). |
-| [`hook`](#hook) | maintainer | yes | Install the marker pre-commit gate (and the commit-msg prefix hook when declared). |
 | [`init`](#init) | maintainer | yes | Scaffold a vault from a starter constitution — only what is missing, unless --force; installs the hook when git exists. |
 | [`modules`](#modules) | maintainer | no | List the modules this bundle declares, or plan the delta of adopting another version. |
 | [`move`](#move) | maintainer | yes | Move a page with a stated reason; surfaces tag findings, never edits tags. |
@@ -866,13 +887,13 @@ wikiwright export roses --to ../roses-skill
 
 `wikiwright gate`
 
-The hooks' entry point: check the engine pin, then judge the staged vault.
+Judge what the commit would contain: the index with HEAD as its base, the law diff, and under --commit-msg the message's prefix and its law-change line.
 
 Role: `maintainer`. Writes: no.
 
 | Flag | Meaning |
 |---|---|
-| `--commit-msg <value>` | judge a commit message file against commit_prefixes |
+| `--commit-msg <value>` | the commit-msg stage: hold this message file to commit_prefixes, and a law change to a `law-change: <reason>` line |
 | `--limit <value>` | cap the findings array (default 50) |
 | `--rule <value>` | only findings with this rule id |
 | `--path <value>` | only findings on this page |
@@ -906,24 +927,6 @@ wikiwright graph edges --label implements --label diverges-from --inbound requir
 wikiwright graph edges --label mapped_in --outbound subsystem --missing
 wikiwright graph edges --kind relation --inbound source --missing
 wikiwright graph edges --label covers --outbound design-note
-```
-
-### hook
-
-`wikiwright hook <install>`
-
-Install the marker pre-commit gate (and the commit-msg prefix hook when declared).
-
-Role: `maintainer`. Writes: yes (accepts `--dry-run`).
-
-| Flag | Meaning |
-|---|---|
-| `--chain <value>` | repo-relative script the hook runs first, propagating its exit |
-| `--dry-run` | report the plan — the ops this verb would apply — and write nothing |
-
-```text
-wikiwright hook install
-wikiwright hook install --chain scripts/hooks/pre-commit
 ```
 
 ### init

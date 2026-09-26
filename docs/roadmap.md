@@ -758,21 +758,29 @@ its old self over any other root. What the rewritten verbs leave, so far:
   lands (`ENGINE_V4_CONSUMERS` names it `null`; every other key names the
   function that reads it, of core or of the shell, and a test holds the
   function to exist and to read the key).
-- The judge has no gate options yet: today's line-scoped demotion of a
-  queued error on an inherited line, and the gate's change-scoping to the
-  pages a commit touches, arrive with the `gate` verb, as the commit-message
-  stage that turns the law diff into `law-changed` or `law-relaxed` does.
-  A finding about a frontmatter key carries the key's page line in
-  `details.line`, as a body finding carries its line in its location, so
-  the demotion can scope it; one with no line (a missing key, or a finding
-  about the page as a whole) is to count as touched whenever the
-  frontmatter block changed.
-  No finding of the new judge is fix-routed: the fixers the kernel ran on a
-  page (`frontmatter-set`, `frontmatter-delete`, `tag-rename`,
-  `section-stub`, `heading-depth`, `link-rewrite`, `retype`,
-  `history-close`) leave with `fix` (contracts §1), so each code they served
-  queues to the lane it fell through to; the two fixers that survive, the
-  folder tags and the generated artifacts, are `check --fix`'s.
+- `gate` absorbs `lint --staged`, and the published hook definition
+  (`.pre-commit-hooks.yaml` at the repository root, `wikiwright-gate` at
+  `pre-commit` and `wikiwright-commit-msg` at `commit-msg`) and two
+  documented one-liners replace the `hook` verb's installed scripts.
+  Nothing installs a hook: a repository adds the definition to its
+  pre-commit config, or writes the one-liners into `.git/hooks`. Not carried
+  from the old gate: the kits a bundle declared by path, read from the index
+  (modules leave), the exports, and `WIKIWRIGHT_BYPASS` with its log, which
+  was the installed scripts' (`git commit --no-verify` skips a hook). The
+  demotion is today's: a queued error on a line the base holds unchanged is
+  a warning (`details.demoted_from: "error"`), except a frontmatter that
+  does not read, an identity collision, an instance count or an illegal
+  exception; a finding with no line — a missing key, the page as a whole —
+  counts as touched whenever the page's frontmatter block changed, where the
+  old gate never demoted one. A link verdict the base's names would not have
+  given is the commit's and is never demoted or scoped away.
+- No finding of the new judge is fix-routed but the two whose fixers
+  survive: `folder-tags-present` under `materialize-add-only` and
+  `generated-drift`, whose `fix` names `check --fix` and `check --write`.
+  The fixers the kernel ran on a page (`frontmatter-set`,
+  `frontmatter-delete`, `tag-rename`, `section-stub`, `heading-depth`,
+  `link-rewrite`, `retype`, `history-close`) leave with `fix` (contracts
+  §1), so each code they served queues to the lane it fell through to.
 - The contracts name few page-level codes; the judge's are this step's, and
   `docs/v2-dispositions.md` maps every v1 id to the one that carries it:
   `type-unknown` (v1 `unknown-type`), `page-shape-invalid` (the shape's

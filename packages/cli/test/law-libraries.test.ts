@@ -140,12 +140,7 @@ describe("engine.json v4", () => {
       expect([key, typeof fn]).toEqual([key, "function"]);
       expect([key, String(fn).includes(key)]).toEqual([key, true]);
     }
-    expect(
-      Object.entries(ENGINE_V4_CONSUMERS)
-        .filter(([, reader]) => reader === null)
-        .map(([key]) => key)
-        .sort(),
-    ).toEqual(["commit_prefixes"]);
+    expect(Object.values(ENGINE_V4_CONSUMERS).filter((reader) => reader === null)).toEqual([]);
   });
 
   it("refuses an absent file and a file that is not JSON", () => {

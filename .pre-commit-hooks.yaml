@@ -1,0 +1,27 @@
+# The hook definition wikiwright publishes (v2 contracts §9.2), read by the
+# pre-commit framework from this repository's root. Both stages invoke the one
+# gate: `wikiwright-gate` judges what the commit would contain at
+# `pre-commit`; `wikiwright-commit-msg` holds the message to the bundle's
+# `commit_prefixes`, and a law change to a body line `law-change: <reason>`,
+# at `commit-msg`, where the framework appends the message file's path after
+# the hook's args. The `wikiwright` binary is the one on PATH
+# (`language: system`). A bundle in a subdirectory is named in the consuming
+# repository's config: `args: [--root, <directory>]` for the gate, and
+# `args: [--root, <directory>, --commit-msg]` for the message, `--commit-msg`
+# last so the file's path is its value.
+- id: wikiwright-gate
+  name: wikiwright gate
+  description: Judge the index with HEAD as its base under the bundle's law.
+  entry: wikiwright gate
+  language: system
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]
+- id: wikiwright-commit-msg
+  name: wikiwright gate --commit-msg
+  description: Hold the commit message to commit_prefixes, and a law change to its law-change line.
+  entry: wikiwright gate
+  args: [--commit-msg]
+  language: system
+  always_run: true
+  stages: [commit-msg]

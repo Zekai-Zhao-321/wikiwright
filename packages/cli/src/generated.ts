@@ -16,7 +16,6 @@
 // the vocabularies as the vault uses them, which moved to `type show --brief`
 // with the live counts, the modules' skill fragments (modules leave), and
 // the pass counts of the old pass table.
-import { join } from "node:path";
 import {
   type Collected,
   codeUnitCompare,
@@ -30,7 +29,6 @@ import {
   type Unrouted,
   verdictOfCollected,
 } from "@wikiwright/core";
-import { replaceFiles } from "./atomicwrite.ts";
 import { type CommandSpec, flagsOf } from "./spec.ts";
 
 export const BRIEF_PATH = "generated/BRIEF.md";
@@ -243,15 +241,4 @@ export function driftFindings(
     });
   }
   return out;
-}
-
-/**
- * `check --write`: every planned file lands through the shell's staged
- * replace, all staged before the first rename (atomicwrite.ts): a failure
- * while staging leaves every old file; a crash inside the rename loop can
- * leave some old and some new, and the next `check --write` converges them.
- */
-export function writeGenerated(root: string, plans: readonly TypeLawArtifact[]): string[] {
-  replaceFiles(plans.map((plan) => ({ path: join(root, plan.path), contents: plan.content })));
-  return plans.map((plan) => plan.path);
 }

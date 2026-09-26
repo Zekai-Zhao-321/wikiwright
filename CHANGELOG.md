@@ -39,6 +39,26 @@ version` prints the engine version and the commit a binary was built from.
   `materialize-add-only` and `tag-review` otherwise, and
   `former-folder-tags-review` over the index's renames), and a finding may
   carry `fix: {argv}` in place of `queue`.
+- **`gate` over the v2 law, and the published hook definition** (v2
+  contracts §8, §9.2). Over a bundle on schema version 4, `gate` reads the
+  index with HEAD as its base, the law and libraries from the index, and
+  HEAD's law for the law diff (no HEAD: an empty base and no diff). At
+  `pre-commit` it judges every staged page with `judgeTypeLaw`, holds a
+  rule the diff adds or changes to its test set (`rule-untested`, error),
+  judges `generated/*` as staged once the index tracks it
+  (`generated-drift`, `details.state: index`), reports the law diff as
+  `law-changed` (info), demotes a queued error on a line the commit did not
+  touch to a warning (`details.demoted_from: "error"`), leaves out the
+  findings of an untouched page, and judges the whole vault, demoting
+  nothing, when the commit stages `config/`, `constitution/`, `rule-tests/`,
+  `examples/` or a library (`data.config_changed`); it exits 5 on any error
+  left. `gate --commit-msg <file>` holds the message to `commit_prefixes`
+  (`commit-prefix`, exit 5, one line on stderr) and every law change to a
+  body line `law-change: <reason>`: without one it is `law-relaxed` (error,
+  `law-review`), with one `law-changed` carrying the reason. The envelope
+  names the index's law and content. `.pre-commit-hooks.yaml` at the
+  repository root publishes `wikiwright-gate` (`pre-commit`) and
+  `wikiwright-commit-msg` (`commit-msg`).
 - **Two command tables.** A root whose `config/engine.json` is schema
   version 4 is answered by the command table of the v2 contracts; any other
   root, and any `--bundle` invocation, by the old table whole, until the
@@ -585,8 +605,13 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Removed
 
-- `lint`, `fix`, `freshness` and `okf`, absorbed by `check` over a
-  schema-version-4 bundle; each still answers any other root. Not carried:
+- `hook`, from the command table: the published hook definition and the
+  documented one-liners invoke `gate` instead, and nothing installs a hook
+  or logs a `WIKIWRIGHT_BYPASS`; `hook-stale` goes with it. It still answers
+  a root not on schema version 4.
+- `lint`, `fix`, `freshness` and `okf`, absorbed by `check` (and `lint
+  --staged` by `gate`) over a schema-version-4 bundle; each still answers any
+  other root. Not carried:
   `lint --since` (the replay, deferred), `lint --stdin` and `--explain`,
   `freshness --fast-forward` and `generated/freshness.json`, every fixer
   but the folder tags and the generated files (`frontmatter-set`,

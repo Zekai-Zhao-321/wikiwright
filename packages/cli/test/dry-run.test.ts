@@ -897,8 +897,8 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
     "the shell's one staged replace: an exclusive temp beside the target, renamed into place",
   "artifacts.ts":
     "the generated artifacts, the writer's brief and the in-repository exports, whose obsolete files it removes — one generator, byte-reproducible",
-  "generated.ts":
-    "the v2 generated files under generated/, through the staged replace — one generator, byte-reproducible (v2 contracts §9.1)",
+  "verbs/check.ts":
+    "`check --write`: the v2 generated files under generated/, through the staged replace — one generator, byte-reproducible (v2 contracts §9.1)",
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
   "main.ts":
     "the file `--out` names, which receives the whole envelope through the staged replace: a destination the caller chose, never a page (v2 contracts §9)",

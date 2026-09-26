@@ -91,7 +91,7 @@ export const ENGINE_V4_CONSUMERS: Readonly<Record<string, string | null>> = {
   content_roots: "contentRootsOf",
   source_roots: "parsePage",
   libraries: "resolveLibraries",
-  commit_prefixes: null,
+  commit_prefixes: "cli/verbs/gate.ts:commitMessageStage",
   field_sources: "compileShapes",
   folder_tags: "folderFindings",
   folder_tag_aliases: "folderFindings",

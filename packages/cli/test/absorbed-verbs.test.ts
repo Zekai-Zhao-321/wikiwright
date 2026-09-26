@@ -27,6 +27,7 @@ const ABSORBED: { spec: CommandSpec; rows: Absorbed[] }[] = [
     spec: lintCommand,
     rows: [
       { example: "wikiwright lint --root .", replacement: ["check"] },
+      { example: "wikiwright lint --staged", replacement: ["gate"] },
       {
         example: "wikiwright lint --page wiki/example.md",
         replacement: ["check", "--path", "wiki/Basil.md"],
@@ -92,9 +93,7 @@ beforeAll(() => {
 
 describe.each(ABSORBED)("the old $spec.name, absorbed", ({ spec, rows }) => {
   it("every documented example has its row", () => {
-    // lint --staged is the gate's; it has its row when the gate lands.
-    const documented = spec.examples.filter((e) => e !== "wikiwright lint --staged");
-    expect(rows.map((r) => r.example)).toEqual(documented);
+    expect(rows.map((r) => r.example)).toEqual(spec.examples);
   });
 
   it("is no verb over a schema-version-4 bundle", () => {

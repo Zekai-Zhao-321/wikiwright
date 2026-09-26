@@ -28,8 +28,9 @@ import {
   type Unrouted,
   verdictOfCollected,
 } from "@wikiwright/core";
+import { replaceFiles } from "../atomicwrite.ts";
 import { type CommandResult, capOptions, ENGINE_VERSION, fail, ok } from "../envelope.ts";
-import { driftFindings, GENERATED_PATHS, generatedPlans, writeGenerated } from "../generated.ts";
+import { driftFindings, GENERATED_PATHS, generatedPlans } from "../generated.ts";
 import { fsState } from "../lawstate.ts";
 import { measurePins } from "../pins.ts";
 import {
@@ -54,6 +55,17 @@ import { commitWrites } from "../writer.ts";
 function onDisk(root: string, path: string): string | undefined {
   const abs = join(root, path);
   return existsSync(abs) ? readFileSync(abs, "utf8") : undefined;
+}
+
+/**
+ * `--write`: every planned file lands through the shell's staged replace,
+ * all staged before the first rename (atomicwrite.ts): a failure while
+ * staging leaves every old file; a crash inside the rename loop can leave
+ * some old and some new, and the next `check --write` converges them.
+ */
+function writeGenerated(root: string, plans: readonly TypeLawArtifact[]): string[] {
+  replaceFiles(plans.map((plan) => ({ path: join(root, plan.path), contents: plan.content })));
+  return plans.map((plan) => plan.path);
 }
 
 /** A page `--fix` rewrites, and the bytes it would hold. */

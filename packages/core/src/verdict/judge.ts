@@ -563,6 +563,17 @@ export function verdictOfCollected(
 }
 
 /**
+ * The verdict of findings no page collection produced — the gate's
+ * commit-message stage, whose findings are the law diff's alone.
+ */
+export function verdictOfFindings(
+  found: readonly Unrouted[],
+  options: TypeLawJudgeOptions = {},
+): TypeLawVerdict {
+  return verdictOf(found, new Coverage([]), 0, options);
+}
+
+/**
  * v2 contracts §10: `judge(state, law)`. `law` is `loadTypeLaw(state.law)`;
  * the caller loads it, so a law that does not load is reported as the
  * loader's issues and never judged.

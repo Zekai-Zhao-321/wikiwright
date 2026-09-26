@@ -4,6 +4,8 @@
 // rewritten over it in step 4.
 
 export { folderFindings, formerFolderFindings, missingFolderTags } from "./folders.ts";
+export type { GateScope } from "./gate.ts";
+export { changesLaw, gateScope, inheritedLines as inheritedPageLines } from "./gate.ts";
 export type {
   Collected,
   CoverageCell,
@@ -19,6 +21,7 @@ export {
   readPages,
   sortVerdictFindings,
   verdictOfCollected,
+  verdictOfFindings,
 } from "./judge.ts";
 export type { LawChange } from "./lawdiff.ts";
 export {

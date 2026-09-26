@@ -20,7 +20,7 @@ import { checkCommand as legacyCheckCommand } from "./legacy/check.ts";
 import { exportCommand } from "./legacy/export.ts";
 import { fixCommand } from "./legacy/fix.ts";
 import { freshnessCommand } from "./legacy/freshness.ts";
-import { gateCommand } from "./legacy/gate.ts";
+import { gateCommand as legacyGateCommand } from "./legacy/gate.ts";
 import { graphCommand } from "./legacy/graph.ts";
 import { hookCommand } from "./legacy/hook.ts";
 import { initCommand } from "./legacy/init.ts";
@@ -40,6 +40,7 @@ import { vocabularyCommand } from "./legacy/vocabulary.ts";
 import { writeCommand } from "./legacy/write.ts";
 import type { CommandSpec } from "./spec.ts";
 import { checkCommand } from "./verbs/check.ts";
+import { gateCommand } from "./verbs/gate.ts";
 
 /** The command table: the verbs a schema-version-4 bundle is answered by. */
 export const COMMANDS: CommandSpec[] = [
@@ -49,7 +50,6 @@ export const COMMANDS: CommandSpec[] = [
   exportCommand,
   gateCommand,
   graphCommand,
-  hookCommand,
   initCommand,
   modulesCommand,
   moveCommand,
@@ -72,7 +72,7 @@ export const LEGACY_COMMANDS: CommandSpec[] = [
   legacyCheckCommand,
   exportCommand,
   freshnessCommand,
-  gateCommand,
+  legacyGateCommand,
   graphCommand,
   hookCommand,
   initCommand,
