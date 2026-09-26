@@ -4,7 +4,7 @@ title: "The Writer and the staged gate"
 description: "The judged draft writer and staged Git acceptance boundary."
 tags: [kernel, cli]
 pin:
-  commit: d8b5ad4a05fac7ea12a06853a0f36007d95059a3
+  commit: 672de1a70a408e4ca09f00602e5496d27244a3c8
   origin: .
   covers: ["packages/cli/src/verbs/write.ts", "packages/cli/src/verbs/gate.ts", "packages/cli/src/lawstate.ts", "packages/cli/src/writer.ts", "packages/cli/src/ops.ts"]
 ---
@@ -29,7 +29,7 @@ A dry run and a real write agree on refusal and plan paths. Draft bases, pages a
 
 ## Failure modes
 
-A crash between replacements is not batch-atomic. A changed accepted state, blocked destination, truncated Git answer, unmerged index or stale bytes base is refused before landing or commit.
+A crash between replacements is not batch-atomic. A changed accepted state, blocked destination, source directory that cannot release a moved page, truncated Git answer, unmerged index or stale bytes base is refused before landing or commit.
 
 ## Relations
 

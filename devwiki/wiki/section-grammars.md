@@ -4,7 +4,7 @@ title: "Section grammars"
 description: "The kernel's fixed claims, relations and dated-entry record grammars."
 tags: [kernel, stdlib]
 pin:
-  commit: d8b5ad4a05fac7ea12a06853a0f36007d95059a3
+  commit: 672de1a70a408e4ca09f00602e5496d27244a3c8
   origin: .
   covers: ["packages/core/src/records/index.ts", "packages/core/src/records/schemas.ts", "packages/core/src/interface/index.ts", "packages/core/src/verdict/grammar.ts"]
 ---
@@ -23,7 +23,7 @@ A top-level item that does not match its grammar is item-unparsed. A relation ca
 
 Current source at this pin: `packages/core/src/records/index.ts`, `packages/core/src/records/schemas.ts`, `packages/core/src/interface/index.ts`, `packages/core/src/verdict/grammar.ts`.
 
-Alternative v1 spellings and one-to-three-space top-level bullets are not silently accepted. Nested bullets under a record remain rationale until an opaque block ends that item. A later bullet is judged on its own. Without a base, transition rows are unevaluated; with one, a removed open claim, relation or entry can be refused.
+Alternative v1 spellings and one-to-three-space top-level bullets are not silently accepted. Nested bullets under a record remain rationale, including across a nested fenced block. A separate opaque block ends that item, so a later bullet is judged on its own. Without a base, transition rows are unevaluated; with one, a removed open claim, relation or entry can be refused.
 
 ## Relations
 

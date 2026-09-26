@@ -233,8 +233,10 @@ version` prints the engine version and the commit a binary was built from.
 - The accepted pages and law are checked again after `write` stages temporary
   files, so an edit during staging refuses the write. `check --fix` stages its
   page repairs and generated artifacts together; an unwritable generated
-  directory is refused before either lands, including on a dry run. Opaque
-  blocks end a grammar list item, so a later indented bullet is judged.
+  directory is refused before either lands, including on a dry run. A move
+  also checks that its source directory permits removal before the destination
+  lands. Separate opaque blocks end a grammar list item, so a later indented
+  bullet is judged; nested fenced blocks preserve nested rationale.
 
 ### Developing
 

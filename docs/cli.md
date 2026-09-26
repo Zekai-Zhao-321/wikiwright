@@ -267,7 +267,8 @@ read.
   dry and real runs; an obstructing directory or link is
   `replacement-target-refused` (exit 4) before the first replacement. Otherwise
   every page is staged beside its path, then renamed into place, then each
-  path a move left is removed: each file is its old or its new complete
+  path a move left is removed. The moved-from parent must allow removal before
+  the first rename: each file is its old or its new complete
   bytes, and the batch is not transactional. The envelope carries the plan's
   `ops`, `wrote`, `operations` (what each did) and one row per page
   (`path`, `created`, `moved_from`, `findings`, `digest` before and after).
