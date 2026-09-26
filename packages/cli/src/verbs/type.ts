@@ -78,7 +78,9 @@ function census(read: StateRead): Map<string, Map<string, number>> {
     if (Array.isArray(tags))
       for (const tag of tags) if (typeof tag === "string") count("tags", tag);
     for (const occurrence of parsed.occurrences) {
-      const section = parsed.type?.sections?.list.find((s) => s.heading === occurrence.heading);
+      const section = parsed.type?.sections?.list.find(
+        (s) => JSON.stringify(s.path) === JSON.stringify(occurrence.policy),
+      );
       if (section?.vocabulary === undefined) continue;
       for (const item of occurrence.items) {
         if (item.kind === "claim") count(section.vocabulary, item.category);
@@ -94,7 +96,7 @@ function instruction(law: TypeLaw, type: LawType): string[] {
   return (type.sections?.list ?? []).map((section) => {
     const grammar = section.grammar ?? "prose";
     const bounds = `min ${section.min}${section.max === null ? "" : ` max ${section.max}`}`;
-    const parts = [`${section.heading}  ${grammar}  ${bounds}`];
+    const parts = [`${section.path.join(" > ")}  ${grammar}  scope ${section.scope}  ${bounds}`];
     const spelling = section.grammar === undefined ? undefined : SPELLING[section.grammar];
     if (spelling !== undefined) parts.push(spelling);
     const params = Object.entries(section.params)
@@ -142,6 +144,8 @@ function contract(law: TypeLaw, type: LawType): Record<string, unknown> {
             additional: type.sections.additional,
             list: type.sections.list.map((s) => ({
               heading: s.heading,
+              path: s.path,
+              scope: s.scope,
               min: s.min,
               max: s.max,
               grammar: s.grammar ?? null,

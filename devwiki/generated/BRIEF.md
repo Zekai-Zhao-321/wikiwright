@@ -2,7 +2,7 @@
 
 Generated file — do not edit; regenerate with `wikiwright check --write`.
 
-Law digest: `52331cd02be580bdcc4079597444148c578bea0445a71bd94bcaad59d37b7b0a`
+Law digest: `2b7204cf7e607463cfd1474f4cccecbdaab160194fc66a58b7e5d979309fc54d`
 
 ## The loop
 
@@ -65,7 +65,7 @@ wikiwright read wiki/Basil.md
 
 ### `rule` — a candidate rule over the pages it would govern, before it is law
 
-`wikiwright rule <try>` — flags: --type <v> --section <v> --expr <v> --config <v> --base <v>
+`wikiwright rule <try>` — flags: --type <v> --section <v> --section-path <v> --expr <v> --config <v> --base <v>
 
 ```text
 wikiwright rule try --type planting --expr "has(page.fields.source)"

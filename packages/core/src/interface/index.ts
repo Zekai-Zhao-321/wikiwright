@@ -12,7 +12,7 @@
 // files, the network, and time.
 import { pageDigest } from "../digest/index.ts";
 import { normalizeIdentity } from "../identity/index.ts";
-import type { LawType } from "../law/compose.ts";
+import { type LawType, sectionPolicy } from "../law/compose.ts";
 import type { TypeLaw } from "../law/load.ts";
 import { utf8Text } from "../law/text.ts";
 import { isMapping, readYaml, setOwn } from "../law/yaml.ts";
@@ -37,8 +37,20 @@ export interface Occurrence {
   depth: number;
   /** The headings from the outermost enclosing one to this one. */
   path: string[];
+  /** Exact path below sections.depth, or [] outside its section tree. */
+  sectionPath: string[];
+  /** Physical ancestry and sibling identity; stable across repeated headings. */
+  address: { heading: string; index: number }[];
+  /** The declaration owning this heading's direct body, if any. */
+  policy: string[] | null;
+  mode: "claims" | "relations" | "entries" | "prose" | "unbound";
+  explicit: boolean;
   location: Location;
+  /** The whole heading subtree, including child headings. */
   raw: string;
+  /** This heading through the next heading of any depth. */
+  direct: string;
+  directLocation: Location;
   items: GrammarRecord[];
 }
 
@@ -70,6 +82,8 @@ export interface ParsedPage {
   frontmatterBytes: Uint8Array | null;
   body: string;
   bodyBytes: Uint8Array;
+  /** Body bytes before its first document-level heading, if any. */
+  preamble: string;
   occurrences: Occurrence[];
   unparsed: UnparsedItem[];
   /** Every wikilink in the body: its target as written, and its line. */
@@ -248,6 +262,13 @@ export function parsePage(
     for (let i = block.line; i <= block.endLine; i += 1) opaque.set(i, indent);
   }
   const headings = doc.headings.filter((h) => h.line > bodyLine);
+  const firstHeading = headings[0];
+  const preamble = text.slice(
+    bodyStartChar,
+    firstHeading === undefined
+      ? text.length
+      : (lines[firstHeading.line - 1]?.startChar ?? text.length),
+  );
   // §6: `page.sections` holds one occurrence per heading, and `facts.links`
   // one entry per distinct target; both are ranges. Refused before the walk
   // below, whose work grows with the headings.
@@ -271,13 +292,23 @@ export function parsePage(
 
   const occurrences: Occurrence[] = [];
   const unparsed: UnparsedItem[] = [];
-  const stack: { depth: number; heading: string }[] = [];
+  const stack: { depth: number; heading: string; address: { heading: string; index: number }[] }[] =
+    [];
+  const siblingCounts = new Map<string, number>();
   const seen = new Map<string, number>();
   let overflow: { heading: string; line: number } | undefined;
   headings.forEach((heading, index) => {
     if (overflow !== undefined) return;
     while (stack.length > 0 && (stack[stack.length - 1]?.depth ?? 0) >= heading.depth) stack.pop();
-    stack.push({ depth: heading.depth, heading: heading.text });
+    // Policy identity starts at sections.depth. A title edit must not make
+    // every governed region look replaced to before.section or transitions.
+    const parentAddress =
+      heading.depth === sections?.depth ? [] : (stack[stack.length - 1]?.address ?? []);
+    const siblingKey = JSON.stringify([parentAddress, heading.text]);
+    const siblingIndex = siblingCounts.get(siblingKey) ?? 0;
+    siblingCounts.set(siblingKey, siblingIndex + 1);
+    const address = [...parentAddress, { heading: heading.text, index: siblingIndex }];
+    stack.push({ depth: heading.depth, heading: heading.text, address });
     const next = headings.slice(index + 1).find((h) => h.depth <= heading.depth);
     const lastLine = (next?.line ?? lines.length + 1) - 1;
     const directEnd = (headings[index + 1]?.line ?? lines.length + 1) - 1;
@@ -288,22 +319,32 @@ export function parsePage(
     for (let n = lastLine; n > heading.line && (lines[n - 1]?.text.trim() ?? "") === ""; n -= 1) {
       endLine = lines[n - 2] ?? startLine;
     }
+    let directEndLine = lines[directEnd - 1] ?? startLine;
+    for (let n = directEnd; n > heading.line && (lines[n - 1]?.text.trim() ?? "") === ""; n -= 1) {
+      directEndLine = lines[n - 2] ?? startLine;
+    }
+    const rootIndex = stack.findIndex((part) => part.depth === sections?.depth);
+    const sectionPath = rootIndex < 0 ? [] : stack.slice(rootIndex).map((part) => part.heading);
+    const policy = sectionPolicy(sections, sectionPath);
     const occurrence: Occurrence = {
       heading: heading.text,
       depth: heading.depth,
       path: stack.map((s) => s.heading),
+      sectionPath,
+      address,
+      policy: policy.section?.path ?? null,
+      mode: policy.section?.grammar ?? (policy.section === undefined ? "unbound" : "prose"),
+      explicit: policy.explicit,
       location: { line: heading.line, span: [startLine.startByte, endLine.endByte] },
       raw: text.slice(startLine.startChar, endLine.endChar),
+      direct: text.slice(startLine.startChar, directEndLine.endChar),
+      directLocation: { line: heading.line, span: [startLine.startByte, directEndLine.endByte] },
       items: [],
     };
     const count = seen.get(heading.text) ?? 0;
     seen.set(heading.text, count + 1);
     occurrences.push(occurrence);
-    const declared =
-      sections !== null && heading.depth === sections.depth
-        ? sections.list.find((s) => s.heading === heading.text)
-        : undefined;
-    const grammar = declared?.grammar;
+    const grammar = policy.section?.grammar;
     if (grammar === undefined) return;
     // A setext heading's underline is not content.
     const contentFrom = startLine.text.trimStart().startsWith("#")
@@ -433,6 +474,7 @@ export function parsePage(
     keyLines,
     body,
     bodyBytes,
+    preamble,
     occurrences,
     unparsed,
     links: doc.wikilinks.map((l) => ({ target: l.target, line: l.line })),
@@ -458,8 +500,12 @@ export function celOccurrence(occurrence: Occurrence): Record<string, unknown> {
   return {
     heading: occurrence.heading,
     path: [...occurrence.path],
+    mode: occurrence.mode,
+    explicit: occurrence.explicit,
     location: celLocation(occurrence.location),
     raw: occurrence.raw,
+    direct: occurrence.direct,
+    directLocation: celLocation(occurrence.directLocation),
     items: occurrence.items.map(celRecord),
   };
 }

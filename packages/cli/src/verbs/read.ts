@@ -239,6 +239,28 @@ async function run(args: CommandArgs): Promise<CommandResult> {
     omitted.push({ ...located, reason: "budget" });
   }
   const frontmatter = parsed?.frontmatter ?? {};
+  const seenHeadings = new Map<string, number>();
+  const regions = (parsed?.occurrences ?? []).map((occurrence) => {
+    const index = seenHeadings.get(occurrence.heading) ?? 0;
+    seenHeadings.set(occurrence.heading, index + 1);
+    return {
+      heading: occurrence.heading,
+      occurrence: index,
+      depth: occurrence.depth,
+      path: occurrence.path,
+      section_path: occurrence.sectionPath,
+      policy: occurrence.policy,
+      mode: occurrence.mode,
+      explicit: occurrence.explicit,
+      subtree_span: occurrence.location.span,
+      direct_span: occurrence.directLocation.span,
+      records: occurrence.items.length,
+      malformed_items:
+        parsed?.unparsed.filter(
+          (item) => item.heading === occurrence.heading && item.occurrence === index,
+        ).length ?? 0,
+    };
+  });
   const description = frontmatter["description"];
   const status = (await pageStatuses(args.root, state, law, read, [page.path])).get(page.path);
   return withIdentity(
@@ -258,6 +280,8 @@ async function run(args: CommandArgs): Promise<CommandResult> {
       bytes: bytesDigest(bytes),
       status,
       sections,
+      regions,
+      unbound_preamble: parsed === undefined ? null : parsed.preamble.trim() !== "",
       omitted,
       coverage: {
         sections: all.length,

@@ -52,6 +52,7 @@ export interface Frontmatter {
   endLine: number;
 }
 
+/** A document-level heading; headings nested in quotes or lists stay block content. */
 export interface Heading {
   depth: number;
   text: string;
@@ -82,6 +83,7 @@ export interface OpaqueBlock {
 
 export interface ParsedDoc {
   frontmatter: Frontmatter;
+  /** Only document-level headings form section boundaries for grammar, read and search. */
   headings: Heading[];
   fences: Fence[];
   /**
@@ -240,11 +242,15 @@ export function parseDoc(raw: string): ParsedDoc {
         exclude(node);
         return;
       case "heading": {
-        headings.push({
-          depth: node.depth ?? 1,
-          text: collectText(node).trim(),
-          line: node.position?.start.line ?? 1,
-        });
+        // A heading quoted or nested in a list is content of that block,
+        // not a document section boundary. Treating it as one can stop a
+        // governed section before the next real claim.
+        if (parent === tree)
+          headings.push({
+            depth: node.depth ?? 1,
+            text: collectText(node).trim(),
+            line: node.position?.start.line ?? 1,
+          });
         break;
       }
       case "code": {

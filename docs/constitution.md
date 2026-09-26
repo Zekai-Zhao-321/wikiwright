@@ -156,18 +156,56 @@ supported keyword directions and reports `shape-relaxed` or
 
 `sections.depth` defaults to heading level 2. `ordered` defaults false.
 `additional` is `allowed` by default or `refused`. Each entry in
-`sections.list` has an exact `heading`, optional `min` and `max`, an
-optional `grammar` and that grammar's parameters. Inheritance merges
-headings by exact text: the higher minimum and lower maximum win;
-conflicting grammar, vocabulary, depth, or parameter values are refused.
-A child can add a heading or tighten its bounds.
+`sections.list` has an exact `heading`, optional `min` and `max`, a
+`scope: direct | descendants` (default `direct`), an optional grammar,
+and that grammar's parameters. A nested entry uses `under: [Facts, Details]`:
+the complete actual heading ancestry below `sections.depth`, excluding the
+page title. It must name a grammar or `grammar: prose` when first declared.
+An explicit prose child excludes that region from its parent's grammar.
+Selectors follow heading ancestry even when Markdown skips a heading level.
+
+Each physical heading owns only the list items in its direct body. Under
+`scope: descendants`, undeclared child headings inherit the nearest policy;
+an explicit child declaration replaces that policy. Under `scope: direct`,
+the child body is unbound until a declaration matches it; the direct child
+is a barrier, so its grandchildren cannot inherit a more distant policy.
+The heading's `raw` span still includes its whole subtree, while `direct`
+and `directLocation` identify its heading line and direct content through
+the next document heading; its `items` belong to that content. A CEL
+section rule and a relation `require` row run on each governed physical
+heading separately; neither aggregates descendant items into an ancestor.
+An explicit child is a new policy owner, including when it uses the same
+grammar and inherits that grammar's parameters: a parent section CEL rule
+does not attach to that child. Attach a separate rule to the child path
+when it needs the same custom check. Same-layer replacement is deliberate;
+cross-layer weakening is refused.
+`relations.history` names a root entries heading at `sections.depth`.
+
+Declarations merge by complete path. A root's `min` and `max` count its
+occurrences; a nested declaration's bounds count matches under each
+physical parent. Inherited bounds can tighten, while conflicting grammar,
+vocabulary, depth or parameters are refused. A later type or fragment cannot
+add a child exception under an inherited descendants grammar or narrow that
+scope to `direct`; deliberate exceptions belong in the same declaration
+layer as the policy they qualify. A later type may add a typed child below
+an inherited prose barrier. Repeated headings at different paths have
+distinct policies and transition identities.
+
+`check` and `gate` summarize governed, explicit prose and unbound heading
+regions, parsed records, malformed governed items and nonempty unbound
+preambles. `read` lists each physical region's path, policy, mode and direct
+span. Prose and unbound bullets are not inferred claims. Text before the
+first document heading is an unbound preamble; a heading nested in a quote
+or list does not start a document section. A green check says only that the
+governed regions satisfy their declared grammar and rules.
 
 `type show <name> --brief` renders a skeleton from the effective shape
 and headings. There is no template declaration or `new` verb.
 
 ## The fixed grammar
 
-A grammar applies to top-level list items under its section heading.
+A grammar applies to top-level list items in each governed heading's direct
+body, including inherited descendants when declared.
 Other prose is allowed. A nested indented item below a record is rationale.
 One to three leading spaces can still make a CommonMark top-level bullet,
 but the canonical grammar requires column one; such an item is
@@ -201,12 +239,14 @@ Each parsed record has the engine's `item-claim`, `item-relation`, or
 ## The rule interface and bounds
 
 CEL rules bind `page`, `config`, `facts`, and `before`. A section rule
-also binds `section`. The interface identity is `page-interface/1`.
+also binds `section`. `section: Facts` attaches to that root declaration's
+governed physical headings; `section: [Facts, Timeline]` names a nested
+declaration. The interface identity is `page-interface/2`.
 
 | Variable | Relevant values |
 |---|---|
 | `page` | path, type, ancestry, role, frontmatter, effective fields, body, digest, parsed URLs, section occurrences |
-| `section` | attached heading, path, location, raw text, parsed items |
+| `section` | physical heading, path, location, raw subtree, direct body and location, effective mode, explicit-declaration flag, direct parsed items |
 | `config` | this rule's config after `configure` |
 | `facts` | vocabulary entries, resolved links, type ancestry |
 | `before` | `present` and the base page and sections when available |

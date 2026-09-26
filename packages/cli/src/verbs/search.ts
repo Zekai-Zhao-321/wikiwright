@@ -38,11 +38,10 @@ function itemCandidates(read: StateRead): ItemCandidate[] {
   for (const page of [...read.pages].sort((a, b) => codeUnitCompare(a.path, b.path))) {
     if (!page.read.ok) continue;
     const parsed = page.read.page;
-    const sections = parsed.type?.sections?.list ?? [];
     const retired = parsed.frontmatter["status"] === "retired";
     for (const occurrence of parsed.occurrences) {
-      const grammar = sections.find((s) => s.heading === occurrence.heading)?.grammar;
-      if (grammar === undefined) continue;
+      const grammar = occurrence.mode;
+      if (grammar === "prose" || grammar === "unbound") continue;
       for (const item of occurrence.items) {
         const { raw, rationale, location, ...fields } = item;
         out.push({

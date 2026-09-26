@@ -48,27 +48,34 @@ export function transitionRows(type: LawType): Set<string> {
   return out;
 }
 
-/** Where a base occurrence's heading stands in the page now: its same occurrence, or the page. */
-function locationOf(page: ParsedPage, heading: string, index: number): FindingLocation {
-  const now = indexed(page).find((a) => a.occurrence.heading === heading && a.index === index);
+/** Where a base physical occurrence stands now, or the page after removal/rename. */
+function locationOf(
+  page: ParsedPage,
+  address: readonly { heading: string; index: number }[],
+): FindingLocation {
+  const now = indexed(page).find(
+    (a) => JSON.stringify(a.occurrence.address) === JSON.stringify(address),
+  );
   return now === undefined
     ? PAGE_LOCATION
-    : { kind: "section", heading, occurrence: index, line: now.occurrence.location.line };
+    : {
+        kind: "section",
+        heading: now.occurrence.heading,
+        occurrence: now.index,
+        line: now.occurrence.location.line,
+      };
 }
 
 /** `lifecycle: append-only`: the first base entry the page changed or removed, per occurrence. */
 function entryFindings(page: ParsedPage, base: ParsedPage, type: LawType): Unrouted[] {
   const out: Unrouted[] = [];
-  const appendOnly = new Set(
-    (type.sections?.list ?? [])
-      .filter((s) => s.grammar === "entries" && s.params.lifecycle === "append-only")
-      .map((s) => s.heading),
-  );
   const current = declaredOccurrences(page, type);
-  for (const { at } of declaredOccurrences(base, type)) {
-    if (!appendOnly.has(at.occurrence.heading)) continue;
+  for (const { at, section } of declaredOccurrences(base, type)) {
+    if (section.grammar !== "entries" || section.params.lifecycle !== "append-only") continue;
     const now = current.find(
-      (c) => c.at.occurrence.heading === at.occurrence.heading && c.at.index === at.index,
+      (c) =>
+        JSON.stringify(c.at.occurrence.address) === JSON.stringify(at.occurrence.address) &&
+        JSON.stringify(c.section.path) === JSON.stringify(section.path),
     );
     const items = now?.at.occurrence.items ?? [];
     for (let i = 0; i < at.occurrence.items.length; i += 1) {
@@ -81,7 +88,7 @@ function entryFindings(page: ParsedPage, base: ParsedPage, type: LawType): Unrou
         path: page.path,
         location:
           is === undefined
-            ? locationOf(page, at.occurrence.heading, at.index)
+            ? locationOf(page, at.occurrence.address)
             : {
                 kind: "section",
                 heading: at.occurrence.heading,
@@ -248,13 +255,25 @@ function newItems<T extends { raw: string }>(current: readonly T[], base: readon
 function claimsOf(
   page: ParsedPage,
   type: LawType,
-): { heading: string; index: number; claim: ClaimRecord }[] {
+): {
+  heading: string;
+  address: { heading: string; index: number }[];
+  policy: string[];
+  claim: ClaimRecord;
+}[] {
   return declaredOccurrences(page, type).flatMap(({ at, section }) =>
     section.grammar !== "claims"
       ? []
       : at.occurrence.items.flatMap((item) =>
           item.kind === "claim"
-            ? [{ heading: at.occurrence.heading, index: at.index, claim: item }]
+            ? [
+                {
+                  heading: at.occurrence.heading,
+                  address: at.occurrence.address,
+                  policy: section.path,
+                  claim: item,
+                },
+              ]
             : [],
         ),
   );
@@ -281,11 +300,14 @@ function claimFindings(page: ParsedPage, base: ParsedPage, type: LawType): Unrou
     normalizeIdentity(i.raw),
   );
   const corrected = new Set<ClaimRecord>();
-  for (const { heading, index, claim } of claimsOf(base, type)) {
+  for (const { heading, address, policy, claim } of claimsOf(base, type)) {
     if (claim.retracted !== null || claim.superseded !== null) continue;
     if (kept.has(identity(claim))) continue;
     const correction = current.find(
-      (c) => c.heading === heading && !corrected.has(c.claim) && isCorrection(claim, c.claim),
+      (c) =>
+        JSON.stringify(c.policy) === JSON.stringify(policy) &&
+        !corrected.has(c.claim) &&
+        isCorrection(claim, c.claim),
     );
     if (correction !== undefined) {
       corrected.add(correction.claim);
@@ -297,7 +319,7 @@ function claimFindings(page: ParsedPage, base: ParsedPage, type: LawType): Unrou
       rule: "claims-transition",
       severity: "error",
       path: page.path,
-      location: locationOf(page, heading, index),
+      location: locationOf(page, address),
       message: `the open [${claim.category}] claim "${claim.core}" left "${heading}" without being closed: retract or supersede it, or record why in a dated entry quoting it`,
       details: { heading, handle: claim.handle, category: claim.category, core: claim.core },
     });
@@ -360,11 +382,17 @@ function relationFindings(page: ParsedPage, base: ParsedPage, type: LawType): Un
   const out: Unrouted[] = [];
   for (const section of type.sections?.list ?? []) {
     if (section.grammar !== "relations") continue;
-    const of = (p: ParsedPage, heading: string) =>
-      declaredOccurrences(p, type).filter((o) => o.at.occurrence.heading === heading);
-    const relations = (p: ParsedPage): RelationRecord[] =>
-      of(p, section.heading).flatMap((o) =>
-        o.at.occurrence.items.filter((i): i is RelationRecord => i.kind === "relation"),
+    const of = (p: ParsedPage, policy: readonly string[]) =>
+      declaredOccurrences(p, type).filter(
+        (o) => JSON.stringify(o.section.path) === JSON.stringify(policy),
+      );
+    const relations = (
+      p: ParsedPage,
+    ): { record: RelationRecord; address: { heading: string; index: number }[] }[] =>
+      of(p, section.path).flatMap((o) =>
+        o.at.occurrence.items
+          .filter((i): i is RelationRecord => i.kind === "relation")
+          .map((record) => ({ record, address: o.at.occurrence.address })),
       );
     // A relation is the same relation when its label is and its target names
     // the same page: by the page the name resolves to, where it resolves, so
@@ -376,8 +404,8 @@ function relationFindings(page: ParsedPage, base: ParsedPage, type: LawType): Un
         ? relationIdentity(r.label, r.target.name)
         : `${normalizeIdentity(r.label)}\u0000path:${r.target.path}`;
     const survivors = new Map<string, number>();
-    for (const r of relations(page)) {
-      const id = kept(r);
+    for (const { record } of relations(page)) {
+      const id = kept(record);
       survivors.set(id, (survivors.get(id) ?? 0) + 1);
     }
     const history = section.params.history;
@@ -385,10 +413,10 @@ function relationFindings(page: ParsedPage, base: ParsedPage, type: LawType): Un
       history === undefined
         ? []
         : newItems(
-            of(page, history).flatMap((o) => o.at.occurrence.items),
-            of(base, history).flatMap((o) => o.at.occurrence.items),
+            of(page, [history]).flatMap((o) => o.at.occurrence.items),
+            of(base, [history]).flatMap((o) => o.at.occurrence.items),
           );
-    for (const relation of relations(base)) {
+    for (const { record: relation, address } of relations(base)) {
       const id = relationIdentity(relation.label, relation.target.name);
       const key = kept(relation);
       const left = survivors.get(key) ?? 0;
@@ -402,7 +430,7 @@ function relationFindings(page: ParsedPage, base: ParsedPage, type: LawType): Un
         rule: "relation-removed",
         severity: "error",
         path: page.path,
-        location: locationOf(page, section.heading, 0),
+        location: locationOf(page, address),
         message:
           history === undefined
             ? `the relation "${quoted}" left "${section.heading}", and the section names no history to record it in: restore it, or declare \`history\` and close it there`

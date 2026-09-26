@@ -71,7 +71,7 @@ describe("type (v2 contracts §9.7)", () => {
       "---\n\n# <title>\n\n## Observations\n\n## History\n\n## Relations\n\n",
     );
     expect(brief.instruction[0]).toBe(
-      'Observations  claims  min 0  |  - [category] core (provenance)  |  provenance="optional"  |  garden/observations: 3 declared (registered)',
+      'Observations  claims  scope direct  min 0  |  - [category] core (provenance)  |  provenance="optional"  |  garden/observations: 3 declared (registered)',
     );
     const relations = brief.vocabularies.find((v) => v.name === "garden/relations");
     expect(relations?.entries.find((e) => e.name === "grows-in")?.count).toBe(1);

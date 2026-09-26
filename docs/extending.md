@@ -88,9 +88,29 @@ RE2; only `date`, `date-time` and `uri` formats are supported.
 The engine rejects unsupported keywords and relaxation of an inherited
 constraint instead of guessing at their meaning.
 
+A section policy can reach nested headings without treating the ancestor's
+subtree as one list. This example governs direct items under `Facts` and
+its undeclared descendants, excludes `Notes` and its descendants as prose,
+and parses a `Timeline` child as dated entries:
+
+```yaml
+sections:
+  depth: 2
+  list:
+    - { heading: Facts, grammar: claims, provenance: required, scope: descendants }
+    - { heading: Notes, under: [Facts], grammar: prose, scope: descendants }
+    - { heading: Timeline, under: [Facts], grammar: entries, scope: descendants }
+```
+
+`under` names the whole path below the section root. A direct scope is
+the default and leaves undeclared child bodies unbound. `read` shows each
+physical heading's effective policy and direct byte span. A later type
+cannot weaken an inherited descendants policy by adding a prose child;
+place a deliberate exclusion in the same document as that policy.
+
 ## Rules are data
 
-A rule is a CEL expression over the documented `page-interface/1`.
+A rule is a CEL expression over the documented `page-interface/2`.
 For example, a section rule can require evidence for a heat observation:
 
 ```yaml
@@ -104,6 +124,9 @@ rules:
 
 `rule try --type planting --section Observations --expr <cel>` evaluates a
 candidate against the current pages before it becomes law. Every declared
+rule on a nested declaration uses `section: [Facts, Timeline]`; a trial
+uses `--section-path '["Facts","Timeline"]'`. `relations.history` names a
+root entries heading only. Every declared
 rule needs a negative page, a repaired twin, a positive page, and
 `expect.json` under `rule-tests/<id>/`. `check` judges those pages, and
 `gate` refuses a newly changed rule whose test set is incomplete. The

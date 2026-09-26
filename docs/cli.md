@@ -414,6 +414,7 @@ Writes: no.
 |---|---|
 | `--type <value>` | the type the candidate attaches to, and every type below it |
 | `--section <value>` | a section rule: the heading it is evaluated at |
+| `--section-path <value>` | a nested section rule: its complete heading path as a JSON array |
 | `--expr <value>` | the candidate's CEL expression, under the profile |
 | `--config <value>` | the candidate's config, a JSON object |
 | `--base <value>` | a revision to try it at too, under the revision adapter |

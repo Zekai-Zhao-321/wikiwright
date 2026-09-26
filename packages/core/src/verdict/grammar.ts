@@ -56,8 +56,9 @@ export function declaredOccurrences(
   if (sections === null) return [];
   const out: { at: Indexed; section: LawSection }[] = [];
   for (const at of indexed(page)) {
-    if (at.occurrence.depth !== sections.depth) continue;
-    const section = sections.list.find((s) => s.heading === at.occurrence.heading);
+    const policy = at.occurrence.policy;
+    if (policy === null) continue;
+    const section = sections.list.find((s) => JSON.stringify(s.path) === JSON.stringify(policy));
     if (section !== undefined) out.push({ at, section });
   }
   return out;
@@ -71,32 +72,69 @@ export function sectionFindings(page: ParsedPage, type: LawType): Unrouted[] {
   const all = indexed(page);
   const atDepth = all.filter((a) => a.occurrence.depth === sections.depth);
   for (const section of sections.list) {
-    const found = atDepth.filter((a) => a.occurrence.heading === section.heading);
-    if (found.length < section.min) {
-      out.push({
-        rule: "section-count",
-        severity: "error",
-        path: page.path,
-        location: PAGE_LOCATION,
-        message: `section "${section.heading}" occurs ${found.length} time(s); ${type.name} requires at least ${section.min}`,
-        details: { kind: "min", heading: section.heading, count: found.length, min: section.min },
-      });
-    }
-    if (section.max !== null && found.length > section.max) {
-      const extra = found[section.max] as Indexed;
-      out.push({
-        rule: "section-count",
-        severity: "error",
-        path: page.path,
-        location: sectionAt(extra),
-        message: `section "${section.heading}" occurs ${found.length} time(s); ${type.name} allows at most ${section.max}`,
-        details: { kind: "max", heading: section.heading, count: found.length, max: section.max },
-      });
+    const parents =
+      section.path.length === 1
+        ? [undefined]
+        : all.filter(
+            (a) =>
+              JSON.stringify(a.occurrence.sectionPath) ===
+              JSON.stringify(section.path.slice(0, -1)),
+          );
+    for (const parent of parents) {
+      const found = all.filter(
+        (a) =>
+          a.occurrence.explicit &&
+          JSON.stringify(a.occurrence.sectionPath) === JSON.stringify(section.path) &&
+          (parent === undefined ||
+            JSON.stringify(a.occurrence.address.slice(0, -1)) ===
+              JSON.stringify(parent.occurrence.address)),
+      );
+      if (found.length < section.min) {
+        out.push({
+          rule: "section-count",
+          severity: "error",
+          path: page.path,
+          location: parent === undefined ? PAGE_LOCATION : sectionAt(parent),
+          message: `section "${section.path.join(" > ")}" occurs ${found.length} time(s); ${type.name} requires at least ${section.min}`,
+          details: {
+            kind: "min",
+            heading: section.heading,
+            section_path: section.path,
+            parent_address: parent?.occurrence.address ?? null,
+            count: found.length,
+            min: section.min,
+          },
+        });
+      }
+      if (section.max !== null && found.length > section.max) {
+        const extra = found[section.max] as Indexed;
+        out.push({
+          rule: "section-count",
+          severity: "error",
+          path: page.path,
+          location: sectionAt(extra),
+          message: `section "${section.path.join(" > ")}" occurs ${found.length} time(s); ${type.name} allows at most ${section.max}`,
+          details: {
+            kind: "max",
+            heading: section.heading,
+            section_path: section.path,
+            count: found.length,
+            max: section.max,
+          },
+        });
+      }
     }
   }
-  const declared = new Map(sections.list.map((s, i) => [s.heading, i] as const));
+  const declared = new Map(
+    sections.list.filter((s) => s.path.length === 1).map((s, i) => [s.heading, i] as const),
+  );
   for (const at of all) {
-    if (at.occurrence.depth === sections.depth || !declared.has(at.occurrence.heading)) continue;
+    if (
+      at.occurrence.depth === sections.depth ||
+      !declared.has(at.occurrence.heading) ||
+      at.occurrence.policy !== null
+    )
+      continue;
     out.push({
       rule: "section-depth",
       severity: "error",
@@ -127,7 +165,7 @@ export function sectionFindings(page: ParsedPage, type: LawType): Unrouted[] {
       continue;
     }
     if (sections.ordered && position < highest) {
-      const after = sections.list[highest]?.heading ?? "";
+      const after = sections.list.filter((s) => s.path.length === 1)[highest]?.heading ?? "";
       out.push({
         rule: "section-order",
         severity: "error",

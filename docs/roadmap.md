@@ -151,12 +151,22 @@ An envelope over 1 MiB is `envelope-too-large`; `--out <file>` writes it
 whole. There is no automatic spill, preview reserve or report directory.
 Add those only if ordinary host output limits make `--out` burdensome.
 
-The page interface is identified as `page-interface/1` in the law digest
+The page interface is identified as `page-interface/2` in the law digest
 but has no multi-version compatibility protocol. Independently updated
 libraries that need different interfaces would trigger one. There is no
 general assessment scale or configurable `cite_with` qualifier; use a
 bundle rule when possible, and add a library only after a stable repeated
 need.
+
+Section scope is declared by a root heading and exact child paths. A
+descendants policy governs each matching physical heading's direct body;
+an explicit child can replace it with another grammar or prose. It does not
+infer that a prose bullet is a claim, mix two grammars within one direct
+body, or aggregate child items into a parent's `section.items` for CEL.
+`check` and `gate` report governed, prose and unbound region counts;
+`read` locates each one. Content before the first document heading is
+counted as an unbound preamble when nonempty. A mixed direct region needs
+an authored heading or list edit before all its bullets can be governed.
 
 ### Other knowledge and agent gaps
 

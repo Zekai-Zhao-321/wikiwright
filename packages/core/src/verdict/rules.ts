@@ -64,13 +64,8 @@ export function ruleFindings(
     basePage === undefined ? undefined : { parsed: basePage, type: basePage.type ?? type },
   );
   const reason = base === undefined ? "no-base" : readable ? undefined : "base-unreadable";
-  const occurrences = indexed(page).filter(
-    (a) => a.occurrence.depth === (type.sections?.depth ?? 2),
-  );
-  const baseOccurrences =
-    basePage === undefined
-      ? []
-      : indexed(basePage).filter((a) => a.occurrence.depth === (type.sections?.depth ?? 2));
+  const occurrences = indexed(page);
+  const baseOccurrences = basePage === undefined ? [] : indexed(basePage);
   for (const rule of type.rules) {
     const compiled = ctx.law.rules.get(rule.id);
     if (compiled === undefined) continue;
@@ -82,10 +77,16 @@ export function ruleFindings(
       rule.section === undefined
         ? [{ location: PAGE_LOCATION, before: beforeValue }]
         : occurrences
-            .filter((a) => a.occurrence.heading === rule.section)
+            .filter(
+              (a) =>
+                JSON.stringify(a.occurrence.policy) ===
+                JSON.stringify(typeof rule.section === "string" ? [rule.section] : rule.section),
+            )
             .map((a) => {
               const was = baseOccurrences.find(
-                (b) => b.occurrence.heading === a.occurrence.heading && b.index === a.index,
+                (b) =>
+                  JSON.stringify(b.occurrence.address) === JSON.stringify(a.occurrence.address) &&
+                  JSON.stringify(b.occurrence.policy) === JSON.stringify(a.occurrence.policy),
               );
               return {
                 location: {

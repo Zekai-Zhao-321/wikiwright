@@ -160,11 +160,11 @@ describe("parseDoc — headings (checker inputs, 07)", () => {
     );
   });
 
-  it("does extract blockquoted headings (resolved by micromark)", () => {
+  it("does not treat blockquoted headings as document section boundaries", () => {
     const doc = parseDoc(LF_DOC);
     assert.equal(
       doc.headings.some((h) => h.text === "Quoted heading" && h.depth === 2),
-      true,
+      false,
     );
   });
 });

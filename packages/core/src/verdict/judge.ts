@@ -88,6 +88,8 @@ export interface TypeLawVerdict {
   coverage: Record<string, CoverageCell>;
   /** The transitions this state could not judge, by id, with every reason it could not. */
   unevaluated: Record<string, { count: number; reasons: UnevaluatedReason[] }>;
+  /** Physical heading bodies by grammar ownership; prose/unbound is not a claim verdict. */
+  scope?: ScopeCoverage;
   summary: {
     pages: number;
     errors: number;
@@ -98,6 +100,15 @@ export interface TypeLawVerdict {
     unevaluated: number;
   };
   caps: { limit: number; hit: boolean };
+}
+
+export interface ScopeCoverage {
+  governed: number;
+  prose: number;
+  unbound: number;
+  parsed_records: number;
+  malformed_items: number;
+  unbound_preambles: number;
 }
 
 export const DEFAULT_FINDING_LIMIT = 50;
@@ -481,6 +492,7 @@ export interface Collected {
   coverage: Coverage;
   /** The pages the state holds. */
   pages: number;
+  scope: ScopeCoverage;
 }
 
 /**
@@ -498,7 +510,25 @@ export function collectTypeLaw(
   const ctx = pageContext(state, law, names);
   const coverage = new Coverage([...PAGE_ROWS, ...law.rules.keys()]);
   const found: Unrouted[] = [];
+  const scope: ScopeCoverage = {
+    governed: 0,
+    prose: 0,
+    unbound: 0,
+    parsed_records: 0,
+    malformed_items: 0,
+    unbound_preambles: 0,
+  };
   for (const page of pages) {
+    if (page.read.ok) {
+      if (page.read.page.preamble.trim() !== "") scope.unbound_preambles += 1;
+      for (const occurrence of page.read.page.occurrences) {
+        if (occurrence.mode === "unbound") scope.unbound += 1;
+        else if (occurrence.mode === "prose") scope.prose += 1;
+        else scope.governed += 1;
+        scope.parsed_records += occurrence.items.length;
+      }
+      scope.malformed_items += page.read.page.unparsed.length;
+    }
     const judgment = judgePage(ctx, page);
     found.push(...judgment.findings);
     coverage.page(judgment.judged, judgment.unjudged);
@@ -541,7 +571,7 @@ export function collectTypeLaw(
       options.rulesChanged === undefined ? {} : { rulesChanged: options.rulesChanged };
     found.push(...lawTestFindings(law, overlaid, tests));
   }
-  return { found, coverage, pages: pages.length };
+  return { found, coverage, pages: pages.length, scope };
 }
 
 /**
@@ -560,12 +590,15 @@ export function verdictOfCollected(
     coverage.reasons.set(id, new Set(reasons));
   for (const [id, cell] of Object.entries(options.shellCoverage ?? {}))
     coverage.cells.set(id, { ...cell });
-  return verdictOf(
-    [...collected.found, ...(options.shellFindings ?? [])],
-    coverage,
-    collected.pages,
-    options,
-  );
+  return {
+    ...verdictOf(
+      [...collected.found, ...(options.shellFindings ?? [])],
+      coverage,
+      collected.pages,
+      options,
+    ),
+    scope: collected.scope,
+  };
 }
 
 /**

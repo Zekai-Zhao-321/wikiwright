@@ -82,6 +82,8 @@ function sectionsShape(type: LawType): string {
     additional: sections.additional,
     list: sections.list.map((s) => ({
       heading: s.heading,
+      path: s.path,
+      scope: s.scope,
       min: s.min,
       max: s.max,
       grammar: s.grammar ?? null,
@@ -91,7 +93,7 @@ function sectionsShape(type: LawType): string {
 }
 
 function sectionParams(type: LawType): string {
-  return canonicalJson((type.sections?.list ?? []).map((s) => [s.heading, s.params]));
+  return canonicalJson((type.sections?.list ?? []).map((s) => [s.path, s.params]));
 }
 
 const same = (a: unknown, b: unknown): boolean => canonicalJson(a) === canonicalJson(b);
@@ -117,7 +119,7 @@ export function lawDiff(head: TypeLaw, index: TypeLaw): LawChange[] {
         before: was.expr,
         after: is.expr,
       });
-    if ((was.section ?? null) !== (is.section ?? null))
+    if (!same(was.section ?? null, is.section ?? null))
       add("rule-section", is.where, `rule ${id} attaches to another section`, {
         rule: id,
         before: was.section ?? null,

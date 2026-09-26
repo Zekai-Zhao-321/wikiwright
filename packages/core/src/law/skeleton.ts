@@ -37,7 +37,28 @@ export function skeletonOf(type: LawType): string {
     lines.push(`${key}: ${kind === "string" ? '""' : kind === "array" ? "[]" : "null"}`);
   }
   lines.push("---", "", "# <title>", "");
-  const marks = "#".repeat(type.sections?.depth ?? 2);
-  for (const section of type.sections?.list ?? []) lines.push(`${marks} ${section.heading}`, "");
+  interface HeadingNode {
+    heading: string;
+    children: Map<string, HeadingNode>;
+  }
+  const roots = new Map<string, HeadingNode>();
+  for (const section of type.sections?.list ?? []) {
+    let siblings = roots;
+    for (const heading of section.path) {
+      let node = siblings.get(heading);
+      if (node === undefined) {
+        node = { heading, children: new Map() };
+        siblings.set(heading, node);
+      }
+      siblings = node.children;
+    }
+  }
+  const emit = (nodes: Map<string, HeadingNode>, depth: number): void => {
+    for (const node of nodes.values()) {
+      lines.push(`${"#".repeat(depth)} ${node.heading}`, "");
+      emit(node.children, depth + 1);
+    }
+  };
+  emit(roots, type.sections?.depth ?? 2);
   return `${lines.join("\n")}\n`;
 }

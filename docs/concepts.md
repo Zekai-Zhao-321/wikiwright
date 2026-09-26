@@ -63,9 +63,13 @@ fields, constrain values, use the engine definitions `page-ref`,
 formats. A page reference is also checked against the pages the bundle
 actually has.
 
-`sections` declares headings by exact text: order, depth, minimum and
-maximum occurrences, and whether other headings are allowed. A heading
-may attach one of the three fixed grammars:
+`sections` declares root headings by exact text, order, depth, minimum and
+maximum occurrences, and whether other root headings are allowed. A
+declaration may carry its grammar through undeclared child headings with
+`scope: descendants`, and an exact child path may override it, including
+`grammar: prose` for an ordinary nested region. Each physical heading owns
+its direct items once; `read` shows the governed, prose and unbound regions.
+A heading may attach one of the three fixed grammars:
 
 | Grammar | One top-level list item |
 |---|---|
@@ -89,7 +93,9 @@ append-only. The exact record spellings and parameters are in
 ## Rules and their tests
 
 A type or fragment declares a bounded CEL rule over the documented page
-interface. A rule attaches to a page or to each occurrence of one section.
+interface. A rule attaches to a page or to each physical occurrence governed
+by one section declaration. A root is named by heading, and a nested
+declaration by its complete heading path.
 Its expression receives `page`, `section` when attached, `config`,
 `facts`, and `before` when a base state exists. It cannot read another
 page's body, Git history, a file, the network, or the clock. The engine

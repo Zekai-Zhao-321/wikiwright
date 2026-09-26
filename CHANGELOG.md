@@ -13,7 +13,7 @@ version` prints the engine version and the commit a binary was built from.
   fragment and vocabulary documents, data-only libraries imported by
   repository-relative path, JSON Schema 2020-12 shapes with RE2, the fixed
   claims/relations/dated-entries grammar, and bounded CEL rules over
-  `page-interface/1`. Every engine key has a named consumer and a CLI
+  `page-interface/2`. Every engine key has a named consumer and a CLI
   fixture.
 - One `judgeTypeLaw` for the working tree, drafts over disk, the index over
   HEAD and a revision. Every error or warning has one fix or queue route;
@@ -39,6 +39,15 @@ version` prints the engine version and the commit a binary was built from.
   disposition.
 
 ### Changed
+
+- Section declarations can use `scope: descendants` to govern each child
+  heading's direct items, `under` to name an exact child path, and
+  `grammar: prose` to exclude an ordinary child region. Direct scope stays
+  the default. `rule try --section-path` accepts a JSON heading path for a
+  nested declaration. `read` exposes physical region ownership, while
+  `check` and `gate` count governed, prose and unbound regions. The page
+  interface is `page-interface/2`, with a direct heading span and effective
+  mode; a child policy owns its own section-rule evaluations.
 
 - Bun 1.3.11 is the pinned build, test and CLI runtime. Git children are
   spawned asynchronously, at most four at once, with stdout and batch

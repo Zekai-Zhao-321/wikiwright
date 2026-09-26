@@ -6,7 +6,7 @@ The queued findings of this bundle's pages under its law, judged with no base: a
 function of the law and the content only. What `check` reads from git (pins,
 citations) is reported live and never written here.
 
-Law digest: `2c7dc9aac302bad6c04acd55d1b773a5f879762d6d7cba6e10e2339e7aa0939a`
+Law digest: `a7dfcb65c3f7229b5b3d34cf2f3ff28f83505083fab7c2ad2e728bc37e85c60c`
 Content digest: `0af324432b425dac4c03106cd210465c2dc3d2e18f0b3575a60545b63788cb71`
 
 3 finding(s).

@@ -188,6 +188,7 @@ function verdictData(verdict: TypeLawVerdict, extra: Record<string, unknown>) {
     findings: verdict.findings,
     summary: verdict.summary,
     coverage: verdict.coverage,
+    scope: verdict.scope,
     unevaluated: verdict.unevaluated,
     caps: verdict.caps,
     ...extra,
@@ -235,6 +236,7 @@ async function preCommit(
     {
       found: scope.findings,
       coverage: collected.coverage,
+      scope: collected.scope,
       pages: scope.scoped ? scope.changed.size : collected.pages,
     },
     {

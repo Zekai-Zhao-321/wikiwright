@@ -44,7 +44,7 @@ export interface TryOutcome {
 
 interface Candidate {
   type: string;
-  section?: string;
+  section?: string | string[];
   expr: string;
   config: Record<string, unknown>;
 }
@@ -74,13 +74,40 @@ function candidateOf(args: CommandArgs): Step<Candidate> {
     config = read.value;
   }
   const section = args.flags["section"];
+  const sectionPath = args.flags["section-path"];
+  if (section !== undefined && sectionPath !== undefined)
+    return usage("invalid-value", "use --section or --section-path", {
+      flags: ["section", "section-path"],
+    });
+  let path: string[] | undefined;
+  if (typeof sectionPath === "string") {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(sectionPath);
+    } catch {
+      parsed = undefined;
+    }
+    if (
+      !Array.isArray(parsed) ||
+      parsed.length === 0 ||
+      !parsed.every((part) => typeof part === "string" && part !== "")
+    )
+      return usage("config-invalid", "--section-path is a nonempty JSON array of heading strings", {
+        flag: "section-path",
+      });
+    path = parsed as string[];
+  }
   return {
     ok: true,
     value: {
       type,
       expr,
       config,
-      ...(typeof section === "string" && section !== "" ? { section } : {}),
+      ...(path !== undefined
+        ? { section: path }
+        : typeof section === "string" && section !== ""
+          ? { section }
+          : {}),
     },
   };
 }
@@ -105,14 +132,15 @@ function lawWithCandidate(
       ),
     };
   }
+  const wanted = typeof candidate.section === "string" ? [candidate.section] : candidate.section;
   if (
-    candidate.section !== undefined &&
-    !(target.sections?.list ?? []).some((s) => s.heading === candidate.section)
+    wanted !== undefined &&
+    !(target.sections?.list ?? []).some((s) => JSON.stringify(s.path) === JSON.stringify(wanted))
   ) {
     return usage(
       "rule-section-unknown",
-      `${candidate.type} declares no section "${candidate.section}"`,
-      { valid_values: (target.sections?.list ?? []).map((s) => s.heading) },
+      `${candidate.type} declares no section "${wanted.join(" > ")}"`,
+      { valid_values: (target.sections?.list ?? []).map((s) => s.path) },
     );
   }
   const admission = admitRule(candidate.expr, candidate.config);
@@ -236,6 +264,11 @@ export const ruleCommand: CommandSpec = {
       summary: "the type the candidate attaches to, and every type below it",
     },
     { name: "section", type: "string", summary: "a section rule: the heading it is evaluated at" },
+    {
+      name: "section-path",
+      type: "string",
+      summary: "a nested section rule: its complete heading path as a JSON array",
+    },
     { name: "expr", type: "string", summary: "the candidate's CEL expression, under the profile" },
     { name: "config", type: "string", summary: "the candidate's config, a JSON object" },
     {

@@ -28,6 +28,9 @@ import { setOwn } from "./yaml.ts";
 
 export interface LawSection {
   heading: string;
+  /** Full selector below sections.depth, including heading. */
+  path: string[];
+  scope: "direct" | "descendants";
   min: number;
   max: number | null;
   grammar?: Grammar;
@@ -48,7 +51,7 @@ export interface LawSections {
 export interface LawRule {
   id: string;
   expr: string;
-  section?: string;
+  section?: string | string[];
   /** After every `configure` on the chain; YAML integers are `bigint`. */
   config: Record<string, unknown>;
   severity: "error" | "warning";
@@ -116,6 +119,29 @@ export interface Composition {
 }
 
 const DEFAULT_DEPTH = 2;
+
+const sectionKey = (path: readonly string[]): string => JSON.stringify(path);
+
+/** The deepest declaration that owns this physical heading's direct body. */
+export function sectionPolicy(
+  sections: LawSections | null,
+  path: readonly string[],
+): { section: LawSection | undefined; explicit: boolean } {
+  if (sections === null || path.length === 0) return { section: undefined, explicit: false };
+  let owner: LawSection | undefined;
+  let explicit = false;
+  for (let n = 1; n <= path.length; n += 1) {
+    const declared = sections.list.find((s) => sectionKey(s.path) === sectionKey(path.slice(0, n)));
+    if (declared !== undefined) {
+      owner = declared;
+      explicit = n === path.length;
+    } else {
+      owner = owner?.scope === "descendants" ? owner : undefined;
+      explicit = false;
+    }
+  }
+  return { section: owner, explicit };
+}
 
 /**
  * v2 contracts §9.4: the id `rule try` gives its candidate rule, reserved, so
@@ -486,7 +512,75 @@ function mergeSections(
     } else depth ??= { value: declaredDepth, by: layer.name };
     if (sections.ordered === true) ordered = true;
     if (sections.additional === "refused") additional = "refused";
-    for (const entry of sections.list) {
+    // The layer may tighten an inherited direct policy to descendants and
+    // declare an exception in the same document. Compare weakening only to
+    // the law this layer received, not its own partly merged declarations.
+    const inheritedAtLayer: LawSections = {
+      depth: depth?.value ?? DEFAULT_DEPTH,
+      ordered,
+      additional,
+      list: [...merged.values()].map((section) => ({ ...section, path: [...section.path] })),
+    };
+    const inLayer = new Set<string>();
+    // Resolve parents before children, independent of their written order.
+    // The declaration order of roots remains unchanged for ordered sections.
+    const entries = [...sections.list].sort((a, b) => a.under.length - b.under.length);
+    for (const entry of entries) {
+      const path = [...entry.under, entry.heading];
+      const key = sectionKey(path);
+      const prior = merged.get(key);
+      if ((depth?.value ?? DEFAULT_DEPTH) + path.length - 1 > 6) {
+        conflict(
+          layer,
+          entry.pointer,
+          `section path ${path.join(" > ")} would require a heading deeper than H6`,
+        );
+        continue;
+      }
+      if (inLayer.has(key)) {
+        conflict(layer, entry.pointer, `section path ${path.join(" > ")} is declared twice`);
+        continue;
+      }
+      inLayer.add(key);
+      if (entry.under.length > 0 && entry.grammar === undefined && prior === undefined) {
+        conflict(
+          layer,
+          `${entry.pointer}/grammar`,
+          `nested section ${path.join(" > ")} must name a grammar or explicit prose`,
+        );
+        continue;
+      }
+      if (entry.under.length > 0 && !merged.has(sectionKey([entry.under[0] as string]))) {
+        conflict(
+          layer,
+          `${entry.pointer}/under`,
+          `nested section ${path.join(" > ")} has no declared root`,
+        );
+        continue;
+      }
+      const inherited =
+        prior === undefined && path.length > 1
+          ? sectionPolicy(
+              {
+                depth: depth?.value ?? DEFAULT_DEPTH,
+                ordered,
+                additional,
+                list: [...merged.values()],
+              },
+              path.slice(0, -1),
+            ).section
+          : undefined;
+      if (prior === undefined) {
+        const held = sectionPolicy(inheritedAtLayer, path.slice(0, -1)).section;
+        if (held?.grammar !== undefined && held.scope === "descendants") {
+          conflict(
+            layer,
+            entry.pointer,
+            `new child ${path.join(" > ")} would override inherited descendants grammar from ${held.path.join(" > ")}`,
+          );
+          continue;
+        }
+      }
       const vocabulary =
         entry.vocabulary === undefined
           ? undefined
@@ -503,9 +597,8 @@ function mergeSections(
         });
         continue;
       }
-      const prior = merged.get(entry.heading);
       // §4: a parameter belongs to the section's effective grammar.
-      const grammar = entry.grammar ?? prior?.grammar;
+      const grammar = entry.grammar === "prose" ? undefined : (entry.grammar ?? prior?.grammar);
       const allowed: readonly string[] =
         grammar === undefined
           ? []
@@ -528,16 +621,33 @@ function mergeSections(
         });
       }
       if (prior === undefined) {
+        const sameGrammar =
+          inherited?.scope === "descendants" &&
+          inherited.grammar !== undefined &&
+          inherited.grammar === entry.grammar;
+        const inheritedParams = sameGrammar ? structuredCopy(inherited.params) : {};
+        const params: SectionParams = { ...inheritedParams, ...structuredCopy(entry.params) };
+        if (sameGrammar && inherited.params.require !== undefined)
+          params.require = [
+            ...inherited.params.require.map((row) => structuredCopy(row)),
+            ...(entry.params.require ?? [])
+              .filter((row) => !inherited.params.require?.some((was) => same(was, row)))
+              .map((row) => structuredCopy(row)),
+          ];
         const fresh: LawSection = {
           heading: entry.heading,
+          path,
+          scope: entry.scope ?? "direct",
           min: entry.min ?? 0,
           max: entry.max ?? null,
-          params: structuredCopy(entry.params),
+          params,
           declaredBy: [layer.name],
         };
-        if (entry.grammar !== undefined) fresh.grammar = entry.grammar;
+        if (entry.grammar !== undefined && entry.grammar !== "prose") fresh.grammar = entry.grammar;
         if (vocabulary !== undefined) fresh.vocabulary = vocabulary;
-        merged.set(entry.heading, fresh);
+        else if (sameGrammar && inherited.vocabulary !== undefined)
+          fresh.vocabulary = inherited.vocabulary;
+        merged.set(key, fresh);
         continue;
       }
       const at = entry.pointer;
@@ -579,7 +689,24 @@ function mergeSections(
         clash = true;
       }
       if (clash) continue;
-      if (entry.grammar !== undefined) prior.grammar = entry.grammar;
+      if (entry.grammar === "prose" && prior.grammar !== undefined) {
+        conflict(
+          layer,
+          `${at}/grammar`,
+          `section ${path.join(" > ")} cannot change inherited grammar to prose`,
+        );
+        continue;
+      }
+      if (entry.scope === "direct" && prior.scope === "descendants") {
+        conflict(
+          layer,
+          `${at}/scope`,
+          `section ${path.join(" > ")} cannot narrow inherited descendants scope to direct`,
+        );
+        continue;
+      }
+      if (entry.grammar !== undefined && entry.grammar !== "prose") prior.grammar = entry.grammar;
+      if (entry.scope === "descendants") prior.scope = "descendants";
       if (vocabulary !== undefined) prior.vocabulary = vocabulary;
       for (const key of ["provenance", "categories", "closed", "history", "lifecycle"] as const) {
         const mine = entry.params[key];
@@ -640,7 +767,7 @@ function mergeSections(
     // heading is an entries section: a prose section holds no record, and a
     // claims section would take a claim line for the entry.
     const history = section.params.history;
-    const landing = history === undefined ? undefined : merged.get(history);
+    const landing = history === undefined ? undefined : merged.get(sectionKey([history]));
     if (history !== undefined && landing === undefined) {
       invalid(
         `lands relations that leave it in "${history}", which this type declares no section for`,
@@ -677,7 +804,7 @@ function mergeRules(
   issues: LawIssue[],
 ): LawRule[] {
   const rules = new Map<string, LawRule>();
-  const headings = new Set(sections?.list.map((s) => s.heading) ?? []);
+  const selectors = new Set(sections?.list.map((s) => sectionKey(s.path)) ?? []);
   const own = (layer: Layer, rule: RuleDeclaration): LawRule => {
     const out: LawRule = {
       id: rule.id,
@@ -695,11 +822,17 @@ function mergeRules(
   for (const layer of layers) {
     for (const rule of layer.doc.rules) {
       if (rules.has(rule.id)) continue;
-      if (rule.section !== undefined && !headings.has(rule.section)) {
+      const rulePath =
+        rule.section === undefined
+          ? undefined
+          : typeof rule.section === "string"
+            ? [rule.section]
+            : rule.section;
+      if (rulePath !== undefined && !selectors.has(sectionKey(rulePath))) {
         issues.push({
           code: "rule-section-unknown",
           where: layer.doc.where,
-          message: `${rule.pointer}/section: rule "${rule.id}" attaches to "${rule.section}", which ${doc.name}'s sections do not declare`,
+          message: `${rule.pointer}/section: rule "${rule.id}" attaches to "${rulePath.join(" > ")}", which ${doc.name}'s sections do not declare`,
           details: { pointer: `${rule.pointer}/section`, rule: rule.id, type: doc.name },
         });
         continue;

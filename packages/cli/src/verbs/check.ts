@@ -293,6 +293,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
     findings: verdict.findings,
     summary: verdict.summary,
     coverage: verdict.coverage,
+    scope: verdict.scope,
     unevaluated: verdict.unevaluated,
     caps: verdict.caps,
     pins: { counts: pins.counts, entries: pins.entries },

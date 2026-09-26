@@ -44,9 +44,13 @@ export interface SectionParams {
 
 export interface SectionDeclaration {
   heading: string;
+  /** Complete heading ancestry below sections.depth, excluding the page title. */
+  under: string[];
+  /** A direct policy ends at the next heading; descendants carries into undeclared children. */
+  scope?: "direct" | "descendants";
   min?: number;
   max?: number | null;
-  grammar?: Grammar;
+  grammar?: Grammar | "prose";
   /** As written: bare or qualified; resolved by `compose.ts`. */
   vocabulary?: string;
   params: SectionParams;
@@ -63,7 +67,7 @@ export interface SectionsDeclaration {
 export interface RuleDeclaration {
   id: string;
   expr: string;
-  section?: string;
+  section?: string | string[];
   /** YAML as read: integers are `bigint`, so CEL sees an `int`. */
   config: Record<string, unknown>;
   severity: "error" | "warning";
@@ -140,7 +144,7 @@ const FRAGMENT_KEYS = ["fragment", "description", "fields", "sections", "rules",
 const VOCABULARY_KEYS = ["vocabulary", "mode", "entries", "retired", "contributes_to"];
 const RULE_KEYS = ["id", "expr", "section", "config", "severity", "message"];
 const SECTIONS_KEYS = ["depth", "ordered", "additional", "list"];
-const SECTION_KERNEL_KEYS = ["heading", "min", "max", "grammar", "vocabulary"];
+const SECTION_KERNEL_KEYS = ["heading", "under", "scope", "min", "max", "grammar", "vocabulary"];
 
 class Reader {
   readonly issues: LawIssue[] = [];
@@ -262,7 +266,18 @@ function readSection(r: Reader, value: unknown, pointer: string): SectionDeclara
   if (!isMapping(value)) return r.invalid(pointer, "a section entry is a mapping");
   const heading = r.string(value["heading"], `${pointer}/heading`);
   if (heading === undefined) return undefined;
-  const out: SectionDeclaration = { heading, params: {}, pointer };
+  const out: SectionDeclaration = { heading, under: [], params: {}, pointer };
+  if (value["under"] !== undefined) {
+    const under = r.strings(value["under"], `${pointer}/under`);
+    if (under !== undefined && under.length > 0) out.under = under;
+    else if (under !== undefined)
+      r.invalid(`${pointer}/under`, "a nonempty path of ancestor headings");
+  }
+  if (value["scope"] !== undefined) {
+    const scope = value["scope"];
+    if (scope === "direct" || scope === "descendants") out.scope = scope;
+    else r.invalid(`${pointer}/scope`, '"direct" or "descendants"');
+  }
   if (value["min"] !== undefined) {
     const min = r.int(value["min"], `${pointer}/min`, false);
     if (typeof min === "number") out.min = min;
@@ -273,8 +288,11 @@ function readSection(r: Reader, value: unknown, pointer: string): SectionDeclara
   }
   const grammar = value["grammar"];
   if (grammar !== undefined) {
-    if (typeof grammar === "string" && (GRAMMARS as readonly string[]).includes(grammar)) {
-      out.grammar = grammar as Grammar;
+    if (
+      grammar === "prose" ||
+      (typeof grammar === "string" && (GRAMMARS as readonly string[]).includes(grammar))
+    ) {
+      out.grammar = grammar as Grammar | "prose";
     } else {
       r.invalid(`${pointer}/grammar`, `one of ${GRAMMARS.join(", ")}; absent for prose`);
       return undefined;
@@ -369,8 +387,13 @@ function readRules(r: Reader, value: unknown): RuleDeclaration[] {
     }
     const config = raw["config"] ?? {};
     if (!isMapping(config)) r.invalid(`${pointer}/config`, "a mapping");
-    let section: string | undefined;
-    if (raw["section"] !== undefined) section = r.string(raw["section"], `${pointer}/section`);
+    let section: string | string[] | undefined;
+    if (raw["section"] !== undefined)
+      section = Array.isArray(raw["section"])
+        ? raw["section"].length > 0
+          ? r.strings(raw["section"], `${pointer}/section`)
+          : r.invalid(`${pointer}/section`, "a nonempty heading path")
+        : r.string(raw["section"], `${pointer}/section`);
     if (id === undefined || expr === undefined || message === undefined) continue;
     if (!isMapping(config) || (severity !== "error" && severity !== "warning")) continue;
     r.configBound(config, `${pointer}/config`, id);
