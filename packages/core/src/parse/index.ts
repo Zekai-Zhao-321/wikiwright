@@ -13,6 +13,7 @@ import { fromMarkdown } from "mdast-util-from-markdown";
 import { frontmatterFromMarkdown } from "mdast-util-frontmatter";
 import { frontmatter as micromarkFrontmatter } from "micromark-extension-frontmatter";
 import { isMap, isScalar, parseDocument } from "yaml";
+import { assertFiniteYamlGraph } from "../law/yaml.ts";
 
 export interface NormalizedInput {
   text: string;
@@ -187,6 +188,7 @@ function parseFrontmatterNode(node: MdNode | undefined): Frontmatter {
     let js: unknown;
     try {
       js = doc.toJS();
+      assertFiniteYamlGraph(js);
     } catch (error) {
       issues.push({
         code: "malformed-frontmatter",

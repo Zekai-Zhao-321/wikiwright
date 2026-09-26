@@ -71,15 +71,32 @@ export function readYaml(text: string): YamlResult {
       line: text.slice(0, proto).split("\n").length,
     };
   }
-  // An alias bomb makes toJS throw (the `yaml` library's resource bound); it
-  // is a document that does not read, not an internal error.
-  let value: unknown;
+  // An alias bomb or cyclic alias is a document that does not read, never an
+  // internal error from a later recursive normalizer.
   try {
-    value = doc.toJS({ maxAliasCount: 100 });
+    const value = doc.toJS({ maxAliasCount: 100 });
+    assertFiniteYamlGraph(value);
+    return { ok: true, value: int64(value), keyLines: keyLinesOf(doc.contents, text) };
   } catch (error) {
     return { ok: false, message: (error as Error).message };
   }
-  return { ok: true, value: int64(value), keyLines: keyLinesOf(doc.contents, text) };
+}
+
+/** Refuse cyclic aliases and excessive nesting before any recursive consumer sees them. */
+export function assertFiniteYamlGraph(value: unknown): void {
+  const active = new WeakSet<object>();
+  let visited = 0;
+  const walk = (node: unknown, depth: number): void => {
+    if (node === null || typeof node !== "object") return;
+    if (depth > 128) throw new Error("YAML value is nested more than 128 levels");
+    if (active.has(node)) throw new Error("YAML aliases form a cycle");
+    visited += 1;
+    if (visited > 100_000) throw new Error("YAML value has more than 100000 members");
+    active.add(node);
+    for (const child of Object.values(node)) walk(child, depth + 1);
+    active.delete(node);
+  };
+  walk(value, 0);
 }
 
 /** The line each top-level key starts on, counted forward once through the text. */

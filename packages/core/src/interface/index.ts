@@ -312,6 +312,7 @@ export function parsePage(
           record: Omit<GrammarRecord, "rationale" | "raw" | "location"> | undefined;
           line: Line;
           lineNo: number;
+          contentIndent: number;
           rationale: Line[];
           reason?: string;
         }
@@ -353,14 +354,21 @@ export function parsePage(
       const line = lines[n - 1];
       if (line === undefined || opaque.has(n)) continue;
       if (line.text.trim() === "") continue;
-      const indented = /^[ \t]/u.test(line.text);
-      if (indented) {
-        // §4 rationale: the lines indented under an item, verbatim.
-        if (current !== undefined) current.rationale.push(line);
-        continue;
+      const spaces = /^( *)/u.exec(line.text)?.[1]?.length ?? 0;
+      const listText = line.text.slice(spaces);
+      const topLevelCandidate = spaces <= 3 && LIST_ITEM.test(listText);
+      if (!topLevelCandidate || (current !== undefined && spaces >= current.contentIndent)) {
+        // A nested list item or indented prose is rationale. At the start of
+        // a section, an indented CommonMark bullet is still a top-level item
+        // and must not disappear from the grammar's judgment.
+        if (/^[ \t]/u.test(line.text)) {
+          if (current !== undefined) current.rationale.push(line);
+          continue;
+        }
+        flush();
+        continue; // prose between items
       }
       flush();
-      if (!LIST_ITEM.test(line.text)) continue; // prose between items
       // §6: `section.items` is a range; parsed or not, an item counts.
       items += 1;
       if (items > RANGE_BOUNDS.items) {
@@ -368,15 +376,34 @@ export function parsePage(
         return;
       }
       const parsed =
-        grammar === "claims"
-          ? parseClaimLine(line.text, law.engine.source_roots)
-          : grammar === "relations"
-            ? parseRelationLine(line.text, resolve)
-            : parseEntryLine(line.text);
+        spaces > 0
+          ? {
+              reason:
+                "a grammar item starts at column 1; an indented top-level list item is not canonical",
+            }
+          : grammar === "claims"
+            ? parseClaimLine(line.text, law.engine.source_roots)
+            : grammar === "relations"
+              ? parseRelationLine(line.text, resolve)
+              : parseEntryLine(line.text);
+      const marker = /^(?:[-*+]|\d{1,9}[.)])(?:[ \t]|$)/u.exec(listText)?.[0] ?? "";
       current =
         "record" in parsed
-          ? { record: parsed.record, line, lineNo: n, rationale: [] }
-          : { record: undefined, line, lineNo: n, rationale: [], reason: parsed.reason };
+          ? {
+              record: parsed.record,
+              line,
+              lineNo: n,
+              contentIndent: spaces + marker.length,
+              rationale: [],
+            }
+          : {
+              record: undefined,
+              line,
+              lineNo: n,
+              contentIndent: spaces + marker.length,
+              rationale: [],
+              reason: parsed.reason,
+            };
     }
     flush();
   });
