@@ -1,12 +1,12 @@
 {
   "schema": "wikiwright/manifest",
   "totals": {
-    "pages": 35,
-    "edges": 267
+    "pages": 36,
+    "edges": 268
   },
   "by_kind": {
     "relation": 72,
-    "tagged": 48,
+    "tagged": 49,
     "wikilink": 147
   },
   "by_label": {
@@ -213,6 +213,20 @@
           "wiki/wikiwright-quickstart.md"
         ]
       }
+    },
+    {
+      "path": "meta/D-008.md",
+      "type": "decision",
+      "role": "reference",
+      "ancestry": [
+        "code/decision"
+      ],
+      "title": "D-008 — A repaired observation needs a recurrence rule and visible evidence status",
+      "description": "The first v2 delivery is exercised as one synthetic gardening episode: repair a claim, add a tested rule, refuse its recurrence at the gate, and show changed evidence in read and search.",
+      "tags": [
+        "meta"
+      ],
+      "status": "active"
     },
     {
       "path": "meta/charter.md",

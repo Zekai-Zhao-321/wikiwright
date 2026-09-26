@@ -59,9 +59,9 @@ const V2_VERDICTS: Record<string, Expected> = {
   // the documentation step re-reads and re-pins them. Every pin is on
   // HEAD's history and every citation stands at its pin.
   devwiki: {
-    pages: 35,
+    pages: 36,
     findings: [],
-    unevaluated: { "body-append-only": 7, "entry-edited": 27, "relation-removed": 27 },
+    unevaluated: { "body-append-only": 8, "entry-edited": 27, "relation-removed": 27 },
     live: ["pin-stale", "stale-source-cited"],
     pins: 27,
   },

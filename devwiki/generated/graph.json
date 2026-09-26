@@ -44,6 +44,12 @@
       "title": "D-007 — Installing is consent; every load proves the module"
     },
     {
+      "id": "meta/D-008.md",
+      "kind": "page",
+      "type": "decision",
+      "title": "D-008 — A repaired observation needs a recurrence rule and visible evidence status"
+    },
+    {
       "id": "meta/charter.md",
       "kind": "page",
       "type": "charter",
@@ -294,6 +300,11 @@
     },
     {
       "from": "meta/D-007.md",
+      "to": "tag:meta",
+      "kind": "tagged"
+    },
+    {
+      "from": "meta/D-008.md",
       "to": "tag:meta",
       "kind": "tagged"
     },
