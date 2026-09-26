@@ -124,6 +124,47 @@ export function fail(
   return { envelope, exit: EXIT[type] };
 }
 
+/** v2 contracts §9: the most bytes one envelope may put on stdout. */
+export const ENVELOPE_MAX_BYTES = 1_048_576;
+
+/**
+ * v2 contracts §9: an envelope over the bound, refused. The refusal keeps the
+ * metadata (the verb, the bundle it read) and drops the data: a caller that
+ * wants the whole answer asks again with `--out`.
+ */
+export function envelopeTooLarge(result: CommandResult, bytes: number): CommandResult {
+  const refusal = fail(
+    result.envelope.metadata.command,
+    "usage",
+    "envelope-too-large",
+    `the envelope is ${bytes} bytes, and stdout carries at most ${ENVELOPE_MAX_BYTES}`,
+    {
+      details: { bytes, limit: ENVELOPE_MAX_BYTES, exit_code: result.exit },
+      hint: "run the same command with --out <file>: the file receives the whole envelope, and stdout a pointer to it",
+    },
+  );
+  return {
+    ...refusal,
+    envelope: { ...refusal.envelope, metadata: result.envelope.metadata },
+  };
+}
+
+/**
+ * v2 contracts §9: what stdout carries when `--out` took the envelope — two
+ * lines that are one JSON object: whether the envelope is ok, its exit code
+ * and size, and where it is. A reader that parses stdout as JSON reads the
+ * pointer; one that reads lines reads the file's name on the second.
+ */
+export function outPointer(result: CommandResult, out: string, bytes: number): string {
+  const head = JSON.stringify({
+    ok: result.envelope.ok,
+    command: result.envelope.metadata.command,
+    exit_code: result.exit,
+    bytes,
+  });
+  return `${head.slice(0, -1)},\n${JSON.stringify({ out }).slice(1)}\n`;
+}
+
 /** The envelope every judging verb prints (docs/concepts.md §Findings and routing). */
 export function verdictEnvelope(verdict: Verdict): Record<string, unknown> {
   return {

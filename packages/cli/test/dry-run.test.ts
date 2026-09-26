@@ -896,6 +896,8 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
   "artifacts.ts":
     "the generated artifacts, the writer's brief and the in-repository exports, whose obsolete files it removes — one generator, byte-reproducible",
   "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
+  "main.ts":
+    "the file `--out` names, which receives the whole envelope through the staged replace: a destination the caller chose, never a page (v2 contracts §9)",
   "skills.ts": "the shipped skills' install and its stamp",
   "stagedkits.ts":
     "a kit declared by path, written out from the index under os.tmpdir() for the staged gate and removed once loaded: never a vault path (docs/cli.md §gate)",

@@ -4,10 +4,19 @@
 import { resolve } from "node:path";
 import { isSkillName, SKILL_NAME, SKILL_NAME_MAX } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
+import { replaceFile } from "./atomicwrite.ts";
 import { bundleIdentity } from "./bundle.ts";
 import { COMMANDS } from "./commands.ts";
 import { resolveBundle } from "./discovery.ts";
-import { type BundleIdentity, type CommandResult, fail, ok } from "./envelope.ts";
+import {
+  type BundleIdentity,
+  type CommandResult,
+  ENVELOPE_MAX_BYTES,
+  envelopeTooLarge,
+  fail,
+  ok,
+  outPointer,
+} from "./envelope.ts";
 import { GitInconsistentRead, GitShortRead, GitTimedOut, gitTimeoutSetting } from "./git.ts";
 import { type ExportMarker, MARKER_PATH, markerAt } from "./marker.ts";
 import { declaredModulesOf, preloadModules } from "./moduleload.ts";
@@ -16,30 +25,67 @@ import { insideCompiledBinary } from "./shipped.ts";
 import {
   type CommandArgs,
   type CommandSpec,
+  commandSchema,
   declaredRole,
   flagsOf,
   GLOBAL_FLAGS,
   ROLE_RANK,
   type Role,
+  usageOf,
 } from "./spec.ts";
 
-function emit(result: CommandResult): void {
-  process.stdout.write(`${JSON.stringify(result.envelope, null, 2)}\n`);
+/** Where an envelope goes: stdout, or the file `--out` names. */
+interface Sink {
+  out?: string;
+}
+
+function write(result: CommandResult, text: string): void {
+  process.stdout.write(text);
   // docs/cli.md §The envelope: payload on stdout, UX on stderr — one writer each.
   if (result.stderr !== undefined) process.stderr.write(`${result.stderr}\n`);
   process.exitCode = result.exit;
 }
 
+function emit(result: CommandResult, sink: Sink = {}): void {
+  const text = `${JSON.stringify(result.envelope, null, 2)}\n`;
+  const bytes = Buffer.byteLength(text, "utf8");
+  if (sink.out !== undefined) {
+    const out = resolve(sink.out);
+    try {
+      replaceFile(out, text);
+    } catch (e) {
+      const refused = fail(
+        result.envelope.metadata.command,
+        "usage",
+        "out-unwritable",
+        `--out names "${sink.out}", and the envelope could not be written there: ${e instanceof Error ? e.message : String(e)}`,
+        { details: { out, exit_code: result.exit } },
+      );
+      write(refused, `${JSON.stringify(refused.envelope, null, 2)}\n`);
+      return;
+    }
+    write(result, outPointer(result, out, bytes));
+    return;
+  }
+  if (bytes > ENVELOPE_MAX_BYTES) {
+    const refused = envelopeTooLarge(result, bytes);
+    write(refused, `${JSON.stringify(refused.envelope, null, 2)}\n`);
+    return;
+  }
+  write(result, text);
+}
+
 /**
- * docs/cli.md §The envelope: one command's spec, from the same registry that
- * renders `schema` and the brief. Intercepted BEFORE parseInvocation — asking
- * for help must never itself be a usage error.
+ * docs/cli.md §The envelope: one command's help — its usage line, summary,
+ * flags and examples. Intercepted BEFORE parseInvocation — asking for help
+ * must never itself be a usage error.
  */
 function commandHelp(spec: CommandSpec): CommandResult {
   return ok(spec.name, {
     name: spec.name,
     role: spec.role,
     summary: spec.summary,
+    usage: usageOf(spec),
     positionals: spec.positionals,
     ...(spec.subcommands === undefined ? {} : { subcommands: [...spec.subcommands] }),
     flags: flagsOf(spec),
@@ -48,14 +94,19 @@ function commandHelp(spec: CommandSpec): CommandResult {
   });
 }
 
-function helpResult(): CommandResult {
+function helpResult(json: boolean): CommandResult {
+  if (json) {
+    // v2 contracts §9: the whole registry, every verb's schema, as `schema` printed it.
+    return ok("help", { global_flags: GLOBAL_FLAGS, commands: COMMANDS.map(commandSchema) });
+  }
   const globals = GLOBAL_FLAGS.map((f) =>
     f.type === "string" ? ` [--${f.name} <value>]` : ` [--${f.name}]`,
   ).join("");
   return ok("help", {
     usage: `wikiwright <command> [arguments]${globals}`,
     commands: COMMANDS.map((c) => ({ name: c.name, role: c.role, summary: c.summary })),
-    schema: "run `wikiwright schema` for the full generated registry",
+    schema:
+      "run `wikiwright --help --json` for every verb's schema, or `wikiwright <command> --help --json` for one",
   });
 }
 
@@ -361,15 +412,18 @@ function roleRefusal(spec: CommandSpec, role: Role): CommandResult | undefined {
 const argv = process.argv.slice(2);
 const commandName = argv[0];
 if (commandName === undefined || commandName === "help" || commandName === "--help") {
-  emit(helpResult());
+  const scan = scanInvocation(undefined, argv.slice(1));
+  emit(helpResult(scan.wantsJson), scan);
 } else {
   const resolvedName = VERSION_ALIASES.has(commandName) ? "version" : commandName;
   const spec = COMMANDS.find((c) => c.name === resolvedName);
+  const sink = scanInvocation(spec, argv.slice(1));
   if (spec === undefined) {
     emit(
       fail("wikiwright", "usage", "unknown-command", `unknown command "${commandName}"`, {
         details: { valid_commands: COMMANDS.map((c) => c.name) },
       }),
+      sink,
     );
   } else {
     const role = currentRole();
@@ -379,6 +433,7 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
         fail("wikiwright", "usage", "role-unknown", `WIKIWRIGHT_ROLE is "${role.unknown}"`, {
           details: { valid_values: [...ROLES] },
         }),
+        sink,
       );
     } else if (typeof gitTimeout !== "number") {
       emit(
@@ -391,16 +446,17 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
             hint: "a whole number of milliseconds from 1 to 2147483647, or unset for the default of 60000",
           },
         ),
+        sink,
       );
     } else {
       // Before --help and before parsing: a bounded caller cannot learn the
       // shape of a verb it may not run, and no maintainer path is reached.
       const rest = argv.slice(1);
-      const scan = scanInvocation(spec, rest);
       const refusal = roleRefusal(spec, role);
-      if (refusal !== undefined) emit(refusal);
-      else if (scan.wantsHelp) emit(commandHelp(spec));
-      else emit(await runCommand(spec, rest));
+      if (refusal !== undefined) emit(refusal, sink);
+      else if (sink.wantsHelp && sink.wantsJson) emit(ok(spec.name, commandSchema(spec)), sink);
+      else if (sink.wantsHelp) emit(commandHelp(spec), sink);
+      else emit(await runCommand(spec, rest), sink);
     }
   }
 }

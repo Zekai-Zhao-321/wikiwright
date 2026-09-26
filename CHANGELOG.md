@@ -9,6 +9,15 @@ version` prints the engine version and the commit a binary was built from.
 
 ### Added
 
+- **The envelope's bound, `--out` and `--help --json`** (v2 contracts §9).
+  An envelope over 1 MiB is refused as `envelope-too-large` (exit 2) with a
+  hint naming `--out <file>`; `--out`, a global flag, writes the whole
+  envelope to the file and prints a two-line pointer (`ok`, `command`,
+  `exit_code`, `bytes`, `out`) on stdout, exit code the envelope's own, or
+  `out-unwritable` (exit 2). `<verb> --help --json` prints the verb's
+  schema, the registry row `schema` prints, and `wikiwright --help --json`
+  every verb's; `<verb> --help` gains a `usage` line. No automatic spill, no
+  preview and no report directory: deferred until `--out` is a burden.
 - **The v2 type-document loader, beside the old one** (v2 contracts §2–§7,
   step 2). Nothing reads through it yet: every verb and corpus still loads
   `config/constitution.json`. What it loads:

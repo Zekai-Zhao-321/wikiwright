@@ -19,9 +19,11 @@
 // a 70,000-byte write comes out of it short, and the same writer setting
 // process.exitCode comes out whole.
 //
-// Three envelopes: a default one (`version`), one of exactly 70,000 bytes
+// Four envelopes: a default one (`version`), one of exactly 70,000 bytes
 // (`read` of a synthetic gardening page padded to that size, past one pipe
-// buffer), and an error envelope (`check` of a root that does not exist).
+// buffer), the `envelope-too-large` refusal (`read` of a page padded past the
+// 1 MiB bound, §9), and an error envelope (`check` of a root that does not
+// exist).
 // Each is probed through `bun dist/main.js` and through the compiled binary,
 // built for this run under os.tmpdir().
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -49,6 +51,7 @@ interface Engine {
 
 let dir = "";
 let root = "";
+let large = "";
 let binary = "";
 
 const ENGINES: Engine[] = [
@@ -103,6 +106,12 @@ beforeAll(() => {
   if (POSIX) buildBinary(binary);
   root = join(dir, "orchard");
   cpSync(ORCHARD, root, { recursive: true });
+  large = join(dir, "large");
+  cpSync(ORCHARD, large, { recursive: true });
+  writeFileSync(
+    join(large, PAGE),
+    `---\ntype: procedure-page\n---\n${"Mulch. ".repeat(160_000)}\n`,
+  );
   // Pad the page until `read` answers with exactly TARGET bytes: one line of
   // plain ASCII grows the envelope byte for byte, and the byte counts the
   // envelope reports grow by a digit now and then, so it converges in a few
@@ -163,6 +172,14 @@ describe.each(ENGINES)("$name: the envelope arrives whole through a pipe", (engi
     if (!POSIX) return;
     const bytes = probe(engine, ["read", PAGE, "--root", root], REPO, 0);
     expect(bytes.length).toBe(TARGET);
+  });
+
+  it("the envelope-too-large refusal of an envelope past 1 MiB", () => {
+    if (!POSIX) return;
+    const bytes = probe(engine, ["read", PAGE, "--root", large], REPO, 2);
+    const envelope = JSON.parse(bytes.toString("utf8")) as { ok: boolean; error: { code: string } };
+    expect(envelope.ok).toBe(false);
+    expect(envelope.error.code).toBe("envelope-too-large");
   });
 
   it("an error envelope", () => {

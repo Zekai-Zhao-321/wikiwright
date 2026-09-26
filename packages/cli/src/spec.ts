@@ -45,6 +45,23 @@ export const GLOBAL_FLAGS: readonly FlagSpec[] = [
     type: "boolean",
     summary: "print this command's spec and exit",
   },
+  // v2 contracts §9: `--help --json` prints the verb's schema — the registry
+  // row the `schema` verb printed — in place of that verb. Read by main.ts
+  // beside `--help`; without it the flag changes nothing.
+  {
+    name: "json",
+    type: "boolean",
+    summary: "with --help: print the verb's schema, the registry row an agent reads",
+  },
+  // v2 contracts §9: no automatic spill. An envelope over 1 MiB is refused as
+  // `envelope-too-large`; `--out <file>` takes the whole envelope instead, and
+  // stdout carries a two-line pointer to it. Written by main.ts, which every
+  // verb's envelope passes through.
+  {
+    name: "out",
+    type: "string",
+    summary: "write the whole envelope to this file and print a two-line pointer to it on stdout",
+  },
 ];
 
 export interface PositionalSpec {
@@ -204,4 +221,40 @@ export function flagsOf(spec: CommandSpec): FlagSpec[] {
 /** The one reader of the flag, so `--dry-run` cannot mean two things. */
 export function isDryRun(args: CommandArgs): boolean {
   return args.flags["dry-run"] === true;
+}
+
+/** The usage line of one verb, from its spec. */
+export function usageOf(spec: CommandSpec): string {
+  const parts = [`wikiwright ${spec.name}`];
+  for (const p of spec.positionals) {
+    parts.push(
+      p.name === "subcommand" && spec.subcommands !== undefined
+        ? `<${spec.subcommands.join("|")}>`
+        : p.required
+          ? `<${p.name}>`
+          : `[${p.name}]`,
+    );
+  }
+  for (const f of flagsOf(spec))
+    parts.push(f.type === "string" ? `[--${f.name} <v>]` : `[--${f.name}]`);
+  return parts.join(" ");
+}
+
+/**
+ * v2 contracts §9: `<verb> --help --json`, the verb's schema — the registry
+ * row the `schema` verb printed, with whether the verb can write.
+ */
+export function commandSchema(spec: CommandSpec): Record<string, unknown> {
+  return {
+    name: spec.name,
+    role: spec.role,
+    summary: spec.summary,
+    positionals: spec.positionals,
+    ...(spec.subcommands === undefined ? {} : { subcommands: [...spec.subcommands] }),
+    flags: flagsOf(spec),
+    examples: spec.examples,
+    // docs/cli.md §The dry-run law: "can this verb write" is a registry
+    // answer, not an inference from the presence of `--dry-run`.
+    writes: spec.writes,
+  };
 }

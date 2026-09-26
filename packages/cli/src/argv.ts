@@ -30,25 +30,46 @@ function unexpectedArgumentHint(spec: CommandSpec): string {
 export interface ArgvScan {
   /** `--help` as a flag of its own — never as the value of a string flag. */
   wantsHelp: boolean;
+  /** `--json` as a flag of its own: with `--help`, the verb's schema. */
+  wantsJson: boolean;
+  /** The value of `--out`, where the whole envelope goes instead of stdout. */
+  out?: string;
 }
 
 /**
- * docs/cli.md §The envelope: the pre-parse read of argv for `--help`,
- * under the same flag declarations `parseArgs` is built from. A declared string
- * flag consumes the token after it and a bare `--` ends the scan, so a string
- * flag's VALUE is never read as a request for help.
+ * docs/cli.md §The envelope: the pre-parse read of argv for `--help`, `--json`
+ * and `--out`, under the same flag declarations `parseArgs` is built from. A
+ * declared string flag consumes the token after it and a bare `--` ends the
+ * scan, so a string flag's VALUE is never read as a request for help. With no
+ * spec (the top-level `wikiwright --help`) only the global flags are declared.
+ * `--out` is read here, and not from the parse, because an envelope that
+ * refuses the parse itself goes to the file too.
  */
-export function scanInvocation(spec: CommandSpec, rest: string[]): ArgvScan {
+export function scanInvocation(spec: CommandSpec | undefined, rest: string[]): ArgvScan {
   const stringFlags = new Set<string>();
-  for (const flag of [...GLOBAL_FLAGS, ...flagsOf(spec)]) {
+  for (const flag of [...GLOBAL_FLAGS, ...(spec === undefined ? [] : flagsOf(spec))]) {
     if (flag.type === "string") stringFlags.add(flag.name);
   }
-  let wantsHelp = false;
+  const scan: ArgvScan = { wantsHelp: false, wantsJson: false };
   for (let i = 0; i < rest.length; i += 1) {
     const token = rest[i] ?? "";
     if (token === "--") break;
     if (token === "--help") {
-      wantsHelp = true;
+      scan.wantsHelp = true;
+      continue;
+    }
+    if (token === "--json") {
+      scan.wantsJson = true;
+      continue;
+    }
+    if (token.startsWith("--out=")) {
+      scan.out = token.slice("--out=".length);
+      continue;
+    }
+    if (token === "--out") {
+      const value = rest[i + 1];
+      if (value !== undefined) scan.out = value;
+      i += 1;
       continue;
     }
     if (token.startsWith("--")) {
@@ -57,7 +78,7 @@ export function scanInvocation(spec: CommandSpec, rest: string[]): ArgvScan {
       if (eq === -1 && stringFlags.has(token.slice(2))) i += 1;
     }
   }
-  return { wantsHelp };
+  return scan;
 }
 
 /**
@@ -98,7 +119,7 @@ export function parseInvocation(
         ok: false,
         result: fail(spec.name, "usage", "unknown-flag", `"${spec.name}" has no flag ${flag}`, {
           details: { flag, valid_flags: validFlags },
-          hint: "run `wikiwright schema` for every verb's flags",
+          hint: `run \`wikiwright ${spec.name} --help --json\` for the verb's flags`,
         }),
       };
     }

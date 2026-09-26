@@ -4,8 +4,10 @@
 envelope on stdout and reserves stderr for text a human at a terminal needs.
 The verb reference below is rendered from the binary's own command registry by
 `bun docs/render-cli.ts --write`, and `bun docs/render-cli.ts --check` fails
-when the document is behind the binary. `wikiwright schema` prints the same
-registry as JSON, and `wikiwright <verb> --help` prints one verb's row.
+when the document is behind the binary. `wikiwright schema` and
+`wikiwright --help --json` print the same registry as JSON, `wikiwright <verb>
+--help --json` prints one verb's row, and `wikiwright <verb> --help` its usage
+line, flags and examples.
 
 ## The envelope
 
@@ -109,6 +111,22 @@ not chosen (§Notes per verb, `--bundle`).
 | `unevaluated` | the passes a declaration turned on that this run could not judge, keyed by pass with a count and a reason |
 | `caps` | `limit` and whether it was `hit` |
 | `dispositions` | per page, the counted transition outcomes where a base exists (`relation_added`, `relation_removed`, `superseded`, `corrected`, …) |
+
+### The bound and `--out`
+
+An envelope is at most 1 MiB (1,048,576 bytes, the closing newline counted)
+on stdout. There is no automatic spill: a larger one is refused as
+`envelope-too-large` (exit 2, type `usage`), its `details` naming `bytes`,
+`limit` and the `exit_code` the whole envelope carried, its `metadata` the
+verb and the bundle the whole one named, and its hint `--out <file>`.
+
+`--out <file>`, accepted by every verb, writes the whole envelope to the file,
+whatever its size, through the same staged replace every generated file
+lands by, and prints a two-line pointer on stdout: the two lines are one JSON
+object, `{"ok", "command", "exit_code", "bytes"` on the first and `"out"}`,
+the file's absolute path, on the second. The exit code is the envelope's own.
+A file that cannot be written is `out-unwritable` (exit 2) on stdout, with the
+exit code the envelope would have carried in `details.exit_code`.
 
 The writing verbs judge with the same judge and answer in their own shapes.
 `write` and `new` report the page they wrote: its `path`, `findings`,
@@ -737,6 +755,8 @@ Global flags, accepted by every verb:
 | `--root <value>` | vault root directory (default: current directory) |
 | `--bundle <value>` | the name of a bundle skill installed in a skill directory: the copy found is the target, in place of --root |
 | `--help` | print this command's spec and exit |
+| `--json` | with --help: print the verb's schema, the registry row an agent reads |
+| `--out <value>` | write the whole envelope to this file and print a two-line pointer to it on stdout |
 
 | Verb | Role | Writes | Summary |
 |---|---|---|---|

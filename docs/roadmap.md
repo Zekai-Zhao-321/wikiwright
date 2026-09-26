@@ -699,12 +699,15 @@ directory and read its envelopes through a pipe.
 Wanted: the shipped files the surviving verbs need, embedded in the binary,
 when a binary is distributed.
 
-### No envelope-size bound yet
+### An envelope over 1 MiB is refused, not spilled
 
-No verb refuses a large envelope and no verb takes `--out`; the v2 contracts
-bound an envelope at 1 MiB with an `envelope-too-large` refusal, and the pipe
-probes cover a default, a 70,000-byte and an error envelope until that
-refusal exists to probe.
+An envelope over 1 MiB is `envelope-too-large` (exit 2) and names `--out
+<file>`, which takes the whole envelope and leaves a two-line pointer on
+stdout (`docs/cli.md` §The bound and `--out`). There is no automatic spill, no
+preview of the refused envelope and no report directory the engine manages:
+the first delivery defers them until host limits reject ordinary results
+often enough that `--out` is a burden. The pipe probes cover the refusal
+beside a default, a 70,000-byte and an error envelope.
 
 ### The v2 loader and judge are read by no verb yet
 

@@ -202,6 +202,17 @@ describe("schema declares the global flags the parser accepts (docs/cli.md §sch
         type: "boolean",
         summary: "print this command's spec and exit",
       },
+      {
+        name: "json",
+        type: "boolean",
+        summary: "with --help: print the verb's schema, the registry row an agent reads",
+      },
+      {
+        name: "out",
+        type: "string",
+        summary:
+          "write the whole envelope to this file and print a two-line pointer to it on stdout",
+      },
     ]);
   });
 
