@@ -256,19 +256,54 @@ function claimFindings(page: ParsedPage, base: ParsedPage, type: LawType): Unrou
   return out;
 }
 
-const QUOTED_RELATION =
-  /([\p{L}\p{N}_-]+)\s+\[\[([^\][|#\n]+)(?:#[^\][|\n]*)?(?:\|[^\][\n]*)?\]\]/gu;
+// A quoted relation is `label [[Target]]`: a run of letters, digits, `_` or
+// `-`, whitespace, then a wikilink (with an optional `#heading` and
+// `|alias`). Read from each `[[` — the target forward with an anchored
+// pattern that stops at the next bracket, the label backward — so the scan
+// is linear in the line. The one global pattern it replaces backtracked
+// over every start of a long run of letters, cubic in the line's length: a
+// History entry of 4,000 letters took seconds, and a page may hold a line
+// of 1 MiB.
+const QUOTED_TARGET = /([^\][|#\n]+)(?:#[^\][|\n]*)?(?:\|[^\][\n]*)?\]\]/uy;
+const LABEL_CHAR = /^[\p{L}\p{N}_-]$/u;
+const SPACE = /^\s$/u;
 
 function relationIdentity(label: string, target: string): string {
   return `${normalizeIdentity(label)}\u0000${normalizeIdentity(target.trim())}`;
 }
 
+/** The code point that ends at `at` in `text`, a surrogate pair whole. */
+function codePointBefore(text: string, at: number): string {
+  const low = text.charCodeAt(at - 1);
+  if (at >= 2 && low >= 0xdc00 && low <= 0xdfff) {
+    const high = text.charCodeAt(at - 2);
+    if (high >= 0xd800 && high <= 0xdbff) return text.slice(at - 2, at);
+  }
+  return text.slice(at - 1, at);
+}
+
 function quotedRelations(raw: string): Set<string> {
   const out = new Set<string>();
-  for (const match of raw.matchAll(QUOTED_RELATION)) {
-    out.add(relationIdentity(match[1] ?? "", match[2] ?? ""));
+  let from = 0;
+  for (;;) {
+    const open = raw.indexOf("[[", from);
+    if (open < 0) return out;
+    from = open + 2;
+    QUOTED_TARGET.lastIndex = open + 2;
+    const target = QUOTED_TARGET.exec(raw);
+    if (target === null) continue;
+    let at = open;
+    while (at > 0 && SPACE.test(raw.charAt(at - 1))) at -= 1;
+    if (at === open) continue;
+    const end = at;
+    for (let ch = codePointBefore(raw, at); at > 0 && LABEL_CHAR.test(ch); ) {
+      at -= ch.length;
+      ch = at > 0 ? codePointBefore(raw, at) : "";
+    }
+    if (at === end) continue;
+    out.add(relationIdentity(raw.slice(at, end), target[1] ?? ""));
+    from = QUOTED_TARGET.lastIndex;
   }
-  return out;
 }
 
 /** A relation of the base that left its section and landed in no new line of its `history`. */

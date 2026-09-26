@@ -284,6 +284,34 @@ describe("the kernel transitions, against the disk (ruling 3)", () => {
       ),
     );
     expect(blocking(recorded)).toEqual([]);
+    const aliased = await overlay(
+      BASIL.replace("- grows-in [[Herb bed]]", "").replace(
+        "- 2026-04-12 — sown",
+        "- 2026-04-12 — sown\n- 2026-05-01 — moved: grows-in\t[[Herb bed#Soil|the bed]], now potted",
+      ),
+    );
+    expect(blocking(aliased)).toEqual([]);
+    const unquoted = await overlay(
+      BASIL.replace("- grows-in [[Herb bed]]", "").replace(
+        "- 2026-04-12 — sown",
+        "- 2026-04-12 — sown\n- 2026-05-01 — moved: grows-in[[Herb bed]], and [[Herb bed]]",
+      ),
+    );
+    expect(only(unquoted, "relation-removed")).toHaveLength(1);
+  });
+
+  it("reads a History line of a mebibyte in linear time", async () => {
+    const long = `- 2026-05-01 — ${"a".repeat(1_000_000)} [[Herb bed]] ${"b ".repeat(20_000)}[[x`;
+    const draft = BASIL.replace("- grows-in [[Herb bed]]", "").replace(
+      "- 2026-04-12 — sown",
+      `- 2026-04-12 — sown\n${long}`,
+    );
+    expect(new TextEncoder().encode(draft).length).toBeLessThan(1024 * 1024);
+    const started = performance.now();
+    const verdict = await overlay(draft);
+    // The pattern this replaced took 7.6 s at 4,000 letters.
+    expect(performance.now() - started).toBeLessThan(5_000);
+    expect(only(verdict, "relation-removed")).toHaveLength(1);
   });
 
   it("reports every transition unevaluated under the working tree, never passed", async () => {
