@@ -8,6 +8,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   changedRules,
+  headLawDiff,
   judgeTypeLaw,
   type LawChange,
   lawChangeFindings,
@@ -370,6 +371,46 @@ describe("law-changed and law-relaxed", () => {
         severity: "info",
         details: { kind: "rule-severity", reason: "a month is precise enough for thinning" },
       },
+    ]);
+  });
+});
+
+describe("a HEAD whose law does not load, or no HEAD", () => {
+  it("is one head-law-unloadable change, law-relaxed with no reason, and every rule counts as added", async () => {
+    const dir = vaultDir({ "constitution/types/guide.yaml": `${GUIDE}role: gardener\n` });
+    gitCommitAll(dir);
+    writeFileSync(join(dir, "constitution/types/guide.yaml"), GUIDE);
+    git(dir, "add", "-A");
+    const head = loadTypeLaw(await revisionLawSnapshot(dir, "HEAD"));
+    expect(head.ok).toBe(false);
+    const index = loaded(loadTypeLaw(await indexLawSnapshot(dir)));
+    const { changes, rulesChanged } = headLawDiff(head, index);
+    expect(changes).toMatchObject([
+      {
+        kind: "head-law-unloadable",
+        path: "bundle:constitution/types/guide.yaml",
+        details: { issues: [{ where: "bundle:constitution/types/guide.yaml" }] },
+      },
+    ]);
+    expect([...rulesChanged].sort()).toEqual([...index.rules.keys()].sort());
+    expect(
+      lawChangeFindings(changes, { kind: "commit-msg", message: "feat: the first v4 law\n" }),
+    ).toMatchObject([{ rule: "law-relaxed", severity: "error" }]);
+    JSON.stringify(changes);
+  });
+
+  it("is no change and no rule added when there is no HEAD (§9.2)", async () => {
+    const dir = vaultDir();
+    git(dir, "init", "-q");
+    git(dir, "add", "-A");
+    const index = loaded(loadTypeLaw(await indexLawSnapshot(dir)));
+    expect(headLawDiff(null, index)).toEqual({ changes: [], rulesChanged: new Set() });
+  });
+
+  it("is the law diff when HEAD's law loads", async () => {
+    const { head, index } = await laws({ "constitution/types/guide.yaml": null });
+    expect(headLawDiff({ ok: true, law: head }, index).changes.map((c) => c.kind)).toEqual([
+      "type-removed",
     ]);
   });
 });

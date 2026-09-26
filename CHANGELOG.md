@@ -166,7 +166,9 @@ version` prints the engine version and the commit a binary was built from.
     (`vocabulary-mode`), an entry no longer retired
     (`vocabulary-retired-removed`), a rule a type no longer carries while it
     stands (`rule-attachment`), and the engine keys `extensions`,
-    `source_roots` and `field_sources` — as
+    `source_roots` and `field_sources` — and, where HEAD's law does not
+    load, one `head-law-unloadable` change with every rule counted as
+    added (`headLawDiff`), as
     `law-changed` (info) at pre-commit and `law-relaxed` (an error) at
     commit-msg unless the body carries `law-change: <reason>`.
   - What changed from v1 on the way: a finding's code, as the table maps

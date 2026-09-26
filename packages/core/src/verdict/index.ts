@@ -11,7 +11,13 @@ export type {
 } from "./judge.ts";
 export { judgeTypeLaw, sortVerdictFindings } from "./judge.ts";
 export type { LawChange } from "./lawdiff.ts";
-export { changedRules, lawChangeFindings, lawChangeReason, lawDiff } from "./lawdiff.ts";
+export {
+  changedRules,
+  headLawDiff,
+  lawChangeFindings,
+  lawChangeReason,
+  lawDiff,
+} from "./lawdiff.ts";
 export type { VaultNameEntry, VaultNames } from "./names.ts";
 export type { JudgeState, PageRename, StateKind } from "./state.ts";
 export { contentRootsOf, pageMap, sameBytes } from "./state.ts";

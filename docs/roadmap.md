@@ -806,9 +806,13 @@ library under the temporary directory. What that leaves, until the verbs
   `vocabulary-mode`, `vocabulary-retired-removed`, `rule-attachment`,
   `extensions`, `source-roots` and `field-sources`. They await the
   navigator's word to join §8.
-- The law diff needs HEAD's law to load; what the gate reports when HEAD
-  holds no loadable v4 law (a bundle's first v4 commit) is the `gate`
-  verb's to decide in step 4.
+- The law diff needs HEAD's law to load. `headLawDiff` gives the gate its
+  answer when HEAD's law does not (a bundle's first v4 commit, or a law
+  broken at HEAD): one change, `head-law-unloadable`, with HEAD's issues in
+  its details, so the commit message must carry `law-change: <reason>`,
+  and every rule of the index's law counted as added, so each untested one
+  is an error; with no HEAD at all there is no law diff (§9.2). The `gate`
+  verb calls it in step 4; the navigator has not ruled on it.
 - A path is keyed in NFC by every adapter; on a filesystem that keeps the
   two normalisations apart, two files whose names differ only by them are
   one page to the engine and two to the filesystem (the navigator's

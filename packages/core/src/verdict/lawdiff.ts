@@ -33,7 +33,7 @@
 import { canonicalJson } from "../digest/index.ts";
 import { codeUnitCompare } from "../identity/index.ts";
 import type { LawRule, LawType } from "../law/compose.ts";
-import type { TypeLaw } from "../law/load.ts";
+import type { TypeLaw, TypeLawResult } from "../law/load.ts";
 import { jsonNumbers } from "../law/yaml.ts";
 import { PAGE_LOCATION, type Unrouted } from "./page.ts";
 import { sameBytes } from "./state.ts";
@@ -317,6 +317,39 @@ export function changedRules(head: TypeLaw, index: TypeLaw): Set<string> {
     if (change.kind === "rule-config" && typeof rule === "string") out.add(rule);
   }
   return out;
+}
+
+/**
+ * The gate's law diff, from what HEAD holds: `null` when there is no HEAD,
+ * which §9.2 gives no law diff; else HEAD's law as it loaded. A HEAD whose
+ * law does not load (a bundle's first v4 commit, or a law broken at HEAD)
+ * cannot be compared, and is never passed over in silence: it is one
+ * change, `head-law-unloadable`, which the commit message must give a
+ * reason for, and every rule of the index's law counts as added, so each
+ * one untested is an error (§8 `rule-untested`).
+ */
+export function headLawDiff(
+  head: TypeLawResult | null,
+  index: TypeLaw,
+): { changes: LawChange[]; rulesChanged: Set<string> } {
+  if (head === null) return { changes: [], rulesChanged: new Set() };
+  if (head.ok)
+    return { changes: lawDiff(head.law, index), rulesChanged: changedRules(head.law, index) };
+  const first = head.issues[0];
+  return {
+    changes: [
+      {
+        kind: "head-law-unloadable",
+        path: first?.where ?? ENGINE_WHERE,
+        message: `HEAD's law does not load${first === undefined ? "" : ` (${first.code}: ${first.message})`}, so nothing it held can be compared with the index's`,
+        details: {
+          kind: "head-law-unloadable",
+          issues: head.issues.map((i) => ({ code: i.code, where: i.where, message: i.message })),
+        },
+      },
+    ],
+    rulesChanged: new Set(index.rules.keys()),
+  };
 }
 
 /** The reason a commit message's body gives for a law change, if it gives one. */
