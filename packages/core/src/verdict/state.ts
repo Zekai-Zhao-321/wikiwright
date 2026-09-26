@@ -18,6 +18,19 @@ import type { LawSnapshot } from "../law/snapshot.ts";
 
 export type StateKind = "working-tree" | "overlay" | "index" | "revision";
 
+/**
+ * A path at, under or above a content root that no state reads through: a
+ * symbolic link (git mode 120000), or a submodule (160000; on disk, a
+ * directory holding `.git`). The index and a revision hold a link as the
+ * text of its target and a submodule as one commit id, and the working tree
+ * would read through either; all four read neither, and report each.
+ */
+export interface SkippedPath {
+  /** Bundle-relative, NFC. */
+  path: string;
+  kind: "symbolic-link" | "submodule";
+}
+
 /** A page the base held under one path and the state holds under another. */
 export interface PageRename {
   from: string;
@@ -39,6 +52,13 @@ export interface JudgeState {
   base?: ReadonlyMap<string, Uint8Array | null>;
   /** Renames from the base to the state (the index's staged renames). */
   renames?: readonly PageRename[];
+  /** The links and submodules at, under or above a content root, in code-unit order of path. */
+  skipped?: readonly SkippedPath[];
+}
+
+/** Whether `path` is a content root, lies under one, or holds one. */
+export function touchesContentRoot(path: string, roots: readonly string[]): boolean {
+  return roots.some((r) => path === r || path.startsWith(`${r}/`) || r.startsWith(`${path}/`));
 }
 
 /** A page map in code-unit order of path, keyed in NFC. */

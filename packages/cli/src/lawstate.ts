@@ -14,21 +14,28 @@
 // own law declares. Beside the old constructors (state.ts), which every verb
 // still calls; nothing in the binary reaches these yet.
 //
-// A page that is a symbolic link, or a submodule, is not a page to any of
-// the four: the index and a revision hold a link as the text of its target,
-// the working tree reads through it, and the one rule all four can keep is
-// to read none of them (docs/roadmap.md says so).
-import { lstatSync } from "node:fs";
+// A symbolic link or a submodule at, under or above a content root is read
+// by none of the four: the index and a revision hold a link as the text of
+// its target and a submodule as a commit id, and the working tree would read
+// through either, so the one rule all four can keep is to read through
+// none. Each reports what it did not read (`skipped`), and the judge reports
+// each as `path-skipped`: the working tree walks with lstat and descends into
+// no link and no directory holding `.git`; the index and a revision list
+// modes 120000 and 160000.
+import { type Dirent, lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   codeUnitCompare,
   contentDigest,
   contentRootsOf,
   isContentPath,
+  isVaultPath,
   type JudgeState,
   type LawSnapshot,
   type PageRename,
   pageMap,
+  type SkippedPath,
+  touchesContentRoot,
 } from "@wikiwright/core";
 import {
   gitHasHead,
@@ -46,7 +53,7 @@ import {
   revisionEntries,
   workingTreeLawSnapshot,
 } from "./lawfiles.ts";
-import { readPageBytes, walkPages } from "./vaultfiles.ts";
+import { readPageBytes } from "./vaultfiles.ts";
 
 /** §11: the working tree changed between two reads, twice; nothing consistent was read. */
 export class StateChangedDuringRead extends Error {
@@ -68,25 +75,85 @@ function inBundle(bundle: string, path: string): string | undefined {
 interface Capture {
   law: LawSnapshot;
   pages: ReadonlyMap<string, Uint8Array>;
+  skipped: SkippedPath[];
+}
+
+function bySkippedPath(skipped: SkippedPath[]): SkippedPath[] {
+  const unique = new Map(skipped.map((s) => [s.path, s] as const));
+  return [...unique.values()].sort((a, b) => codeUnitCompare(a.path, b.path));
+}
+
+/**
+ * The pages under the content roots and the links and submodules the walk
+ * does not enter, by lstat: a link is never followed, a directory holding
+ * `.git` never entered, and a content root is checked segment by segment,
+ * as git holds a link above one as a single entry. `disk` is the name as the
+ * directory lists it, `path` its NFC key.
+ */
+function walkContent(
+  root: string,
+  roots: readonly string[],
+): { pages: { path: string; disk: string }[]; skipped: SkippedPath[] } {
+  const pages: { path: string; disk: string }[] = [];
+  const skipped: SkippedPath[] = [];
+  const holdsGit = (entries: Dirent[]): boolean => entries.some((e) => e.name === ".git");
+  const walk = (disk: string, path: string): void => {
+    const entries = readdirSync(join(root, disk), { withFileTypes: true, encoding: "utf8" });
+    if (holdsGit(entries)) {
+      skipped.push({ path, kind: "submodule" });
+      return;
+    }
+    for (const entry of entries) {
+      const childDisk = `${disk}/${entry.name}`;
+      const child = `${path}/${entry.name.normalize("NFC")}`;
+      if (entry.isSymbolicLink()) {
+        if (isVaultPath(child)) skipped.push({ path: child, kind: "symbolic-link" });
+      } else if (entry.isDirectory()) walk(childDisk, child);
+      else if (entry.isFile() && isContentPath(child, roots))
+        pages.push({ path: child, disk: childDisk });
+    }
+  };
+  for (const contentRoot of roots) {
+    const segments = contentRoot.split("/");
+    let blocked = false;
+    for (let i = 1; i <= segments.length && !blocked; i += 1) {
+      const prefix = segments.slice(0, i).join("/");
+      let stat: ReturnType<typeof lstatSync> | undefined;
+      try {
+        stat = lstatSync(join(root, prefix));
+      } catch {
+        blocked = true; // No such directory: the root holds no page.
+        continue;
+      }
+      if (stat.isSymbolicLink()) {
+        skipped.push({ path: prefix, kind: "symbolic-link" });
+        blocked = true;
+      } else if (!stat.isDirectory()) blocked = true;
+      else if (i < segments.length) {
+        const entries = readdirSync(join(root, prefix), { withFileTypes: true, encoding: "utf8" });
+        if (holdsGit(entries)) {
+          skipped.push({ path: prefix, kind: "submodule" });
+          blocked = true;
+        }
+      }
+    }
+    if (!blocked) walk(contentRoot, contentRoot);
+  }
+  pages.sort((a, b) => codeUnitCompare(a.path, b.path));
+  return { pages, skipped: bySkippedPath(skipped) };
 }
 
 async function captureWorkingTree(root: string): Promise<Capture> {
   const law = await workingTreeLawSnapshot(root);
-  const pages: [string, Uint8Array][] = [];
-  for (const rel of walkPages(root, contentRootsOf(law))) {
-    let link = false;
-    try {
-      link = lstatSync(join(root, rel)).isSymbolicLink();
-    } catch {
-      // Named NFC by the walk and NFD on disk: the read below finds it.
-    }
-    if (link) continue;
-    pages.push([rel, new Uint8Array(readPageBytes(root, rel))]);
-  }
-  return { law, pages: pageMap(pages) };
+  const walked = walkContent(root, contentRootsOf(law));
+  const pages: [string, Uint8Array][] = walked.pages.map((p) => [
+    p.path,
+    new Uint8Array(readPageBytes(root, p.disk)),
+  ]);
+  return { law, pages: pageMap(pages), skipped: walked.skipped };
 }
 
-/** One digest over everything a capture read: the law's files and the pages. */
+/** One digest over everything a capture read: the law's files, the pages and what it skipped. */
 function captureDigest(capture: Capture): string {
   return contentDigest([
     ...[...capture.law.files].map(([path, file]) => ({
@@ -98,7 +165,23 @@ function captureDigest(capture: Capture): string {
       bytes: new Uint8Array(),
     })),
     ...[...capture.pages].map(([path, bytes]) => ({ path: `page:${path}`, bytes })),
+    ...capture.skipped.map((s) => ({ path: `${s.kind}:${s.path}`, bytes: new Uint8Array() })),
   ]);
+}
+
+/** A file or directory that left, or a link that came back on itself, between the listing and the read. */
+function vanished(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP";
+}
+
+async function tryCapture(root: string): Promise<Capture | undefined> {
+  try {
+    return await captureWorkingTree(root);
+  } catch (error) {
+    if (vanished(error)) return undefined;
+    throw error;
+  }
 }
 
 export interface CaptureOptions {
@@ -115,18 +198,24 @@ export interface CaptureOptions {
  */
 async function consistentCapture(root: string, options: CaptureOptions): Promise<Capture> {
   for (const attempt of [1, 2]) {
-    const first = await captureWorkingTree(root);
+    // A path that vanishes mid-read is a tree that changed: read again.
+    const first = await tryCapture(root);
     await options.betweenReads?.(attempt);
-    const second = await captureWorkingTree(root);
-    if (captureDigest(first) === captureDigest(second)) return second;
+    const second = await tryCapture(root);
+    if (
+      first !== undefined &&
+      second !== undefined &&
+      captureDigest(first) === captureDigest(second)
+    )
+      return second;
   }
   throw new StateChangedDuringRead(root);
 }
 
 /** The working tree as it stands: its law and its pages, no base. */
 export async function fsState(root: string, options: CaptureOptions = {}): Promise<JudgeState> {
-  const { law, pages } = await consistentCapture(root, options);
-  return { kind: "working-tree", law, pages };
+  const { law, pages, skipped } = await consistentCapture(root, options);
+  return { kind: "working-tree", law, pages, skipped };
 }
 
 /** A draft page: a bundle-relative path and the bytes proposed for it. */
@@ -139,7 +228,8 @@ export interface Draft {
  * Drafts over the working tree, judged together: the pages are the disk's
  * with every draft in its place, and the base is the disk — a page's bytes on
  * disk, `null` for a draft the disk does not hold. A draft outside the
- * content roots is refused: it would be judged as a page nothing reads.
+ * content roots is refused: it would be judged as a page nothing reads; so is
+ * a draft at or under a link or a submodule, which no state reads through.
  */
 export async function overlayState(
   root: string,
@@ -156,16 +246,38 @@ export async function overlayState(
         `the draft "${draft.path}" is not a page under the content roots (${roots.join(", ")})`,
       );
     }
+    const behind = disk.skipped.find((s) => path === s.path || path.startsWith(`${s.path}/`));
+    if (behind !== undefined) {
+      throw new Error(
+        `the draft "${draft.path}" is at or under ${behind.path}, a ${behind.kind === "symbolic-link" ? "symbolic link" : "submodule"} no state reads through`,
+      );
+    }
     pages.set(path, draft.bytes);
   }
   const base = new Map<string, Uint8Array | null>();
   for (const path of pages.keys()) base.set(path, disk.pages.get(path) ?? null);
-  return { kind: "overlay", law: disk.law, pages: pageMap(pages), base };
+  return { kind: "overlay", law: disk.law, pages: pageMap(pages), base, skipped: disk.skipped };
 }
 
 /** A tree entry that is a page: a regular file, not a link (120000) or a submodule (160000). */
 function regular(mode: string): boolean {
   return mode !== "120000" && mode !== "160000";
+}
+
+/** The links and submodules a listing holds at, under or above a content root. */
+function skippedEntries(
+  entries: readonly { path: string; mode: string }[],
+  bundle: string,
+  roots: readonly string[],
+): SkippedPath[] {
+  const out: SkippedPath[] = [];
+  for (const entry of entries) {
+    if (regular(entry.mode)) continue;
+    const rel = inBundle(bundle, entry.path.normalize("NFC"));
+    if (rel === undefined || !isVaultPath(rel) || !touchesContentRoot(rel, roots)) continue;
+    out.push({ path: rel, kind: entry.mode === "120000" ? "symbolic-link" : "submodule" });
+  }
+  return bySkippedPath(out);
 }
 
 /** The staged-diff statuses that name a page at another path, or none, in HEAD. */
@@ -259,7 +371,8 @@ export async function indexState(root: string): Promise<JudgeState> {
     .filter((r): r is PageRename => r.from !== undefined && r.to !== undefined)
     .filter((r) => isContentPath(r.to, roots))
     .sort((a, b) => codeUnitCompare(a.to, b.to));
-  return { kind: "index", law, pages: pageMap(pages), base, renames };
+  const skipped = skippedEntries(entries, bundle, roots);
+  return { kind: "index", law, pages: pageMap(pages), base, renames, skipped };
 }
 
 /** A revision's tree, its law and its pages, with no base (§10: `rule try --base`). */
@@ -281,5 +394,6 @@ export async function revisionState(root: string, rev: string): Promise<JudgeSta
     if (bytes === undefined) throw new Error(`git did not return blob ${e.object} for "${e.path}"`);
     return [inBundle(bundle, e.path) ?? e.path, new Uint8Array(bytes)];
   });
-  return { kind: "revision", law, pages: pageMap(pages) };
+  const skipped = skippedEntries(listing, bundle, roots);
+  return { kind: "revision", law, pages: pageMap(pages), skipped };
 }

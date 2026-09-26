@@ -160,6 +160,14 @@ export const VERDICT_TABLE: readonly VerdictRow[] = [
     needsBase: true,
     scope: "page",
   },
+  // A link or a submodule where a page could be, which no state reads through.
+  {
+    id: "path-skipped",
+    severity: "warning",
+    lane: "identity-review",
+    carries: [],
+    scope: "vault",
+  },
   // --- instances -----------------------------------------------------------------
   {
     id: "instances-min",

@@ -19,8 +19,8 @@ export {
   lawDiff,
 } from "./lawdiff.ts";
 export type { VaultNameEntry, VaultNames } from "./names.ts";
-export type { JudgeState, PageRename, StateKind } from "./state.ts";
-export { contentRootsOf, pageMap, sameBytes } from "./state.ts";
+export type { JudgeState, PageRename, SkippedPath, StateKind } from "./state.ts";
+export { contentRootsOf, pageMap, sameBytes, touchesContentRoot } from "./state.ts";
 export type { FindingLocation, VerdictFinding, VerdictRow } from "./table.ts";
 export {
   RULE_LANE,

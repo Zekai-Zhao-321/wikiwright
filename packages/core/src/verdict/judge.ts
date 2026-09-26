@@ -468,6 +468,19 @@ export function judgeTypeLaw(
       details: collision.details,
     });
   }
+  for (const skipped of state.skipped ?? []) {
+    found.push({
+      rule: "path-skipped",
+      severity: "warning",
+      path: skipped.path,
+      location: PAGE_LOCATION,
+      message:
+        skipped.kind === "symbolic-link"
+          ? `${skipped.path} is a symbolic link where the content roots hold pages; no state reads through it, so nothing behind it is judged`
+          : `${skipped.path} is a submodule where the content roots hold pages; no state reads into it, so nothing in it is judged`,
+      details: { kind: skipped.kind },
+    });
+  }
   found.push(...instanceFindings(law, pages));
   if (options.lawTests !== false) {
     const overlaid: JudgeOverlaid = (path, bytes, base) => {

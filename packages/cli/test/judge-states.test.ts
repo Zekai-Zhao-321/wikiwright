@@ -3,9 +3,9 @@
 // base — and §11: the working tree read by digest before and after, one
 // retry, then state-changed-during-read.
 import { afterAll, describe, expect, it } from "bun:test";
-import { rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { contentRootsOf, type JudgeState } from "@wikiwright/core";
+import { contentRootsOf, type JudgeState, type SkippedPath } from "@wikiwright/core";
 import {
   fsState,
   indexState,
@@ -14,7 +14,8 @@ import {
   StateChangedDuringRead,
 } from "../src/lawstate.ts";
 import { BASIL, gardenVault, git, gitCommitAll, START } from "./fixtures/garden-judge.ts";
-import { removeTree, type Tree, writeTree } from "./fixtures/garden-law.ts";
+import { engineJson, removeTree, type Tree, writeTree } from "./fixtures/garden-law.ts";
+import { judgeState } from "./fixtures/judge-run.ts";
 
 const made: string[] = [];
 afterAll(() => {
@@ -170,18 +171,76 @@ describe("the four constructors over one repository", () => {
     expect(state.pages.size).toBe(3);
   });
 
-  it("reads no page that is a symbolic link, in any constructor", async () => {
-    const dir = vault();
+  it("reads through no symbolic link and no submodule, and names each alike, in every constructor", async () => {
+    const dir = vault({
+      "wiki/beds/Cold frame.md": "---\ntype: garden/bed\ntitle: Cold frame\n---\n",
+    });
+    // A page that is a link, a directory that is one, and one that loops.
     symlinkSync("Herb bed.md", join(dir, "wiki/Alias.md"));
+    symlinkSync("beds", join(dir, "wiki/alias"));
+    symlinkSync(".", join(dir, "wiki/loop"));
+    // A repository of its own inside a content root: a submodule to git.
+    const nested = join(dir, "wiki/nested");
+    mkdirSync(nested);
+    writeFileSync(join(nested, "Pond.md"), "---\ntype: garden/bed\ntitle: Pond\n---\n");
+    gitCommitAll(nested);
+    gitCommitAll(dir);
+    const skipped: SkippedPath[] = [
+      { path: "wiki/Alias.md", kind: "symbolic-link" },
+      { path: "wiki/alias", kind: "symbolic-link" },
+      { path: "wiki/loop", kind: "symbolic-link" },
+      { path: "wiki/nested", kind: "submodule" },
+    ];
+    for (const state of [
+      await fsState(dir),
+      await indexState(dir),
+      await revisionState(dir, "HEAD"),
+      await overlayState(dir, []),
+    ]) {
+      expect([state.kind, Object.keys(pagesOf(state))]).toEqual([
+        state.kind,
+        ["wiki/Basil.md", "wiki/Herb bed.md", "wiki/Start.md", "wiki/beds/Cold frame.md"],
+      ]);
+      expect([state.kind, state.skipped]).toEqual([state.kind, skipped]);
+      const verdict = await judgeState(state);
+      expect(
+        verdict.findings
+          .filter((f) => f.rule === "path-skipped")
+          .map((f) => [f.path, f.details["kind"], f.severity, f.queue]),
+      ).toEqual(skipped.map((s) => [s.path, s.kind, "warning", "identity-review"]));
+      expect(verdict.findings.filter((f) => f.rule === "identity-collision")).toEqual([]);
+    }
+    const draft = { path: "wiki/Alias.md", bytes: new TextEncoder().encode("---\n---\n") };
+    await expect(overlayState(dir, [draft])).rejects.toThrow("no state reads through");
+    await expect(overlayState(dir, [{ ...draft, path: "wiki/alias/New.md" }])).rejects.toThrow(
+      "no state reads through",
+    );
+  });
+
+  it("names a link above a content root, and reads nothing through it", async () => {
+    const dir = vault();
+    const { renameSync } = await import("node:fs");
+    renameSync(join(dir, "wiki"), join(dir, "pages"));
+    mkdirSync(join(dir, "docs"));
+    symlinkSync("../pages", join(dir, "docs/wiki"));
+    writeFileSync(
+      join(dir, "config/engine.json"),
+      engineJson({ content_roots: ["docs/wiki/garden", "pages"] }),
+    );
     gitCommitAll(dir);
     for (const state of [
       await fsState(dir),
       await indexState(dir),
       await revisionState(dir, "HEAD"),
     ]) {
-      expect([state.kind, Object.keys(pagesOf(state))]).toEqual([
+      expect([state.kind, state.skipped]).toEqual([
         state.kind,
-        ["wiki/Basil.md", "wiki/Herb bed.md", "wiki/Start.md"],
+        [{ path: "docs/wiki", kind: "symbolic-link" }],
+      ]);
+      expect(Object.keys(pagesOf(state))).toEqual([
+        "pages/Basil.md",
+        "pages/Herb bed.md",
+        "pages/Start.md",
       ]);
     }
   });

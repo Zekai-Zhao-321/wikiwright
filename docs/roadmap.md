@@ -783,10 +783,16 @@ library under the temporary directory. What that leaves, until the verbs
   the page and a count in the verdict's `unevaluated` block; beside the
   contracts' `no-base`, its reason can be `base-unreadable`, a base whose
   bytes do not read as a page.
-- A page that is a symbolic link is read by none of the four states: the
-  index and a revision hold a link as the text of its target's path, the
-  working tree reads through it, and the one rule all four can keep is to
-  read none. Such a page is not judged and nothing reports it.
+- A symbolic link or a submodule at, under or above a content root is read
+  through by none of the four states: the index and a revision hold a link
+  as the text of its target's path and a submodule as a commit id, the
+  working tree would read through either, and the one rule all four can
+  keep is to read through none. What is behind one is not judged; each is
+  reported, alike from all four, as `path-skipped` (a warning, queued to
+  `identity-review`, `details.kind` `symbolic-link` or `submodule`), and a
+  draft at or under one is refused. The working tree walks with lstat, so a
+  link that loops is never entered, and a path that vanishes mid-read is
+  read again as a tree that changed.
 - A page reference in frontmatter is a bare page name (`origin: Herb
   bed`); `[[Herb bed]]` there names no page, and a reference that names no
   page is `page-ref-type` (`details.kind: unresolved`), an error as v1's
