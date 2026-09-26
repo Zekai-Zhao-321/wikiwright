@@ -6,7 +6,7 @@ tags: [cli, kit]
 aliases: ["trust-law"]
 status: retired
 pin:
-  commit: 29cf0dbf5608db22b6ee5d8136125eeea2c0ce45
+  commit: 34a9fe67279c277a390b728ac1b8bdeb15ab1a96
   origin: .
   covers: ["CHANGELOG.md", "docs/roadmap.md"]
 ---

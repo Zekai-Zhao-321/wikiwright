@@ -4,7 +4,7 @@ title: wikiwright architecture
 description: "Kernel, data-library and bundle layers and the four adapters that reach one judge."
 tags: [kernel, stdlib, cli, kit]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: 34a9fe67279c277a390b728ac1b8bdeb15ab1a96
   origin: .
   covers: ["packages/core/src/index.ts", "packages/cli/src/main.ts", "packages/cli/src/lawstate.ts", "docs/architecture.md"]
 ---

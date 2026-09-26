@@ -4,7 +4,7 @@ title: "Git"
 description: "Asynchronous file-backed Git transport for staged, revision and local-pin reads."
 tags: [cli]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: 34a9fe67279c277a390b728ac1b8bdeb15ab1a96
   origin: .
   covers: ["packages/cli/src/git.ts", "packages/cli/src/stdoutfile.ts", "packages/cli/src/lawstate.ts", "packages/cli/src/lawfiles.ts"]
 ---
@@ -19,7 +19,7 @@ Current source at this pin: `packages/cli/src/git.ts`, `packages/cli/src/stdoutf
 
 At most four children run at once. The index state uses object ids and HEAD as its base; the law adapter reads constitution and library blobs from the same selected state.
 
-A short answer, a contradictory index listing and diff, or a mismatched batch row is refused before judgment. The first commit is cross-checked as well.
+A short answer, contradictory index, HEAD and staged-diff listings, or a mismatched batch row is refused before judgment. The first commit is cross-checked as well.
 
 ## Failure modes
 
