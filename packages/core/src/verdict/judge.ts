@@ -14,8 +14,9 @@
 // filters. Not ported here: the gate's line-scoped demotion and its
 // change-scoping, which the `gate` verb brings with it (step 4).
 import { codeUnitCompare } from "../identity/index.ts";
-import { type PageRead, type ParsedPage, parsePage } from "../interface/index.ts";
+import { lawFacts, type PageRead, type ParsedPage, parsePage } from "../interface/index.ts";
 import type { TypeLaw } from "../law/load.ts";
+import { applyExceptions, hasExceptions } from "./exceptions.ts";
 import { grammarRows, itemFindings, sectionFindings } from "./grammar.ts";
 import { buildNames, identityCollisions, type NamedPage, type VaultNames } from "./names.ts";
 import {
@@ -29,6 +30,7 @@ import {
   tagFindings,
   type Unrouted,
 } from "./page.ts";
+import { ruleFindings } from "./rules.ts";
 import { type JudgeState, sameBytes } from "./state.ts";
 import { routeVerdictFinding, VERDICT_TABLE, type VerdictFinding } from "./table.ts";
 import { transitionFindings, transitionRows } from "./transitions.ts";
@@ -281,6 +283,14 @@ export function judgePage(ctx: PageContext, page: ReadPage): PageJudgment {
     if (page.base !== null && page.base?.ok === true && page.base !== page.read)
       out.findings.push(...transitionFindings(parsed, page.base.page, type));
   }
+  const ruled = ruleFindings(ctx.rules, parsed, type, page.base);
+  for (const id of ruled.judged) judged.add(id);
+  for (const [id, why] of ruled.unjudged) unjudged.set(id, why);
+  out.findings.push(...ruled.findings);
+  if (hasExceptions(parsed)) {
+    judged.add("exception-applied").add("exception-stale").add("exception-illegal");
+    out.findings = applyExceptions(ctx.law, parsed, out.findings);
+  }
   return out;
 }
 
@@ -322,7 +332,11 @@ function instanceFindings(law: TypeLaw, pages: readonly ReadPage[]): Unrouted[] 
 }
 
 /** The context the state and the law give every page. */
-export function pageContext(state: JudgeState, law: TypeLaw, names: VaultNames): PageContext {
+export function pageContext(
+  state: Pick<JudgeState, "renames">,
+  law: TypeLaw,
+  names: VaultNames,
+): PageContext {
   const tags = law.vocabularies.get("tags");
   return {
     law,
@@ -331,6 +345,14 @@ export function pageContext(state: JudgeState, law: TypeLaw, names: VaultNames):
     tags,
     renamedFrom: new Map((state.renames ?? []).map((r) => [r.to, r.from] as const)),
     contentRoots: law.engine.content_roots,
+    rules: {
+      law,
+      facts: lawFacts(law),
+      resolve: (name) => {
+        const found = names.resolve(name);
+        return found === undefined ? undefined : { path: found.path, type: found.type };
+      },
+    },
   };
 }
 
@@ -354,6 +376,11 @@ export function verdictOf(
   for (const f of filtered) byRule.set(f.rule, (byRule.get(f.rule) ?? 0) + 1);
   const by_rule: Record<string, number> = {};
   for (const id of [...byRule.keys()].sort(codeUnitCompare)) by_rule[id] = byRule.get(id) ?? 0;
+  const excepted: Record<string, number> = {};
+  for (const f of routed) {
+    const waived = f.rule === "exception-applied" ? f.details["rule"] : undefined;
+    if (typeof waived === "string") excepted[waived] = (excepted[waived] ?? 0) + 1;
+  }
   const unevaluated: Record<string, { count: number; reasons: UnevaluatedReason[] }> = {};
   const coverageOut: Record<string, CoverageCell> = {};
   let unevaluatedTotal = 0;
@@ -378,7 +405,11 @@ export function verdictOf(
       warnings: filtered.filter((f) => f.severity === "warning").length,
       infos: filtered.filter((f) => f.severity === "info").length,
       by_rule,
-      excepted: {},
+      excepted: Object.fromEntries(
+        Object.keys(excepted)
+          .sort(codeUnitCompare)
+          .map((k) => [k, excepted[k] ?? 0]),
+      ),
       unevaluated: unevaluatedTotal,
     },
     caps: { limit, hit: options.all !== true && filtered.length > limit },
@@ -397,7 +428,7 @@ export function judgeTypeLaw(
 ): TypeLawVerdict {
   const { pages, names, named } = readPages(state, law);
   const ctx = pageContext(state, law, names);
-  const coverage = new Coverage(PAGE_ROWS);
+  const coverage = new Coverage([...PAGE_ROWS, ...law.rules.keys()]);
   const found: Unrouted[] = [];
   for (const page of pages) {
     const judgment = judgePage(ctx, page);

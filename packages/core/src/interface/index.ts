@@ -473,18 +473,24 @@ export function buildPageInterface(parsed: ParsedPage, type: LawType): Record<st
   };
 }
 
-/**
- * §5 `facts`: every vocabulary's entries, every link this page makes keyed by
- * its normalised target name, and every type's ancestry.
- */
-export function buildFacts(
-  law: TypeLaw,
-  parsed: ParsedPage,
-  resolve: ResolveTarget = () => undefined,
-): Record<string, unknown> {
+/** §5 `facts.vocabularies` and `facts.ancestry`: the law's, the same for every page. */
+export function lawFacts(law: TypeLaw): {
+  vocabularies: Record<string, string[]>;
+  ancestry: Record<string, string[]>;
+} {
   const vocabularies: Record<string, string[]> = {};
   for (const [name, vocabulary] of law.vocabularies)
     setOwn(vocabularies, name, [...vocabulary.entries.keys()]);
+  const ancestry: Record<string, string[]> = {};
+  for (const [name, type] of law.types) setOwn(ancestry, name, [...type.ancestry]);
+  return { vocabularies, ancestry };
+}
+
+/** §5 `facts.links`: every link this page makes, keyed by its normalised target name. */
+export function pageLinks(
+  parsed: ParsedPage,
+  resolve: ResolveTarget = () => undefined,
+): Record<string, Record<string, unknown>> {
   const links: Record<string, Record<string, unknown>> = {};
   const targets = [
     ...parsed.links.map((l) => l.target),
@@ -504,9 +510,20 @@ export function buildFacts(
         : { resolved: true, path: found.path, type: found.type },
     );
   }
-  const ancestry: Record<string, string[]> = {};
-  for (const [name, type] of law.types) setOwn(ancestry, name, [...type.ancestry]);
-  return { vocabularies, links, ancestry };
+  return links;
+}
+
+/**
+ * §5 `facts`: every vocabulary's entries, every link this page makes keyed by
+ * its normalised target name, and every type's ancestry.
+ */
+export function buildFacts(
+  law: TypeLaw,
+  parsed: ParsedPage,
+  resolve: ResolveTarget = () => undefined,
+): Record<string, unknown> {
+  const { vocabularies, ancestry } = lawFacts(law);
+  return { vocabularies, links: pageLinks(parsed, resolve), ancestry };
 }
 
 /**

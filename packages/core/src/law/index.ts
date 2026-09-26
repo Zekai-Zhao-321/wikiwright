@@ -22,8 +22,10 @@ export {
   buildFacts,
   buildPageInterface,
   celOccurrence,
+  lawFacts,
   PAGE_BYTES_MAX,
   PAGE_INTERFACE,
+  pageLinks,
   parsePage,
 } from "../interface/index.ts";
 export type {

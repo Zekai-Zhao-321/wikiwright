@@ -18,11 +18,12 @@
 // re-expressed over the §4 records. What changed with the grammar: a claim
 // is matched by its handle (the core's normalised identity), so a claim
 // closed in place or moved to another claims section keeps its handle and
-// passes; the category classes are gone, so every open claim of a claims
-// section is held, where the old arm held only the `supersede` and
-// `accumulate` classes; and the History landing reads any new item of an
-// entries or claims section quoting the core, where the old one read the
-// section the claims `history` parameter named, a parameter v2 drops.
+// passes, and so does one whose provenance alone changed (the old arm
+// called that an annotation of a `supersede` claim); the category classes
+// are gone, so every open claim of a claims section is held, where the old
+// arm held only the `supersede` and `accumulate` classes; and the History
+// landing reads any new dated entry quoting the core, where the old one read
+// the section the claims `history` parameter named, a parameter v2 drops.
 import { normalizeIdentity } from "../identity/index.ts";
 import type { ParsedPage } from "../interface/index.ts";
 import type { LawType } from "../law/compose.ts";
@@ -208,9 +209,14 @@ function claimsOf(
   );
 }
 
+/**
+ * The items a claim's record may land in: the dated entries. A claim landing
+ * as a claim keeps its handle and is found by it; a new claim quoting an old
+ * one is another claim, not its record.
+ */
 function landingItems(page: ParsedPage, type: LawType): { raw: string }[] {
   return declaredOccurrences(page, type).flatMap(({ at, section }) =>
-    section.grammar === "entries" || section.grammar === "claims" ? at.occurrence.items : [],
+    section.grammar === "entries" ? at.occurrence.items : [],
   );
 }
 

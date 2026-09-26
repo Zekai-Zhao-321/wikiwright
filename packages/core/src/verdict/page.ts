@@ -19,6 +19,7 @@ import { basenameOf } from "../names/basename.ts";
 import { errorLine } from "../schema/ajv.ts";
 import { reservedShape } from "../schema/reserved.ts";
 import type { VaultNameEntry, VaultNames } from "./names.ts";
+import type { RuleContext } from "./rules.ts";
 import type { FindingLocation, VerdictFinding } from "./table.ts";
 
 /** A finding before it is routed. */
@@ -52,8 +53,10 @@ export interface PageContext {
   tags: LawVocabulary | undefined;
   /** Renames the state records, by the path renamed to. */
   renamedFrom: ReadonlyMap<string, string>;
-  /** Every content root and source root, for `target_root`. */
+  /** Every content root, for `target_root: content`. */
   contentRoots: readonly string[];
+  /** What every page's CEL rules share. */
+  rules: RuleContext;
 }
 
 /** The findings of a page that did not reach its type: `undefined` when it did. */
