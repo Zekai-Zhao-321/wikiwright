@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { parse } from "@bufbuild/cel";
 import { strings } from "@bufbuild/cel/ext";
 import {
+  ANCESTRY_MAX,
   admitRule,
   CEL_PROFILE,
   COST_MAX,
@@ -67,19 +68,16 @@ describe("admission", () => {
     ["range-not-bound", "config.all(k, k != '')"],
     ["range-not-bound", "section.items.all(i, i.rationale.all(r, r != ''))"],
     ["cost-bound", "section.items.all(i, section.items.exists(j, j.date == i.date))"],
-    [
-      "cost-bound",
-      "config.require.all(r, section.items.filter(i, i.label in r.labels).size() >= r.min)",
-    ],
   ])("refuses %s", (expected, expr) => {
     expect(limit(expr)).toBe(expected);
   });
 
+  const cost = (expr: string, config: Record<string, unknown> = {}) => {
+    const admission = admitRule(expr, config);
+    return admission.ok ? admission.cost : admission.limit;
+  };
+
   it("admits ranges that are direct interface paths, each under its bound", () => {
-    const cost = (expr: string) => {
-      const admission = admitRule(expr);
-      return admission.ok ? admission.cost : admission.limit;
-    };
     expect(cost("section.items.all(i, i.precision == 'day')")).toBe(RANGE_BOUNDS.items);
     expect(cost("page.sections.exists(s, s.heading == 'History')")).toBe(RANGE_BOUNDS.sections);
     expect(cost("page.fields.covers.all(p, p != '')")).toBe(RANGE_BOUNDS.list);
@@ -87,7 +85,6 @@ describe("admission", () => {
     expect(cost("facts.vocabularies['garden/beds'].exists(b, b == 'herb')")).toBe(
       RANGE_BOUNDS.facts,
     );
-    expect(cost("config.ranges['grows-in'].exists(t, t == 'garden/bed')")).toBe(RANGE_BOUNDS.list);
     // A section's items inside page.sections: 200 × 5,000 exceeds the bound.
     expect(cost("page.sections.all(s, s.items.all(i, i.kind != ''))")).toBe("cost-bound");
     // Nested within the bound: 200 × a 1,000 list would not fit; 200 × 1 does.
@@ -96,11 +93,41 @@ describe("admission", () => {
     expect(cost("section.items.all(i, true) && page.fields.covers.all(p, true)")).toBe(
       RANGE_BOUNDS.items + RANGE_BOUNDS.list,
     );
-    expect(cost("config.labels.all(l, config.more.exists(m, m == l))")).toBe(
-      RANGE_BOUNDS.list * RANGE_BOUNDS.list > COST_MAX
-        ? "cost-bound"
-        : RANGE_BOUNDS.list * RANGE_BOUNDS.list,
+  });
+
+  it("bounds a config range by the lists the config holds (ruling 1)", () => {
+    const ranges = { ranges: { "grows-in": ["garden/bed"], "companion-of": ["a", "b", "c"] } };
+    expect(cost("config.ranges['grows-in'].exists(t, t == 'garden/bed')", ranges)).toBe(1);
+    // An index that is not a constant may name any member: the longest.
+    expect(cost("config.ranges[page.type].exists(t, t == 'garden/bed')", ranges)).toBe(3);
+    // A path that names no list bounds nothing.
+    expect(cost("config.labels.all(l, l != '')")).toBe(0);
+    expect(
+      cost("config.labels.all(l, config.more.exists(m, m == l))", {
+        labels: ["a", "b"],
+        more: ["c", "d", "e"],
+      }),
+    ).toBe(6);
+    // A list inside a config element, as long as the elements' lists are.
+    const require = { require: [{ labels: ["a"] }, { labels: ["b", "c"] }] };
+    expect(cost("config.require.all(r, r.labels.all(l, l != ''))", require)).toBe(4);
+    // The spike's nested relations-required: rows × a section's items.
+    const nested =
+      "config.require.all(r, section.items.filter(i, i.label in r.labels).size() >= r.min)";
+    expect(cost(nested, { require: [{ labels: ["grows-in"], min: 1n }] })).toBe(RANGE_BOUNDS.items);
+    const rows = Array.from({ length: 41 }, () => ({ labels: ["x"], min: 1n }));
+    expect(cost(nested, { require: rows })).toBe("cost-bound");
+  });
+
+  it("bounds one type's ancestry chain at 32 (ruling 1)", () => {
+    expect(ANCESTRY_MAX).toBe(32);
+    expect(cost("facts.ancestry[page.type].exists(t, t == 'garden/bed')")).toBe(ANCESTRY_MAX);
+    expect(cost("section.items.all(i, facts.ancestry[i.target.type].exists(t, t == 'x'))")).toBe(
+      RANGE_BOUNDS.items * ANCESTRY_MAX,
     );
+    // The map of every type's chain is a facts range.
+    expect(cost("facts.ancestry.all(t, t != '')")).toBe(RANGE_BOUNDS.facts);
+    expect(COST_MAX).toBeGreaterThanOrEqual(RANGE_BOUNDS.items * ANCESTRY_MAX);
   });
 
   it("reads a raw string's parentheses as text", () => {
@@ -130,7 +157,7 @@ describe("the declared bounds, held on the data", () => {
 
   it("refuses a law of more than 10,000 types or vocabularies as law-too-large", () => {
     const many = (n: number) =>
-      new Map(Array.from({ length: n }, (_, i) => [`t${i}`, { parts: [] } as never]));
+      new Map(Array.from({ length: n }, (_, i) => [`t${i}`, { parts: [], ancestry: [] } as never]));
     expect(lawBoundIssues(many(RANGE_BOUNDS.facts), new Map())).toEqual([]);
     expect(lawBoundIssues(many(RANGE_BOUNDS.facts + 1), new Map())).toMatchObject([
       { code: "law-too-large", details: { limit: "facts", size: RANGE_BOUNDS.facts + 1 } },
@@ -142,6 +169,29 @@ describe("the declared bounds, held on the data", () => {
       ]),
     );
     expect(lawBoundIssues(new Map(), vocabularies).map((i) => i.code)).toEqual(["law-too-large"]);
+  });
+
+  it("refuses an ancestry chain over 32 types as law-too-large (ruling 1)", () => {
+    const chain = (n: number) =>
+      new Map([
+        [
+          "leaf",
+          {
+            name: "leaf",
+            where: "bundle:constitution/types/leaf.yaml",
+            parts: [],
+            ancestry: Array.from({ length: n }, (_, i) => `t${i}`),
+          } as never,
+        ],
+      ]);
+    expect(lawBoundIssues(chain(ANCESTRY_MAX), new Map())).toEqual([]);
+    expect(lawBoundIssues(chain(ANCESTRY_MAX + 1), new Map())).toMatchObject([
+      {
+        code: "law-too-large",
+        where: "bundle:constitution/types/leaf.yaml",
+        details: { limit: "ancestry", bound: ANCESTRY_MAX, size: ANCESTRY_MAX + 1 },
+      },
+    ]);
   });
 });
 

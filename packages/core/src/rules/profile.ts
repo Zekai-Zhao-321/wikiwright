@@ -18,6 +18,15 @@
 //   interface path (a range produced by `map`, `filter`, `split` or any call);
 // - `cost-bound`: a worst case over 200,000 iterations — the product of the
 //   bounds of nested ranges, summed over comprehensions side by side.
+//
+// A config list is bounded by its actual length (the navigator's ruling 1 on
+// the contracts, 2026-09-26): the rule's config is known at load, after
+// `configure`, so a range under `config` counts the members it holds, and a
+// config path that names no list counts none. `facts.ancestry[t]` is bounded
+// at 32, which the loader holds on every chain (`law-too-large`). The linear
+// work of a built-in inside one iteration (`in` over a list, `join`,
+// `contains`, `matches`) is not counted; docs/roadmap.md states the worst
+// case that leaves.
 
 import { parse } from "@bufbuild/cel";
 import type { Expr } from "@bufbuild/cel-spec/cel/expr/syntax_pb.js";
@@ -40,7 +49,18 @@ export const RANGE_BOUNDS = {
   facts: 10_000,
 } as const;
 
-type RangeKind = keyof typeof RANGE_BOUNDS;
+/** Ruling 1: an ancestry chain, `facts.ancestry[t]`, holds at most 32 types. */
+export const ANCESTRY_MAX = 32;
+
+type RangeKind = keyof typeof RANGE_BOUNDS | "ancestry" | "config";
+
+/** A range a comprehension walks: its kind, its bound, and for a config list the lists it may be. */
+interface Range {
+  kind: RangeKind;
+  bound: number;
+  /** For a range under `config`: every list or map the path may name, as the config holds it. */
+  values?: unknown[];
+}
 
 export type RuleLimit =
   | "bytes"
@@ -113,7 +133,7 @@ function pathOf(expr: Expr | undefined): { root: string; segments: string[] } | 
     const kind = at.exprKind;
     if (kind.case === "identExpr") return { root: kind.value.name, segments: segments.reverse() };
     if (kind.case === "selectExpr" && !kind.value.testOnly) {
-      segments.push(kind.value.field);
+      segments.push(`.${kind.value.field}`);
       at = kind.value.operand;
       continue;
     }
@@ -122,7 +142,15 @@ function pathOf(expr: Expr | undefined): { root: string; segments: string[] } | 
       kind.value.function === "_[_]" &&
       kind.value.args.length === 2
     ) {
-      segments.push("[]");
+      // A constant key names one member; any other index may name any.
+      const key = kind.value.args[1]?.exprKind;
+      const constant =
+        key?.case === "constExpr" &&
+        (key.value.constantKind.case === "stringValue" ||
+          key.value.constantKind.case === "int64Value")
+          ? String(key.value.constantKind.value)
+          : undefined;
+      segments.push(constant === undefined ? "[]" : `.${constant}`);
       at = kind.value.args[0];
       continue;
     }
@@ -131,45 +159,102 @@ function pathOf(expr: Expr | undefined): { root: string; segments: string[] } | 
   return undefined;
 }
 
+function members(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (value !== null && typeof value === "object") return Object.values(value);
+  return [];
+}
+
+function sizeOf(value: unknown): number {
+  if (Array.isArray(value)) return value.length;
+  if (value !== null && typeof value === "object") return Object.keys(value).length;
+  return 0;
+}
+
 /**
- * §6: which declared bound a range falls under, given what each iteration
- * variable in scope ranges over; undefined when it is not a direct path.
+ * Ruling 1: what a path names inside a rule's config, followed through every
+ * candidate: a field or a constant key names one member, any other index any
+ * member. The bound is the largest list or map a candidate is; a path that
+ * names nothing bounds nothing.
  */
-function rangeKind(
+function configRange(candidates: readonly unknown[], segments: readonly string[]): Range {
+  let at = [...candidates];
+  for (const segment of segments) {
+    const next: unknown[] = [];
+    for (const value of at) {
+      if (segment === "[]") next.push(...members(value));
+      else if (Array.isArray(value)) {
+        const index = Number(segment.slice(1));
+        if (Number.isInteger(index) && index >= 0 && index < value.length) next.push(value[index]);
+      } else if (
+        value !== null &&
+        typeof value === "object" &&
+        Object.hasOwn(value, segment.slice(1))
+      )
+        next.push((value as Record<string, unknown>)[segment.slice(1)]);
+    }
+    at = next;
+  }
+  return { kind: "config", bound: Math.max(0, ...at.map(sizeOf)), values: at };
+}
+
+const bounded = (kind: keyof typeof RANGE_BOUNDS): Range => ({ kind, bound: RANGE_BOUNDS[kind] });
+
+/**
+ * §6: which bound a range falls under, given what each iteration variable in
+ * scope ranges over; undefined when it is not a direct path.
+ */
+function rangeOf(
   expr: Expr | undefined,
-  scope: ReadonlyMap<string, RangeKind>,
-): RangeKind | undefined {
+  scope: ReadonlyMap<string, Range>,
+  config: Record<string, unknown>,
+): Range | undefined {
   const path = pathOf(expr);
   if (path === undefined) return undefined;
-  const [first, second, ...rest] = path.segments;
-  const bound = scope.get(path.root);
-  if (bound !== undefined) {
-    // A list inside an element: a section's items, or a list within a
-    // config, frontmatter or facts list, under that list's own bound.
-    if (bound === "sections")
-      return first === "items" && second === undefined ? "items" : undefined;
-    if (bound === "items") return undefined;
-    return first === undefined ? undefined : bound;
+  const segments = path.segments;
+  const [first, second, ...rest] = segments;
+  const outer = scope.get(path.root);
+  if (outer !== undefined) {
+    // A list inside an element: a section's items, a list within a config
+    // element (as long as the config's lists are), or within a frontmatter
+    // or facts list under that list's own bound.
+    if (outer.kind === "sections")
+      return first === ".items" && second === undefined ? bounded("items") : undefined;
+    if (outer.kind === "items" || outer.kind === "ancestry") return undefined;
+    if (first === undefined) return undefined;
+    if (outer.kind === "config") {
+      return configRange(
+        (outer.values ?? []).flatMap((v) => members(v)),
+        segments,
+      );
+    }
+    return { kind: outer.kind, bound: outer.bound };
   }
-  const page = (segments: (string | undefined)[]): RangeKind | undefined => {
-    const [head, next] = segments;
-    if (head === "sections" && next === undefined) return "sections";
-    if ((head === "fields" || head === "frontmatter") && next !== undefined) return "list";
+  const page = (at: (string | undefined)[]): Range | undefined => {
+    const [head, next] = at;
+    if (head === ".sections" && next === undefined) return bounded("sections");
+    if ((head === ".fields" || head === ".frontmatter") && next !== undefined)
+      return bounded("list");
     return undefined;
   };
   switch (path.root) {
     case "section":
-      return first === "items" && second === undefined ? "items" : undefined;
+      return first === ".items" && second === undefined ? bounded("items") : undefined;
     case "page":
-      return page([first, second, ...rest]);
+      return page(segments);
     case "config":
-      return first === undefined ? undefined : "list";
+      return first === undefined ? undefined : configRange([config], segments);
     case "facts":
-      return first === undefined ? undefined : "facts";
+      if (first === undefined) return undefined;
+      // Ruling 1: one type's ancestry chain holds at most 32 types.
+      if (first === ".ancestry" && second !== undefined && rest.length === 0)
+        return { kind: "ancestry", bound: ANCESTRY_MAX };
+      return bounded("facts");
     case "before":
-      if (first === "sections" && second === undefined) return "sections";
-      if (first === "section") return second === "items" && rest.length === 0 ? "items" : undefined;
-      if (first === "page") return page([second, ...rest]);
+      if (first === ".sections" && second === undefined) return bounded("sections");
+      if (first === ".section")
+        return second === ".items" && rest.length === 0 ? bounded("items") : undefined;
+      if (first === ".page") return page([second, ...rest]);
       return undefined;
     default:
       return undefined;
@@ -188,9 +273,10 @@ interface Walk {
  */
 function level(
   expr: Expr | undefined,
-  scope: ReadonlyMap<string, RangeKind>,
+  scope: ReadonlyMap<string, Range>,
   depth: number,
   walk: Walk,
+  config: Record<string, unknown>,
 ): number {
   let cost = 0;
   let siblings = 0;
@@ -267,7 +353,7 @@ function level(
           return;
         }
         visit(c.iterRange);
-        const range = rangeKind(c.iterRange, scope);
+        const range = rangeOf(c.iterRange, scope, config);
         if (range === undefined) {
           walk.refusal = {
             limit: "range-not-bound",
@@ -283,9 +369,9 @@ function level(
         let body = 0;
         for (const part of [c.loopCondition, c.loopStep, c.result]) {
           if (walk.refusal !== undefined) return;
-          body += level(part, inner, depth + 1, walk);
+          body += level(part, inner, depth + 1, walk, config);
         }
-        cost += RANGE_BOUNDS[range] * Math.max(1, body);
+        cost += range.bound * Math.max(1, body);
         return;
       }
       default:
@@ -296,8 +382,32 @@ function level(
   return cost;
 }
 
-/** Admit one rule expression under the profile, or name the limit it breaks. */
-export function admitRule(expr: string): Admission {
+function costMessage(cost: number): string {
+  return `the worst case is ${cost} iterations; at most ${COST_MAX} (items per section ${RANGE_BOUNDS.items}, sections per page ${RANGE_BOUNDS.sections}, a frontmatter list ${RANGE_BOUNDS.list}, a config list as long as it is, an ancestry chain ${ANCESTRY_MAX}, a facts list ${RANGE_BOUNDS.facts})`;
+}
+
+/**
+ * The static worst case of an admitted rule under one config: the loader
+ * asks it again of every type the rule is attached to, with the config
+ * `configure` left there (ruling 1). `undefined` never: the walk that
+ * admitted the expression refused everything else.
+ */
+export function ruleCost(ast: ReturnType<typeof parse>, config: Record<string, unknown>): number {
+  const walk: Walk = { nodes: 0, transition: false };
+  return level(ast.expr, new Map(), 0, walk, config);
+}
+
+/** The refusal of a cost over the bound, as admission reports it. */
+export function costRefusal(cost: number): { limit: "cost-bound"; message: string } | undefined {
+  return cost > COST_MAX ? { limit: "cost-bound", message: costMessage(cost) } : undefined;
+}
+
+/**
+ * Admit one rule expression under the profile, or name the limit it breaks.
+ * `config` is the rule's config as declared: a range under it is bounded by
+ * the lists it holds.
+ */
+export function admitRule(expr: string, config: Record<string, unknown> = {}): Admission {
   const bytes = utf8Length(expr);
   if (bytes > EXPRESSION_BYTES_MAX) {
     return {
@@ -322,7 +432,7 @@ export function admitRule(expr: string): Admission {
     return { ok: false, limit: "parse", message: `CEL does not parse it: ${message}` };
   }
   const walk: Walk = { nodes: 0, transition: false };
-  const cost = level(ast.expr, new Map(), 0, walk);
+  const cost = level(ast.expr, new Map(), 0, walk, config);
   if (walk.nodes > AST_NODES_MAX) {
     return {
       ok: false,
@@ -331,12 +441,7 @@ export function admitRule(expr: string): Admission {
     };
   }
   if (walk.refusal !== undefined) return { ok: false, ...walk.refusal };
-  if (cost > COST_MAX) {
-    return {
-      ok: false,
-      limit: "cost-bound",
-      message: `the worst case is ${cost} iterations; at most ${COST_MAX} (items per section ${RANGE_BOUNDS.items}, sections per page ${RANGE_BOUNDS.sections}, a frontmatter or config list ${RANGE_BOUNDS.list}, a facts list ${RANGE_BOUNDS.facts})`,
-    };
-  }
+  const refused = costRefusal(cost);
+  if (refused !== undefined) return { ok: false, ...refused };
   return { ok: true, ast, transition: walk.transition, cost };
 }

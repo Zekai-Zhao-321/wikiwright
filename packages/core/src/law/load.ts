@@ -5,7 +5,7 @@
 import type { ValidateFunction } from "ajv/dist/2020.js";
 import { lawBoundIssues } from "../rules/bounds.ts";
 import { type CompiledRule, compileRule } from "../rules/evaluate.ts";
-import { admitRule } from "../rules/profile.ts";
+import { admitRule, costRefusal, ruleCost } from "../rules/profile.ts";
 import { compileShapes } from "../schema/shapes.ts";
 import { compose, type LawType, type LawVocabulary } from "./compose.ts";
 import {
@@ -101,9 +101,10 @@ export function loadTypeLaw(snapshot: LawSnapshot): TypeLawResult {
   const compiled = compileShapes(composed.types, engine);
   // §6: every rule is admitted under the profile, or refused with its limit.
   const rules = new Map<string, CompiledRule>();
+  const admitted = new Map<string, Extract<ReturnType<typeof admitRule>, { ok: true }>>();
   for (const doc of [...fragmentDocs, ...typeDocs]) {
     for (const rule of doc.rules) {
-      const admission = admitRule(rule.expr);
+      const admission = admitRule(rule.expr, rule.config);
       if (!admission.ok) {
         compiled.issues.push({
           code: "rule-invalid",
@@ -113,7 +114,37 @@ export function loadTypeLaw(snapshot: LawSnapshot): TypeLawResult {
         });
         continue;
       }
+      admitted.set(rule.id, admission);
       rules.set(rule.id, compileRule(admission));
+    }
+  }
+  // Ruling 1: a config list bounds a rule's cost by its length after
+  // `configure`, so the bound is asked again of every type the rule reaches
+  // with a config other than the one it was declared with, and reported
+  // where that config was last extended: at the type whose parent holds a
+  // different one.
+  const configOf = (config: Record<string, unknown>): string =>
+    JSON.stringify(config, (_k, v: unknown) => (typeof v === "bigint" ? `${v}n` : v));
+  for (const type of composed.types.values()) {
+    const parent = type.extends === undefined ? undefined : composed.types.get(type.extends);
+    for (const rule of type.rules) {
+      const admission = admitted.get(rule.id);
+      if (admission === undefined || rule.where === type.where) continue;
+      const inherited = parent?.rules.find((r) => r.id === rule.id);
+      if (inherited !== undefined && configOf(inherited.config) === configOf(rule.config)) continue;
+      const refused = costRefusal(ruleCost(admission.ast, rule.config));
+      if (refused === undefined) continue;
+      compiled.issues.push({
+        code: "rule-invalid",
+        where: type.where,
+        message: `/configure/${rule.id}: rule "${rule.id}" under ${type.name}'s configure: ${refused.message}`,
+        details: {
+          pointer: `/configure/${rule.id}`,
+          rule: rule.id,
+          limit: refused.limit,
+          type: type.name,
+        },
+      });
     }
   }
   if (compiled.issues.length > 0) return failed(compiled.issues);

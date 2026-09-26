@@ -4,7 +4,7 @@
 // data that exceeds them.
 import type { LawType, LawVocabulary } from "../law/compose.ts";
 import type { LawIssue } from "../law/issues.ts";
-import { RANGE_BOUNDS } from "./profile.ts";
+import { ANCESTRY_MAX, RANGE_BOUNDS } from "./profile.ts";
 
 export { RANGE_BOUNDS };
 
@@ -41,8 +41,8 @@ export function overBound(
 /**
  * §6 at load: the ranges the law itself supplies. Every vocabulary is a
  * `facts.vocabularies` list (entries, contributions counted), the type set is
- * `facts.ancestry` (a map a rule may walk, and the bound of every ancestry
- * chain in it), the vocabulary set is `facts.vocabularies` itself, and a
+ * `facts.ancestry` (a map a rule may walk; each chain in it holds at most 32
+ * types, ruling 1), the vocabulary set is `facts.vocabularies` itself, and a
  * `default` the shape declares enters `page.fields` as a frontmatter value
  * would. A rule's config lists are held where they are written, by the
  * document reader.
@@ -62,6 +62,16 @@ export function lawBoundIssues(
     });
   };
   whole("types (libraries included)", types.size);
+  // Ruling 1: `facts.ancestry[t]` is a range bounded at 32.
+  for (const type of types.values()) {
+    if (type.ancestry.length <= ANCESTRY_MAX) continue;
+    issues.push({
+      code: "law-too-large",
+      where: type.where,
+      message: `${type.name}'s ancestry chain holds ${type.ancestry.length} types; a chain holds at most ${ANCESTRY_MAX}`,
+      details: { limit: "ancestry", bound: ANCESTRY_MAX, size: type.ancestry.length },
+    });
+  }
   whole("vocabularies (libraries included)", vocabularies.size);
   for (const vocabulary of vocabularies.values()) {
     if (vocabulary.entries.size <= RANGE_BOUNDS.facts) continue;

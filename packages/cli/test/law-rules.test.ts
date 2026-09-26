@@ -307,13 +307,54 @@ describe("the six spike rules over the page interface", () => {
     ]);
   });
 
-  it("refuses the spike's nested forms of relations-required and relation-range as cost-bound", async () => {
-    for (const expr of [SPIKE_RELATIONS_REQUIRED, SPIKE_RELATION_RANGE]) {
-      const result = await load(withRule(rule("nested", expr, "    section: Relations\n")));
-      expect(result.ok ? [] : result.issues.map((i) => i.details?.["limit"])).toEqual([
-        "cost-bound",
-      ]);
+  it("admits the spike's nested forms under ruling 1: a config list as long as it is, a chain at 32", async () => {
+    const forms: [string, string][] = [
+      [SPIKE_RELATIONS_REQUIRED, "    config: { require: [{ labels: [grows-in], min: 1 }] }\n"],
+      [
+        SPIKE_RELATION_RANGE,
+        "    config: { ranges: { grows-in: [garden/bed], companion-of: [garden/planting] } }\n",
+      ],
+    ];
+    for (const [expr, config] of forms) {
+      const result = await load(
+        withRule(rule("nested", expr, `    section: Relations\n${config}`)),
+      );
+      expect(result.ok ? "ok" : result.issues).toBe("ok");
     }
+  });
+
+  it("refuses a rule whose configure grows its config past the bound, at the type that configures it", async () => {
+    const text = gardenTree()[PLANTING] ?? "";
+    const beds = (n: number) => `[${Array.from({ length: n }, (_, i) => `b${i}`).join(", ")}]`;
+    const tree = (n: number): Tree => ({
+      [PLANTING]: `${text}${rule(
+        "bed-items",
+        "config.beds.all(b, section.items.all(i, true))",
+        "    section: Observations\n    config: { beds: [b0] }\n",
+      )}`,
+      "constitution/types/raised-planting.yaml": `type: raised-planting
+extends: planting
+description: A planting in a raised bed.
+configure:
+  bed-items: { beds: ${beds(n)} }
+`,
+    });
+    // 40 beds × 5,000 items is the bound itself; 41 is over it.
+    const at = await load(tree(40));
+    expect(at.ok ? "ok" : at.issues).toBe("ok");
+    const over = await load(tree(41));
+    expect(over.ok ? [] : over.issues.map((i) => [i.code, i.where, i.details])).toEqual([
+      [
+        "rule-invalid",
+        "bundle:constitution/types/raised-planting.yaml",
+        {
+          pointer: "/configure/bed-items",
+          rule: "bed-items",
+          limit: "cost-bound",
+          type: "raised-planting",
+        },
+      ],
+    ]);
   });
 
   it("evaluates a section rule once per matching occurrence and skips a page with none", async () => {
