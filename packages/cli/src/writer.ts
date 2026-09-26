@@ -7,7 +7,7 @@
 // before they call this.
 import { createHash } from "node:crypto";
 import { lstatSync, rmSync, statSync } from "node:fs";
-import { replaceFiles } from "./atomicwrite.ts";
+import { preflightReplacements, ReplacementTargetRefused, replaceFiles } from "./atomicwrite.ts";
 import { vaultAbsolute } from "./paths.ts";
 
 /** git's own blob identity: `sha1("blob <len>\0" + bytes)` — what a write envelope reports. */
@@ -40,6 +40,25 @@ export function commitWrite(root: string, path: string, text: string): string {
   return commitWrites(root, [{ path, text }])[0] ?? blobSha(text);
 }
 
+/** Validate every page destination and moved-from path before a batch lands. */
+export function preflightBatch(
+  root: string,
+  pages: readonly string[],
+  removed: readonly string[],
+): void {
+  preflightReplacements(pages.map((path) => ({ path: vaultAbsolute(root, path) })));
+  for (const path of removed) {
+    const absolute = vaultAbsolute(root, path);
+    try {
+      if (!lstatSync(absolute).isFile()) {
+        throw new ReplacementTargetRefused(absolute, "a moved-from path is not a regular file");
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  }
+}
+
 /**
  * v2 contracts §9.3: `write`'s batch writer. Every page's bytes are staged in
  * an exclusive temp beside it before the first rename, then each is renamed
@@ -47,15 +66,18 @@ export function commitWrite(root: string, path: string, text: string): string {
  * per file: each page is its old or its new complete bytes, never a mix. The
  * batch is not transactional: a crash between two renames leaves some pages
  * new and some old, and one after the renames and before the removals leaves
- * a moved page at both its paths. A path to remove that is the same file as a
- * page just landed — a case variant of it on a case-insensitive filesystem —
- * is left: removing it would remove the page.
+ * a moved page at both paths.
  */
 export function landBatch(
   root: string,
   pages: readonly { path: string; bytes: Uint8Array }[],
   removed: readonly string[],
 ): void {
+  preflightBatch(
+    root,
+    pages.map((page) => page.path),
+    removed,
+  );
   replaceFiles(
     pages.map((page) => ({
       path: vaultAbsolute(root, page.path),

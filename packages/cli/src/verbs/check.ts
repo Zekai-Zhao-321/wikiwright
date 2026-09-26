@@ -10,12 +10,13 @@
 // files, the two fixers that survive). What the old `check` also judged and
 // this one does not: templates, exports, installed skills, installed hooks
 // (each left with its mechanism, §1).
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import {
   applyWrite,
   type CoverageCell,
   collectTypeLaw,
+  findingKey,
   type JudgeState,
   lawDigest,
   missingFolderTags,
@@ -28,7 +29,7 @@ import {
   type Unrouted,
   verdictOfCollected,
 } from "@wikiwright/core";
-import { replaceFiles } from "../atomicwrite.ts";
+import { preflightReplacements, replaceFiles } from "../atomicwrite.ts";
 import { type CommandResult, capOptions, ENGINE_VERSION, fail, ok } from "../envelope.ts";
 import { driftFindings, GENERATED_PATHS, generatedPlans } from "../generated.ts";
 import { fsState } from "../lawstate.ts";
@@ -53,8 +54,15 @@ import { commitWrites } from "../writer.ts";
 
 /** The bytes `generated/` holds on disk for one planned path, or undefined when absent. */
 function onDisk(root: string, path: string): string | undefined {
-  const abs = join(root, path);
+  const abs = join(realpathSync(root), path);
+  preflightReplacements([{ path: abs }]);
   return existsSync(abs) ? readFileSync(abs, "utf8") : undefined;
+}
+
+/** A write validates every generated destination before landing any page or artifact. */
+function preflightGenerated(root: string): void {
+  const real = realpathSync(root);
+  preflightReplacements(GENERATED_PATHS.map((path) => ({ path: join(real, path) })));
 }
 
 /**
@@ -64,7 +72,8 @@ function onDisk(root: string, path: string): string | undefined {
  * some old and some new, and the next `check --write` converges them.
  */
 function writeGenerated(root: string, plans: readonly TypeLawArtifact[]): string[] {
-  replaceFiles(plans.map((plan) => ({ path: join(root, plan.path), contents: plan.content })));
+  const real = realpathSync(root);
+  replaceFiles(plans.map((plan) => ({ path: join(real, plan.path), contents: plan.content })));
   return plans.map((plan) => plan.path);
 }
 
@@ -163,10 +172,45 @@ async function prepare(args: CommandArgs): Promise<Preparation> {
   const law = loaded.law;
   const mismatch = engineMismatch("check", law);
   if (mismatch !== undefined) return { ok: false, result: mismatch };
-  const fixes = args.flags["fix"] === true ? folderFixes(read0, law, readPages(read0, law)) : [];
+  const diskRead = readPages(read0, law);
+  const fixes = args.flags["fix"] === true ? folderFixes(read0, law, diskRead) : [];
   const state = withFixes(read0, fixes);
   const read = readPages(state, law);
   const collected = collectTypeLaw(state, law, { read });
+  if (fixes.length > 0) {
+    const before = new Set(
+      verdictOfCollected(collectTypeLaw(read0, law, { read: diskRead }), {
+        all: true,
+      }).findings.map(findingKey),
+    );
+    const touched = new Set(fixes.map((fix) => fix.path));
+    const introduced = verdictOfCollected(collected, { all: true }).findings.filter(
+      (finding) =>
+        finding.severity === "error" &&
+        (touched.has(finding.path) || !before.has(findingKey(finding))),
+    );
+    if (introduced.length > 0) {
+      return {
+        ok: false,
+        result: withIdentity(
+          fail(
+            "check",
+            "findings",
+            "fix-invalid",
+            `${introduced.length} error finding(s) would remain or arise from the proposed fixes; nothing landed`,
+            {
+              data: {
+                findings: introduced,
+                failing: [...new Set(introduced.map((finding) => finding.path))].sort(),
+              },
+              hint: "review the page and its type before applying a mechanical fix",
+            },
+          ),
+          await typeLawIdentity(args.root, read0, law),
+        ),
+      };
+    }
+  }
   const plans = generatedPlans({
     state,
     law,
@@ -220,6 +264,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
   const prepared = preparation.prepared;
   const { state, law, read, plans, fixes } = prepared;
   const identity = await typeLawIdentity(args.root, state, law);
+  if (writing(args)) preflightGenerated(args.root);
   if (isDryRun(args)) {
     return withIdentity(ok("check", planOf(opsOf(args.root, prepared, writing(args)))), identity);
   }

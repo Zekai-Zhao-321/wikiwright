@@ -167,7 +167,7 @@ async function captureWorkingTree(root: string): Promise<Capture> {
 }
 
 /** One digest over everything a capture read: the law's files, the pages and what it skipped. */
-function captureDigest(capture: Capture): string {
+function captureDigest(capture: Pick<JudgeState, "law" | "pages" | "skipped">): string {
   return contentDigest([
     ...[...capture.law.files].map(([path, file]) => ({
       path: `${file.link === true ? "link" : "law"}:${path}`,
@@ -178,8 +178,16 @@ function captureDigest(capture: Capture): string {
       bytes: new Uint8Array(),
     })),
     ...[...capture.pages].map(([path, bytes]) => ({ path: `page:${path}`, bytes })),
-    ...capture.skipped.map((s) => ({ path: `${s.kind}:${s.path}`, bytes: new Uint8Array() })),
+    ...(capture.skipped ?? []).map((s) => ({
+      path: `${s.kind}:${s.path}`,
+      bytes: new Uint8Array(),
+    })),
   ]);
+}
+
+/** The complete bytes a working-tree write accepted: law, pages and skipped paths. */
+export function workingTreeDigest(state: JudgeState): string {
+  return captureDigest(state);
 }
 
 /** A file or directory that left, or a link that came back on itself, between the listing and the read. */
@@ -259,16 +267,15 @@ export interface Move {
  * content roots is refused: it would be judged as a page nothing reads; so is
  * a draft at or under a link or a submodule, which no state reads through.
  */
-export async function overlayState(
-  root: string,
+export function overlayFromState(
+  disk: JudgeState,
   drafts: readonly Draft[],
-  options: CaptureOptions & { moves?: readonly Move[] } = {},
-): Promise<JudgeState> {
-  const disk = await consistentCapture(root, options);
+  moves: readonly Move[] = [],
+): JudgeState {
   const roots = contentRootsOf(disk.law);
   const pages = new Map(disk.pages);
   const movedFrom = new Map<string, string>();
-  for (const move of options.moves ?? []) {
+  for (const move of moves) {
     pages.delete(move.from.normalize("NFC"));
     movedFrom.set(move.to.normalize("NFC"), move.from.normalize("NFC"));
   }
@@ -279,7 +286,9 @@ export async function overlayState(
         `the draft "${draft.path}" is not a page under the content roots (${roots.join(", ")})`,
       );
     }
-    const behind = disk.skipped.find((s) => path === s.path || path.startsWith(`${s.path}/`));
+    const behind = (disk.skipped ?? []).find(
+      (s) => path === s.path || path.startsWith(`${s.path}/`),
+    );
     if (behind !== undefined) {
       throw new Error(
         `the draft "${draft.path}" is at or under ${behind.path}, a ${behind.kind === "symbolic-link" ? "symbolic link" : "submodule"} no state reads through`,
@@ -300,10 +309,19 @@ export async function overlayState(
     law: disk.law,
     pages: pageMap(pages),
     base,
-    skipped: disk.skipped,
+    skipped: disk.skipped ?? [],
   };
   if (renames.length > 0) state.renames = renames;
   return state;
+}
+
+/** Capture disk once, then lay drafts over exactly the law and pages it returned. */
+export async function overlayState(
+  root: string,
+  drafts: readonly Draft[],
+  options: CaptureOptions & { moves?: readonly Move[] } = {},
+): Promise<JudgeState> {
+  return overlayFromState(await fsState(root, options), drafts, options.moves ?? []);
 }
 
 /** A tree entry that is a page: a regular file, not a link (120000) or a submodule (160000). */

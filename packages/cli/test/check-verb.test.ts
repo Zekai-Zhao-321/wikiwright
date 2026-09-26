@@ -5,7 +5,15 @@
 // `okf-missing-type` row, `engine-mismatch`, a law that does not load, the
 // folder-tag fixer.
 import { afterAll, describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { contentDigest, parseTypeLawQueue } from "@wikiwright/core";
@@ -357,6 +365,26 @@ describe("check --fix: the folder tags (v2 contracts §2, §9.1)", () => {
       ).toEqual([segment]);
     },
   );
+});
+
+describe("generated output stays inside its bundle", () => {
+  it("refuses a linked generated directory in dry and real runs", () => {
+    const dir = gardenBundle();
+    const outside = mkdtempSync(join(tmpdir(), "ww-generated-outside-"));
+    clones.push(outside);
+    writeFileSync(join(outside, "BRIEF.md"), "external sentinel\n");
+    symlinkSync(outside, join(dir, "generated"), "dir");
+    for (const argv of [
+      ["check", "--write", "--dry-run"],
+      ["check", "--write"],
+    ]) {
+      const result = cli(argv, dir);
+      expect(result.status).toBe(4);
+      expect(result.envelope.error?.code).toBe("replacement-target-refused");
+      expect(readFileSync(join(outside, "BRIEF.md"), "utf8")).toBe("external sentinel\n");
+      expect(existsSync(join(outside, "manifest.json"))).toBe(false);
+    }
+  });
 });
 
 describe("the dry-run law (docs/cli.md §The dry-run law)", () => {

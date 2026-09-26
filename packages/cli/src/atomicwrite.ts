@@ -11,11 +11,11 @@ import { randomBytes } from "node:crypto";
 import {
   closeSync,
   fchmodSync,
+  lstatSync,
   mkdirSync,
   openSync,
   renameSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from "node:fs";
 import { dirname } from "node:path";
@@ -48,9 +48,53 @@ export interface Replacement {
 /** The permission bits of a file that is already there, or none for a new one. */
 function modeOf(target: string): number | undefined {
   try {
-    return statSync(target).mode & 0o7777;
+    return lstatSync(target).mode & 0o7777;
   } catch {
     return undefined;
+  }
+}
+
+/** A known target or ancestor cannot hold the planned regular-file replacement. */
+export class ReplacementTargetRefused extends Error {
+  readonly path: string;
+  readonly kind: string;
+  constructor(path: string, kind: string) {
+    super(`cannot replace "${path}": ${kind}`);
+    this.name = "ReplacementTargetRefused";
+    this.path = path;
+    this.kind = kind;
+  }
+}
+
+/** Every target is checked before the first write, including on a dry run. */
+export function preflightReplacements(entries: readonly { path: string }[]): void {
+  const seen = new Set<string>();
+  for (const { path } of entries) {
+    if (seen.has(path)) throw new ReplacementTargetRefused(path, "the batch names it twice");
+    seen.add(path);
+    let parent = dirname(path);
+    for (;;) {
+      try {
+        const stat = lstatSync(parent);
+        if (!stat.isDirectory()) {
+          throw new ReplacementTargetRefused(parent, "an existing parent is not a directory");
+        }
+        break;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        const above = dirname(parent);
+        if (above === parent) throw error;
+        parent = above;
+      }
+    }
+    try {
+      const stat = lstatSync(path);
+      if (!stat.isFile()) {
+        throw new ReplacementTargetRefused(path, "the destination is not a regular file");
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
   }
 }
 
@@ -65,6 +109,7 @@ function modeOf(target: string): number | undefined {
  * another user changes hands, and the umask sets the mode of a new file.
  */
 export function replaceFiles(entries: readonly Replacement[]): void {
+  preflightReplacements(entries);
   const staged: { temp: string; target: string }[] = [];
   try {
     for (const entry of entries) {
@@ -85,6 +130,9 @@ export function replaceFiles(entries: readonly Replacement[]): void {
   }
   let renamed = 0;
   try {
+    // A target may have changed while temp files were staged. Do not land
+    // the first replacement if another target is now known to be unsafe.
+    preflightReplacements(entries);
     for (const { temp, target } of staged) {
       renameSync(temp, target);
       renamed += 1;

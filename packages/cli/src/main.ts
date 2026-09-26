@@ -4,7 +4,7 @@
 import { existsSync, realpathSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { parseInvocation, scanInvocation } from "./argv.ts";
-import { replaceFile } from "./atomicwrite.ts";
+import { ReplacementTargetRefused, replaceFile } from "./atomicwrite.ts";
 import { COMMANDS } from "./commands.ts";
 import {
   type CommandResult,
@@ -196,6 +196,12 @@ function thrown(command: string, e: unknown): CommandResult {
     return fail(command, "conflict", "linked-outside-vault", e.message, {
       details: { path: e.path },
       hint: "a vault reads and writes only inside itself; replace the link with the file it names, inside the vault",
+    });
+  }
+  if (e instanceof ReplacementTargetRefused) {
+    return fail(command, "conflict", "replacement-target-refused", e.message, {
+      details: { path: e.path, kind: e.kind },
+      hint: "remove the obstructing directory or link, then run the command again",
     });
   }
   if (e instanceof GitInconsistentRead) {

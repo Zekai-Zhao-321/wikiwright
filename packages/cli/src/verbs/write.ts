@@ -42,7 +42,7 @@ import {
 } from "@wikiwright/core";
 import { today } from "../clock.ts";
 import { type CommandResult, fail, ok } from "../envelope.ts";
-import { fsState, type Move, overlayState } from "../lawstate.ts";
+import { fsState, type Move, overlayFromState, workingTreeDigest } from "../lawstate.ts";
 import {
   closeLine,
   OPS_FILE,
@@ -61,7 +61,7 @@ import {
   planOf,
 } from "../spec.ts";
 import { engineMismatch, lawOf, stateRefusal, typeLawIdentity, withIdentity } from "../typelaw.ts";
-import { landBatch } from "../writer.ts";
+import { landBatch, preflightBatch } from "../writer.ts";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -601,10 +601,10 @@ async function prepare(args: CommandArgs): Promise<Step<Prepared>> {
     .sort(codeUnitCompare);
   let overlay: JudgeState;
   try {
-    overlay = await overlayState(
-      args.root,
+    overlay = overlayFromState(
+      disk,
       changed.map((path) => ({ path, bytes: batch.pages.get(path) as Uint8Array })),
-      { moves: batch.moves },
+      batch.moves,
     );
   } catch (e) {
     const refused = stateRefusal("write", e);
@@ -705,6 +705,35 @@ async function run(args: CommandArgs): Promise<CommandResult> {
     );
     return withIdentity(refused, await typeLawIdentity(args.root, prepared.disk, prepared.law));
   }
+  const removed = prepared.batch.moves
+    .map((move) => move.from)
+    .filter((path) => !prepared.batch.pages.has(path));
+  preflightBatch(args.root, prepared.changed, removed);
+  let current: JudgeState;
+  try {
+    current = await fsState(args.root);
+  } catch (error) {
+    const refused = stateRefusal("write", error);
+    if (refused === undefined) throw error;
+    return withIdentity(refused, await typeLawIdentity(args.root, prepared.disk, prepared.law));
+  }
+  const expectedState = workingTreeDigest(prepared.disk);
+  const actualState = workingTreeDigest(current);
+  if (expectedState !== actualState) {
+    return withIdentity(
+      fail(
+        "write",
+        "conflict",
+        "state-changed-before-write",
+        "the bundle's pages or law changed after the draft base was read; nothing landed",
+        {
+          details: { expected: expectedState, actual: actualState },
+          hint: "read the bundle again, re-apply the draft to its current bytes and law, then retry",
+        },
+      ),
+      await typeLawIdentity(args.root, prepared.disk, prepared.law),
+    );
+  }
   if (isDryRun(args)) {
     return withIdentity(
       ok("write", { ...planOf(plan), ...data }),
@@ -714,7 +743,7 @@ async function run(args: CommandArgs): Promise<CommandResult> {
   landBatch(
     args.root,
     prepared.changed.map((path) => ({ path, bytes: prepared.batch.pages.get(path) as Uint8Array })),
-    prepared.batch.moves.map((m) => m.from).filter((path) => !prepared.batch.pages.has(path)),
+    removed,
   );
   return withIdentity(
     ok("write", { ops: plan, wrote: true, ...data }),

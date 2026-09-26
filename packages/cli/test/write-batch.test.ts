@@ -123,6 +123,22 @@ describe("drafts (v2 contracts §9.3)", () => {
     expect(delta(before, snapshot(dir))).toEqual([]);
   });
 
+  it("refuses a directory at a later destination before changing the first page", () => {
+    const dir = gardenBundle();
+    mkdirSync(join(dir, "wiki/Tour.md"));
+    const before = page(dir, "wiki/Basil.md");
+    const from = drafts({ "wiki/Basil.md": thinned(dir), "wiki/Tour.md": TOUR });
+    for (const argv of [
+      ["write", "--from", from, "--dry-run"],
+      ["write", "--from", from],
+    ]) {
+      const result = cli(argv, dir);
+      expect(result.status).toBe(4);
+      expect(result.envelope.error?.code).toBe("replacement-target-refused");
+      expect(page(dir, "wiki/Basil.md")).toBe(before);
+    }
+  });
+
   it("judges against the disk as the base: a relation that leaves unrecorded is refused", () => {
     const dir = gardenBundle();
     const basil = page(dir, "wiki/Basil.md").replace("- grows-in [[Herb bed]]\n", "");
