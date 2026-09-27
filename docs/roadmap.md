@@ -227,7 +227,11 @@ or another operating system.
 
 The suite runs several test files concurrently. Heavy machine load can
 cause timeout failures; a passing rerun alone does not prove why an
-earlier run failed. The packed-install test uses a temporary empty
+earlier run failed. The runner executes the unchanged two-run synthetic
+episode after its parallel file workers, with no other suite file running
+concurrently. Its 30-second test limit is unchanged; activity outside this
+suite can still affect wall time. This schedule does not establish a CPU
+cause. The packed-install test uses a temporary empty
 package cache and needs network access to fetch dependencies. The CLI
 reads Git child output through files because synchronous piped stdout
 was observed cut short under load on Bun 1.3.11; the build-info writer

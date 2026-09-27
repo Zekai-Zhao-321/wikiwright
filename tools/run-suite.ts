@@ -10,8 +10,9 @@
 //   bun tools/run-suite.ts [file ...]
 //
 // With no file, the files are `packages/core/test/*.test.ts` and
-// `packages/cli/test/*.test.ts` and `test/*.test.ts`. The largest start first, so the long files
-// are not the last to begin. A file passes when its process exits 0 and
+// `packages/cli/test/*.test.ts` and `test/*.test.ts`. The largest parallel
+// files start first; the complete two-run episode follows those workers alone
+// so its unchanged test budget measures that episode. A file passes when its process exits 0 and
 // reports at least one test; the run exits 1 when any file does not, and
 // prints that file's whole output.
 //
@@ -19,13 +20,19 @@
 // files, and the CLI the tests spawn, whose stdout a test reads from a file
 // (packages/cli/test/fixtures/runtime.ts).
 import { spawn } from "node:child_process";
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync, realpathSync, statSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const TEST_DIRS = ["packages/core/test", "packages/cli/test", "test"];
+const EPISODE = realpathSync(join(ROOT, "test/episode.test.ts"));
+
+/** The complete two-run correction episode keeps its own wall-clock budget. */
+function serialEpisode(file: string): boolean {
+  return realpathSync(isAbsolute(file) ? file : join(ROOT, file)) === EPISODE;
+}
 
 interface Outcome {
   file: string;
@@ -116,24 +123,28 @@ async function main(): Promise<number> {
   const files = (given.length > 0 ? given : suiteFiles()).sort(
     (a, b) => bytesOf(b) - bytesOf(a) || (a < b ? -1 : a > b ? 1 : 0),
   );
-  const queue = [...files];
+  const queue = files.filter((file) => !serialEpisode(file));
+  const tail = files.filter(serialEpisode);
   const outcomes: Outcome[] = [];
-  const worker = async (): Promise<void> => {
-    for (let file = queue.shift(); file !== undefined; file = queue.shift()) {
-      const outcome = await runFile(file);
-      outcomes.push(outcome);
-      if (outcome.ok) {
-        process.stdout.write(
-          `ok    ${String(outcome.tests).padStart(4)}  ${seconds(outcome.ms)}  ${file}\n`,
-        );
-      } else {
-        const why = outcome.tests === 0 && outcome.fail === 0 ? "ran no test" : "failed";
-        process.stdout.write(`\nFAIL  ${file} (${why})\n${outcome.output}\n`);
-      }
+  const record = (outcome: Outcome): void => {
+    outcomes.push(outcome);
+    if (outcome.ok) {
+      process.stdout.write(
+        `ok    ${String(outcome.tests).padStart(4)}  ${seconds(outcome.ms)}  ${outcome.file}\n`,
+      );
+    } else {
+      const why = outcome.tests === 0 && outcome.fail === 0 ? "ran no test" : "failed";
+      process.stdout.write(`\nFAIL  ${outcome.file} (${why})\n${outcome.output}\n`);
     }
   };
-  const jobs = Math.max(1, Math.min(availableParallelism(), files.length));
+  const worker = async (): Promise<void> => {
+    for (let file = queue.shift(); file !== undefined; file = queue.shift()) {
+      record(await runFile(file));
+    }
+  };
+  const jobs = Math.max(1, Math.min(availableParallelism(), queue.length));
   await Promise.all(Array.from({ length: jobs }, worker));
+  for (const file of tail) record(await runFile(file));
   const failed = outcomes.filter((o) => !o.ok);
   const pass = outcomes.reduce((n, o) => n + o.pass, 0);
   const fail = outcomes.reduce((n, o) => n + o.fail, 0);
