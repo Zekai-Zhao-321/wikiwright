@@ -1,0 +1,49 @@
+{
+  "schema": "wikiwright/manifest",
+  "totals": {
+    "pages": 3,
+    "edges": 3
+  },
+  "by_kind": {
+    "tagged": 3
+  },
+  "by_label": {},
+  "pages": [
+    {
+      "path": "wiki/pruning-roses.md",
+      "type": "procedure-page",
+      "role": "procedure",
+      "ancestry": [],
+      "title": "Pruning roses",
+      "description": "Prune roses lightly in autumn so they keep their shade through the dry season.",
+      "tags": [
+        "pruning"
+      ],
+      "status": "active"
+    },
+    {
+      "path": "wiki/start-here.md",
+      "type": "guide-page",
+      "role": "hub",
+      "ancestry": [],
+      "title": "Start here",
+      "description": "How to use the allotment handbook, and what it covers.",
+      "tags": [
+        "orientation"
+      ],
+      "status": "active"
+    },
+    {
+      "path": "wiki/watering-beans.md",
+      "type": "procedure-page",
+      "role": "procedure",
+      "ancestry": [],
+      "title": "Watering beans",
+      "description": "Water climbing beans at the root, early in the day, through a hot summer.",
+      "tags": [
+        "vegetables"
+      ],
+      "status": "active"
+    }
+  ]
+}

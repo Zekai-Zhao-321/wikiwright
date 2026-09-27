@@ -13,12 +13,10 @@
     "wikiwright": "./dist/bin.js"
   },
   "files": [
-    "dist",
-    "skills",
-    "constitutions"
+    "dist"
   ],
   "engines": {
-    "node": ">=22.12.0"
+    "bun": "1.3.11"
   },
   "dependencies": {
     "@wikiwright/core": "workspace:*"

@@ -1,0 +1,4 @@
+type: note
+role: concept
+description: One durable note about this garden.
+use_when: The observation has a stable subject and needs its own page.

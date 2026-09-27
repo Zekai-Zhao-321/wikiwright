@@ -13,6 +13,7 @@ import { fromMarkdown } from "mdast-util-from-markdown";
 import { frontmatterFromMarkdown } from "mdast-util-frontmatter";
 import { frontmatter as micromarkFrontmatter } from "micromark-extension-frontmatter";
 import { isMap, isScalar, parseDocument } from "yaml";
+import { assertFiniteYamlGraph } from "../law/yaml.ts";
 
 export interface NormalizedInput {
   text: string;
@@ -51,6 +52,7 @@ export interface Frontmatter {
   endLine: number;
 }
 
+/** A document-level heading; headings nested in quotes or lists stay block content. */
 export interface Heading {
   depth: number;
   text: string;
@@ -72,10 +74,23 @@ export interface Wikilink {
   raw: string;
 }
 
+/** A block that is not prose and holds no list item: raw HTML, a thematic break. */
+export interface OpaqueBlock {
+  kind: "html" | "thematic-break";
+  line: number;
+  endLine: number;
+}
+
 export interface ParsedDoc {
   frontmatter: Frontmatter;
+  /** Only document-level headings form section boundaries for grammar, read and search. */
   headings: Heading[];
   fences: Fence[];
+  /**
+   * The top-level HTML blocks (a comment among them) and thematic breaks, by
+   * line: the v2 grammar reads no list item inside one (contracts §4).
+   */
+  opaque: OpaqueBlock[];
   wikilinks: Wikilink[];
   /** The normalized (BOM-stripped, LF) source — the text every checker sees. */
   source: string;
@@ -171,7 +186,18 @@ function parseFrontmatterNode(node: MdNode | undefined): Frontmatter {
       for (const ch of source.slice(0, offset)) if (ch === "\n") breaks += 1;
       keys.push({ key: keyText, line: fenceLine + 1 + breaks });
     }
-    const js: unknown = doc.toJS();
+    // An alias bomb makes toJS throw its resource bound: malformed, not a crash.
+    let js: unknown;
+    try {
+      js = doc.toJS();
+      assertFiniteYamlGraph(js);
+    } catch (error) {
+      issues.push({
+        code: "malformed-frontmatter",
+        message: `${(error as Error).message} (line ${fenceLine + 1})`,
+        line: fenceLine + 1,
+      });
+    }
     if (typeof js === "object" && js !== null && !Array.isArray(js)) {
       value = js as Record<string, unknown>; // invariant: guarded plain-object narrowing
     }
@@ -196,7 +222,13 @@ export function parseDoc(raw: string): ParsedDoc {
 
   const headings: Heading[] = [];
   const fences: Fence[] = [];
+  const opaque: OpaqueBlock[] = [];
   const excluded: Array<[number, number]> = [];
+  const block = (kind: OpaqueBlock["kind"], node: MdNode, parent: MdNode | undefined): void => {
+    if (parent !== tree) return;
+    const line = node.position?.start.line ?? 1;
+    opaque.push({ kind, line, endLine: node.position?.end.line ?? line });
+  };
 
   const exclude = (node: MdNode): void => {
     const start = node.position?.start.offset;
@@ -204,17 +236,21 @@ export function parseDoc(raw: string): ParsedDoc {
     if (start !== undefined && end !== undefined) excluded.push([start, end]);
   };
 
-  const visit = (node: MdNode): void => {
+  const visit = (node: MdNode, parent?: MdNode): void => {
     switch (node.type) {
       case "yaml":
         exclude(node);
         return;
       case "heading": {
-        headings.push({
-          depth: node.depth ?? 1,
-          text: collectText(node).trim(),
-          line: node.position?.start.line ?? 1,
-        });
+        // A heading quoted or nested in a list is content of that block,
+        // not a document section boundary. Treating it as one can stop a
+        // governed section before the next real claim.
+        if (parent === tree)
+          headings.push({
+            depth: node.depth ?? 1,
+            text: collectText(node).trim(),
+            line: node.position?.start.line ?? 1,
+          });
         break;
       }
       case "code": {
@@ -227,14 +263,20 @@ export function parseDoc(raw: string): ParsedDoc {
         exclude(node);
         return;
       }
-      case "inlineCode":
       case "html":
+        block("html", node, parent);
         exclude(node);
+        return;
+      case "inlineCode":
+        exclude(node);
+        return;
+      case "thematicBreak":
+        block("thematic-break", node, parent);
         return;
       default:
         break;
     }
-    for (const child of node.children ?? []) visit(child);
+    for (const child of node.children ?? []) visit(child, node);
   };
   visit(tree);
   const wikilinks = scanWikilinks(text, excluded);
@@ -243,6 +285,7 @@ export function parseDoc(raw: string): ParsedDoc {
     frontmatter: parseFrontmatterNode(tree.children?.[0]),
     headings,
     fences,
+    opaque,
     wikilinks,
     source: text,
     input: { hadBom, hadCrlf },

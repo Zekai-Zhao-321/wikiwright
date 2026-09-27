@@ -1,0 +1,15 @@
+type: integration
+role: concept
+description: An external system this project talks to, and the contract with it, anchored to the code that speaks it.
+use_when: "Third-party services, protocols, or consumed APIs."
+avoid_when: Internal components (subsystem).
+abstract: true
+fragments: [anchored]
+sections:
+  list:
+    - { heading: Contract, min: 1, max: 1 }
+    - { heading: Failure modes, min: 1, max: 1 }
+    - heading: Relations
+      min: 1
+      require:
+        - { labels: [part-of], min: 1 }

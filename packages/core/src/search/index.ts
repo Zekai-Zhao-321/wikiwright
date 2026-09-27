@@ -17,7 +17,7 @@ import {
   nearCandidatesAll,
   stripQualifier,
 } from "./near.ts";
-import { TOKENIZATION_MODE } from "./tokenize.ts";
+import { TOKENIZATION_MODE, tokenize } from "./tokenize.ts";
 
 export interface SearchFilters {
   type?: string;
@@ -31,6 +31,9 @@ export interface SearchFilters {
  * (docs/concepts.md §Generated artifacts).
  */
 export type SearchBand = "identity" | "relevance";
+
+/** Every band, in the order results come in: `--band` takes one of these. */
+export const SEARCH_BANDS: readonly SearchBand[] = ["identity", "relevance"];
 
 export interface SearchResult {
   path: string;
@@ -125,6 +128,8 @@ export interface SearchOptions {
    */
   lexicalIndex?: LexicalIndex | undefined;
   nearIndex?: NearIndex | undefined;
+  /** `--band`: keep only the results of one band, before the cap is applied. */
+  band?: SearchBand | undefined;
 }
 
 interface LadderRow {
@@ -141,6 +146,41 @@ function round6(x: number): number {
   return Math.round(x * 1e6) / 1e6;
 }
 
+/**
+ * The filter flags as one predicate over a page: `--type` matches the page's
+ * type, any ancestor or the archetype through its chain (D11), `--tag` a tag
+ * it carries, `--title-contains` a substring of its resolved title, each
+ * compared by identity. Page search and item search keep the same pages.
+ */
+export function pageFilter(
+  filters: SearchFilters,
+  options?: SearchOptions,
+): (page: NamedPage) => boolean {
+  const nFilterType = filters.type === undefined ? undefined : normalizeIdentity(filters.type);
+  const nFilterTag = filters.tag === undefined ? undefined : normalizeIdentity(filters.tag);
+  const nTitleContains =
+    filters.titleContains === undefined ? undefined : normalizeIdentity(filters.titleContains);
+  return (page) => {
+    const fm = page.doc.frontmatter.value;
+    const type = str(fm["type"]);
+    if (nFilterType !== undefined) {
+      const chain = type === null ? [] : (options?.typeChains?.get(type) ?? [type]);
+      if (!chain.some((t) => normalizeIdentity(t) === nFilterType)) return false;
+    }
+    if (nFilterTag !== undefined) {
+      const tags = Array.isArray(fm["tags"])
+        ? fm["tags"].filter((t): t is string => typeof t === "string")
+        : [];
+      if (!tags.some((t) => normalizeIdentity(t) === nFilterTag)) return false;
+    }
+    if (nTitleContains !== undefined) {
+      const title = resolveTitle(page.doc, page.path, options?.fieldSources);
+      if (title === null || !normalizeIdentity(title).includes(nTitleContains)) return false;
+    }
+    return true;
+  };
+}
+
 export function searchPages(
   pages: NamedPage[],
   query: string | undefined,
@@ -149,10 +189,7 @@ export function searchPages(
   options?: SearchOptions,
 ): SearchOutcome {
   const q = query === undefined ? undefined : normalizeIdentity(query);
-  const nFilterType = filters.type === undefined ? undefined : normalizeIdentity(filters.type);
-  const nFilterTag = filters.tag === undefined ? undefined : normalizeIdentity(filters.tag);
-  const nTitleContains =
-    filters.titleContains === undefined ? undefined : normalizeIdentity(filters.titleContains);
+  const keeps = pageFilter(filters, options);
 
   // The lexical index carries the corpus statistics AND the normalized page
   // source the `body:phrase` tier compares against, so both are computed once
@@ -175,18 +212,9 @@ export function searchPages(
       ? fm["aliases"].filter((a): a is string => typeof a === "string")
       : [];
 
-    if (nFilterType !== undefined) {
-      // D11: exact type, any ancestor, or the archetype — the chain carries
-      // all three, so one flag serves every altitude.
-      const chain = type === null ? [] : (options?.typeChains?.get(type) ?? [type]);
-      if (!chain.some((t) => normalizeIdentity(t) === nFilterType)) continue;
-    }
-    if (nFilterTag !== undefined && !tags.some((t) => normalizeIdentity(t) === nFilterTag)) {
-      continue;
-    }
-    if (nTitleContains !== undefined) {
-      if (title === null || !normalizeIdentity(title).includes(nTitleContains)) continue;
-    }
+    // D11: exact type, any ancestor, or the archetype — the chain carries all
+    // three, so one flag serves every altitude.
+    if (!keeps(page)) continue;
     kept.push(page);
 
     let score = 0;
@@ -328,6 +356,14 @@ export function searchPages(
     if (a.score !== b.score) return b.score - a.score;
     return codeUnitCompare(a.path, b.path);
   });
+  // `--band` is a post-filter: the ranks are computed over every result, and
+  // the kept band's results keep the order they had.
+  if (options?.band !== undefined) {
+    const band = options.band;
+    const kept = results.filter((r) => r.band === band);
+    results.length = 0;
+    results.push(...kept);
+  }
 
   const capped = results.length > limit;
   // A query-less invocation matched by filter membership and consulted no tier
@@ -366,4 +402,77 @@ export function searchPages(
     outcome.coverage.caps.near_hit = all.length > NEAR_LIMIT;
   }
   return outcome;
+}
+
+/** One page `--files` lists: its path and why it matched. */
+export interface FileHit {
+  path: string;
+  match_reasons: string[];
+}
+
+/** The coverage block of `--files`: the page search's, with no cap to hit. */
+export type FilesCoverage = Omit<SearchCoverage, "caps"> & {
+  caps: { limit: null; found: number; hit: false };
+};
+
+/** A page whose source holds a query term only inside a longer word. */
+const CONTAINS_TIER = "text:contains";
+
+/**
+ * docs/cli.md §search: `--files`, every page with at least one match, in
+ * code-unit order by path, unranked and uncapped. The pages the ranked search
+ * finds, each with its reasons, and every other page whose source holds a
+ * query term inside a longer word, as a line search would list it; with no
+ * query, every page the filters keep.
+ */
+export function searchFiles(
+  pages: NamedPage[],
+  query: string | undefined,
+  filters: SearchFilters,
+  options?: SearchOptions,
+): { files: FileHit[]; coverage: FilesCoverage } {
+  // Every ranked match is classified first, whatever band was asked for: a
+  // page the ranked search found is never offered to the substring scan, so
+  // the band applied afterwards cannot see an identity match come back as
+  // `text:contains`.
+  const ranked = searchPages(pages, query, filters, Number.MAX_SAFE_INTEGER, {
+    ...options,
+    band: undefined,
+  });
+  // The fusion's list positions are a ranking's; an unranked list keeps the
+  // tiers that matched and drops where each list put the page.
+  const classified: (FileHit & { band: SearchBand })[] = ranked.results.map((r) => ({
+    path: r.path,
+    band: r.band,
+    match_reasons: r.match_reasons.filter((reason) => !reason.startsWith("rrf:")),
+  }));
+  const tiers = [...ranked.coverage.tiers_executed];
+  if (query !== undefined) {
+    const terms = [...new Set(tokenize(query))];
+    const found = new Set(classified.map((f) => f.path));
+    const keeps = pageFilter(filters, options);
+    for (const page of pages) {
+      if (found.has(page.path) || !keeps(page)) continue;
+      const source = normalizeIdentity(page.doc.source);
+      if (terms.some((t) => source.includes(t))) {
+        // A page only a substring found is relevance-band by construction.
+        classified.push({ path: page.path, band: "relevance", match_reasons: [CONTAINS_TIER] });
+      }
+    }
+    tiers.push(CONTAINS_TIER);
+  }
+  const band = options?.band;
+  const files: FileHit[] = classified
+    .filter((f) => band === undefined || f.band === band)
+    .map((f) => ({ path: f.path, match_reasons: f.match_reasons }));
+  files.sort((a, b) => codeUnitCompare(a.path, b.path));
+  const { caps: _caps, ...coverage } = ranked.coverage;
+  return {
+    files,
+    coverage: {
+      ...coverage,
+      tiers_executed: tiers,
+      caps: { limit: null, found: files.length, hit: false },
+    },
+  };
 }

@@ -7,8 +7,9 @@
 //
 // An adversarial review's core-side findings, each pinned to the documented sentence
 // the review forced into existence.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import type { NamedPage } from "../src/names/index.ts";
 import { parseDoc } from "../src/parse/index.ts";
 import { buildLexicalIndex } from "../src/search/bm25.ts";

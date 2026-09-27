@@ -1,0 +1,52 @@
+{
+  "schema": "wikiwright/graph",
+  "nodes": [
+    {
+      "id": "wiki/Café.md",
+      "kind": "page",
+      "type": "source-kit/field-note",
+      "title": "Café"
+    },
+    {
+      "id": "wiki/Seed catalog.md",
+      "kind": "page",
+      "type": "source-kit/seed-catalog",
+      "title": "Seed catalog"
+    },
+    {
+      "id": "wiki/Soil observations.md",
+      "kind": "page",
+      "type": "source-kit/observation",
+      "title": "Soil observations"
+    },
+    {
+      "id": "wiki/Straße.md",
+      "kind": "page",
+      "type": "source-kit/field-note",
+      "title": "Straße"
+    },
+    {
+      "id": "wiki/茶园记录.md",
+      "kind": "page",
+      "type": "source-kit/field-note",
+      "title": "茶园记录"
+    }
+  ],
+  "edges": [
+    {
+      "from": "wiki/Soil observations.md",
+      "to": "wiki/Café.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/Soil observations.md",
+      "to": "wiki/Straße.md",
+      "kind": "wikilink"
+    },
+    {
+      "from": "wiki/Soil observations.md",
+      "to": "wiki/茶园记录.md",
+      "kind": "wikilink"
+    }
+  ]
+}

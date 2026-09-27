@@ -1,12 +1,14 @@
 // docs/cli.md §The envelope (`<verb> --help` is rendered from the same
 // registry as `schema`, exit 0; --help is intercepted before parsing; an unknown
-// verb still exits 2) · every verb declares its role
+// verb still exits 2)
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
 import { flagsOf } from "../src/spec.ts";
+import { cleanBundles, gardenBundle } from "./fixtures/garden-cli.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
@@ -21,7 +23,7 @@ interface Run {
 }
 
 function run(args: string[], env?: Record<string, string>): Run {
-  const r = spawnSync(process.execPath, [CLI, ...args], {
+  const r = runCli([CLI, ...args], {
     encoding: "utf8",
     env: { ...process.env, ...(env ?? {}) } as Record<string, string>,
   });
@@ -32,14 +34,15 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
   // One subprocess per verb, and the verb list grows: the budget is the WORK,
   // not the runner's five-second default. Nothing about the assertion changes —
   // a verb that fails to answer still fails, on any machine.
-  it("every registered verb answers --help with ok and its own spec", { timeout: 120_000 }, () => {
+  it("every registered verb answers --help with ok and its own spec", () => {
+    const garden = gardenBundle();
     for (const command of COMMANDS) {
-      const r = run([command.name, "--help"]);
+      const r = run([command.name, "--help", "--root", garden]);
       assert.equal(r.status, 0, `${command.name} --help: ${JSON.stringify(r.envelope)}`);
       assert.equal(r.envelope.ok, true);
       const data = r.envelope.data ?? {};
       assert.equal(data["name"], command.name);
-      assert.equal(data["role"], command.role);
+      assert.equal(data["role"], undefined, "no verb declares a role (v2 contracts §1)");
       assert.equal(data["summary"], command.summary);
       // docs/cli.md §The dry-run law: help renders `flagsOf(spec)` — the verb's
       // own flags plus the registry's `--dry-run` when it writes — because the
@@ -50,10 +53,11 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
       assert.deepEqual(data["examples"], command.examples);
       assert.equal(Array.isArray(data["global_flags"]), true, "the flags every verb accepts");
     }
-  });
+    cleanBundles();
+  }, 120_000);
 
   it("--help never becomes a usage error, even beside flags the verb rejects", () => {
-    const r = run(["lint", "--help", "--no-such-flag"]);
+    const r = run(["check", "--help", "--no-such-flag"]);
     assert.equal(r.status, 0, JSON.stringify(r.envelope));
   });
 
@@ -67,13 +71,13 @@ describe("per-command --help (docs/cli.md §The envelope)", () => {
   });
 
   it("a bare -- ends the scan", () => {
-    const r = run(["schema", "--", "--help"]);
+    const r = run(["version", "--", "--help"]);
     assert.equal(r.status, 2, JSON.stringify(r.envelope));
     assert.equal(r.envelope.error?.["code"], "unexpected-argument");
   });
 
   it("an unknown verb still exits 2 — --help is not a way to make a typo succeed", () => {
-    const r = run(["lintt", "--help"]);
+    const r = run(["checkk", "--help"]);
     assert.equal(r.status, 2);
     assert.equal(r.envelope.error?.["code"], "unknown-command");
   });

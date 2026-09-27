@@ -1,4 +1,4 @@
-// Synthetic, cold-process check and staged-lint measurements. All writes stay
+// Synthetic, cold-process check and gate measurements. All writes stay
 // under os.tmpdir(). An optional baseline CLI must produce identical results.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -18,7 +18,7 @@ assert(
 assert(Number.isSafeInteger(runs) && runs > 0, "runs must be a positive integer");
 const cli = fileURLToPath(new URL("../packages/cli/dist/main.js", import.meta.url));
 const binaries = baselineArg === undefined ? [cli] : [resolve(baselineArg), cli];
-const commands = [["check"], ["check", "--write"], ["lint", "--staged"]];
+const commands = [["check"], ["check", "--write"], ["gate"]];
 const median = (values: number[]): number =>
   [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)] ?? 0;
 
@@ -47,19 +47,23 @@ for (const count of sizes) {
   const root = mkdtempSync(join(tmpdir(), "ww-benchmark-"));
   try {
     for (const dir of ["config", "wiki", "empty-hooks"]) mkdirSync(join(root, dir));
+    mkdirSync(join(root, "constitution", "types"), { recursive: true });
     writeFileSync(
-      join(root, "config/constitution.json"),
+      join(root, "constitution/types/note.yaml"),
+      "type: note\nrole: concept\ndescription: A synthetic benchmark note.\n",
+    );
+    writeFileSync(
+      join(root, "config/engine.json"),
       JSON.stringify({
-        schema: "wikiwright/constitution",
-        schema_version: 3,
-        vocabularies: { tags: { mode: "registered", entries: {} } },
-        types: { note: { extends: "concept", description: "A synthetic benchmark note." } },
+        schema: "wikiwright/engine",
+        schema_version: 4,
+        label: "benchmark",
+        content_roots: ["wiki"],
       }),
     );
-    writeFileSync(join(root, "config/engine.json"), JSON.stringify({ content_roots: ["wiki"] }));
     const page = (i: number): string => {
       const links = [1, 2, 3].map((n) => `[[Note ${(i + n) % count}]]`).join(" and ");
-      return `---\ntype: note\ntitle: Note ${i}\ndescription: A synthetic benchmark note.\ntags: []\n---\n\n# Note ${i}\n\nSee ${links}.\n`;
+      return `---\ntype: note\ntitle: Note ${i}\ndescription: A synthetic benchmark note.\n---\n\n# Note ${i}\n\nSee ${links}.\n`;
     };
     for (let i = 0; i < count; i++) writeFileSync(join(root, "wiki", `Note ${i}.md`), page(i));
     const git = (...args: string[]): void => {
@@ -67,7 +71,7 @@ for (const count of sizes) {
     };
     git("init", "-q");
     git("config", "core.hooksPath", join(root, "empty-hooks"));
-    git("add", "config", "wiki");
+    git("add", "config", "constitution", "wiki");
     git(
       "-c",
       "user.name=Benchmark",
@@ -106,10 +110,7 @@ for (const count of sizes) {
       }
       console.log(
         JSON.stringify({
-          runtime:
-            process.versions["bun"] === undefined
-              ? `Node ${process.version}`
-              : `Bun ${process.versions["bun"]}`,
+          runtime: `Bun ${process.versions["bun"] ?? "unknown"}`,
           pages: count,
           command: args.join(" "),
           runs,

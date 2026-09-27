@@ -1,0 +1,8 @@
+type: decision
+extends: code/decision
+description: A decision record of the engine, numbered D-nnn, citing the documents and pages that carry its evidence.
+fields:
+  type: object
+  properties:
+    decision_id: { type: string, pattern: "^D-[0-9]{3}$" }
+  required: [decision_id]

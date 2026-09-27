@@ -1,8 +1,9 @@
 // docs/architecture.md (git via spawned plumbing with -z output parsed in pure core)
 // docs/architecture.md §Directories (core/gitplan: pure parsers) · docs/constitution.md (rename detection feeds
 // the former-folder-tags review) · docs/concepts.md (the staged gate's inputs).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { parseNameStatusZ } from "../src/gitplan/index.ts";
 
 describe("parseNameStatusZ — `git diff --cached --name-status -z -M` parser", () => {
@@ -33,5 +34,17 @@ describe("parseNameStatusZ — `git diff --cached --name-status -z -M` parser", 
     assert.deepEqual(parseNameStatusZ(raw), [
       { status: "C", path: "wiki/copy.md", oldPath: "wiki/src.md" },
     ]);
+  });
+});
+
+describe("parseNameStatusZ on a cut answer (docs/roadmap.md)", () => {
+  it("returns a shorter listing and cannot tell: the shell holds the answer to its final NUL", () => {
+    // `M wiki/a.md`, then a record cut inside its path: the parser keeps what it
+    // was given, which is why a cut listing is refused before it is parsed.
+    assert.deepEqual(parseNameStatusZ("M\0wiki/a.md\0M\0wiki/b"), [
+      { status: "M", path: "wiki/a.md" },
+      { status: "M", path: "wiki/b" },
+    ]);
+    assert.deepEqual(parseNameStatusZ("M\0wiki/a.md\0M"), [{ status: "M", path: "wiki/a.md" }]);
   });
 });

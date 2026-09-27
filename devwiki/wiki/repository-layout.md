@@ -1,30 +1,37 @@
 ---
 type: source-map
 title: Repository layout
-description: Directory-to-purpose lookup for the wikiwright repository.
+description: "Current file-to-purpose map for the v2 engine repository."
 tags: [repo]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
-origin: .
-covers: [package.json, tsconfig.json, packages/cli/constitutions/, packages/cli/skills/, packages/kit-code/, fixtures/, tools/, scripts/, .github/]
+pin:
+  commit: f1dc7deae8b129b74e9db2eb37da44b927ae22f6
+  origin: .
+  covers: ["packages/core/src/index.ts", "packages/core/src/verdict/sourcepaths.ts", "packages/cli/src/main.ts", "libraries/kit-code/types/subsystem.yaml", "libraries/source-kit/types/observation.yaml", "devwiki/config/engine.json", "fixtures/handbooks/orchard/config/engine.json", "fixtures/source-policy/config/engine.json", "tools/run-suite.ts", "test/episode.test.ts", "docs/architecture.md", "AGENTS.md"]
+updated: 2026-09-26
 ---
 
 # Repository layout
 
 ## Layout
 
+The repository separates a pure kernel, an imperative CLI, data libraries, synthetic bundles, build and test tools, and documentation.
+The synthetic source-policy bundle imports a garden source library and tests
+the nominal type of cited page sources across working-tree, write and staged
+states.
+
 | Path | Purpose |
-| --- | --- |
-| `docs/` | The documentation: concepts, the constitution reference, the CLI reference (rendered from the binary), extending, architecture, the roadmap |
-| `packages/core/` | `@wikiwright/core`: the kernel and the standard library (see [[registry-pipeline]]) |
-| `packages/cli/` | The `wikiwright` binary: one module per verb, envelopes, the shell half of the Writer |
-| `packages/cli/constitutions/` | The starters `init` scaffolds: `base`, and `code`, a bundle over the code kit |
-| `packages/cli/skills/` | The two shipped skills and the generated lint-response playbook |
-| `packages/kit-code/` | `@wikiwright/kit-code`: the shipped domain kit — the types, relation labels, templates and discipline of a code wiki, consumed by the `code` starter and by this bundle |
-| `fixtures/` | The corpora the suite judges (`memory-synth`, `minimal-vault`), the conformance module fixture with its two bundles, and the OKF pin |
-| `tools/` | Repository scripts: the build-info writer, the playbook renderer, the case-fold table generator, the uncovered-directory lister, the suite runner the gate uses, and the benchmark of `check` and `lint --staged` |
-| `scripts/hooks/` | The development gate, `pre-commit` |
-| `.github/workflows/` | The workflow `check.yml`: the gate and the node runner on every push and pull request, on Linux and macOS |
-| `devwiki/` | This bundle: wikiwright documented by wikiwright over the code kit, a workspace member, judged by the suite |
-| `AGENTS.md` | The operating rules for an agent working in this repository |
-| `CHANGELOG.md` | What each release changed |
-| `CONTRIBUTING.md` | Setup from a clone, the gate and the hook, the runners, the generated files, sending a change |
+|---|---|
+| packages/core/src/index.ts | Pure kernel export surface |
+| packages/core/src/verdict/sourcepaths.ts | Selected-state source-path existence judgment |
+| packages/cli/src/main.ts | CLI dispatch and envelope writing |
+| libraries/kit-code/types/subsystem.yaml | Example data library type |
+| libraries/source-kit/types/observation.yaml | Synthetic source-type policy |
+| devwiki/config/engine.json | This repository's own bundle law |
+| fixtures/handbooks/orchard/config/engine.json | Synthetic handbook law |
+| fixtures/source-policy/config/engine.json | Synthetic source-policy bundle law |
+| tools/run-suite.ts | Per-file Bun test runner |
+| test/episode.test.ts | Synthetic first-delivery episode |
+| docs/architecture.md | Package and invariant map |
+| AGENTS.md | Repository operating rules |
+
+Current source at this pin: `packages/core/src/index.ts`, `packages/core/src/verdict/sourcepaths.ts`, `packages/cli/src/main.ts`, `libraries/kit-code/types/subsystem.yaml`, `libraries/source-kit/types/observation.yaml`, `devwiki/config/engine.json`, `fixtures/handbooks/orchard/config/engine.json`, `fixtures/source-policy/config/engine.json`, `tools/run-suite.ts`, `test/episode.test.ts`, `docs/architecture.md`, `AGENTS.md`.

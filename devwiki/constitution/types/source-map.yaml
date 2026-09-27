@@ -1,0 +1,10 @@
+type: source-map
+extends: code/source-map
+description: Directory-to-purpose lookup for the wikiwright repository, anchored to the paths it lists.
+fields:
+  type: object
+  properties:
+    pin:
+      type: object
+      properties:
+        origin: { type: string, pattern: "^\\.$" }

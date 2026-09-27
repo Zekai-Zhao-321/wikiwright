@@ -29,25 +29,25 @@ Heath Tallow — Isle pallet lantern copse glen moss umber kestrel mesa rivet in
 - [category-05] Fern fern saffron orchard knoll pebble saffron upland ember (moss inlet) (ledgerexport export 2031-04-16)
 
 ## Relations
-- pilots_with [[蒯澜]]
-- tallies_beside [[麴珺澜]]
-- hosted_by [[揭澜珺]]
-- cohort_of [[揭澜珺]]
-- peer_of [[揭澜珺]]
+- pilots-with [[蒯澜]]
+- tallies-beside [[麴珺澜]]
+- hosted-by [[揭澜珺]]
+- cohort-of [[揭澜珺]]
+- peer-of [[揭澜珺]]
 - touches [[麴珺澜]]
 
 ## Timeline
-- 2009-02-06: Copse marrow vale pebble saffron thicket fern umber moss umber ochre copse
-- 2009-09-26: Alder tallow moss wharf jasper ridge pallet dell dune hollow eddy copse
-- 2011: Larch jasper kiln gable copse grove ridge jasper loam yarrow heath pebble
-- 2013-10-21 → 2013-11-21 (birch umber): Quarry moss nook hollow saffron hollow ridge juniper harrow
-- 2016-12-25 (umber cadence): Bramble grove umber amber saffron [[Rivet Larch]]
-- 2022-09: Copse wharf harrow wicket ochre knoll tallow lantern
-- 2025-03-25: Lantern ochre saffron nimbus fern wharf umber alder dune vale
-- 2026-05-10 → 2026-06-10: Thicket harrow lantern saffron nook marrow eddy wicket nimbus
-- 2029-04-10: Alder ridge dune hollow kestrel harrow ridge wicket
-- 2031-04-26: Pallet dapple inlet heath fathom basin nimbus larch orchard moss
-- 约2021: Yarrow marrow saffron dapple nook zephyr dune vale cinder lantern
+- 2009-02-06 — Copse marrow vale pebble saffron thicket fern umber moss umber ochre copse
+- 2009-09-26 — Alder tallow moss wharf jasper ridge pallet dell dune hollow eddy copse
+- 2011 — Larch jasper kiln gable copse grove ridge jasper loam yarrow heath pebble
+- 2013-10-21 — → 2013-11-21 (birch umber) Quarry moss nook hollow saffron hollow ridge juniper harrow
+- 2016-12-25 — (umber cadence) Bramble grove umber amber saffron [[Rivet Larch]]
+- 2022-09 — Copse wharf harrow wicket ochre knoll tallow lantern
+- 2025-03-25 — Lantern ochre saffron nimbus fern wharf umber alder dune vale
+- 2026-05-10 — → 2026-06-10 Thicket harrow lantern saffron nook marrow eddy wicket nimbus
+- 2029-04-10 — Alder ridge dune hollow kestrel harrow ridge wicket
+- 2031-04-26 — Pallet dapple inlet heath fathom basin nimbus larch orchard moss
+- 2021 — 约 Yarrow marrow saffron dapple nook zephyr dune vale cinder lantern
 
 ## Notes
 - Moss upland heath loam knoll heath cadence harrow fern pallet mesa basin.

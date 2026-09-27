@@ -1,0 +1,10 @@
+type: integration
+extends: code/integration
+description: "An external system the engine talks to, and the contract with it; anchored to the code that speaks it."
+fields:
+  type: object
+  properties:
+    pin:
+      type: object
+      properties:
+        origin: { type: string, pattern: "^\\.$" }

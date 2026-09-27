@@ -1,40 +1,88 @@
 // docs/cli.md §version (`commit` names the BUILD, read from
 // dist/build-info.json written by the build script; the call-time git lookup is
 // demoted to checkout_commit) · docs/architecture.md §Directories / no timestamps in build artifacts.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { versionData } from "../src/buildinfo.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const BUILD_INFO = fileURLToPath(new URL("../dist/build-info.json", import.meta.url));
 
 function envelopeOf(args: string[]): { data?: Record<string, unknown> } {
-  const r = spawnSync(process.execPath, [CLI, ...args], { cwd: REPO, encoding: "utf8" });
+  const r = runCli([CLI, ...args], { cwd: REPO, encoding: "utf8" });
   return JSON.parse(r.stdout) as { data?: Record<string, unknown> };
 }
 
 describe("the build stamps the artifact it produced (docs/cli.md §version)", () => {
-  it("`bun run build` writes dist/build-info.json, and the bytes are reproducible", () => {
-    const build = spawnSync("bun", ["run", "build"], { cwd: REPO, encoding: "utf8" });
-    assert.equal(build.status, 0, build.stderr);
-    assert.equal(existsSync(BUILD_INFO), true, "the build wrote dist/build-info.json");
-    const first = readFileSync(BUILD_INFO, "utf8");
-    const info = JSON.parse(first) as Record<string, unknown>;
-    assert.deepEqual(Object.keys(info).sort(), ["commit", "dirty"]);
-    assert.equal(typeof info["commit"] === "string" || info["commit"] === null, true);
-    assert.equal(typeof info["dirty"] === "boolean" || info["dirty"] === null, true);
-    // A build artifact that changes when nothing changed is not
-    // reproducible, so nothing in it may come from the clock.
-    assert.equal(/\d{4}-\d{2}-\d{2}T/.test(first), false, "no timestamp");
-    const again = spawnSync("bun", ["run", "build"], { cwd: REPO, encoding: "utf8" });
-    assert.equal(again.status, 0, again.stderr);
-    assert.equal(readFileSync(BUILD_INFO, "utf8"), first, "byte-identical across builds");
+  // The writer alone, not the whole build — `bun run build` removes every
+  // dist/ before it compiles, and a rebuild inside the suite would take the
+  // binary away from the tests running beside this one — and against a
+  // temporary copy of its scaffold, never this checkout's dist/: the writer
+  // stamps the tree it sits in. That the build runs the writer is the next case.
+  it("the build-info writer stamps the commit it sits at, and the bytes are reproducible", () => {
+    const scaffold = mkdtempSync(join(tmpdir(), "ww-build-info-"));
+    try {
+      mkdirSync(join(scaffold, "tools"));
+      copyFileSync(
+        join(REPO, "tools", "write-build-info.ts"),
+        join(scaffold, "tools", "write-build-info.ts"),
+      );
+      const git = (...args: string[]): string =>
+        execFileSync(
+          "git",
+          [
+            "-c",
+            "user.name=T",
+            "-c",
+            "user.email=t@example.com",
+            "-c",
+            "commit.gpgsign=false",
+            ...args,
+          ],
+          { cwd: scaffold, encoding: "utf8" },
+        );
+      git("init", "-q");
+      git("add", "-A");
+      git("commit", "-q", "-m", "the scaffold");
+      const stamp = join(scaffold, "packages", "cli", "dist", "build-info.json");
+      const write = (): void => {
+        const r = spawnSync("bun", [join(scaffold, "tools", "write-build-info.ts")], {
+          cwd: scaffold,
+          encoding: "utf8",
+        });
+        assert.equal(r.status, 0, r.stderr);
+      };
+      write();
+      assert.equal(existsSync(stamp), true, "the writer wrote dist/build-info.json");
+      const first = readFileSync(stamp, "utf8");
+      const info = JSON.parse(first) as Record<string, unknown>;
+      assert.deepEqual(Object.keys(info).sort(), ["commit", "dirty"]);
+      assert.equal(info["commit"], git("rev-parse", "--short", "HEAD").trim());
+      assert.equal(info["dirty"], false);
+      // A build artifact that changes when nothing changed is not
+      // reproducible, so nothing in it may come from the clock.
+      assert.equal(/\d{4}-\d{2}-\d{2}T/.test(first), false, "no timestamp");
+      write();
+      assert.equal(readFileSync(stamp, "utf8"), first, "byte-identical across builds");
+    } finally {
+      rmSync(scaffold, { recursive: true, force: true });
+    }
   });
 
   it("the build script runs the writer — the stamp cannot depend on remembering", () => {
@@ -170,7 +218,7 @@ interface Outcome {
 }
 
 function runIn(cwd: string, args: string[], env: Record<string, string> = {}): Outcome {
-  const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
+  const r = runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env: { ...process.env, ...env },
@@ -261,12 +309,12 @@ describe("version — the binary names its build (docs/cli.md §version)", () =>
     }
   });
 
-  it("the verb is a consumer-role entry of the generated registry", () => {
+  it("the verb is an entry of the generated registry, and writes nothing", () => {
     const tmp = mkdtempSync(join(tmpdir(), "ww-version-"));
     try {
-      const schema = runIn(tmp, ["schema"]);
-      const commands = dataOf(schema)["commands"] as Array<{ name: string; role: string }>;
-      assert.equal(commands.find((c) => c.name === "version")?.role, "consumer");
+      const schema = runIn(tmp, ["--help", "--json"]);
+      const commands = dataOf(schema)["commands"] as Array<{ name: string; writes: boolean }>;
+      assert.equal(commands.find((c) => c.name === "version")?.writes, false);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }

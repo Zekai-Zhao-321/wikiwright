@@ -1,0 +1,10 @@
+type: architecture-overview
+extends: code/architecture-overview
+description: "The engine's shape: the four layers and how a verdict flows through them; anchored to the entry points that define them. This bundle lives in the repository it documents, so origin is `.`."
+fields:
+  type: object
+  properties:
+    pin:
+      type: object
+      properties:
+        origin: { type: string, pattern: "^\\.$" }

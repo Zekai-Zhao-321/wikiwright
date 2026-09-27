@@ -6,8 +6,9 @@
 // refuses` restores the exact predicate the law replaced and asserts it says yes
 // to the traversal that wrote a file above the vault root. If someone reverts
 // the law, that case goes green in a way a reader cannot miss.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import {
   isContentPath,
   isVaultPath,

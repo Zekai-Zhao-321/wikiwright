@@ -23,9 +23,9 @@ Rivet Larch — Ridge kiln sedge vellum yarrow heath wharf gable eddy mesa moss 
 - [category-03] Rate fern: alder harrow **gable loam** grove gable knoll 片段 fern pallet knoll (stated 2031-07-24)
 
 ## Relations
-- drafts_into [[揭澜珺]]
-- kin_of [[麴珺澜]]
-- routes_to [[Upland Fathom]]
+- drafts-into [[揭澜珺]]
+- kin-of [[麴珺澜]]
+- routes-to [[Upland Fathom]]
 
 ## Excluded
 - [x] Loam wicket quarry upland mesa pebble.

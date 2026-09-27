@@ -11,57 +11,54 @@
   },
   "by_label": {
     "relation": {
-      "allied_with": 12,
+      "allied-with": 12,
       "anchors": 5,
-      "borrows_under": 1,
-      "cohort_of": 8,
-      "courts_after": 1,
-      "courts_under": 1,
-      "drafts_after": 1,
-      "drafts_into": 1,
-      "echoes_via": 1,
-      "frames_per": 1,
-      "hosted_by": 6,
-      "kin_of": 7,
-      "lends_before": 1,
-      "lends_under": 1,
-      "mentored_by": 9,
-      "nudges_before": 1,
-      "nudges_for": 1,
-      "orbits_from": 1,
-      "patron_of": 5,
-      "peer_of": 12,
-      "pilots_with": 1,
-      "quotes_after": 1,
-      "quotes_from": 1,
-      "quotes_via": 1,
-      "relays_under": 1,
-      "routes_to": 5,
-      "scouts_into": 1,
-      "spun_from": 3,
-      "steward_of": 4,
+      "borrows-under": 1,
+      "cohort-of": 8,
+      "courts-after": 1,
+      "courts-under": 1,
+      "drafts-after": 1,
+      "drafts-into": 1,
+      "echoes-via": 1,
+      "frames-per": 1,
+      "hosted-by": 6,
+      "kin-of": 7,
+      "lends-before": 1,
+      "lends-under": 1,
+      "mentored-by": 9,
+      "nudges-before": 1,
+      "nudges-for": 1,
+      "orbits-from": 1,
+      "patron-of": 5,
+      "peer-of": 12,
+      "pilots-with": 1,
+      "quotes-after": 1,
+      "quotes-from": 1,
+      "quotes-via": 1,
+      "relays-under": 1,
+      "routes-to": 5,
+      "scouts-into": 1,
+      "spun-from": 3,
+      "steward-of": 4,
       "succeeds": 6,
-      "tallies_beside": 1,
-      "tenant_of": 7,
+      "tallies-beside": 1,
+      "tenant-of": 7,
       "touches": 9,
       "tracks": 2
     }
   },
-  "extensions": {},
   "pages": [
     {
       "path": "journal/2031-W31.md",
       "type": "review",
-      "archetype": "reference",
-      "chain": [
-        "review",
-        "reference"
-      ],
+      "role": "reference",
+      "ancestry": [],
       "title": "2031-W31",
-      "description": "- Zephyr vellum wharf kiln sedge dune gable lantern umber fathom mesa birch glen quarry thicket larch loam umber sedge birch orchard kiln pebble harrow.",
+      "description": null,
       "tags": [
         "diary"
       ],
+      "status": "active",
       "outbound": {
         "wikilink": [
           "wiki/Workshop/Rivet Larch.md"
@@ -71,17 +68,15 @@
     {
       "path": "journal/daily/2031-08-02.md",
       "type": "daily",
-      "archetype": "reference",
-      "chain": [
-        "daily",
-        "reference"
-      ],
+      "role": "reference",
+      "ancestry": [],
       "title": "2031-08-02",
-      "description": "- Yarrow lantern upland dell nimbus cadence nimbus pebble hollow loam dell amber kestrel inlet basin pebble tallow harrow amber eddy pallet saffron vellum nook jasper.",
+      "description": null,
       "tags": [
         "diary",
         "diary-days"
       ],
+      "status": "active",
       "outbound": {
         "wikilink": [
           "wiki/Workshop/Rivet Larch.md",
@@ -93,17 +88,15 @@
     {
       "path": "journal/daily/2031-08-05.md",
       "type": "daily",
-      "archetype": "reference",
-      "chain": [
-        "daily",
-        "reference"
-      ],
+      "role": "reference",
+      "ancestry": [],
       "title": "2031-08-05",
-      "description": "- Ember quarry grove alder cadence birch kiln basin inlet nimbus fathom heath wicket birch rivet fern dapple kestrel cinder thicket wicket kiln quarry wharf knoll nook eddy heath. See [[Nevin Ostrander]].",
+      "description": null,
       "tags": [
         "diary",
         "diary-days"
       ],
+      "status": "active",
       "outbound": {
         "wikilink": [
           "wiki/Craft/Ridge Loam.md",
@@ -116,17 +109,15 @@
     {
       "path": "journal/daily/2031-08-08.md",
       "type": "daily",
-      "archetype": "reference",
-      "chain": [
-        "daily",
-        "reference"
-      ],
+      "role": "reference",
+      "ancestry": [],
       "title": "2031-08-08",
-      "description": "- Hollow copse dell bramble knoll quiver eddy juniper copse nimbus ochre fern dapple bramble larch knoll cinder zephyr dell cadence hollow cinder kestrel saffron amber nook inlet eddy dune pallet.",
+      "description": null,
       "tags": [
         "diary",
         "diary-days"
       ],
+      "status": "active",
       "outbound": {
         "wikilink": [
           "wiki/Admin/Heath Tallow.md",
@@ -137,17 +128,15 @@
     {
       "path": "journal/daily/2031-08-11.md",
       "type": "daily",
-      "archetype": "reference",
-      "chain": [
-        "daily",
-        "reference"
-      ],
+      "role": "reference",
+      "ancestry": [],
       "title": "2031-08-11",
-      "description": "- Glen orchard dell zephyr upland sedge isle larch grove juniper kiln dune ochre birch grove heath mesa inlet vellum jasper mesa harrow eddy inlet copse quarry quiver wharf umber. See [[备忘坞]].",
+      "description": null,
       "tags": [
         "diary",
         "diary-days"
       ],
+      "status": "active",
       "outbound": {
         "wikilink": [
           "wiki/Folk/Nevin Ostrander (cousin).md",
@@ -160,17 +149,15 @@
     {
       "path": "journal/daily/2031-08-14.md",
       "type": "daily",
-      "archetype": "reference",
-      "chain": [
-        "daily",
-        "reference"
-      ],
+      "role": "reference",
+      "ancestry": [],
       "title": "2031-08-14",
-      "description": "- **Wicket nook heath.** Juniper nook saffron lantern grove gable gable pebble quiver orchard zephyr dell tallow amber eddy yarrow upland knoll nimbus ridge bramble nook copse wharf quarry heath fern heath moss loam dune moss juniper ridge basin thicket kiln mesa.",
+      "description": null,
       "tags": [
         "diary",
         "diary-days"
       ],
+      "status": "active",
       "outbound": {
         "wikilink": [
           "wiki/Folk/揭澜珺.md"
@@ -180,33 +167,32 @@
     {
       "path": "wiki/Admin/Heath Tallow.md",
       "type": "doc",
-      "archetype": "reference",
-      "chain": [
-        "doc",
-        "record",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "record"
       ],
       "title": "Heath Tallow",
-      "description": "Heath Tallow — Isle pallet lantern copse glen moss umber kestrel mesa rivet inlet juniper; pebble mesa nimbus jasper yarrow pallet moss copse alder.",
+      "description": null,
       "tags": [
         "admin",
         "dossier"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "pilots_with": [
+          "pilots-with": [
             "wiki/Folk/Kin/蒯澜.md"
           ],
-          "tallies_beside": [
+          "tallies-beside": [
             "wiki/Folk/Guild/麴珺澜.md"
           ],
           "touches": [
@@ -231,24 +217,23 @@
     {
       "path": "wiki/Admin/Vault Remit.md",
       "type": "doc",
-      "archetype": "reference",
-      "chain": [
-        "doc",
-        "record",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "record"
       ],
       "title": "Vault Remit",
-      "description": "Vault Remit — Tallow dapple kiln bramble eddy pebble copse yarrow kiln fern pebble lantern bramble umber isle fathom birch inlet jasper tallow kiln cadence birch mesa kestrel nimbus; birch ember umber cinder ember hollow pebble grove nimbus.",
+      "description": null,
       "tags": [
         "admin",
         "dossier"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "steward_of": [
+          "steward-of": [
             "wiki/Roaming/Nimbus Knoll (2020).md"
           ],
           "touches": [
@@ -276,24 +261,23 @@
     {
       "path": "wiki/Craft/Isle Cadence.md",
       "type": "topic",
-      "archetype": "concept",
-      "chain": [
-        "topic",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Isle Cadence",
-      "description": "Isle Cadence — Birch mesa hollow fathom jasper dune kestrel quiver yarrow juniper jasper pebble mesa hollow saffron hollow dapple basin pebble kestrel marrow quiver lantern upland thicket amber saffron umber; ridge thicket gable harrow jasper loam.",
+      "description": null,
       "tags": [
         "craft",
         "strand"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Ledger/Thicket Cadence.md"
           ],
-          "spun_from": [
+          "spun-from": [
             "wiki/Schooling/Dapple Heath.md"
           ]
         },
@@ -307,13 +291,13 @@
       },
       "inbound": {
         "relation": {
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Ledger/线索台账.md"
           ],
-          "quotes_from": [
+          "quotes-from": [
             "wiki/Roaming/备忘坞.md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Folk/Kin/逄笳.md"
           ]
         },
@@ -329,24 +313,23 @@
     {
       "path": "wiki/Craft/Kiln Jasper.md",
       "type": "topic",
-      "archetype": "concept",
-      "chain": [
-        "topic",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Kiln Jasper",
-      "description": "Kiln Jasper — Juniper nimbus lantern isle quiver knoll basin ridge heath heath kestrel gable lantern tallow basin; amber mesa dapple vale knoll umber knoll quarry glen copse quarry.",
+      "description": null,
       "tags": [
         "craft",
         "strand"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
           "anchors": [
             "wiki/Folk/Kin/隽珅.md"
           ],
-          "patron_of": [
+          "patron-of": [
             "wiki/Ledger/Hollow Jasper.md"
           ],
           "touches": [
@@ -365,7 +348,7 @@
       },
       "inbound": {
         "relation": {
-          "echoes_via": [
+          "echoes-via": [
             "wiki/Ledger/Thicket Cadence.md"
           ]
         },
@@ -380,34 +363,33 @@
     {
       "path": "wiki/Craft/Ridge Loam.md",
       "type": "topic",
-      "archetype": "concept",
-      "chain": [
-        "topic",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Ridge Loam",
-      "description": "Ridge Loam — Orchard hollow ridge wharf saffron dapple fern heath bramble glen upland; quiver ridge umber zephyr lantern dune isle basin.",
+      "description": null,
       "tags": [
         "craft",
         "strand"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "kin_of": [
+          "kin-of": [
             "wiki/Folk/揭澜珺.md",
             "wiki/Workshop/阶段会所.md"
           ],
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Ledger/Umber Upland.md"
           ],
-          "nudges_before": [
+          "nudges-before": [
             "wiki/Folk/Guild/冼昫珉.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Workshop/Rivet Larch.md"
           ]
         },
@@ -427,7 +409,7 @@
       },
       "inbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/Kin/佘芊.md"
           ]
         },
@@ -443,27 +425,26 @@
     {
       "path": "wiki/Craft/Sedge Kestrel.md",
       "type": "topic",
-      "archetype": "concept",
-      "chain": [
-        "topic",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Sedge Kestrel",
-      "description": "Sedge Kestrel — Quarry fathom glen glen vellum ember knoll rivet fern juniper dune pebble pallet ochre wicket vale birch ochre wicket mesa isle fern copse tallow; copse quiver ember orchard.",
+      "description": null,
       "tags": [
         "craft",
         "strand"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Folk/揭澜珺.md"
           ]
         },
@@ -476,7 +457,7 @@
       },
       "inbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/缑珉珉.md"
           ]
         },
@@ -489,31 +470,30 @@
     {
       "path": "wiki/Folk/Guild/Gwynne Saltmarsh.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Gwynne Saltmarsh",
-      "description": "Gwynne Saltmarsh — Rivet mesa sedge dune tallow wharf kestrel heath larch nook; cinder umber vellum lantern mesa pebble cadence heath.",
+      "description": null,
       "tags": [
         "folk",
         "guild",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "orbits_from": [
+          "orbits-from": [
             "wiki/Workshop/Rivet Larch.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/Kin/鄢霈珉.md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Workshop/阶段会所.md"
           ],
-          "steward_of": [
+          "steward-of": [
             "wiki/Ledger/线索台账.md"
           ]
         },
@@ -528,10 +508,10 @@
       },
       "inbound": {
         "relation": {
-          "patron_of": [
+          "patron-of": [
             "wiki/Workshop/阶段会所.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/Guild/雒珺珩.md",
             "wiki/Workshop/阶段会所.md"
           ]
@@ -548,22 +528,21 @@
     {
       "path": "wiki/Folk/Guild/Maelis Ostrander.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Maelis Ostrander",
-      "description": "Maelis Ostrander — Knoll sedge rivet amber juniper hollow pebble alder quiver ochre cadence fern fern; yarrow umber dell nimbus.",
+      "description": null,
       "tags": [
         "folk",
         "guild",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "peer_of": [
+          "peer-of": [
             "wiki/Ledger/Hollow Jasper.md"
           ]
         },
@@ -575,10 +554,10 @@
       },
       "inbound": {
         "relation": {
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Workshop/Upland Fathom.md"
           ],
-          "nudges_for": [
+          "nudges-for": [
             "wiki/Roaming/备忘坞.md"
           ],
           "touches": [
@@ -596,28 +575,27 @@
     {
       "path": "wiki/Folk/Guild/Nevin Ostrander.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Nevin Ostrander",
-      "description": "Nevin Ostrander — Copse dapple larch ochre kiln marrow ember ridge glen loam tallow quarry cadence ochre tallow wharf kiln hollow cadence copse dell alder; cinder pallet pallet birch thicket cadence.",
+      "description": null,
       "tags": [
         "folk",
         "guild",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "kin_of": [
+          "kin-of": [
             "wiki/Workshop/Rivet Larch.md"
           ],
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "spun_from": [
+          "spun-from": [
             "wiki/Folk/鄢笳.md"
           ],
           "touches": [
@@ -635,13 +613,13 @@
       },
       "inbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Workshop/阶段会所.md"
           ],
-          "courts_under": [
+          "courts-under": [
             "wiki/Ledger/Thicket Cadence.md"
           ],
-          "drafts_after": [
+          "drafts-after": [
             "wiki/Folk/Kin/佘芊.md"
           ],
           "touches": [
@@ -661,31 +639,30 @@
     {
       "path": "wiki/Folk/Guild/冼昫珉.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "冼昫珉",
-      "description": "冼昫珉 — Alder lantern saffron jasper dapple yarrow orchard nook pallet marrow dapple quarry gable mesa saffron kiln marrow hollow tallow wicket upland zephyr pebble vale; pebble pebble juniper dune nimbus fathom.",
+      "description": null,
       "tags": [
         "folk",
         "guild",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "borrows_under": [
+          "borrows-under": [
             "wiki/Ledger/线索台账.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "quotes_after": [
+          "quotes-after": [
             "wiki/Folk/Guild/雒珺珩.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Workshop/Rivet Larch.md"
           ]
         },
@@ -700,10 +677,10 @@
       },
       "inbound": {
         "relation": {
-          "nudges_before": [
+          "nudges-before": [
             "wiki/Craft/Ridge Loam.md"
           ],
-          "steward_of": [
+          "steward-of": [
             "wiki/Folk/Guild/雒珺珩.md"
           ],
           "touches": [
@@ -721,31 +698,30 @@
     {
       "path": "wiki/Folk/Guild/雒珺珩.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "雒珺珩",
-      "description": "雒珺珩 — Copse kestrel wicket moss mesa birch ridge saffron birch larch thicket pebble umber orchard hollow ridge tallow mesa marrow; tallow wicket vellum dapple yarrow copse nimbus zephyr moss kiln juniper.",
+      "description": null,
       "tags": [
         "folk",
         "guild",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
           "anchors": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "frames_per": [
+          "frames-per": [
             "wiki/Workshop/Upland Fathom.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/Guild/Gwynne Saltmarsh.md"
           ],
-          "steward_of": [
+          "steward-of": [
             "wiki/Folk/Guild/冼昫珉.md"
           ],
           "succeeds": [
@@ -764,10 +740,10 @@
       },
       "inbound": {
         "relation": {
-          "patron_of": [
+          "patron-of": [
             "wiki/Workshop/Upland Fathom.md"
           ],
-          "quotes_after": [
+          "quotes-after": [
             "wiki/Folk/Guild/冼昫珉.md"
           ],
           "succeeds": [
@@ -786,25 +762,24 @@
     {
       "path": "wiki/Folk/Guild/麴珺澜.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "麴珺澜",
-      "description": "麴珺澜 — Alder kiln jasper nook marrow basin cinder nimbus dapple heath thicket heath saffron larch umber isle cadence pebble moss glen marrow wharf basin ridge copse amber orchard saffron rivet; heath tallow vale basin hollow hollow alder wharf saffron orchard tallow juniper.",
+      "description": null,
       "tags": [
         "folk",
         "guild",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "lends_under": [
+          "lends-under": [
             "wiki/Workshop/Upland Fathom.md"
           ],
-          "spun_from": [
+          "spun-from": [
             "wiki/Folk/揭澜珺.md"
           ],
           "touches": [
@@ -823,13 +798,13 @@
       },
       "inbound": {
         "relation": {
-          "kin_of": [
+          "kin-of": [
             "wiki/Workshop/Rivet Larch.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "tallies_beside": [
+          "tallies-beside": [
             "wiki/Admin/Heath Tallow.md"
           ],
           "touches": [
@@ -848,34 +823,33 @@
     {
       "path": "wiki/Folk/Kin/佘芊.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "佘芊",
-      "description": "佘芊 — Ember vellum wicket loam amber wicket juniper fathom jasper pallet birch ochre eddy ridge thicket kiln; juniper larch nook upland kestrel zephyr rivet dapple pebble.",
+      "description": null,
       "tags": [
         "folk",
         "kin",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Craft/Ridge Loam.md"
           ],
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "drafts_after": [
+          "drafts-after": [
             "wiki/Folk/Guild/Nevin Ostrander.md"
           ],
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/揭澜珺.md"
           ]
         },
@@ -888,7 +862,7 @@
       },
       "inbound": {
         "relation": {
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Ledger/线索台账.md"
           ],
           "touches": [
@@ -914,28 +888,27 @@
     {
       "path": "wiki/Folk/Kin/蒯澜.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "蒯澜",
-      "description": "蒯澜 — Ridge dell gable moss zephyr dell fathom upland wharf nimbus birch jasper inlet larch lantern; jasper ridge copse saffron.",
+      "description": null,
       "tags": [
         "folk",
         "kin",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "peer_of": [
+          "peer-of": [
             "wiki/Ledger/Thicket Cadence.md"
           ],
-          "quotes_via": [
+          "quotes-via": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Folk/揭澜珺.md"
           ]
         },
@@ -950,10 +923,10 @@
       },
       "inbound": {
         "relation": {
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Folk/缑珉珉.md"
           ],
-          "pilots_with": [
+          "pilots-with": [
             "wiki/Admin/Heath Tallow.md"
           ]
         },
@@ -966,25 +939,24 @@
     {
       "path": "wiki/Folk/Kin/逄笳.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "逄笳",
-      "description": "逄笳 — Thicket upland copse thicket pallet jasper alder kiln grove thicket larch dune saffron inlet tallow copse amber glen larch grove; pallet moss zephyr larch nook ember nimbus copse dapple loam dell kestrel.",
+      "description": null,
       "tags": [
         "folk",
         "kin",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Folk/缑珉珉.md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Craft/Isle Cadence.md"
           ]
         },
@@ -996,7 +968,7 @@
       },
       "inbound": {
         "relation": {
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Ledger/线索台账.md"
           ]
         },
@@ -1009,28 +981,27 @@
     {
       "path": "wiki/Folk/Kin/鄢霈珉.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "鄢霈珉",
-      "description": "鄢霈珉 — Knoll knoll marrow fern amber grove quiver dune eddy copse amber pallet inlet larch cadence harrow knoll inlet harrow basin isle wharf zephyr quiver; pallet upland rivet wharf vale marrow kestrel.",
+      "description": null,
       "tags": [
         "folk",
         "kin",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Roaming/Bramble Harbor.md"
           ],
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Folk/揭澜珺.md"
           ]
         },
@@ -1047,10 +1018,10 @@
           "anchors": [
             "wiki/Folk/Kin/麴澜昫.md"
           ],
-          "patron_of": [
+          "patron-of": [
             "wiki/Folk/Kin/麴澜昫.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/Guild/Gwynne Saltmarsh.md"
           ]
         },
@@ -1064,28 +1035,27 @@
     {
       "path": "wiki/Folk/Kin/隽珅.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "隽珅",
-      "description": "隽珅 — Tallow yarrow juniper glen upland pebble thicket thicket loam bramble kiln pebble grove yarrow knoll heath pallet vale zephyr fathom heath quarry fern moss sedge dune kestrel lantern quiver; grove birch orchard basin nimbus.",
+      "description": null,
       "tags": [
         "folk",
         "kin",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Roaming/Bramble Harbor.md"
           ],
-          "courts_after": [
+          "courts-after": [
             "wiki/Roaming/Nimbus Knoll (2020).md"
           ],
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Workshop/Sedge Birch Guild.md"
           ]
         },
@@ -1114,32 +1084,31 @@
     {
       "path": "wiki/Folk/Kin/麴澜昫.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "麴澜昫",
-      "description": "麴澜昫 — Vellum ridge gable glen harrow kiln pallet thicket fathom copse bramble quiver vale vellum bramble copse fathom knoll vellum bramble dune basin mesa; ember saffron orchard loam cadence heath orchard pallet.",
+      "description": null,
       "tags": [
         "folk",
         "kin",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
           "anchors": [
             "wiki/Folk/Kin/鄢霈珉.md",
             "wiki/Folk/揭澜珺.md"
           ],
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Workshop/Rivet Larch.md"
           ],
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "patron_of": [
+          "patron-of": [
             "wiki/Folk/Kin/鄢霈珉.md"
           ]
         },
@@ -1163,24 +1132,23 @@
     {
       "path": "wiki/Folk/Nevin Ostrander (cousin).md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Nevin Ostrander (cousin)",
-      "description": "Nevin Ostrander (cousin) — Nimbus grove eddy isle saffron fathom kiln pallet knoll umber birch isle hollow rivet fern lantern loam ember quarry glen jasper nimbus pallet birch pallet umber ember basin; isle kiln copse vellum sedge wicket thicket grove pebble moss copse fathom.",
+      "description": null,
       "tags": [
         "folk",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "relays_under": [
+          "relays-under": [
             "wiki/Workshop/Rivet Larch.md"
           ],
           "touches": [
@@ -1195,10 +1163,10 @@
       },
       "inbound": {
         "relation": {
-          "patron_of": [
+          "patron-of": [
             "wiki/Workshop/Upland Fathom.md"
           ],
-          "scouts_into": [
+          "scouts-into": [
             "wiki/Folk/揭澜珺.md"
           ]
         },
@@ -1213,28 +1181,27 @@
     {
       "path": "wiki/Folk/揭澜珺.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "揭澜珺",
-      "description": "揭澜珺 — Isle heath bramble harrow larch isle umber kestrel gable ochre alder copse lantern; thicket vellum upland jasper birch jasper loam jasper wicket wicket.",
+      "description": null,
       "tags": [
         "folk",
         "persona",
         "routing"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/缑珉珉.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/Guild/麴珺澜.md"
           ],
-          "scouts_into": [
+          "scouts-into": [
             "wiki/Folk/Nevin Ostrander (cousin).md"
           ]
         },
@@ -1248,7 +1215,7 @@
       },
       "inbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Craft/Sedge Kestrel.md",
             "wiki/Folk/Kin/鄢霈珉.md",
             "wiki/Folk/Nevin Ostrander (cousin).md",
@@ -1260,55 +1227,55 @@
             "wiki/Folk/Guild/雒珺珩.md",
             "wiki/Folk/Kin/麴澜昫.md"
           ],
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Admin/Heath Tallow.md",
             "wiki/Admin/Vault Remit.md",
             "wiki/Craft/Ridge Loam.md",
             "wiki/Folk/Kin/佘芊.md"
           ],
-          "drafts_into": [
+          "drafts-into": [
             "wiki/Workshop/Rivet Larch.md"
           ],
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Admin/Heath Tallow.md",
             "wiki/Folk/Kin/麴澜昫.md"
           ],
-          "kin_of": [
+          "kin-of": [
             "wiki/Craft/Ridge Loam.md",
             "wiki/Roaming/Nimbus Knoll (2020).md",
             "wiki/Schooling/Dapple Heath.md"
           ],
-          "lends_before": [
+          "lends-before": [
             "wiki/Workshop/阶段会所.md"
           ],
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Folk/Guild/Nevin Ostrander.md",
             "wiki/Folk/Kin/佘芊.md",
             "wiki/Folk/Kin/鄢霈珉.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Admin/Heath Tallow.md",
             "wiki/Craft/Sedge Kestrel.md",
             "wiki/Folk/Guild/冼昫珉.md",
             "wiki/Folk/Kin/佘芊.md",
             "wiki/Folk/鄢笳.md"
           ],
-          "quotes_via": [
+          "quotes-via": [
             "wiki/Folk/Kin/蒯澜.md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Roaming/Nimbus Knoll (2020).md"
           ],
-          "spun_from": [
+          "spun-from": [
             "wiki/Folk/Guild/麴珺澜.md"
           ],
-          "steward_of": [
+          "steward-of": [
             "wiki/Ledger/Thicket Cadence.md"
           ],
           "succeeds": [
             "wiki/Schooling/Dapple Heath.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Craft/Sedge Kestrel.md",
             "wiki/Folk/Kin/蒯澜.md",
             "wiki/Workshop/Sedge Birch Guild.md"
@@ -1356,28 +1323,27 @@
     {
       "path": "wiki/Folk/缑珉珉.md",
       "type": "person",
-      "archetype": "concept",
-      "chain": [
-        "person",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "缑珉珉",
-      "description": "缑珉珉 — Gable nimbus eddy upland vellum zephyr harrow heath nimbus nook heath zephyr wharf pallet dapple; kestrel eddy fathom yarrow basin thicket basin copse orchard pebble thicket dapple.",
+      "description": null,
       "tags": [
         "folk",
         "persona"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Craft/Sedge Kestrel.md",
             "wiki/Folk/揭澜珺.md"
           ],
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Folk/Kin/蒯澜.md"
           ],
-          "kin_of": [
+          "kin-of": [
             "wiki/Workshop/Sedge Birch Guild.md"
           ],
           "succeeds": [
@@ -1398,10 +1364,10 @@
       },
       "inbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Folk/Kin/逄笳.md"
           ]
         },
@@ -1416,21 +1382,20 @@
     {
       "path": "wiki/Folk/鄢笳.md",
       "type": "pet",
-      "archetype": "concept",
-      "chain": [
-        "pet",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "鄢笳",
-      "description": "鄢笳 — Nimbus hollow heath tallow lantern ember yarrow fern jasper dapple nimbus yarrow isle larch eddy alder; dapple basin fern vellum loam saffron pallet tallow grove nimbus.",
+      "description": null,
       "tags": [
         "folk",
         "fauna"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/揭澜珺.md"
           ]
         },
@@ -1442,10 +1407,10 @@
       },
       "inbound": {
         "relation": {
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Ledger/Umber Upland.md"
           ],
-          "spun_from": [
+          "spun-from": [
             "wiki/Folk/Guild/Nevin Ostrander.md"
           ],
           "touches": [
@@ -1465,21 +1430,20 @@
     {
       "path": "wiki/Ledger/Hollow Jasper.md",
       "type": "account",
-      "archetype": "reference",
-      "chain": [
-        "account",
-        "record",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "record"
       ],
       "title": "Hollow Jasper",
-      "description": "Hollow Jasper — Ridge rivet pallet dell yarrow harrow loam ochre ochre kiln kestrel moss ochre sedge ember tallow pebble nimbus fathom vellum upland; rivet wicket dell pallet larch glen dapple pebble alder.",
+      "description": null,
       "tags": [
         "ledger",
         "vault"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Workshop/Rivet Larch.md"
           ],
           "tracks": [
@@ -1495,10 +1459,10 @@
       },
       "inbound": {
         "relation": {
-          "patron_of": [
+          "patron-of": [
             "wiki/Craft/Kiln Jasper.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/Guild/Maelis Ostrander.md"
           ]
         },
@@ -1514,30 +1478,29 @@
     {
       "path": "wiki/Ledger/Thicket Cadence.md",
       "type": "asset",
-      "archetype": "reference",
-      "chain": [
-        "asset",
-        "record",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "record"
       ],
       "title": "Thicket Cadence",
-      "description": "Thicket Cadence — Nook pebble quarry hollow eddy cinder copse pebble gable lantern cadence fern mesa bramble nimbus vale jasper fathom; lantern birch alder grove nook cadence cinder gable juniper ochre marrow.",
+      "description": null,
       "tags": [
         "ledger",
         "gear"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "courts_under": [
+          "courts-under": [
             "wiki/Folk/Guild/Nevin Ostrander.md"
           ],
-          "echoes_via": [
+          "echoes-via": [
             "wiki/Craft/Kiln Jasper.md"
           ],
-          "steward_of": [
+          "steward-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Roaming/Bramble Harbor.md"
           ]
         },
@@ -1551,10 +1514,10 @@
       },
       "inbound": {
         "relation": {
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Craft/Isle Cadence.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/Kin/蒯澜.md"
           ],
           "succeeds": [
@@ -1573,21 +1536,20 @@
     {
       "path": "wiki/Ledger/Umber Upland.md",
       "type": "account",
-      "archetype": "reference",
-      "chain": [
-        "account",
-        "record",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "record"
       ],
       "title": "Umber Upland",
-      "description": "Umber Upland — Alder amber larch isle kiln ember quarry lantern cinder loam jasper ember inlet kiln bramble ochre jasper dell dune vale; isle glen pebble fathom knoll isle glen upland fern isle dell orchard.",
+      "description": null,
       "tags": [
         "ledger",
         "vault"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Folk/鄢笳.md"
           ]
         },
@@ -1601,13 +1563,13 @@
           "anchors": [
             "wiki/Schooling/Dapple Heath.md"
           ],
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Roaming/备忘坞.md"
           ],
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Craft/Ridge Loam.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Roaming/Nimbus Knoll (2020).md"
           ]
         },
@@ -1624,27 +1586,26 @@
     {
       "path": "wiki/Ledger/线索台账.md",
       "type": "account",
-      "archetype": "reference",
-      "chain": [
-        "account",
-        "record",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "record"
       ],
       "title": "线索台账",
-      "description": "线索台账 — Saffron yarrow vale glen birch gable wharf orchard wharf quiver loam copse grove moss hollow isle ochre tallow loam grove quiver nimbus umber quarry wicket knoll copse mesa; ridge bramble bramble upland sedge cadence wicket marrow rivet rivet upland.",
+      "description": null,
       "tags": [
         "ledger",
         "vault"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Craft/Isle Cadence.md"
           ],
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Folk/Kin/逄笳.md"
           ],
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Folk/Kin/佘芊.md"
           ]
         },
@@ -1657,10 +1618,10 @@
       },
       "inbound": {
         "relation": {
-          "borrows_under": [
+          "borrows-under": [
             "wiki/Folk/Guild/冼昫珉.md"
           ],
-          "steward_of": [
+          "steward-of": [
             "wiki/Folk/Guild/Gwynne Saltmarsh.md"
           ]
         },
@@ -1675,21 +1636,20 @@
     {
       "path": "wiki/Roaming/Bramble Harbor.md",
       "type": "place",
-      "archetype": "concept",
-      "chain": [
-        "place",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Bramble Harbor",
-      "description": "Bramble Harbor — Saffron saffron vellum kiln fern fathom rivet moss nimbus cadence ridge quarry yarrow isle; copse loam kestrel grove hollow loam jasper isle vellum umber wicket loam.",
+      "description": null,
       "tags": [
         "roaming",
         "haunt"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Workshop/阶段会所.md"
           ],
           "touches": [
@@ -1705,16 +1665,16 @@
       },
       "inbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/Kin/隽珅.md"
           ],
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Folk/Kin/鄢霈珉.md"
           ],
           "succeeds": [
             "wiki/Folk/缑珉珉.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Ledger/Thicket Cadence.md"
           ]
         },
@@ -1731,27 +1691,26 @@
     {
       "path": "wiki/Roaming/Nimbus Knoll (2020).md",
       "type": "event",
-      "archetype": "concept",
-      "chain": [
-        "event",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Nimbus Knoll (2020)",
-      "description": "Nimbus Knoll (2020) — Glen gable tallow quiver bramble zephyr ember pallet bramble jasper hollow vellum; nimbus gable isle knoll eddy.",
+      "description": null,
       "tags": [
         "roaming",
         "happening"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "kin_of": [
+          "kin-of": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Ledger/Umber Upland.md"
           ]
         },
@@ -1762,10 +1721,10 @@
       },
       "inbound": {
         "relation": {
-          "courts_after": [
+          "courts-after": [
             "wiki/Folk/Kin/隽珅.md"
           ],
-          "steward_of": [
+          "steward-of": [
             "wiki/Admin/Vault Remit.md"
           ]
         },
@@ -1780,27 +1739,26 @@
     {
       "path": "wiki/Roaming/备忘坞.md",
       "type": "place",
-      "archetype": "concept",
-      "chain": [
-        "place",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "备忘坞",
-      "description": "备忘坞 — Quiver umber cinder knoll pallet ridge cinder pebble jasper bramble ridge ridge pallet orchard isle orchard dune; sedge lantern larch pallet fathom upland larch.",
+      "description": null,
       "tags": [
         "roaming",
         "haunt"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Ledger/Umber Upland.md"
           ],
-          "nudges_for": [
+          "nudges-for": [
             "wiki/Folk/Guild/Maelis Ostrander.md"
           ],
-          "quotes_from": [
+          "quotes-from": [
             "wiki/Craft/Isle Cadence.md"
           ]
         },
@@ -1824,18 +1782,17 @@
     {
       "path": "wiki/Roaming/样本镇 (2013).md",
       "type": "event",
-      "archetype": "concept",
-      "chain": [
-        "event",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "样本镇 (2013)",
-      "description": "样本镇 (2013) — Dapple upland quarry marrow cadence saffron hollow saffron jasper larch wharf ember alder jasper kiln; kestrel alder orchard heath.",
+      "description": null,
       "tags": [
         "roaming",
         "happening"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
           "succeeds": [
@@ -1868,24 +1825,23 @@
     {
       "path": "wiki/Schooling/Dapple Heath.md",
       "type": "topic",
-      "archetype": "concept",
-      "chain": [
-        "topic",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Dapple Heath",
-      "description": "Dapple Heath — Marrow lantern bramble wicket grove harrow larch vellum dell glen jasper quarry ember tallow quarry amber sedge gable nook vale fern lantern jasper hollow marrow orchard; knoll eddy birch marrow lantern kestrel.",
+      "description": null,
       "tags": [
         "schooling",
         "strand"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
           "anchors": [
             "wiki/Ledger/Umber Upland.md"
           ],
-          "kin_of": [
+          "kin-of": [
             "wiki/Folk/揭澜珺.md"
           ],
           "succeeds": [
@@ -1903,10 +1859,10 @@
       },
       "inbound": {
         "relation": {
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Workshop/Sedge Birch Guild.md"
           ],
-          "spun_from": [
+          "spun-from": [
             "wiki/Craft/Isle Cadence.md"
           ]
         },
@@ -1922,27 +1878,26 @@
     {
       "path": "wiki/Workshop/Rivet Larch.md",
       "type": "project",
-      "archetype": "concept",
-      "chain": [
-        "project",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Rivet Larch",
-      "description": "Rivet Larch — Ridge kiln sedge vellum yarrow heath wharf gable eddy mesa moss dune saffron inlet quarry hollow nimbus cinder nook quiver wharf gable amber sedge; ember wharf pebble yarrow loam quiver quiver.",
+      "description": null,
       "tags": [
         "workshop",
         "venture"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "drafts_into": [
+          "drafts-into": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "kin_of": [
+          "kin-of": [
             "wiki/Folk/Guild/麴珺澜.md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Workshop/Upland Fathom.md"
           ]
         },
@@ -1956,25 +1911,25 @@
       },
       "inbound": {
         "relation": {
-          "cohort_of": [
+          "cohort-of": [
             "wiki/Folk/Kin/麴澜昫.md"
           ],
-          "kin_of": [
+          "kin-of": [
             "wiki/Folk/Guild/Nevin Ostrander.md"
           ],
-          "orbits_from": [
+          "orbits-from": [
             "wiki/Folk/Guild/Gwynne Saltmarsh.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Craft/Ridge Loam.md"
           ],
-          "relays_under": [
+          "relays-under": [
             "wiki/Folk/Nevin Ostrander (cousin).md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Workshop/Sedge Birch Guild.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Folk/Guild/冼昫珉.md",
             "wiki/Ledger/Hollow Jasper.md"
           ]
@@ -1998,30 +1953,29 @@
     {
       "path": "wiki/Workshop/Sedge Birch Guild.md",
       "type": "org",
-      "archetype": "concept",
-      "chain": [
-        "org",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Sedge Birch Guild",
-      "description": "Sedge Birch Guild — Upland gable upland basin vellum larch yarrow pallet larch inlet alder dell dune rivet; yarrow wharf lantern lantern dell vale.",
+      "description": null,
       "tags": [
         "workshop",
         "guild"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Schooling/Dapple Heath.md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Workshop/Rivet Larch.md"
           ],
-          "tenant_of": [
+          "tenant-of": [
             "wiki/Folk/揭澜珺.md"
           ]
         },
@@ -2038,10 +1992,10 @@
       },
       "inbound": {
         "relation": {
-          "hosted_by": [
+          "hosted-by": [
             "wiki/Folk/Kin/隽珅.md"
           ],
-          "kin_of": [
+          "kin-of": [
             "wiki/Folk/缑珉珉.md"
           ],
           "succeeds": [
@@ -2063,24 +2017,23 @@
     {
       "path": "wiki/Workshop/Upland Fathom.md",
       "type": "project",
-      "archetype": "concept",
-      "chain": [
-        "project",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "Upland Fathom",
-      "description": "Upland Fathom — Ochre upland pallet fathom gable harrow sedge knoll eddy wharf thicket harrow fern yarrow nook dune fern orchard hollow bramble isle inlet; saffron wicket copse wharf orchard fathom.",
+      "description": null,
       "tags": [
         "workshop",
         "venture"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mentored_by": [
+          "mentored-by": [
             "wiki/Folk/Guild/Maelis Ostrander.md"
           ],
-          "patron_of": [
+          "patron-of": [
             "wiki/Folk/Guild/雒珺珩.md",
             "wiki/Folk/Nevin Ostrander (cousin).md"
           ]
@@ -2095,13 +2048,13 @@
       },
       "inbound": {
         "relation": {
-          "frames_per": [
+          "frames-per": [
             "wiki/Folk/Guild/雒珺珩.md"
           ],
-          "lends_under": [
+          "lends-under": [
             "wiki/Folk/Guild/麴珺澜.md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Workshop/Rivet Larch.md"
           ],
           "touches": [
@@ -2124,31 +2077,30 @@
     {
       "path": "wiki/Workshop/阶段会所.md",
       "type": "org",
-      "archetype": "concept",
-      "chain": [
-        "org",
-        "entity",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "entity"
       ],
       "title": "阶段会所",
-      "description": "阶段会所 — Quarry zephyr dell marrow basin dapple amber tallow sedge larch bramble fathom larch quarry thicket cadence; basin larch loam cadence wharf birch.",
+      "description": null,
       "tags": [
         "workshop",
         "guild"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Folk/Guild/Nevin Ostrander.md",
             "wiki/Folk/揭澜珺.md"
           ],
-          "lends_before": [
+          "lends-before": [
             "wiki/Folk/揭澜珺.md"
           ],
-          "patron_of": [
+          "patron-of": [
             "wiki/Folk/Guild/Gwynne Saltmarsh.md"
           ],
-          "peer_of": [
+          "peer-of": [
             "wiki/Folk/Guild/Gwynne Saltmarsh.md"
           ],
           "succeeds": [
@@ -2168,13 +2120,13 @@
       },
       "inbound": {
         "relation": {
-          "allied_with": [
+          "allied-with": [
             "wiki/Roaming/Bramble Harbor.md"
           ],
-          "kin_of": [
+          "kin-of": [
             "wiki/Craft/Ridge Loam.md"
           ],
-          "routes_to": [
+          "routes-to": [
             "wiki/Folk/Guild/Gwynne Saltmarsh.md"
           ]
         },

@@ -1,21 +1,20 @@
 // docs/architecture.md §Directories: the one way the shell replaces a file's
-// bytes. A content page (`writer.ts`), a generated artifact, the machine-local
-// trust store, a skill's files and its stamp and the freshness report all land
-// the same way: staged in an exclusively created temp file beside the target,
-// renamed into place only once every file of the batch is complete. So a write
-// interrupted while staging leaves every old file as it was and no debris, and
-// a reader of the target never sees half of one. The rename loop itself is not
-// batch-atomic — a crash inside it can land some files and not others — and
-// that window is named here rather than hidden.
+// bytes. Content pages, generated artifacts and envelope --out files land
+// through a complete temp file beside each target. Every known destination
+// obstruction is refused before staging and checked again before the first
+// rename. A reader never sees half of one file; a crash during the rename
+// loop can still leave a mix across files, so that window is stated.
 import { randomBytes } from "node:crypto";
 import {
+  accessSync,
   closeSync,
+  constants,
   fchmodSync,
+  lstatSync,
   mkdirSync,
   openSync,
   renameSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from "node:fs";
 import { dirname } from "node:path";
@@ -48,9 +47,63 @@ export interface Replacement {
 /** The permission bits of a file that is already there, or none for a new one. */
 function modeOf(target: string): number | undefined {
   try {
-    return statSync(target).mode & 0o7777;
+    return lstatSync(target).mode & 0o7777;
   } catch {
     return undefined;
+  }
+}
+
+/** A known target or ancestor cannot hold the planned regular-file replacement. */
+export class ReplacementTargetRefused extends Error {
+  readonly path: string;
+  readonly kind: string;
+  constructor(path: string, kind: string) {
+    super(`cannot replace "${path}": ${kind}`);
+    this.name = "ReplacementTargetRefused";
+    this.path = path;
+    this.kind = kind;
+  }
+}
+
+/** Every target is checked before the first write, including on a dry run. */
+export function preflightReplacements(
+  entries: readonly { path: string }[],
+  options: { writable?: boolean } = {},
+): void {
+  const seen = new Set<string>();
+  for (const { path } of entries) {
+    if (seen.has(path)) throw new ReplacementTargetRefused(path, "the batch names it twice");
+    seen.add(path);
+    let parent = dirname(path);
+    for (;;) {
+      try {
+        const stat = lstatSync(parent);
+        if (!stat.isDirectory()) {
+          throw new ReplacementTargetRefused(parent, "an existing parent is not a directory");
+        }
+        if (options.writable !== false) {
+          try {
+            accessSync(parent, constants.W_OK | constants.X_OK);
+          } catch {
+            throw new ReplacementTargetRefused(parent, "the parent directory is not writable");
+          }
+        }
+        break;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        const above = dirname(parent);
+        if (above === parent) throw error;
+        parent = above;
+      }
+    }
+    try {
+      const stat = lstatSync(path);
+      if (!stat.isFile()) {
+        throw new ReplacementTargetRefused(path, "the destination is not a regular file");
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
   }
 }
 
@@ -64,7 +117,12 @@ function modeOf(target: string): number | undefined {
  * that needs privilege this process does not ask for — so a file replaced by
  * another user changes hands, and the umask sets the mode of a new file.
  */
-export function replaceFiles(entries: readonly Replacement[]): void {
+export function stageReplacements(entries: readonly Replacement[]): {
+  commit: () => void;
+  discard: () => void;
+  tempPaths: readonly string[];
+} {
+  preflightReplacements(entries);
   const staged: { temp: string; target: string }[] = [];
   try {
     for (const entry of entries) {
@@ -83,18 +141,33 @@ export function replaceFiles(entries: readonly Replacement[]): void {
     for (const { temp } of staged) rmSync(temp, { force: true });
     throw error;
   }
-  let renamed = 0;
-  try {
-    for (const { temp, target } of staged) {
-      renameSync(temp, target);
-      renamed += 1;
-    }
-  } catch (error) {
-    // What landed stays; the temp files not yet renamed go, so a refused rename
-    // leaves the old bytes and no debris beside them.
-    for (const { temp } of staged.slice(renamed)) rmSync(temp, { force: true });
-    throw error;
-  }
+  const discard = (): void => {
+    for (const { temp } of staged) rmSync(temp, { force: true });
+  };
+  return {
+    discard,
+    tempPaths: staged.map(({ temp }) => temp),
+    commit: () => {
+      let renamed = 0;
+      try {
+        // A target may have changed while temp files were staged. Do not land
+        // the first replacement if another target is now known to be unsafe.
+        preflightReplacements(entries);
+        for (const { temp, target } of staged) {
+          renameSync(temp, target);
+          renamed += 1;
+        }
+      } catch (error) {
+        // What landed stays; the temp files not yet renamed go.
+        for (const { temp } of staged.slice(renamed)) rmSync(temp, { force: true });
+        throw error;
+      }
+    },
+  };
+}
+
+export function replaceFiles(entries: readonly Replacement[]): void {
+  stageReplacements(entries).commit();
 }
 
 /** One file, through the same staging. */

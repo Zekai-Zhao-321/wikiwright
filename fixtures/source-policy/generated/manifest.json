@@ -1,0 +1,85 @@
+{
+  "schema": "wikiwright/manifest",
+  "totals": {
+    "pages": 5,
+    "edges": 3
+  },
+  "by_kind": {
+    "wikilink": 3
+  },
+  "by_label": {},
+  "pages": [
+    {
+      "path": "wiki/Café.md",
+      "type": "source-kit/field-note",
+      "role": "reference",
+      "ancestry": [],
+      "title": "Café",
+      "description": null,
+      "tags": [],
+      "status": "active",
+      "inbound": {
+        "wikilink": [
+          "wiki/Soil observations.md"
+        ]
+      }
+    },
+    {
+      "path": "wiki/Seed catalog.md",
+      "type": "source-kit/seed-catalog",
+      "role": "reference",
+      "ancestry": [],
+      "title": "Seed catalog",
+      "description": null,
+      "tags": [],
+      "status": "active"
+    },
+    {
+      "path": "wiki/Soil observations.md",
+      "type": "source-kit/observation",
+      "role": "concept",
+      "ancestry": [],
+      "title": "Soil observations",
+      "description": null,
+      "tags": [],
+      "status": "active",
+      "outbound": {
+        "wikilink": [
+          "wiki/Café.md",
+          "wiki/Straße.md",
+          "wiki/茶园记录.md"
+        ]
+      }
+    },
+    {
+      "path": "wiki/Straße.md",
+      "type": "source-kit/field-note",
+      "role": "reference",
+      "ancestry": [],
+      "title": "Straße",
+      "description": null,
+      "tags": [],
+      "status": "active",
+      "inbound": {
+        "wikilink": [
+          "wiki/Soil observations.md"
+        ]
+      }
+    },
+    {
+      "path": "wiki/茶园记录.md",
+      "type": "source-kit/field-note",
+      "role": "reference",
+      "ancestry": [],
+      "title": "茶园记录",
+      "description": null,
+      "tags": [],
+      "status": "active",
+      "inbound": {
+        "wikilink": [
+          "wiki/Soil observations.md"
+        ]
+      }
+    }
+  ]
+}

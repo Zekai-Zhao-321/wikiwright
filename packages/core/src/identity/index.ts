@@ -1,4 +1,4 @@
-// docs/constitution.md §Types (the normalized-identity contract) ·
+// docs/concepts.md §Page and type (the normalized-identity contract) ·
 // docs/architecture.md §Directories (determinism invariants).
 import { CASE_FOLD } from "./casefold-data.ts";
 

@@ -1,0 +1,2 @@
+fragment: dated-log
+description: "Dated entries; existing entries are never silently changed."

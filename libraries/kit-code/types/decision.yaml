@@ -1,0 +1,24 @@
+type: decision
+role: reference
+description: "A decision record: the context, the decision, and its consequences; dated, and never edited — only appended."
+use_when: "A choice a later reader must be able to revisit: a dependency taken, a boundary drawn, a mechanism rejected."
+avoid_when: "Content; a setting; the current shape of a component (subsystem)."
+abstract: true
+fields:
+  type: object
+  properties:
+    decision_id: {}
+    decided: { type: string, format: date }
+  required: [decision_id, decided]
+sections:
+  ordered: true
+  list:
+    - { heading: Context, min: 1, max: 1 }
+    - { heading: Decision, min: 1, max: 1 }
+    - { heading: Consequences, max: 1 }
+rules:
+  - id: body-append-only
+    expr: '!before.present || before.page.body.trim() == "" || (page.body.replace("\r\n", "\n").trim() + "\n").startsWith(before.page.body.replace("\r\n", "\n").trim() + "\n")'
+    severity: error
+    message: "A decision record is append-only: its body before this change is a prefix of its body after it; a consequence learned later is a new dated line at the end, and a reversed decision is a new record that supersedes this one."
+examples: [examples/decision.md]

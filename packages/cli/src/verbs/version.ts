@@ -7,7 +7,6 @@ import type { CommandSpec } from "../spec.ts";
 
 export const versionCommand: CommandSpec = {
   name: "version",
-  role: "consumer",
   summary:
     "Report the engine version and the commit this binary was BUILT from (--version / -v alias it).",
   positionals: [],
@@ -17,6 +16,6 @@ export const versionCommand: CommandSpec = {
   // checkout the package sits in is a real but different question, kept beside
   // it under the name that says which one it is.
   writes: false,
-  needsVaultModules: false,
-  run: () => ok("version", versionData(readBuildInfo(), checkoutIdentity(), ENGINE_VERSION)),
+  run: async () =>
+    ok("version", versionData(readBuildInfo(), await checkoutIdentity(), ENGINE_VERSION)),
 };

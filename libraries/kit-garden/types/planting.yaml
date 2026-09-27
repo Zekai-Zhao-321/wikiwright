@@ -1,0 +1,13 @@
+type: planting
+role: procedure
+description: One sowing of one crop in one bed.
+use_when: A crop went into a bed on a date, and what became of it is worth keeping.
+avoid_when: A bed itself (bed), or advice with no sowing behind it.
+abstract: true
+fragments: [planted]
+sections:
+  list:
+    - { heading: Observations, grammar: claims, vocabulary: observations }
+    - { heading: History, max: 1, grammar: entries, lifecycle: append-only }
+    - { heading: Relations, max: 1, grammar: relations, vocabulary: relations, history: History }
+examples: [examples/planting.md]

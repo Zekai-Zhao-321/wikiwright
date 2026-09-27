@@ -1,0 +1,6 @@
+vocabulary: categories
+mode: registered
+entries:
+  observed: { description: Seen in the garden. }
+  measured: { description: Counted in the garden. }
+  advice: { description: A suggested practice. }

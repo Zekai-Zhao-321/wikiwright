@@ -3,8 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "declaration": false,
-    "types": ["node"],
+    "types": ["node", "bun"],
     "composite": false
   },
-  "include": ["packages/*/test/**/*.ts", "tools/**/*.ts"]
+  "include": ["packages/*/test/**/*.ts", "test/**/*.ts", "tools/**/*.ts"]
 }

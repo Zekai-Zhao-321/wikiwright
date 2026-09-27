@@ -34,17 +34,17 @@ Ridge Loam — Orchard hollow ridge wharf saffron dapple fern heath bramble glen
 - [category-08] Birch loam **quiver heath dell quarry birch** knoll wicket yarrow amber jasper nook saffron ember tallow vellum "dune saffron nook" (stated 2031-03-28)
 
 ## Relations
-- cohort_of [[揭澜珺]]
+- cohort-of [[揭澜珺]]
   - Mesa copse pebble larch gable wicket wicket tallow jasper dune moss thicket glen kiln.
-- nudges_before [[冼昫珉]]
+- nudges-before [[冼昫珉]]
   - Glen jasper nimbus quiver alder umber nook gable saffron wharf ochre harrow umber.
-- peer_of [[Rivet Larch]]
+- peer-of [[Rivet Larch]]
   - Juniper fern thicket moss thicket quarry ochre fathom cinder tallow.
-- kin_of [[阶段会所]]
+- kin-of [[阶段会所]]
   - Kestrel basin saffron larch yarrow dell umber birch vellum lantern basin marrow saffron quiver mesa tallow.
-- mentored_by [[Umber Upland]]
+- mentored-by [[Umber Upland]]
   - Birch dune thicket bramble ridge cadence dell marrow cinder cadence birch.
-- kin_of [[揭澜珺]]
+- kin-of [[揭澜珺]]
   - Ridge gable basin loam umber jasper dune orchard gable moss dell wharf dapple.
 
 ## Stance

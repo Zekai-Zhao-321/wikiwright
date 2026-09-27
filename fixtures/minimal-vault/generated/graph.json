@@ -1,0 +1,62 @@
+{
+  "schema": "wikiwright/graph",
+  "nodes": [
+    {
+      "id": "tag:cycling",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:reset",
+      "kind": "tag"
+    },
+    {
+      "id": "tag:test-execution",
+      "kind": "tag"
+    },
+    {
+      "id": "wiki/test-execution/broken-case.md",
+      "kind": "page",
+      "type": "test-case",
+      "title": "Broken case"
+    },
+    {
+      "id": "wiki/test-execution/warm-reset.md",
+      "kind": "page",
+      "type": "test-case",
+      "title": "Warm reset under load"
+    },
+    {
+      "id": "wiki/test-execution/热重启.md",
+      "kind": "page",
+      "type": "test-case",
+      "title": "热重启恢复"
+    }
+  ],
+  "edges": [
+    {
+      "from": "wiki/test-execution/broken-case.md",
+      "to": "tag:test-execution",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/test-execution/warm-reset.md",
+      "to": "tag:reset",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/test-execution/warm-reset.md",
+      "to": "tag:test-execution",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/test-execution/热重启.md",
+      "to": "tag:reset",
+      "kind": "tagged"
+    },
+    {
+      "from": "wiki/test-execution/热重启.md",
+      "to": "tag:test-execution",
+      "kind": "tagged"
+    }
+  ]
+}

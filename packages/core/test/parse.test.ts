@@ -2,8 +2,9 @@
 // (micromark/mdast behind the ParsedDoc seam; yaml strict frontmatter)
 // docs/concepts.md §Findings and routing (headings, fences and wikilinks are the checker inputs)
 //  (wikilink forms).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { normalizeInput, parseDoc } from "../src/parse/index.ts";
 
 const LF_DOC = `---
@@ -104,6 +105,21 @@ describe("parseDoc — frontmatter", () => {
     assert.deepEqual(doc.frontmatter.issues, []);
   });
 
+  it("reports an alias bomb as malformed-frontmatter rather than throwing", () => {
+    const bomb = [
+      "a: &a [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+      "b: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a, *a]",
+      "c: &c [*b, *b, *b, *b, *b, *b, *b, *b, *b, *b]",
+      "d: [*c, *c, *c, *c, *c, *c, *c, *c, *c, *c]",
+    ].join("\n");
+    const doc = parseDoc(`---\n${bomb}\n---\n\nBody.\n`);
+    assert.deepEqual(
+      doc.frontmatter.issues.map((i) => [i.code, i.line]),
+      [["malformed-frontmatter", 2]],
+    );
+    assert.deepEqual(doc.frontmatter.value, {});
+  });
+
   it("flags non-mapping frontmatter", () => {
     const doc = parseDoc("---\n- a\n- b\n---\n\nBody.\n");
     assert.equal(
@@ -144,11 +160,11 @@ describe("parseDoc — headings (checker inputs, 07)", () => {
     );
   });
 
-  it("does extract blockquoted headings (resolved by micromark)", () => {
+  it("does not treat blockquoted headings as document section boundaries", () => {
     const doc = parseDoc(LF_DOC);
     assert.equal(
       doc.headings.some((h) => h.text === "Quoted heading" && h.depth === 2),
-      true,
+      false,
     );
   });
 });

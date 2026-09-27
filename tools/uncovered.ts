@@ -73,10 +73,13 @@ function coversOf(vault: string): string[] {
     for (const entry of readdirSync(dir, { recursive: true, encoding: "utf8" })) {
       if (!entry.endsWith(".md")) continue;
       const doc = parseDoc(readFileSync(join(dir, entry), "utf8"));
-      const listed = doc.frontmatter.value["covers"];
-      if (!Array.isArray(listed)) continue;
-      for (const path of listed) {
-        if (typeof path === "string" && path.length > 0) covers.add(path.replace(/\/+$/u, ""));
+      // A pin is one object (v2 contracts §3.1): its `covers` are the paths.
+      for (const value of Object.values(doc.frontmatter.value)) {
+        const listed = (value as { covers?: unknown } | null)?.covers;
+        if (value === null || typeof value !== "object" || !Array.isArray(listed)) continue;
+        for (const path of listed) {
+          if (typeof path === "string" && path.length > 0) covers.add(path.replace(/\/+$/u, ""));
+        }
       }
     }
   }

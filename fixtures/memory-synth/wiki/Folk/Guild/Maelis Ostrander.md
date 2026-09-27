@@ -22,7 +22,7 @@ Maelis Ostrander — Knoll sedge rivet amber juniper hollow pebble alder quiver 
 
 ## Relations
 - kin_of the vellum circle (ridge alder upland 2031-06-03)
-- peer_of [[Hollow Jasper]]
+- peer-of [[Hollow Jasper]]
 
 ## Notes
 Gable moss pallet yarrow jasper nimbus juniper quiver cadence pallet tallow nimbus quarry eddy moss vale isle quarry zephyr jasper wicket vellum isle inlet basin rivet vale isle pallet. Basin cinder larch thicket marrow eddy rivet copse juniper tallow grove lantern eddy pebble amber bramble inlet knoll.

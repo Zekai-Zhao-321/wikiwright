@@ -1,0 +1,6 @@
+fragment: claim-classes
+description: "Per-fact lifecycle: supersede categories hold one truth, accumulate categories collect dated observations, journal-only categories never become standing facts."
+sections:
+  list:
+    - { heading: Facts, grammar: claims, vocabulary: categories, closed: refused }
+    - { heading: History, grammar: entries }

@@ -7,53 +7,40 @@ and how to send one.
 
 ## Setup from a fresh clone
 
-Bun 1.3.11 or later builds and tests the engine; Node 22.12 or later runs
-the shipped binary, and the node runner proves that it does.
+The engine runs on Bun only: the version in `.bun-version` (1.3.11), which
+every `engines.bun` pins exactly, builds it, tests it and runs it.
 
 ```sh
 git clone https://github.com/Zekai-Zhao-321/wikiwright
 cd wikiwright
 bun install
 bun run build
-node packages/cli/dist/bin.js version
+bun packages/cli/dist/bin.js version
 ```
 
-The executable is `packages/cli/dist/bin.js`, which switches on Node's
-compile cache and loads `packages/cli/dist/main.js`, the engine, which the
-suite runs directly; `version` reports the commit it
+The executable is `packages/cli/dist/bin.js`, a Bun script that loads
+`packages/cli/dist/main.js`, the engine, which the suite runs directly
+(`bun run binary` also compiles it into one executable, `dist/wikiwright`,
+which answers as `bun packages/cli/dist/main.js` does); `version` reports the commit it
 was built from and whether the checkout was dirty, so a stale build is never
 mistaken for the checkout. The installed pre-commit hook of a bundle looks
 for `wikiwright` on PATH, so put a one-line launcher there if you want it:
 
 ```sh
-printf '#!/bin/sh\nexec node /path/to/wikiwright/packages/cli/dist/bin.js "$@"\n' > ~/.local/bin/wikiwright
+printf '#!/bin/sh\nexec bun /path/to/wikiwright/packages/cli/dist/bin.js "$@"\n' > ~/.local/bin/wikiwright
 chmod +x ~/.local/bin/wikiwright
 ```
 
-`bun install` links `@wikiwright/kit-code` into `devwiki/node_modules`.
-Before `check --root devwiki` judges anything, a maintainer grants the kit
-once on this machine, after reading it. `--scope worktrees` covers `devwiki`
-in every linked worktree of this clone, existing and future, which suits a
-workflow that opens a worktree per session; without it the grant covers this
-checkout's `devwiki` alone:
-
-```sh
-node packages/cli/dist/main.js trust grant module:@wikiwright/kit-code --root devwiki --scope worktrees
-```
-
-An agent must not grant trust to unblock its own work; see AGENTS.md.
-
-Until the install, `check` refuses `module-unresolved`; until the grant,
-`module-untrusted`; each hint names the step. The grant is this machine's,
-per vault path, and the suite never reads it — every test judges a copy under
-`os.tmpdir()` that installs the kit from the shipped package and grants it in
-its own store. Editing any byte of the kit revokes the grant; re-grant after
-reading the diff.
+`devwiki` is on the v2 law and imports the type library `libraries/kit-code`
+by its path from the repository's top level, so `check --root devwiki` needs
+nothing installed: the library is data, read from the tree. The tests judge
+it where it stands and in copies under `os.tmpdir()`. The v1 kit it
+imported before, `@wikiwright/kit-code`, left in step 6 of the v2 delivery.
 
 ## The gate
 
-`bun run check` is the gate: biome, `bun run build` (`tsc -b` plus the
-build-info stamp), the test-project typecheck and the whole suite, which
+`bun run check` is the gate: biome, `bun run build` (each package's `dist/`
+removed, then `tsc -b` and the build-info stamp), the test-project typecheck and the whole suite, which
 `tools/run-suite.ts` runs as one `bun test` process per file, as many at
 once as the machine has cores. Under it a test or a hook has 20 seconds
 rather than Bun's 5, because the files contend for the machine; a file run
@@ -65,56 +52,75 @@ once per clone:
 git config core.hooksPath scripts/hooks
 ```
 
-The hook covers the machine that commits, under Bun. The workflow under
-`.github/workflows/check.yml` runs the same command, then the node runner,
-on every push and pull request on Linux and macOS. Before a release, run
-the node runner and the release matrix by hand:
+The hook covers the machine that commits. The workflow under
+`.github/workflows/check.yml` runs the same command, under the Bun
+`.bun-version` names, on every push and pull request on Linux and macOS,
+over a checkout of the whole history so devwiki's pins are measured.
+Before a release, run the release matrix by hand:
 
 ```sh
-bun run test:node
 sh scripts/release-matrix.sh
 ```
 
-The matrix runs the gate, the node runner, a pack of both packages, a
-cross-runtime determinism check and the corpus verdicts, and prints PASS or
-FAIL per arm. Windows is unverified; `docs/roadmap.md` says so and lists what
+The matrix runs the gate, checks that the running Bun is the pinned one,
+packs both packages, compares the source's and the build's verdict over one
+corpus, builds from nothing and checks the corpus verdicts, and prints PASS
+or FAIL per arm. Windows is unverified; `docs/roadmap.md` says so and lists what
 else is not covered.
 
-## Tests, on Bun and on Node
+## Tests
 
 - `bun run test` runs the suite after a build, through `tools/run-suite.ts`;
-  `bun test ./packages/cli/test/write-verb.test.ts` runs one file. Keep the
+  `bun test ./packages/cli/test/write-batch.test.ts` runs one file. Keep the
   `./`: to `bun test` a bare path is a substring filter, and
-  `packages/cli/test/staged-gate` also runs `staged-gate-reads`. A plain
-  `bun test` still runs every file, one after another, in one process. The
-  node runner is
-  `node --test "packages/core/test/*.test.ts" "packages/cli/test/*.test.ts"`,
-  which `bun run test:node` wraps after a build.
-- Every test writes under `os.tmpdir()`, never in the repository.
-- A test that spawns a verb that stamps a date (`write`, `new`,
-  `trust grant`) sets `WIKIWRIGHT_TODAY`, or the stamp moves with the day.
-- Bun's per-test budget is five seconds. A case that installs a kit and
-  drives a dozen verbs exceeds it: build the bundle in `before` and keep one
-  `it` per verb, or state `{ timeout }` on a deliberately sequential walk.
+  `packages/cli/test/gate` also matches other gate tests. A plain
+  `bun test` still runs every file, one after another, in one process.
+  `tools/run-suite.ts` is a bridge, deleted the day `bun test --parallel`
+  is proven on this suite.
+- A test runs the CLI with `runCli` from
+  `packages/cli/test/fixtures/runtime.ts`: under the Bun running the test,
+  with the CLI's stdout on a file the test created and read back from it,
+  never through a pipe. Under load Bun's synchronous spawn has cut a child's
+  piped output short (`docs/roadmap.md`).
+- Every test file uses `bun:test` for its structure (`describe`, `it`,
+  `beforeAll`, `afterAll`, a timeout as `it`'s last argument); `node:assert`
+  stays where a file asserts with it. `bun-pin.test.ts` refuses a
+  `node:test` import.
+- A test of the built CLI as a whole goes under `test/`: the synthetic
+  gardening episode (`test/episode.test.ts`), the pipe probes
+  (`test/pipe-boundary.test.ts`), the one place a test reads the CLI's
+  envelope through a pipe, on purpose — a shell's pipe, since Bun's spawned
+  "pipe" is a socket with a far larger buffer on macOS — and the compiled
+  binary (`test/binary.test.ts`); each builds its binary under
+  `os.tmpdir()` (`test/fixtures/binary.ts`).
+- Every test writes under `os.tmpdir()`, never in the repository. The
+  packed-install test installs under a package cache of its own there, so
+  every run fetches the packed core's dependencies from the registry: the
+  gate needs the network for that one test, as a fresh clone's
+  `bun install` does.
+- A test that spawns a verb that stamps a date (`write`) sets
+  `WIKIWRIGHT_TODAY`, or the stamp moves with the day.
+- Bun's per-test budget is five seconds. Build shared fixtures in `before`
+  or state a longer timeout on a deliberately sequential episode.
 - `packages/core` is a pure library with no Node typings in its tsconfig, so
   a filesystem call does not typecheck there; the shell is `packages/cli`.
-- The three corpora are fixtures. A change to `devwiki`'s pages or
-  constitution is judged by `starter-fixtures` (under the `code` starter's
-  types merged with devwiki's own vocabularies, the error set must equal
-  devwiki's own — a concrete type devwiki adds must exist in the starter,
-  while a tag or a label is devwiki's to register), `routing-xor` (its
-  `lint` must be clean) and `generated-tracked` (its `generated/` must be
-  what this build renders).
+- The corpora are fixtures, all on the v2 law. A change to `devwiki`'s pages
+  or constitution is judged by `fixture-verdicts` (no error under `check`
+  and `gate`; its warnings only the pins measured live), `routing-xor`,
+  `coverage-coherence` and `generated-tracked` (its `generated/` must be
+  what this build renders). The two handbooks under `fixtures/handbooks` are
+  held at zero findings of any severity under `check` and `gate` by
+  `fixture-verdicts` and their tracked `generated/` by `generated-tracked`.
 
 ## Measuring command performance
 
-After `bun run build`, run `node tools/benchmark-check.ts` for 1,000, 5,000
+After `bun run build`, run `bun tools/benchmark-check.ts` for 1,000, 5,000
 and 10,000 synthetic pages, three fresh processes per command (`check`,
-`check --write`, `lint --staged`). The first two positional arguments
+`check --write`, `gate`). The first two positional arguments
 override the comma-separated page counts and the repetition count:
 
 ```sh
-node tools/benchmark-check.ts 1000,5000 3
+bun tools/benchmark-check.ts 1000,5000 3
 ```
 
 An optional third argument names a separately built baseline CLI. The runner
@@ -122,7 +128,7 @@ alternates the two builds and requires byte-identical envelopes and generated
 files before reporting their timings. Corpus creation and initial artifact
 generation are outside the measured interval. Every process starts fresh;
 the operating system's filesystem cache is not flushed. All temporary vaults
-are removed when the run finishes. Use Bun instead of Node to measure Bun.
+are removed when the run finishes.
 
 ## Generated files have one generator each
 
@@ -132,16 +138,18 @@ logical change is one commit).
 
 | File | Generator |
 |---|---|
-| `devwiki/generated/*`, the brief included | `wikiwright check --write --root devwiki`, under the grant above |
-| `packages/cli/skills/wikiwright-maintain/lint-response.md` | `bun tools/render-playbook.ts` (`--check` verifies) |
-| the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies) |
+| `devwiki/generated/*`, the brief and the queue included | `wikiwright check --write --root devwiki` |
+| `fixtures/handbooks/*/generated/*`, `fixtures/memory-synth/generated/*` and `fixtures/minimal-vault/generated/*`, the briefs and the queues included | `wikiwright check --write --root <corpus>` |
+| `fixtures/source-policy/generated/*`, the brief and queue included | `wikiwright check --write --root fixtures/source-policy` |
+| `docs/skills/wikiwright-maintain/finding-response.md` | `bun tools/render-playbook.ts` (`--check` verifies) |
+| the verb block of `docs/cli.md` | `bun docs/render-cli.ts --write` (`--check` verifies, and the suite runs it with nothing on PATH) |
 | `packages/core/src/identity/casefold-data.ts` | `bun tools/generate-casefold.ts` |
 
-`freshness --root devwiki` measures every devwiki page against this
-repository and holds its citations to the pin; `bun tools/uncovered.ts`
-lists the source directories no page covers. devwiki's pins name this
-repository's commits, so a copy of the tree with fresh history makes
-`freshness --root devwiki` report every pin `unknown`; the repair is to
+`check --root devwiki` measures every devwiki pin against this repository
+and holds its citations to the pin; `bun tools/uncovered.ts` lists the
+source directories no page covers. devwiki's pins name this repository's
+commits, so a copy of the tree with fresh history makes `check --root
+devwiki` report every pin `pin-unknown`; the repair is to
 re-read the covered paths at the copy's first commit and re-pin
 (`docs/roadmap.md`, "Copying the tree without its history").
 
@@ -172,7 +180,7 @@ documentation is invented or drawn from this repository's own `devwiki`.
 1. Branch from `main`; work in a worktree per change if you like
    (`git worktree add ../wt-<name> -b <branch>`).
 2. Keep the gate green after every commit, regenerate what your change
-   moved, and run `bun run test:node` before you push.
+   moved.
 3. Open the pull request against `main` with the why in its description:
    what was wrong or missing, what the change does about it, and what it
    does not do. A change that adds a key, a verb or a finding names its

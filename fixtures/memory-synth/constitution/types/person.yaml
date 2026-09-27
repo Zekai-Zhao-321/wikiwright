@@ -1,0 +1,17 @@
+type: person
+extends: entity
+description: One human being the owner knows or who matters to the record.
+use_when: "Independent identity, own relationships, substantial content about one named person."
+avoid_when: "Mentioned in passing; a group (topic); an animal (pet)."
+sections:
+  list:
+    - heading: Facts
+      min: 1
+      grammar: claims
+      vocabulary: categories
+      provenance: optional
+      closed: refused
+    - { heading: Relations, min: 1, grammar: relations }
+    - { heading: Timeline, max: 1, grammar: entries }
+    - { heading: Notes, max: 1 }
+    - { heading: History, max: 1, grammar: entries }

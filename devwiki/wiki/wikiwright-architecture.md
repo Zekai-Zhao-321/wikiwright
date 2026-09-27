@@ -1,56 +1,44 @@
 ---
 type: architecture-overview
 title: wikiwright architecture
-description: The four-layer shape of the engine and how a page's obligations flow through it.
+description: "Kernel, data-library and bundle layers and the four adapters that reach one judge."
 tags: [kernel, stdlib, cli, kit]
-pin: a38be783d7393d145ba7950daf1b0ca2c1c4fbad
-origin: .
-covers: [packages/core/src/index.ts, packages/core/src/judge/, packages/core/src/modules/, packages/core/src/stdlib/, packages/cli/src/main.ts, packages/cli/src/vaultio.ts, packages/cli/src/law.ts, packages/kit-code/]
+pin:
+  commit: 61cf635d842b8f465a66b0b666b163b39127f909
+  origin: .
+  covers: ["packages/core/src/index.ts", "packages/cli/src/main.ts", "packages/cli/src/lawstate.ts", "docs/architecture.md"]
+updated: 2026-09-27
 ---
 
 # wikiwright architecture
 
 ## System shape
 
-wikiwright is a typed wiki engine with a pure computational core and an
-imperative shell. Canonical state is Markdown plus git; everything under
-`generated/` is derived, byte-reproducible and deletable. A page declares
-exactly one nominal type; the registry resolves inheritance chains once at
-load into flattened effective contracts, and every consumer (the judge,
-templates, search, the graph) reads only the flattened form.
+WikiWright is a pure core over bytes plus an imperative Bun CLI. Type documents in libraries and bundles declare law, including section scope and exact child paths; the kernel fixes grammar, schemas, CEL profile, judge and artifacts.
+Claims expose a source page's resolved path and nominal type to bounded CEL;
+a data library can require particular source types for selected categories.
+Literal paths under source roots are checked for existence from the same
+selected state without reading raw source bytes. The kernel defines those
+reference facts, while the library declares the policy that interprets them.
+CEL binds a relation's current target from current names and its `before`
+target from base names, without rewriting the parsed record or changing
+relation transition matching.
 
-One function, `judge(state, law)`, produces every verdict. The shell builds
-the state (the working tree, the git index, a draft overlay or a historical
-revision) and the core judges it, so `write --dry-run`, `lint --staged` and
-the pre-commit gate cannot disagree. Every finding carries either a runnable
-fix or a queue lane. See [[registry-pipeline]] for the load path and
-[[wikiwright-quickstart]] to run it.
+Current source at this pin: `packages/core/src/index.ts`, `packages/cli/src/main.ts`, `packages/cli/src/lawstate.ts`, `docs/architecture.md`.
 
 ## Layers
 
-1. The kernel, in `@wikiwright/core`: the parse seam, identity, the type
-   system and shapes, the judge with routing and the gate rule, the
-   splice-only Writer, generation and search. It knows what a section is and
-   not what a claim is.
-2. The standard library, under `packages/core/src/stdlib/`: the `claims`,
-   `relations` and `entries` modules, registered through the same API a kit
-   uses. The kernel imports nothing from them.
-3. A domain kit: an npm package a bundle installs, registering grammars,
-   vocabularies, checks, lanes and constitution data through that API, loaded
-   behind a purity scan, a machine-local trust grant and its own determinism
-   fixture. `@wikiwright/kit-code`, under `packages/kit-code/`, is the shipped
-   one: the page kinds, relation labels, templates and reading discipline of
-   a code wiki, registered as declarations only; this bundle consumes it.
-4. The bundle: one corpus with its pages, its constitution, its local
-   vocabulary entries and subtypes, judged by the `wikiwright` CLI, whose one
-   spec-driven command registry generates `--help`, `schema` and the writer's
-   brief.
+The CLI builds working-tree, draft, index or revision states and loads each state with its matching law and source-path facts. Eight verbs expose the same JSON envelope and closed exit taxonomy. A compact check view still carries the full verdict decision, and envelope output cannot overwrite the selected bundle or imported law. Named local Git origins can be observed at captured HEAD ids for pin freshness; each pin checks inline citations only inside its declared covers. URL origins remain unmeasured.
 
-The repository layout behind these layers is mapped in [[repository-layout]].
+A type system is held at both acceptance boundaries: write judges one captured law and page state, preflights every destination and moved-from parent, then rechecks the state after staging, before the first rename; gate judges what a commit would contain. The engine checks conformance, not truth.
+
+A direct editor change is judged when staged for the gate, not at the moment the host lands it. There is no daemon, executable library hook or mechanical session role bound.
+
+The detailed v1 descriptions remain in Git history at 35f5c01; these pages describe the v2 binary and do not present removed code as current.
 
 ## Relations
 
-- mapped_in [[repository-layout]]
-- verified_by [[wikiwright-quickstart]]
-- decided_by [[D-004]]
-- verified_by [[testing-guide]]
+- mapped-in [[repository-layout]]
+- verified-by [[wikiwright-quickstart]]
+- decided-by [[D-004]]
+- verified-by [[testing-guide]]

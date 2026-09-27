@@ -7,7 +7,7 @@
 // knows, and `docs/architecture.md §Directories` keeps `realpath` out of the kernel.
 import { existsSync, realpathSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
-import { isContentPath, PATH_REFUSALS, pathRefusal } from "@wikiwright/core";
+import { PATH_REFUSALS, pathRefusal } from "@wikiwright/core";
 
 /**
  * The vault root's real path, once per root per process. The root is the one
@@ -37,6 +37,23 @@ function assertShape(path: string, operation: "read" | "write"): void {
 }
 
 /**
+ * docs/cli.md §Exit codes: a vault path that resolves outside the vault,
+ * refused by name — `linked-outside-vault` — wherever it reaches the entry
+ * point. The message names the path asked about and never where it resolved:
+ * that would be a directory-structure oracle.
+ */
+export class LinkedOutsideVault extends Error {
+  readonly path: string;
+  readonly operation: "read" | "write";
+  constructor(path: string, operation: "read" | "write") {
+    super(`refusing to ${operation} "${path}": it resolves outside the vault`);
+    this.name = "LinkedOutsideVault";
+    this.path = path;
+    this.operation = operation;
+  }
+}
+
+/**
  * Resolve an existing vault path through every link. Filesystem readers use
  * this boundary so a lexically-valid path cannot read through a junction or
  * symlink outside the vault.
@@ -46,7 +63,7 @@ export function vaultReadAbsolute(root: string, path: string): string {
   const realRoot = realRootOf(root);
   const realPath = realpathSync(resolve(realRoot, path));
   if (!isInside(realRoot, realPath)) {
-    throw new Error(`refusing to read "${path}": it resolves outside the vault`);
+    throw new LinkedOutsideVault(path, "read");
   }
   return realPath;
 }
@@ -56,11 +73,9 @@ export function vaultReadAbsolute(root: string, path: string): string {
  * nothing else does the join, so every content write in the engine is contained
  * (`docs/architecture.md §The invariants`).
  *
- * A throw rather than a result, because every agent-facing verb has already
- * refused the path by name through `contentPathRefusal` below: reaching this is
- * a defect in a verb, a race against a symlink planted mid-run, or a caller
- * whose path came from the vault walk and therefore cannot be wrong. None of
- * the three is something to describe politely and continue from.
+ * A throw rather than a result: a caller has already checked the path shape,
+ * but a link can still appear before the write. The verb must refuse that
+ * race rather than land bytes outside the bundle.
  */
 export function vaultAbsolute(root: string, path: string): string {
   assertShape(path, "write");
@@ -77,37 +92,7 @@ export function vaultAbsolute(root: string, path: string): string {
   }
   const realExisting = realpathSync(existing);
   if (!isInside(realRoot, realExisting)) {
-    throw new Error(`refusing to write "${path}": it resolves outside the vault`);
+    throw new LinkedOutsideVault(path, "write");
   }
   return join(realExisting, relative(existing, abs));
-}
-
-/**
- * The one question an agent-facing verb asks about a path it was handed:
- * `undefined` when the path is a content page of THIS vault, and the message
- * for a named usage refusal otherwise.
- *
- * Shape and roots come from `isContentPath`, which is the kernel's and is also
- * what the state constructors and the page walk use. Containment is asked
- * second and only for a path that already passed, so the common refusal never
- * touches the filesystem.
- */
-export function contentPathRefusal(
-  root: string,
-  path: string,
-  roots: readonly string[],
-): string | undefined {
-  if (!isContentPath(path, roots)) {
-    return `must be a .md path under a content root (${roots.join(", ")})`;
-  }
-  try {
-    if (existsSync(resolve(root, path))) vaultReadAbsolute(root, path);
-    else vaultAbsolute(root, path);
-  } catch {
-    // The reason is deliberately not the throw's text: a message naming what
-    // resolved where is a directory-structure oracle, and the caller already
-    // knows which path it asked about.
-    return "resolves outside the vault; a link out of the vault is not a page of it";
-  }
-  return undefined;
 }

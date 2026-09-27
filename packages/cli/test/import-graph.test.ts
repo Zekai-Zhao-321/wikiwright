@@ -6,11 +6,13 @@
 // registry to the invocation instead of importing it back.
 //
 // A type-only import is erased before anything runs and is not an edge.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
-import { describe, it } from "node:test";
+import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runtimeImports } from "./fixtures/imports.ts";
 
 const PACKAGES = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -32,28 +34,6 @@ function sources(): string[] {
     }
   }
   return out;
-}
-
-/**
- * Every relative specifier that survives compilation, from one file: an
- * import, a re-export — `export { x } from "./y.ts"` runs `./y.ts` exactly as
- * an import does — a bare import for its side effects, and a dynamic import,
- * which defers the edge but does not remove it. A `type` import or a `type`
- * re-export is erased and is no edge.
- */
-export function runtimeImports(source: string, file: string): string[] {
-  const out: string[] = [];
-  const here = (specifier: string): void => {
-    out.push(resolve(dirname(file), specifier));
-  };
-  for (const match of source.matchAll(/^\s*(import|export)\s+([\s\S]*?)from\s+"(\.[^"]+)"/gmu)) {
-    if (/^\s*type\s/u.test(match[2] ?? "")) continue;
-    here(match[3] ?? "");
-  }
-  for (const match of source.matchAll(/^\s*import\s+"(\.[^"]+)"/gmu)) here(match[1] ?? "");
-  for (const match of source.matchAll(/\bimport\s*\(\s*"(\.[^"]+)"/gu)) here(match[1] ?? "");
-  for (const match of source.matchAll(/\brequire\s*\(\s*"(\.[^"]+)"/gu)) here(match[1] ?? "");
-  return [...new Set(out)];
 }
 
 function cycles(): string[][] {

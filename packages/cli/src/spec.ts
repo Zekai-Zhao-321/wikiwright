@@ -1,5 +1,5 @@
 // docs/cli.md §The envelope (one spec-driven registry generates help and
-// schema, and every verb declares its role) · docs/cli.md §The dry-run law
+// schema) · docs/cli.md §The dry-run law
 // (`writes` and `plan` are members of the spec, so the registry answers "can
 // this verb write") · docs/architecture.md §Directories (the vocabulary every
 // verb module and the argv parser share).
@@ -35,6 +35,23 @@ export const GLOBAL_FLAGS: readonly FlagSpec[] = [
     name: "help",
     type: "boolean",
     summary: "print this command's spec and exit",
+  },
+  // v2 contracts §9: `--help --json` prints the verb's schema — the registry
+  // row the `schema` verb printed — in place of that verb. Read by main.ts
+  // beside `--help`; without it the flag changes nothing.
+  {
+    name: "json",
+    type: "boolean",
+    summary: "with --help: print the verb's schema, the registry row an agent reads",
+  },
+  // v2 contracts §9: no automatic spill. An envelope over 1 MiB is refused as
+  // `envelope-too-large`; `--out <file>` takes the whole envelope instead, and
+  // stdout carries a two-line pointer to it. Written by main.ts, which every
+  // verb's envelope passes through.
+  {
+    name: "out",
+    type: "string",
+    summary: "write the whole envelope to this file and print a two-line pointer to it on stdout",
   },
 ];
 
@@ -72,8 +89,8 @@ export type PlanOpKind = "create" | "write" | "append" | "copy" | "rename" | "de
 
 export interface PlanOp {
   kind: PlanOpKind;
-  /** Repo-relative inside the vault; absolute where the target is not (the
-   * machine-local trust store, `.git/hooks`). */
+  /** Repo-relative inside the vault; absolute where the target is not
+   * (`.git/hooks`, an `export --to` destination outside the vault). */
   path: string;
   /**
    * docs/cli.md §The dry-run law: where the file LEFT, for the kinds that have
@@ -97,20 +114,8 @@ export function planOf(ops: PlanOp[]): Plan {
   return { ops, wrote: false };
 }
 
-/**
- * docs/cli.md §brief: the three bounds, ordered. A caller of rank R may call a
- * verb of rank ≤ R, so `consumer ⊂ writer ⊂ maintainer` and a verb declares the
- * LOWEST role that may run it. The writer bound exists because the ingest loop
- * is a real population with a real surface — nine verbs — and bounding it by
- * what a skill happens to print is not a bound (R-wm A10).
- */
-export const ROLE_RANK = { consumer: 0, writer: 1, maintainer: 2 } as const;
-
-export type Role = keyof typeof ROLE_RANK;
-
 interface CommandBase {
   name: string;
-  role: Role;
   summary: string;
   positionals: PositionalSpec[];
   /**
@@ -129,17 +134,6 @@ interface CommandBase {
    * one switch whose purpose is bounding. The meta-test (docs/architecture.md §The invariants) scans
    * each verb module for reachable writes and fails the build on a disagreement.
    */
-  /**
-   * docs/extending.md §Declaring a module: does this verb read the vault's own
-   * law? The entry point preloads the modules `config/engine.json` declares
-   * before a verb that does, so a bundle judged without a law it declares is
-   * refused rather than judged under a quieter one; a verb that answers about
-   * the engine rather than the vault loads no third-party code to do it.
-   * REQUIRED, like `writes`: a verb allowed to stay silent would decide by
-   * omission which law it is judged under. The meta-test holds each
-   * declaration against what the verb's own imports reach.
-   */
-  needsVaultModules: boolean;
   run: (args: CommandArgs) => CommandResult | Promise<CommandResult>;
 }
 
@@ -152,7 +146,10 @@ interface CommandBase {
  * declaration to the code.
  */
 export type CommandSpec = CommandBase &
-  ({ writes: true; plan: (args: CommandArgs) => Plan } | { writes: false; plan?: never });
+  (
+    | { writes: true; plan: (args: CommandArgs) => Plan | Promise<Plan> }
+    | { writes: false; plan?: never }
+  );
 
 /**
  * docs/cli.md §The dry-run law: the dry-run flag is RENDERED from the registry, never
@@ -173,4 +170,39 @@ export function flagsOf(spec: CommandSpec): FlagSpec[] {
 /** The one reader of the flag, so `--dry-run` cannot mean two things. */
 export function isDryRun(args: CommandArgs): boolean {
   return args.flags["dry-run"] === true;
+}
+
+/** The usage line of one verb, from its spec. */
+export function usageOf(spec: CommandSpec): string {
+  const parts = [`wikiwright ${spec.name}`];
+  for (const p of spec.positionals) {
+    parts.push(
+      p.name === "subcommand" && spec.subcommands !== undefined
+        ? `<${spec.subcommands.join("|")}>`
+        : p.required
+          ? `<${p.name}>`
+          : `[${p.name}]`,
+    );
+  }
+  for (const f of flagsOf(spec))
+    parts.push(f.type === "string" ? `[--${f.name} <v>]` : `[--${f.name}]`);
+  return parts.join(" ");
+}
+
+/**
+ * v2 contracts §9: `<verb> --help --json`, the verb's schema — the registry
+ * row the `schema` verb printed, with whether the verb can write.
+ */
+export function commandSchema(spec: CommandSpec): Record<string, unknown> {
+  return {
+    name: spec.name,
+    summary: spec.summary,
+    positionals: spec.positionals,
+    ...(spec.subcommands === undefined ? {} : { subcommands: [...spec.subcommands] }),
+    flags: flagsOf(spec),
+    examples: spec.examples,
+    // docs/cli.md §The dry-run law: "can this verb write" is a registry
+    // answer, not an inference from the presence of `--dry-run`.
+    writes: spec.writes,
+  };
 }

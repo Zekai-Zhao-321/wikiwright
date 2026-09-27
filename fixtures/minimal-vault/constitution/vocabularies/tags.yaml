@@ -1,0 +1,6 @@
+vocabulary: tags
+mode: registered
+entries:
+  reset: { description: "Reset behavior, recovery, or validation." }
+  cycling: { description: Repeated execution across state transitions. }
+  test-execution: { description: Running tests on real hardware or rigs. }

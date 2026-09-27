@@ -1,0 +1,12 @@
+type: architecture-overview
+role: concept
+description: "The system's shape: layers, boundaries, and how data flows; anchored to the entry points that define them."
+use_when: The whole-system view organized around owned systems, not the source tree.
+avoid_when: One subsystem's internals (subsystem) or directory listings (source-map).
+abstract: true
+fragments: [anchored]
+sections:
+  list:
+    - { heading: System shape, min: 1, max: 1 }
+    - { heading: Layers, min: 1, max: 1 }
+examples: [examples/architecture-overview.md]

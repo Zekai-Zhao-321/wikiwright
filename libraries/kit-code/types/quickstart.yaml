@@ -1,0 +1,17 @@
+type: quickstart
+role: procedure
+description: "Install, run, and verify the project in minutes: the one from-zero on-ramp."
+use_when: The single from-zero on-ramp; one page per bundle.
+avoid_when: The testing story (testing-guide) or command references (ops-reference).
+abstract: true
+instances: { max: 1 }
+fragments: [anchored]
+sections:
+  list:
+    - { heading: Setup, min: 1, max: 1 }
+    - { heading: Run, min: 1, max: 1 }
+    - { heading: Verify, min: 1, max: 1 }
+    - heading: Relations
+      min: 1
+      require:
+        - { labels: [part-of], min: 1 }

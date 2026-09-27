@@ -2,7 +2,7 @@
 // write declares `writes: true` and a `plan`, and `--dry-run` returns exactly
 // that plan with `wrote: false`, touching nothing) · docs/cli.md §The dry-run law
 // (a dry run answers a valid invocation; `PlanOp.from`; the plan is exact for
-// the invocation as typed and names files; the consumer-writer acknowledgment)
+// the invocation as typed and names files)
 // · docs/cli.md (the modules that write directly are a closed set, read off
 // their imports).
 //
@@ -11,12 +11,13 @@
 // is read from source is only the closed set of direct writers — a module that
 // imports a `node:fs` write API or spawns a writing `git` subcommand — and that
 // no module but the Writer computes a page path to write.
+
+import { afterAll, describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   cpSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -27,18 +28,15 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/commands.ts";
-import { trustFilePath } from "../src/trust.ts";
 import { PINNED_CLOCK } from "./fixtures/clock.ts";
+import { runCli } from "./fixtures/runtime.ts";
+import { verbModule } from "./fixtures/verb-module.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../../../fixtures/minimal-vault", import.meta.url));
-const MODULE_FIXTURE = fileURLToPath(
-  new URL("../../../fixtures/conformance/module-fixture", import.meta.url),
-);
 
 /** The `node:fs` write APIs the shell may import. */
 const WRITE_CALLS = [
@@ -52,6 +50,17 @@ const WRITE_CALLS = [
   "unlinkSync",
   "chmodSync",
   "createWriteStream",
+  // The same writes without `Sync`: the callback API of `node:fs` and the
+  // promise API of `node:fs/promises` spell them so.
+  "writeFile",
+  "appendFile",
+  "rename",
+  "cp",
+  "mkdir",
+  "rm",
+  "rmdir",
+  "unlink",
+  "chmod",
 ];
 
 /** `git <subcommand>` spellings that change the repository rather than read it. */
@@ -96,11 +105,10 @@ function treeHash(root: string): string {
 
 /**
  * Path → sha256 for every file the fidelity check compares, which is a WIDER
- * set than `treeHash`: `.git/hooks` (where `hook install` lands) and the
- * machine-local trust store (where `trust grant` lands) are exactly the writes
- * a vault-shaped hash cannot see (docs/cli.md §The dry-run law).
+ * set than `treeHash`: `.git/hooks` is exactly the write a vault-shaped hash
+ * cannot see (docs/cli.md §The dry-run law).
  */
-function snapshot(root: string, trustStore: string): Map<string, string> {
+function snapshot(root: string): Map<string, string> {
   const out = new Map<string, string>();
   const walk = (rel: string): void => {
     let entries: string[];
@@ -127,9 +135,6 @@ function snapshot(root: string, trustStore: string): Map<string, string> {
     }
   };
   walk("");
-  if (existsSync(trustStore)) {
-    out.set(trustStore, createHash("sha256").update(readFileSync(trustStore)).digest("hex"));
-  }
   return out;
 }
 
@@ -140,19 +145,6 @@ function delta(before: Map<string, string>, after: Map<string, string>): string[
   return [...changed].sort();
 }
 
-/** Install the conformance fixture module into a scratch vault, offline. */
-function installFixtureModule(dir: string): void {
-  writeFileSync(
-    join(dir, "package.json"),
-    `${JSON.stringify({
-      name: "ww-dry-run-bundle",
-      private: true,
-      dependencies: { "@wikiwright-fixture/probe": `file:${MODULE_FIXTURE}` },
-    })}\n`,
-  );
-  execFileSync("bun", ["install"], { cwd: dir, stdio: "ignore" });
-}
-
 function gitInit(dir: string): void {
   execFileSync("git", ["init", "-q"], { cwd: dir });
   execFileSync("git", ["config", "user.email", "t@e.com"], { cwd: dir });
@@ -161,26 +153,42 @@ function gitInit(dir: string): void {
   execFileSync("git", ["commit", "-qm", "init"], { cwd: dir });
 }
 
-const FOLDER_MODE = { content_roots: ["wiki"], folder_tags: { mode: "materialize-add-only" } };
+const ENGINE = JSON.parse(readFileSync(join(FIXTURE, "config", "engine.json"), "utf8")) as Record<
+  string,
+  unknown
+>;
+const FOLDER_MODE = { ...ENGINE, folder_tags: { mode: "materialize-add-only" } };
 
-/** minimal-vault, with a folder-tag mode the folder-tags fixer can run under. */
+/** minimal-vault without its broken case, with a folder-tag mode the materializer runs under. */
 function vault(engine: Record<string, unknown> = FOLDER_MODE): string {
   const dir = mkdtempSync(join(tmpdir(), "ww-dryrun-"));
   cpSync(FIXTURE, dir, { recursive: true });
+  rmSync(join(dir, "wiki/test-execution/broken-case.md"));
   writeFileSync(join(dir, "config", "engine.json"), `${JSON.stringify(engine, null, 2)}\n`);
   gitInit(dir);
   return dir;
 }
 
+/**
+ * A home of this file's own: a verb that scans the skill directories reads
+ * none of the developer's.
+ */
+const HOME = mkdtempSync(join(tmpdir(), "ww-dryrun-home-"));
+afterAll(() => {
+  rmSync(HOME, { recursive: true, force: true });
+});
+
 function run(
   cwd: string,
   args: string[],
-  trustStore?: string,
   stdin?: string,
 ): { status: number; envelope: Record<string, unknown> } {
-  const env: Record<string, string | undefined> = { ...process.env, ...PINNED_CLOCK };
-  if (trustStore !== undefined) env["WIKIWRIGHT_TRUST_FILE"] = trustStore;
-  const r = spawnSync(process.execPath, [CLI, ...args, "--root", "."], {
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    ...PINNED_CLOCK,
+    HOME,
+  };
+  const r = runCli([CLI, ...args, "--root", "."], {
     cwd,
     encoding: "utf8",
     env,
@@ -189,11 +197,40 @@ function run(
   return { status: r.status ?? -1, envelope: JSON.parse(r.stdout) as Record<string, unknown> };
 }
 
-/** The page `write`'s cases edit, and the draft that edits it. */
+/** The page `write`'s cases edit. */
 const WRITE_TARGET = "wiki/test-execution/warm-reset.md";
 
-function writeDraft(dir: string): string {
-  return `${readFileSync(join(dir, WRITE_TARGET), "utf8").replace(/\n*$/u, "")}\n\nA line the draft adds.\n`;
+/** A test case with the sections its type requires. */
+function testCase(title: string, id: string): string {
+  return `---\ntype: test-case\ntitle: ${title}\ndescription: ${title}.\ncase_id: ${id}\ntags: [test-execution]\n---\n\n# ${title}\n\n## Purpose\n\nA purpose.\n\n## Execution\n\nA step.\n`;
+}
+
+/** A drafts directory holding exactly `files`, outside the bundle. */
+function draftsOf(files: Record<string, string>): string {
+  const from = mkdtempSync(join(tmpdir(), "ww-dryrun-drafts-"));
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(from, path)), { recursive: true });
+    writeFileSync(join(from, path), text);
+  }
+  return from;
+}
+
+/** The drafts `write`'s cases land: the edited page, one line appended, and a new page. */
+function drafts(dir: string): string {
+  const seed = readFileSync(join(dir, WRITE_TARGET), "utf8");
+  return draftsOf({
+    [WRITE_TARGET]: `${seed.replace(/\n*$/u, "")}\n\nA line the draft adds.\n`,
+    "wiki/test-execution/batch-one.md": testCase("Batch one", "TC-0201"),
+  });
+}
+
+/** ops.json moving the edited page to another folder. */
+function moveOps(): string {
+  return draftsOf({
+    "ops.json": JSON.stringify({
+      move: [{ from: WRITE_TARGET, to: "wiki/reset/warm-reset.md", reason: "tidy" }],
+    }),
+  });
 }
 
 interface PlanOp {
@@ -219,42 +256,10 @@ function plannedPaths(ops: readonly PlanOp[]): string[] {
 }
 
 /** One dry-run invocation per writing verb, each one that succeeds on the fixture. */
-const DRY_RUNS: Record<string, string[]> = {
-  brief: ["brief", "--role", "writer", "--write", "--dry-run"],
-  check: ["check", "--dry-run"],
-  fix: [
-    "fix",
-    "--rule",
-    "renamed-without-alias",
-    "--path",
-    "wiki/test-execution/warm-reset.md",
-    "--staged",
-    "--expect",
-    "0",
-    "--dry-run",
-  ],
-  freshness: ["freshness", "--dry-run"],
-  gate: ["gate", "--dry-run"],
-  hook: ["hook", "install", "--dry-run"],
-  move: [
-    "move",
-    "wiki/test-execution/warm-reset.md",
-    "wiki/other/warm-reset.md",
-    "--reason",
-    "activity-boundary",
-    "--dry-run",
-  ],
-  new: ["new", "test-case", "Dry Run", "--dest", "wiki/test-execution/dry-run.md", "--dry-run"],
-  retire: ["retire", "wiki/test-execution/warm-reset.md", "--dry-run"],
-  skills: ["skills", "update", "--dry-run"],
-  trust: ["trust", "list", "--dry-run"],
-  // A dry run leaves nothing on disk and still renders its date into the
-  // envelope it returns; the fidelity case below runs the same argv for real.
-  write: ["write", WRITE_TARGET, "--dry-run", "--date", "2026-09-03"],
+const DRY_RUNS: Record<string, (dir: string) => string[]> = {
+  check: () => ["check", "--write", "--dry-run"],
+  write: (dir) => ["write", "--from", drafts(dir), "--dry-run"],
 };
-
-/** The verbs whose form reads Markdown on stdin (docs/cli.md §write). */
-const DRY_RUN_STDIN: Record<string, (dir: string) => string> = { write: writeDraft };
 
 describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   it("every writes: true verb declares a plan, and no reader does", () => {
@@ -277,10 +282,10 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
     }
   });
 
-  it("schema prints writes for every command", () => {
+  it("--help --json prints writes for every command", () => {
     const tmp = vault();
     try {
-      const r = run(tmp, ["schema"]);
+      const r = run(tmp, ["--help", "--json"]);
       const commands = ((r.envelope["data"] as Record<string, unknown>)["commands"] ?? []) as Array<
         Record<string, unknown>
       >;
@@ -291,7 +296,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
         assert.equal(
           row["writes"],
           spec?.writes,
-          `schema's "${String(row["name"])}" row disagrees with the registry about writes`,
+          `the "${String(row["name"])}" row disagrees with the registry about writes`,
         );
       }
     } finally {
@@ -301,7 +306,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
 
   it("every writing verb has a dry run this test drives", () => {
     for (const command of COMMANDS) {
-      if (!command.writes || command.name === "init") continue;
+      if (!command.writes) continue;
       assert.notEqual(
         DRY_RUNS[command.name],
         undefined,
@@ -310,76 +315,22 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
     }
   });
 
-  for (const command of COMMANDS.filter((c) => c.writes && c.name !== "init")) {
+  for (const command of COMMANDS.filter((c) => c.writes)) {
     it(`${command.name} --dry-run writes nothing and reports wrote: false`, () => {
       const tmp = vault();
-      const store = trustFilePath();
-      const storeBefore = existsSync(store) ? readFileSync(store, "utf8") : null;
       try {
         const before = treeHash(tmp);
-        const argv = DRY_RUNS[command.name] ?? [];
-        const r = run(tmp, argv, undefined, DRY_RUN_STDIN[command.name]?.(tmp));
+        const r = run(tmp, DRY_RUNS[command.name]?.(tmp) ?? []);
         assert.equal(r.status, 0, `${command.name}: ${JSON.stringify(r.envelope)}`);
         const data = (r.envelope["data"] ?? {}) as Record<string, unknown>;
         assert.equal(data["wrote"], false, `${command.name} does not report wrote: false`);
         assert.equal(Array.isArray(data["ops"]), true, `${command.name} reports no ops array`);
         assert.equal(treeHash(tmp), before, `${command.name} --dry-run changed the vault tree`);
-        const storeAfter = existsSync(store) ? readFileSync(store, "utf8") : null;
-        assert.equal(storeAfter, storeBefore, `${command.name} --dry-run wrote the trust store`);
       } finally {
         rmSync(tmp, { recursive: true, force: true });
       }
     });
   }
-
-  it("init --dry-run scaffolds nothing into an empty directory", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "ww-dryrun-init-"));
-    try {
-      const before = treeHash(tmp);
-      const r = run(tmp, ["init", "--dry-run"]);
-      assert.equal(r.status, 0, JSON.stringify(r.envelope));
-      const data = (r.envelope["data"] ?? {}) as Record<string, unknown>;
-      assert.equal(data["wrote"], false);
-      assert.equal(
-        (data["ops"] as unknown[]).length > 0,
-        true,
-        "init plans the files it would copy",
-      );
-      assert.equal(treeHash(tmp), before, "init --dry-run wrote into the directory");
-      assert.equal(existsSync(join(tmp, "config")), false);
-    } finally {
-      rmSync(tmp, { recursive: true, force: true });
-    }
-  });
-
-  // A plan names FILES. `init` planned two `copy` ops on skill
-  // DIRECTORIES while landing eight files and two stamps.
-  it("init --dry-run enumerates each skill's files and its stamp", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "ww-dryrun-initfiles-"));
-    try {
-      const ops = opsOf(run(tmp, ["init", "--dry-run"]).envelope);
-      const paths = plannedPaths(ops);
-      for (const skill of ["wikiwright-maintain", "wikiwright-write"]) {
-        assert.equal(
-          paths.includes(`.claude/skills/${skill}/SKILL.md`),
-          true,
-          `init plans ${skill}/SKILL.md`,
-        );
-        assert.equal(
-          paths.includes(`.claude/skills/${skill}/.wikiwright-stamp.json`),
-          true,
-          `init plans ${skill}'s stamp, under the basename the writer uses`,
-        );
-        assert.equal(
-          paths.includes(`.claude/skills/${skill}`),
-          false,
-          `init plans ${skill}'s files, not the directory`,
-        );
-      }
-    } finally {
-      rmSync(tmp, { recursive: true, force: true });
-    }
-  });
 
   it("a reader verb does not accept --dry-run at all (the flag comes from the registry)", () => {
     const tmp = vault();
@@ -398,7 +349,7 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
   });
 
   // One subprocess per verb; the budget is the WORK, not the runner's default.
-  it("every writing verb advertises --dry-run in its own --help", { timeout: 120_000 }, () => {
+  it("every writing verb advertises --dry-run in its own --help", () => {
     const tmp = vault();
     try {
       for (const command of COMMANDS) {
@@ -415,107 +366,61 @@ describe("the dry-run law (docs/architecture.md §The invariants)", () => {
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
-  });
+  }, 120_000);
 });
 
-// docs/cli.md §The dry-run law law 5: a dry run answers a VALID invocation.
-// Every row below returned exit 0 with a confident plan for a write the verb
-// refuses — the answer an agent uses to decide it is safe to proceed.
+// docs/cli.md §The dry-run law: a dry run answers a VALID invocation. Each
+// row is a write the verb refuses; its dry run must refuse it the same way,
+// never answer with a confident plan an agent would take as safe.
 interface Refusal {
   name: string;
-  argv: string[];
-  engine?: Record<string, unknown>;
+  argv: (dir: string) => string[];
   arrange?: (dir: string) => void;
-  /** A tree that is not the fixture vault — an empty directory, or a non-repo. */
-  make?: () => string;
 }
 
 const REFUSALS: Refusal[] = [
   {
-    name: "init into an already-initialized directory",
-    argv: ["init"],
-    arrange: () => undefined,
+    name: "write from a directory that is not there",
+    argv: (dir) => ["write", "--from", join(dir, "no-such-drafts")],
   },
   {
-    name: "hook install over a foreign pre-commit hook",
-    argv: ["hook", "install"],
-    arrange: (dir) => {
-      const hooks = join(dir, ".git", "hooks");
-      mkdirSync(hooks, { recursive: true });
-      writeFileSync(join(hooks, "pre-commit"), "#!/bin/sh\n# someone else's gate\nexit 0\n");
-    },
+    name: "write with an ops.json that is not one",
+    argv: () => ["write", "--from", draftsOf({ "ops.json": "{ not json" })],
   },
   {
-    name: "hook install with a missing --chain",
-    argv: ["hook", "install", "--chain", "no/such.sh"],
-  },
-  { name: "hook with an unknown subcommand", argv: ["hook", "frobnicate"] },
-  { name: "trust with an unknown action", argv: ["trust", "frobnicate"] },
-  {
-    name: "trust grant on a module that is not installed",
-    argv: ["trust", "grant", "module:@nope/kit"],
+    name: "write of a draft outside the content roots",
+    argv: () => ["write", "--from", draftsOf({ "notes/x.md": testCase("X", "TC-0301") })],
   },
   {
-    name: "move with no --reason",
-    argv: ["move", "wiki/test-execution/warm-reset.md", "wiki/other/warm-reset.md"],
-  },
-  {
-    name: "move that changes the basename",
-    argv: [
-      "move",
-      "wiki/test-execution/warm-reset.md",
-      "wiki/other/renamed.md",
-      "--reason",
-      "activity-boundary",
+    name: "write that moves a page onto one that exists",
+    argv: () => [
+      "write",
+      "--from",
+      draftsOf({
+        "ops.json": JSON.stringify({
+          move: [{ from: WRITE_TARGET, to: "wiki/test-execution/热重启.md", reason: "tidy" }],
+        }),
+      }),
     ],
   },
   {
-    name: "new of an unregistered type",
-    argv: ["new", "no-such-type", "X", "--dest", "wiki/test-execution/x.md"],
-  },
-  {
-    name: "new outside the content roots",
-    argv: ["new", "test-case", "X", "--dest", "notes/x.md"],
-  },
-  {
-    name: "retire naming a successor that does not exist",
-    argv: ["retire", "wiki/test-execution/warm-reset.md", "--superseded-by", "no-such-page"],
-  },
-  { name: "skills with an unknown subcommand", argv: ["skills", "frobnicate"] },
-  {
-    name: "skills update over a file the engine cannot account for",
-    argv: ["skills", "update"],
-    arrange: (dir) => {
-      mkdirSync(join(dir, ".claude", "skills", "wikiwright-maintain"), { recursive: true });
-      writeFileSync(join(dir, ".claude", "skills", "wikiwright-maintain", "SKILL.md"), "mine\n");
-    },
-  },
-  {
-    name: "init over a file the starter would land",
-    argv: ["init"],
-    make: () => {
-      const dir = mkdtempSync(join(tmpdir(), "ww-refusal-init-"));
-      mkdirSync(join(dir, "meta"), { recursive: true });
-      writeFileSync(join(dir, "meta", "charter.md"), "# my charter\n");
-      return dir;
-    },
-  },
-  {
-    name: "freshness --fast-forward without --fetch",
-    argv: ["freshness", "--fast-forward"],
+    name: "check --write over a law that does not load",
+    argv: () => ["check", "--write"],
+    arrange: (dir) =>
+      writeFileSync(join(dir, "constitution", "types", "test-case.yaml"), "type: test-case\n"),
   },
 ];
 
 describe("a dry run answers a valid invocation, never a typo (docs/cli.md §The dry-run law)", () => {
   for (const refusal of REFUSALS) {
     it(`${refusal.name} is refused with and without --dry-run`, () => {
-      const store = join(mkdtempSync(join(tmpdir(), "ww-trust-")), "trust.json");
-      const tmp = refusal.make === undefined ? vault(refusal.engine) : refusal.make();
+      const tmp = vault();
       try {
         refusal.arrange?.(tmp);
-        const real = run(tmp, refusal.argv, store);
+        const argv = refusal.argv(tmp);
+        const real = run(tmp, argv);
         assert.notEqual(real.status, 0, `${refusal.name}: the real run does not refuse`);
-        const dry = run(tmp, [...refusal.argv, "--dry-run"], store);
+        const dry = run(tmp, [...argv, "--dry-run"]);
         const realError = (real.envelope["error"] ?? {}) as Record<string, unknown>;
         const dryError = (dry.envelope["error"] ?? {}) as Record<string, unknown>;
         assert.equal(
@@ -528,146 +433,62 @@ describe("a dry run answers a valid invocation, never a typo (docs/cli.md §The 
           realError["code"],
           `${refusal.name}: --dry-run and the run name different errors`,
         );
-        assert.equal(existsSync(store), false, `${refusal.name}: the trust store was written`);
       } finally {
         rmSync(tmp, { recursive: true, force: true });
-        rmSync(dirname(store), { recursive: true, force: true });
       }
     });
   }
 });
 
-// docs/cli.md §The dry-run law law 6: the plan's path set IS the delta the
-// run makes. This is the test whose absence let a plan name eight writes the
-// verb would not make, a directory where the verb lands eight files, and a
-// rename with no source.
+// docs/cli.md §The dry-run law: the plan's path set IS the delta the run
+// makes. This is the test whose absence once let a plan name writes the verb
+// would not make, a directory where the verb landed files, and a rename with
+// no source.
 interface Fidelity {
   name: string;
-  /** The argv WITHOUT `--dry-run`; the dry run is the same argv plus the flag. */
-  argv: string[];
-  engine?: Record<string, unknown>;
+  /** The verb this case drives, and its argv WITHOUT `--dry-run`. */
+  verb: string;
+  argv: (dir: string) => string[];
   arrange?: (dir: string) => void;
   /** Whether this case must plan at least one op — a vacuous case proves nothing. */
   writes: boolean;
-  /** An empty vault instead of the fixture (init). */
-  empty?: boolean;
-  /** The Markdown this invocation reads on stdin (docs/cli.md §write). */
-  stdin?: (dir: string) => string;
 }
 
 const FIDELITY: Fidelity[] = [
-  { name: "check (no --write writes nothing)", argv: ["check"], writes: false },
-  { name: "check --write", argv: ["check", "--write"], writes: true },
   {
-    name: "fix",
-    argv: [
-      "fix",
-      "--rule",
-      "renamed-without-alias",
-      "--path",
-      "wiki/test-execution/warm-reset-two.md",
-      "--line",
-      "1",
-      "--staged",
-      "--expect",
-      "1",
-    ],
+    name: "check (no --write writes nothing)",
+    verb: "check",
+    argv: () => ["check"],
+    writes: false,
+  },
+  { name: "check --write", verb: "check", argv: () => ["check", "--write"], writes: true },
+  {
+    name: "check --fix (the folder-tag materializer)",
+    verb: "check",
+    argv: () => ["check", "--fix"],
     arrange: (dir) => {
-      execFileSync(
-        "git",
-        ["mv", "wiki/test-execution/warm-reset.md", "wiki/test-execution/warm-reset-two.md"],
-        { cwd: dir },
-      );
-      execFileSync("git", ["add", "-A"], { cwd: dir });
+      mkdirSync(join(dir, "wiki", "reset"), { recursive: true });
+      writeFileSync(join(dir, "wiki", "reset", "cold-reset.md"), testCase("Cold reset", "TC-0401"));
     },
     writes: true,
   },
-  { name: "freshness", argv: ["freshness"], writes: true },
   {
-    name: "freshness --fetch --fast-forward",
-    argv: ["freshness", "--fetch", "--fast-forward"],
-    writes: true,
-  },
-  { name: "hook install", argv: ["hook", "install"], writes: true },
-  {
-    name: "hook install with the commit-msg hook",
-    argv: ["hook", "install"],
-    engine: { ...FOLDER_MODE, commit_prefixes: { prefixes: ["feat"] } },
-    writes: true,
-  },
-  { name: "init", argv: ["init"], empty: true, writes: true },
-  {
-    name: "move",
-    argv: [
-      "move",
-      "wiki/test-execution/warm-reset.md",
-      "wiki/other/warm-reset.md",
-      "--reason",
-      "activity-boundary",
-    ],
+    name: "write --from (drafts)",
+    verb: "write",
+    argv: (dir) => ["write", "--from", drafts(dir)],
     writes: true,
   },
   {
-    name: "new",
-    argv: ["new", "test-case", "Dry Run", "--dest", "wiki/test-execution/dry-run.md"],
-    writes: true,
-  },
-  { name: "retire", argv: ["retire", "wiki/test-execution/warm-reset.md"], writes: true },
-  {
-    // The stamp covers the generated brief, so `skills update` refreshes
-    // the manual's generated half even where no skill file is installed.
-    name: "skills update with no skills root",
-    argv: ["skills", "update"],
-    writes: true,
-  },
-  {
-    name: "skills update with the skills root installed",
-    argv: ["skills", "update"],
-    arrange: (dir) => mkdirSync(join(dir, ".claude", "skills"), { recursive: true }),
-    writes: true,
-  },
-  {
-    // docs/extending.md §Declaring a module: a grant names an installed module package, so
-    // the case installs the conformance fixture module first — offline, it is a
-    // `file:` dependency — and the plan's one path is the machine-local store.
-    name: "trust grant module:<package>",
-    argv: ["trust", "grant", "module:@wikiwright-fixture/probe"],
-    arrange: installFixtureModule,
-    writes: true,
-  },
-  {
-    name: "write (the whole-page form)",
-    argv: ["write", WRITE_TARGET, "--date", "2026-09-03"],
-    stdin: writeDraft,
-    writes: true,
-  },
-  {
-    // The plan names every draft the directory holds.
-    name: "write --from (the batch form)",
-    argv: ["write", "--from", "temp/drafts", "--date", "2026-09-03"],
-    arrange: (dir) => {
-      const seed = readFileSync(join(dir, WRITE_TARGET), "utf8");
-      mkdirSync(join(dir, "temp", "drafts", "wiki", "test-execution"), { recursive: true });
-      for (const [name, id] of [
-        ["batch-one", "TC-0201"],
-        ["batch-two", "TC-0202"],
-      ]) {
-        writeFileSync(
-          join(dir, "temp", "drafts", "wiki", "test-execution", `${name}.md`),
-          seed
-            .replace("title: Warm reset under load", `title: ${name}`)
-            .replace(/case_id: .*/u, `case_id: ${id}`)
-            .replace("# Warm reset under load", `# ${name}`),
-        );
-      }
-    },
+    name: "write --from (a move in ops.json)",
+    verb: "write",
+    argv: () => ["write", "--from", moveOps()],
     writes: true,
   },
 ];
 
 describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run law)", () => {
   it("every writing verb has a fidelity case", () => {
-    const covered = new Set(FIDELITY.map((c) => c.argv[0]));
+    const covered = new Set(FIDELITY.map((c) => c.verb));
     for (const command of COMMANDS) {
       if (!command.writes) continue;
       assert.equal(
@@ -680,16 +501,8 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
 
   for (const c of FIDELITY) {
     it(`${c.name}: the plan's paths are the delta's paths`, () => {
-      const trustDir = mkdtempSync(join(tmpdir(), "ww-trust-"));
-      const store = join(trustDir, "trust.json");
       const make = (): string => {
-        if (c.empty !== true) {
-          const dir = vault(c.engine);
-          c.arrange?.(dir);
-          return dir;
-        }
-        const dir = mkdtempSync(join(tmpdir(), "ww-fidelity-init-"));
-        gitInitEmpty(dir);
+        const dir = vault();
         c.arrange?.(dir);
         return dir;
       };
@@ -698,8 +511,8 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
       const planned = make();
       const applied = make();
       try {
-        const dry = run(planned, [...c.argv, "--dry-run"], store, c.stdin?.(planned));
-        assert.equal(dry.status, 0, `${c.name} --dry-run: ${JSON.stringify(dry.envelope)}`);
+        const dry = run(planned, [...c.argv(planned), "--dry-run"]);
+        assert.notEqual(dry.status, 1, `${c.name} --dry-run: ${JSON.stringify(dry.envelope)}`);
         const ops = opsOf(dry.envelope);
         assert.equal(
           plannedPaths(ops).length > 0,
@@ -708,10 +521,10 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
             ? `${c.name}: the plan is empty — a vacuous fidelity case proves nothing`
             : `${c.name}: the invocation as typed writes nothing and the plan names paths`,
         );
-        const before = snapshot(applied, store);
-        const real = run(applied, c.argv, store, c.stdin?.(applied));
+        const before = snapshot(applied);
+        const real = run(applied, c.argv(applied));
         assert.notEqual(real.status, 1, `${c.name}: ${JSON.stringify(real.envelope)}`);
-        const actual = delta(before, snapshot(applied, store));
+        const actual = delta(before, snapshot(applied));
         assert.deepEqual(
           actual,
           plannedPaths(ops),
@@ -720,41 +533,24 @@ describe("a plan is exact for the invocation as typed (docs/cli.md §The dry-run
       } finally {
         rmSync(planned, { recursive: true, force: true });
         rmSync(applied, { recursive: true, force: true });
-        rmSync(trustDir, { recursive: true, force: true });
       }
     });
   }
 
-  // One `path` per op named where a file arrives and nothing named
-  // where it left.
+  // One `path` per op named where a file arrives and nothing named where it left.
   it("a rename reports its source in from", () => {
     const tmp = vault();
     try {
-      const ops = opsOf(
-        run(tmp, [
-          "move",
-          "wiki/test-execution/warm-reset.md",
-          "wiki/other/warm-reset.md",
-          "--reason",
-          "activity-boundary",
-          "--dry-run",
-        ]).envelope,
-      );
+      const ops = opsOf(run(tmp, ["write", "--from", moveOps(), "--dry-run"]).envelope);
       const rename = ops.find((op) => op.kind === "rename");
       assert.notEqual(rename, undefined, JSON.stringify(ops));
-      assert.equal(rename?.path, "wiki/other/warm-reset.md");
-      assert.equal(rename?.from, "wiki/test-execution/warm-reset.md");
+      assert.equal(rename?.path, "wiki/reset/warm-reset.md");
+      assert.equal(rename?.from, WRITE_TARGET);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
 });
-
-function gitInitEmpty(dir: string): void {
-  execFileSync("git", ["init", "-q"], { cwd: dir });
-  execFileSync("git", ["config", "user.email", "t@e.com"], { cwd: dir });
-  execFileSync("git", ["config", "user.name", "T"], { cwd: dir });
-}
 
 /**
  * docs/architecture.md §The invariants. The dry-run law bounds WHETHER a
@@ -764,19 +560,38 @@ function gitInitEmpty(dir: string): void {
  * build by the module's own name rather than by a reviewer noticing.
  */
 
-/** The `node:fs` write APIs a module imports, by the specifier — never by a bare name. */
+/**
+ * The `node:fs` write APIs a module imports, by the specifier — never by a bare
+ * name: a named import of one, or a namespace (`* as fs`) or default (`fs`)
+ * binding called through a member, `fs.writeFileSync(`. It reads source text,
+ * so an API reached through a name built at runtime is outside it.
+ */
 function fsWriteImports(raw: string): string[] {
   const out: string[] = [];
+  // The clause holds no `;`, so it never runs back over an earlier import.
   for (const m of raw.matchAll(
-    /import\s+(?:type\s+)?([\s\S]*?)\s+from\s+"node:fs(?:\/promises)?"/g,
+    /import\s+(?:type\s+)?([^;]*?)\s+from\s+"node:fs(?:\/promises)?"/g,
   )) {
-    for (const entry of (m[1] ?? "").replace(/[{}]/g, "").split(",")) {
+    const clause = m[1] ?? "";
+    const named = /\{([\s\S]*?)\}/u.exec(clause)?.[1] ?? "";
+    for (const entry of named.split(",")) {
       const name =
         entry
           .trim()
           .split(/\s+as\s+/)[0]
           ?.trim() ?? "";
       if (WRITE_CALLS.includes(name)) out.push(name);
+    }
+    const bare = clause.replace(/\{[\s\S]*?\}/u, "");
+    const bindings = [
+      /\*\s*as\s+([A-Za-z_$][\w$]*)/u.exec(bare)?.[1],
+      /^\s*([A-Za-z_$][\w$]*)\s*(?:,|$)/u.exec(bare)?.[1],
+    ].filter((b): b is string => b !== undefined && b !== "type");
+    for (const binding of bindings) {
+      const member = new RegExp(`\\b${binding.replaceAll("$", "\\$")}\\.([A-Za-z]+)\\s*\\(`, "gu");
+      for (const call of raw.matchAll(member)) {
+        if (WRITE_CALLS.includes(call[1] ?? "")) out.push(call[1] ?? "");
+      }
     }
   }
   return out;
@@ -822,18 +637,13 @@ function source(rel: string): string {
 const DIRECT_WRITERS: Readonly<Record<string, string>> = {
   "atomicwrite.ts":
     "the shell's one staged replace: an exclusive temp beside the target, renamed into place",
-  "artifacts.ts":
-    "the generated artifacts and the writer's brief — one generator, byte-reproducible",
-  "hooks.ts": "the git hooks, which are outside the vault (docs/cli.md §hook)",
-  "skills.ts": "the shipped skills' install and its stamp",
-  "trust.ts": "the machine-local trust store",
+  "verbs/check.ts":
+    "`check --write`: the generated files under generated/, through the staged replace — one generator, byte-reproducible (v2 contracts §9.1)",
+  "main.ts":
+    "the file `--out` names, which receives the whole envelope through the staged replace: a destination the caller chose, never a page (v2 contracts §9)",
+  "stdoutfile.ts":
+    "the file a git child writes its stdout to: created exclusively under os.tmpdir(), removed once read, never a vault path (docs/roadmap.md)",
   "writer.ts": "THE Writer: every content page, temp-then-rename",
-  // `init`'s tree copy is the one declared exception: it lands a starter,
-  // it does not edit a page, and a starter is a directory rather than a splice.
-  "verbs/init.ts": "the starter tree copy — the declared exception",
-  "verbs/freshness.ts":
-    "the freshness report under generated/, and the self-ignoring .wikiwright/ the origin caches live under (fixed paths, not pages)",
-  "verbs/move.ts": "`mkdirSync` for the destination directory, before `git mv`",
 };
 
 describe("the Writer is the only writer of a content page (docs/architecture.md §The invariants)", () => {
@@ -851,7 +661,9 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
   it("a reader verb imports neither a write API nor a direct writer", () => {
     for (const command of COMMANDS) {
       if (command.writes) continue;
-      const raw = source(`verbs/${command.name}.ts`);
+      const rel = verbModule(command.name);
+      const raw = source(rel);
+      const here = rel.slice(0, rel.indexOf("/") + 1);
       assert.deepEqual(
         fsWriteImports(raw),
         [],
@@ -859,8 +671,8 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
       );
       assert.equal(GIT_WRITE.test(raw), false, `"${command.name}" spawns a writing git`);
       const specifiers = [...raw.matchAll(/from\s+"([^"]+)"/g)].map((m) => m[1] ?? "");
-      const writers = Object.keys(DIRECT_WRITERS).map((rel) =>
-        rel.startsWith("verbs/") ? `./${rel.slice("verbs/".length)}` : `../${rel}`,
+      const writers = Object.keys(DIRECT_WRITERS).map((writer) =>
+        writer.startsWith(here) ? `./${writer.slice(here.length)}` : `../${writer}`,
       );
       assert.deepEqual(
         specifiers.filter((spec) => writers.includes(spec)),
@@ -898,5 +710,20 @@ describe("the Writer is the only writer of a content page (docs/architecture.md 
     assert.equal(writesDirectly('import { replaceFile } from "./atomicwrite.ts";'), true);
     assert.equal(writesDirectly('import { writeFileSync as persist } from "node:fs";'), true);
     assert.equal(writesDirectly('import { readFileSync } from "node:fs";'), false);
+    // A namespace or default binding reaches the write APIs through a member.
+    for (const writes of [
+      'import * as fs from "node:fs";\nfs.writeFileSync(path, text);',
+      'import fs from "node:fs";\nfs.renameSync(from, to);',
+      'import fs, { readFileSync } from "node:fs";\nfs.rmSync(path);',
+      'import * as fsp from "node:fs/promises";\nawait fsp.writeFile(path, text);',
+    ]) {
+      assert.equal(writesDirectly(writes), true, writes);
+    }
+    for (const reads of [
+      'import * as fs from "node:fs";\nfs.readFileSync(path);',
+      'import fs from "node:fs";\nconst text = fs.readFileSync(path, "utf8");',
+    ]) {
+      assert.equal(writesDirectly(reads), false, reads);
+    }
   });
 });

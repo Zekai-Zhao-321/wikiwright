@@ -45,10 +45,10 @@ Sedge Birch Guild — Upland gable upland basin vellum larch yarrow pallet larch
 - [category-04] Stub zephyr: inlet pebble rivet dell loam nimbus 线索 rivet lantern vale moss bramble harrow kestrel nook thicket marrow eddy zephyr zephyr dell cinder nimbus juniper quarry yarrow ochre sedge ridge birch wharf isle gable saffron harrow ridge pallet dell amber tallow kestrel nook upland moss vale gable rivet amber ember vellum jasper zephyr tallow pebble bramble ochre grove dune saffron jasper hollow kestrel orchard bramble lantern amber birch nook juniper cinder (stated 2031-04-26)
 
 ## Relations
-- routes_to [[Rivet Larch]]
-- tenant_of [[揭澜珺]]
-- hosted_by [[Dapple Heath]]
-- allied_with [[揭澜珺]]
+- routes-to [[Rivet Larch]]
+- tenant-of [[揭澜珺]]
+- hosted-by [[Dapple Heath]]
+- allied-with [[揭澜珺]]
   - Loam jasper birch vellum rivet inlet hollow knoll upland heath sedge.
 
 ## Notes

@@ -1,8 +1,9 @@
 // docs/architecture.md §The invariants · docs/concepts.md The byte-level invariant is
 // FUZZED, on one deterministic seed, so the failing case is reproducible from the
 // case number alone and the same 300+ cases run on every runner and both engines.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { applyWrite, parseDoc, type WriteOp } from "@wikiwright/core";
 
 /** A 32-bit LCG — deterministic across bun and node. */

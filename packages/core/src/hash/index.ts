@@ -1,7 +1,7 @@
 // The kernel's one hash. Core's tsconfig grants no Node typings and a gate test
 // bans `node:` specifiers inside core, so sha256 is vendored rather than
-// imported: the claim handle, the evidence digest and the trust digest all read
-// it from here (integer arithmetic only; identical bytes on every engine).
+// imported: the claim handle and a finding's evidence digest read it from here
+// (integer arithmetic only; identical bytes on every engine).
 //
 // FIPS 180-4 SHA-256 over the UTF-8 bytes of a string. Zero dependencies, no
 // ambient globals (`TextEncoder` is not in the `es2023` lib), no allocation
@@ -43,7 +43,14 @@ function utf8Bytes(text: string): number[] {
 const rotr = (x: number, n: number): number => ((x >>> n) | (x << (32 - n))) >>> 0;
 
 export function sha256Hex(text: string): string {
-  const bytes = utf8Bytes(text);
+  return sha256HexOfBytes(utf8Bytes(text));
+}
+
+/**
+ * The same hash over bytes as they are (v2 contracts §7: a page file's bytes,
+ * a law file's bytes), with no decoding between the file and the digest.
+ */
+export function sha256HexOfBytes(bytes: ArrayLike<number>): string {
   const bitLength = bytes.length * 8;
   const blocks = Math.ceil((bytes.length + 9) / 64);
   const padded: number[] = new Array<number>(blocks * 64).fill(0);

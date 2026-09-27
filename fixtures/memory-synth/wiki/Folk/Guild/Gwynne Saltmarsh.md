@@ -19,14 +19,14 @@ Gwynne Saltmarsh — Rivet mesa sedge dune tallow wharf kestrel heath larch nook
 - [category-20] Span wharf: heath rivet thicket orchard quiver dell orchard umber birch cadence cinder eddy birch tallow knoll fern kestrel pallet birch yarrow amber saffron umber lantern rivet ochre dapple saffron gable zephyr nimbus quiver jasper ridge kestrel umber alder ochre ridge inlet fathom lantern hollow basin ember jasper sedge alder basin orchard thicket marrow rivet rivet marrow nimbus ridge orchard eddy gable glen jasper basin moss birch cadence amber juniper quarry pallet eddy umber (stated 2031-04-26, ledgerexport)
 
 ## Relations
-- steward_of [[线索台账]]
-- peer_of [[鄢霈珉]]
-- orbits_from [[Rivet Larch]]
-- routes_to [[阶段会所]]
+- steward-of [[线索台账]]
+- peer-of [[鄢霈珉]]
+- orbits-from [[Rivet Larch]]
+- routes-to [[阶段会所]]
 
 ## Notes
 Marrow orchard amber inlet vale alder harrow basin moss lantern tallow glen hollow quiver upland vale saffron fern jasper harrow nook saffron pebble orchard sedge marrow nook inlet wicket harrow. Gable ochre quarry grove dell pebble mesa rivet.
 
 ## History
-- 2031-04-02: **Orchard hollow rivet.** Juniper cinder jasper alder wharf heath ochre cinder quiver fern hollow saffron mesa. The earlier value was valid 2031-07-23 → 2031-04-02, superseded 2031-04-02 by cinder nimbus fern. Dune glen nook orchard marrow ember jasper knoll eddy gable kestrel heath umber eddy birch glen upland thicket quarry. See [[Maelis Ostrander]].
-- 2031-06-15: **Yarrow harrow dapple.** Juniper cinder orchard ochre quiver ochre fathom umber vale quiver dune birch heath pebble mesa wicket. The marrow figure is **superseded** by the alder record.
+- 2031-04-02 — **Orchard hollow rivet.** Juniper cinder jasper alder wharf heath ochre cinder quiver fern hollow saffron mesa. The earlier value was valid 2031-07-23 → 2031-04-02, superseded 2031-04-02 by cinder nimbus fern. Dune glen nook orchard marrow ember jasper knoll eddy gable kestrel heath umber eddy birch glen upland thicket quarry. See [[Maelis Ostrander]].
+- 2031-06-15 — **Yarrow harrow dapple.** Juniper cinder orchard ochre quiver ochre fathom umber vale quiver dune birch heath pebble mesa wicket. The marrow figure is **superseded** by the alder record.

@@ -2,8 +2,9 @@
 // ops' line ranges; the BOM, the line ending and the trailing-newline state are
 // the input's; a shape a splice cannot read is a refusal, never a partial edit)
 // docs/architecture.md §How a verdict is produced (the Writer module and WritePlan).
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { applyWrite, parseDoc, sectionTail } from "@wikiwright/core";
 
 const PAGE = [

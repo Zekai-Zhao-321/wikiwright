@@ -1,125 +1,96 @@
 # wikiwright: operating rules
 
-You are working in the engine repository, not in a wiki. `docs/` describes
-the system; `docs/roadmap.md` says where it stands; `CONTRIBUTING.md` says
-how to set up, test and send a change. This file is the rules.
+This is the engine repository, not a wiki. `docs/concepts.md` names its
+terms, `docs/constitution.md` specifies its data law, `docs/architecture.md`
+maps packages to invariants, `docs/roadmap.md` states losses and unverified
+work, and `CONTRIBUTING.md` gives setup and change mechanics.
 
-## What this is
+## What the engine is
 
-A typed wiki engine for LLM agents. A bundle is a Markdown vault in git that
-Obsidian opens unchanged, plus a JSON constitution. One function judges every
-change against that constitution at every write path. No database, no daemon,
-no query language, and the engine never calls a model. The thesis: a type
-system is only as good as its narrowest write path.
+A bundle is Markdown in Git, openable by Obsidian unchanged, plus a strict
+`config/engine.json` and YAML type documents. The kernel, data libraries,
+and bundle documents form its three layers. One `judgeTypeLaw(state, law)`
+judges every write path. The engine does not call a model, keep a database,
+run a daemon, or execute code supplied by a bundle. Conformance is not truth.
 
-## The invariants
+## Keep these invariants and their tests
 
-Keep these, and keep the test that holds each (`docs/architecture.md` names
-them):
+- One nominal type per page. Types, fragments, vocabularies, sections and
+  rules are data. `check` reports `okf-missing-type` on a content page with
+  no type.
+- A library is data only, imported by path from the bundle's repository.
+  The kernel owns the fixed claims, relations and entries grammar, JSON
+  Schema, the bounded CEL profile, and the page interface.
+- Working tree, drafts over disk, index over HEAD, and revision reach the
+  same judge under the law from that same state.
+- Every error or warning finding has exactly one `fix` or `queue` route;
+  informational findings have neither. Unevaluated checks are counted
+  separately, never silently passed.
+- Every declared engine key has a consumer and an end-to-end CLI fixture.
+  A law change carries rule tests and a visible staged diff.
+- Artifacts are byte-reproducible. Each generated file has one generator.
+  Sort without locale, avoid the clock in artifacts, and keep Bun APIs out
+  of `packages/` outside the Git transport.
+- The writer proves the whole proposed batch before the first page write.
+  A dry run and real run have the same refusal and path plan. A Git gate
+  judges staged bytes and law together.
+- The development gate covers every corpus and the built CLI. The
+  invariant-to-test table is in `docs/architecture.md`.
 
-- **Typed.** One nominal type per page; shapes and section grammars are data
-  in `config/constitution.json`. Conformance, not truth: a conformant claim
-  can still be false, and nothing here claims otherwise.
-- **OKF-compatible.** `okf check` stays green on every corpus.
-- **Four layers behind one registration API.** Kernel, standard library
-  (claims, relations, entries), domain kit, bundle. The kernel imports nothing
-  from `stdlib/`. If a first-party module needs a private hook, the API is
-  wrong, not the module.
-- **One judge at every write path.** Working tree, staged gate, stdin, write
-  draft, replay: the same `judge(state, law)`.
-- **Deterministic, byte-reproducible artifacts.** One generator per artifact;
-  never hand-edited; no locale, no clock, no Bun-only API in `packages/`.
-- **Every declared key has a consumer and an end-to-end test.** A key nothing
-  reads is a lie the config tells its author.
-- **Routing is total.** Every error or warning finding carries exactly one of
-  `fix` and `queue`; a decidable check may gate, a judgment is a queue lane.
-- **The bundle declares policy; the engine supplies mechanism.** A bundle
-  selects from a closed set; it never authors a predicate.
-- **State the loss.** When a mechanism is removed, deferred or unverified,
-  write it where a reader will meet it. Green that hides a gap is worse than
-  red.
+## Commands
 
-## The gate
+- Read `docs/roadmap.md`, then inspect `git log --oneline -10` and
+  `git status` before changing anything. Run `bun run check` to establish
+  the inherited baseline.
+- `bun run check` runs Biome, the build, test-project typecheck and whole
+  suite. The local `scripts/hooks/pre-commit` runs it. Enable the hook
+  once per clone with `git config core.hooksPath scripts/hooks`.
+- `bun test ./<path>.test.ts` runs one file. Tests write under
+  `os.tmpdir()`; a test that spawns `write` sets `WIKIWRIGHT_TODAY`.
+- `bun packages/cli/dist/bin.js <verb> --help` and `docs/cli.md` describe
+  the eight verbs: `check`, `gate`, `write`, `rule`, `read`, `search`,
+  `type` and `version`. Run the binary when prose and behavior disagree.
+- `sh scripts/release-matrix.sh` is the manual pre-release matrix.
+  Linux and macOS have workflow runners; Windows remains unverified.
 
-The gate is `bun run check`: biome, `bun run build`, the test-project
-typecheck and the whole suite. The hook runs it locally, the workflow runs
-it on every push and pull request on Linux and macOS. Enable the hook once
-per clone:
+## Generated output
 
-```sh
-git config core.hooksPath scripts/hooks
-```
-
-Before a release run `bun run test:node` (the node runner) and
-`sh scripts/release-matrix.sh` by hand; Windows is unverified, and
-`docs/roadmap.md` says so.
-
-## Discipline
-
-- **Literal names only.** `lint` means lint. No metaphor in a verb, a config
-  key, a rule id or an error code.
-- **One logical change per commit**, with a typed prefix: `feat:`, `fix:`,
-  `refactor:`, `test:`, `docs:`, `chore:`. The why lives in the message body.
-- **Every test writes under `os.tmpdir()`.** A test that spawns a verb that
-  stamps a date sets `WIKIWRIGHT_TODAY`.
-- **Generated files have one generator.** `devwiki/generated`, the brief
-  included, from `wikiwright check --write --root devwiki`; the playbook from
-  `bun tools/render-playbook.ts`; `docs/cli.md`'s verb block from
+- `devwiki/generated/*`, including the brief, from
+  `wikiwright check --write --root devwiki`.
+- A handbook's `generated/*` from `wikiwright check --write --root
+  fixtures/handbooks/<name>`.
+- `fixtures/memory-synth/generated/*` and
+  `fixtures/minimal-vault/generated/*` and
+  `fixtures/source-policy/generated/*` from their own `check --write`.
+- `docs/skills/wikiwright-maintain/finding-response.md` from
+  `bun tools/render-playbook.ts`.
+- The verb block in `docs/cli.md` from
   `bun docs/render-cli.ts --write`.
-- **Describe what exists.** A document, a help string or a skill line names
-  behaviour the binary has. When unsure, run the binary and quote the
-  envelope.
-- **Semantic conflicts go to a maintainer**, never auto-resolved.
-- **Trust is a maintainer's decision.** An agent must not grant trust
-  automatically to unblock work: `module-untrusted`, `module-modified` and
-  `module-scope-unresolved` mean stop and ask, and an explicit maintainer
-  authorization is required. A test grants only in a store it owns under
-  `os.tmpdir()`.
+- `docs/v2-dispositions.md` from `bun tools/dispositions.ts`.
+- `packages/core/src/identity/casefold-data.ts` from
+  `bun tools/generate-casefold.ts`.
 
-## Two hard rules
+Regenerate, inspect, and stage generated output with the source change.
+Do not hand-edit it.
 
-- **No private or personal data enters this repository**: not as a fixture,
-  not as an example, not in a commit message. The fixtures are synthetic.
-- **Never push anywhere but `origin`.**
+## NEVER
 
-## Before you start
+- Put private or personal data in this repository, its fixtures, examples,
+  docs, or commit messages. The corpora here are synthetic.
+- Push anywhere but `origin`.
+- Auto-resolve a semantic conflict. Send it to a maintainer.
+- Add an executable library hook or imply that a bundle policy can run code.
+- Call a structural pass proof of a claim's truth, a pin's semantic
+  accuracy, or host hook delivery.
+- Describe a removed verb, key, module loader, or role gate as available.
 
-1. Read `docs/roadmap.md`.
-2. `git log --oneline -10` and `git status`.
-3. `bun run check`, so you know whether you inherited a green tree.
+## Change discipline and verification
 
-## Where to look
+Use one logical change per commit with `feat:`, `fix:`, `refactor:`,
+`test:`, `docs:`, or `chore:`. Put the why in the body. No co-author
+trailers. Use literal names for verbs, keys, rule ids and errors.
 
-| Working on | Read |
-|---|---|
-| the words: page, type, vocabulary, grammar, the judge, findings, the gate | `docs/concepts.md` |
-| a key in `config/constitution.json` or `config/engine.json` | `docs/constitution.md` |
-| a verb, a flag, the envelope, an exit code | `docs/cli.md`, or `wikiwright <verb> --help` |
-| a module, a kit, the loader, trust | `docs/extending.md` |
-| a package, an invariant, a test, the gate | `docs/architecture.md` |
-| what is missing, deferred or unverified | `docs/roadmap.md` |
-| what a release changed | `CHANGELOG.md` |
-| setup, the hook, the runners, sending a change | `CONTRIBUTING.md` |
-
-## Where things live
-
-- `packages/core`: the kernel and the standard library.
-- `packages/cli`: the binary, one module per verb under `src/verbs/`; the
-  starters under `constitutions/`; the skills under `skills/`.
-- `packages/kit-code`: `@wikiwright/kit-code`, the shipped domain kit — a
-  code wiki's types, `anchored` fragment, relation labels, templates and
-  discipline — consumed by the `code` starter and by `devwiki`. Nothing
-  code-specific enters the kernel or the CLI.
-- `devwiki`, `fixtures/memory-synth`, `fixtures/minimal-vault`: the corpora
-  every change is judged against. `devwiki` is a bundle over the kit: after
-  `bun install`, a maintainer grants it once on this machine
-  (`wikiwright trust grant module:@wikiwright/kit-code --root devwiki`, with
-  `--scope worktrees` to cover every linked worktree of this clone) before
-  `check --root devwiki` judges anything; the suite never reads that grant —
-  every test judges a copy under `os.tmpdir()`.
-- `fixtures/conformance`: the neutral module fixture and the two bundles that
-  consume it. Test infrastructure, not a domain model.
-- `tools/`: the build-info writer, the playbook renderer, the case-fold table
-  generator, the uncovered-directory lister, the suite runner the gate uses,
-  and the benchmark of `check` and `lint --staged`.
-- `docs/`: the documentation, and the CLI reference renderer.
+Verify the affected CLI seam and corpus, then run `bun run check`.
+Before a release, run the release matrix. If a mechanism is removed,
+deferred or unverified, state the loss where its reader will meet it,
+including `docs/roadmap.md`. Green that hides a gap is worse than red.

@@ -1,103 +1,104 @@
 {
   "schema": "wikiwright/manifest",
   "totals": {
-    "pages": 33,
-    "edges": 210
+    "pages": 36,
+    "edges": 198
   },
   "by_kind": {
-    "relation": 69,
-    "tagged": 46,
-    "wikilink": 95
+    "relation": 72,
+    "tagged": 49,
+    "wikilink": 77
   },
   "by_label": {
     "relation": {
-      "decided_by": 11,
-      "mapped_in": 18,
-      "part_of": 25,
-      "verified_by": 15
+      "decided-by": 11,
+      "mapped-in": 19,
+      "part-of": 26,
+      "verified-by": 16
     }
   },
-  "extensions": {},
   "pages": [
     {
       "path": "meta/D-001.md",
       "type": "decision",
-      "archetype": "reference",
-      "chain": [
-        "decision",
-        "code/decision",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/decision"
       ],
       "title": "D-001 — Generated artifacts are tracked",
       "description": "devwiki commits generated/graph.json, manifest.json, tag-catalog.md and BRIEF.md so the drift gate means something to a reviewer; freshness.json stays untracked.",
       "tags": [
         "meta"
       ],
+      "status": "active",
       "inbound": {
         "relation": {
-          "decided_by": [
+          "decided-by": [
             "wiki/deterministic-artifacts.md",
             "wiki/generated-artifacts.md"
           ]
         },
         "wikilink": [
           "wiki/deterministic-artifacts.md",
-          "wiki/generated-artifacts.md",
-          "wiki/skills-and-brief.md"
+          "wiki/generated-artifacts.md"
         ]
       }
     },
     {
       "path": "meta/D-002.md",
       "type": "decision",
-      "archetype": "reference",
-      "chain": [
-        "decision",
-        "code/decision",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/decision"
       ],
       "title": "D-002 — One trust law: the digest over the package is the boundary",
       "description": "A module is admitted by one machine-local, content-hashed grant over every file of the installed package; the lockfile pin gate and the plugin tier were deleted rather than kept as second laws.",
       "tags": [
         "meta"
       ],
+      "status": "active",
+      "outbound": {
+        "wikilink": [
+          "meta/D-007.md"
+        ]
+      },
       "inbound": {
         "relation": {
-          "decided_by": [
-            "wiki/modules-and-trust.md",
-            "wiki/trust-law.md"
+          "decided-by": [
+            "wiki/loading-a-module.md",
+            "wiki/modules.md"
           ]
         },
         "wikilink": [
           "meta/D-006.md",
-          "wiki/modules-and-trust.md",
-          "wiki/trust-law.md"
+          "meta/D-007.md",
+          "wiki/loading-a-module.md",
+          "wiki/modules.md"
         ]
       }
     },
     {
       "path": "meta/D-003.md",
       "type": "decision",
-      "archetype": "reference",
-      "chain": [
-        "decision",
-        "code/decision",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/decision"
       ],
       "title": "D-003 — The code kit is unpublished",
       "description": "@wikiwright/kit-code is on no registry; a bundle depends on it by workspace link or by a file: path to packages/kit-code, and engine.json's version range is a loader check, not a lookup.",
       "tags": [
         "meta"
       ],
+      "status": "active",
       "inbound": {
         "relation": {
-          "decided_by": [
-            "wiki/modules-and-trust.md",
+          "decided-by": [
+            "wiki/modules.md",
             "wiki/wikiwright-quickstart.md"
           ]
         },
         "wikilink": [
-          "wiki/modules-and-trust.md",
+          "wiki/modules.md",
           "wiki/wikiwright-quickstart.md"
         ]
       }
@@ -105,25 +106,23 @@
     {
       "path": "meta/D-004.md",
       "type": "decision",
-      "archetype": "reference",
-      "chain": [
-        "decision",
-        "code/decision",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/decision"
       ],
       "title": "D-004 — No lane and no check in the code kit",
       "description": "The kit registers declarations only — types, a fragment, relation labels, templates, skill fragments — because every obligation it states is a shape or section law the kernel already holds, and a lane nothing routes to is a declared key without a consumer.",
       "tags": [
         "meta"
       ],
+      "status": "active",
       "inbound": {
         "relation": {
-          "decided_by": [
+          "decided-by": [
             "wiki/wikiwright-architecture.md"
           ]
         },
         "wikilink": [
-          "wiki/trust-law.md",
           "wiki/wikiwright-architecture.md"
         ]
       }
@@ -131,20 +130,19 @@
     {
       "path": "meta/D-005.md",
       "type": "decision",
-      "archetype": "reference",
-      "chain": [
-        "decision",
-        "code/decision",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/decision"
       ],
       "title": "D-005 — A relation is a labelled edge, and coverage is a graph query",
       "description": "Relation items become labelled edges in generated/graph.json through the grammar's edges hook, and graph edges --missing answers coverage from that construction rather than from a grep over the pages.",
       "tags": [
         "meta"
       ],
+      "status": "active",
       "inbound": {
         "relation": {
-          "decided_by": [
+          "decided-by": [
             "wiki/generated-artifacts.md"
           ]
         },
@@ -156,74 +154,112 @@
     {
       "path": "meta/D-006.md",
       "type": "decision",
-      "archetype": "reference",
-      "chain": [
-        "decision",
-        "code/decision",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/decision"
       ],
       "title": "D-006 — A grant may cover a vault's path in every linked worktree of one clone",
       "description": "Extends D-002: beside the grant keyed by the vault's real path, a maintainer may approve a module's digest for the vault's path in every linked worktree of one repository, keyed by the real path of its git common directory; a matching digest in either scope approves, and no refusal names a command to run.",
       "tags": [
         "meta"
       ],
+      "status": "active",
       "outbound": {
         "wikilink": [
-          "meta/D-002.md"
+          "meta/D-002.md",
+          "meta/D-007.md"
+        ]
+      },
+      "inbound": {
+        "wikilink": [
+          "meta/D-007.md"
+        ]
+      }
+    },
+    {
+      "path": "meta/D-007.md",
+      "type": "decision",
+      "role": "reference",
+      "ancestry": [
+        "code/decision"
+      ],
+      "title": "D-007 — Installing is consent; every load proves the module",
+      "description": "The machine-local grant and the trust verb are removed: a module a bundle declares and has installed, or carries by a bundle-relative path, runs because it was installed, and every load proves it — the purity scan and the determinism fixture, once per digest in a process — before it judges anything.",
+      "tags": [
+        "meta"
+      ],
+      "status": "active",
+      "outbound": {
+        "wikilink": [
+          "meta/D-002.md",
+          "meta/D-006.md"
         ]
       },
       "inbound": {
         "relation": {
-          "decided_by": [
-            "wiki/modules-and-trust.md",
-            "wiki/trust-law.md",
+          "decided-by": [
+            "wiki/loading-a-module.md",
+            "wiki/modules.md",
             "wiki/wikiwright-quickstart.md"
           ]
         },
         "wikilink": [
-          "wiki/modules-and-trust.md",
-          "wiki/trust-law.md",
+          "meta/D-002.md",
+          "meta/D-006.md",
+          "wiki/loading-a-module.md",
+          "wiki/modules.md",
           "wiki/wikiwright-quickstart.md"
         ]
       }
     },
     {
+      "path": "meta/D-008.md",
+      "type": "decision",
+      "role": "reference",
+      "ancestry": [
+        "code/decision"
+      ],
+      "title": "D-008 — A repaired observation needs a recurrence rule and visible evidence status",
+      "description": "The first v2 delivery is exercised as one synthetic gardening episode: repair a claim, add a tested rule, refuse its recurrence at the gate, and show changed evidence in read and search.",
+      "tags": [
+        "meta"
+      ],
+      "status": "active"
+    },
+    {
       "path": "meta/charter.md",
       "type": "charter",
-      "archetype": "hub",
-      "chain": [
-        "charter",
-        "hub"
-      ],
+      "role": "hub",
+      "ancestry": [],
       "title": "Charter",
       "description": "What this code bundle documents, for whom, and what stays out.",
       "tags": [
         "meta"
-      ]
+      ],
+      "status": "active"
     },
     {
       "path": "wiki/command-runtime.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "The command runtime",
-      "description": "One spec-driven registry of 22 verbs, the argv parser built from it, the envelope and exit taxonomy, the role bound, the one clock, and the place a loaded vault becomes the judge's law.",
+      "description": "The eight-verb command table, argument parser, JSON envelope and bundle identity of the v2 CLI.",
       "tags": [
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
@@ -235,7 +271,7 @@
       },
       "inbound": {
         "relation": {
-          "part_of": [
+          "part-of": [
             "wiki/envelope-and-exit-codes.md",
             "wiki/environment-variables.md",
             "wiki/skills-and-brief.md"
@@ -244,7 +280,6 @@
         "wikilink": [
           "wiki/envelope-and-exit-codes.md",
           "wiki/environment-variables.md",
-          "wiki/one-judge-five-states.md",
           "wiki/skills-and-brief.md"
         ]
       }
@@ -252,34 +287,28 @@
     {
       "path": "wiki/deterministic-artifacts.md",
       "type": "code-concept",
-      "archetype": "concept",
-      "chain": [
-        "code-concept",
-        "code/concept",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/concept"
       ],
       "title": "Determinism of artifacts",
-      "description": "Every generated byte is a function of the vault and the law: one generator per artifact, code-unit ordering over NFC, no clock, no locale, no Bun-only API, a vendored hash and a specified logarithm, and a build stamp without a timestamp.",
+      "description": "Stable law and content digests and generated files produced from one judged state.",
       "tags": [
         "kernel",
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "decided_by": [
+          "decided-by": [
             "meta/D-001.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ]
         },
         "wikilink": [
           "meta/D-001.md",
-          "wiki/generated-artifacts.md",
-          "wiki/modules-and-trust.md",
-          "wiki/parser-and-names.md",
-          "wiki/search.md",
-          "wiki/skills-and-brief.md",
           "wiki/wikiwright-architecture.md"
         ]
       }
@@ -287,23 +316,22 @@
     {
       "path": "wiki/envelope-and-exit-codes.md",
       "type": "ops-reference",
-      "archetype": "reference",
-      "chain": [
-        "ops-reference",
-        "code/ops-reference",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/ops-reference"
       ],
       "title": "The envelope and exit codes",
-      "description": "Every verb prints one JSON envelope on stdout; the exit code is one of seven, each mapped to one error type; the judging verbs share one verdict block.",
+      "description": "The CLI JSON envelope, output bound and closed exit-code taxonomy.",
       "tags": [
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/command-runtime.md"
           ]
         },
@@ -316,57 +344,85 @@
     {
       "path": "wiki/environment-variables.md",
       "type": "ops-reference",
-      "archetype": "reference",
-      "chain": [
-        "ops-reference",
-        "code/ops-reference",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/ops-reference"
       ],
       "title": "Environment variables",
-      "description": "The four WIKIWRIGHT_ variables the engine or its hooks read, what reads each, the one git variable the engine sets and the four it removes.",
+      "description": "The two environment inputs the v2 CLI reads: the write date and Git-child timeout.",
       "tags": [
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/command-runtime.md"
           ]
         },
         "wikilink": [
           "wiki/command-runtime.md",
-          "wiki/git.md",
+          "wiki/repository-layout.md"
+        ]
+      }
+    },
+    {
+      "path": "wiki/exports.md",
+      "type": "subsystem",
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
+      ],
+      "title": "Exports",
+      "description": "Historical v1 export copies; the v2 binary has no export planner or copy identity.",
+      "tags": [
+        "cli"
+      ],
+      "status": "retired",
+      "outbound": {
+        "relation": {
+          "mapped-in": [
+            "wiki/repository-layout.md"
+          ],
+          "part-of": [
+            "wiki/wikiwright-architecture.md"
+          ],
+          "verified-by": [
+            "wiki/testing-guide.md"
+          ]
+        },
+        "wikilink": [
           "wiki/repository-layout.md",
-          "wiki/repository-scripts.md"
+          "wiki/testing-guide.md",
+          "wiki/wikiwright-architecture.md"
         ]
       }
     },
     {
       "path": "wiki/fields-and-shapes.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "Fields and shapes",
-      "description": "The closed shape vocabulary a frontmatter field is declared in, the value check every field runs, the one pin shape, and the derivation of a title or description from the page.",
+      "description": "Effective JSON Schema shapes, reserved fields, RE2 patterns and page-reference checks.",
       "tags": [
         "kernel"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/judge.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
@@ -380,26 +436,23 @@
     {
       "path": "wiki/findings-and-routing.md",
       "type": "code-concept",
-      "archetype": "concept",
-      "chain": [
-        "code-concept",
-        "code/concept",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/concept"
       ],
       "title": "Findings and total routing",
-      "description": "Every error or warning finding carries exactly one of a runnable fix and a queue lane; an info finding is a census row; the property is held statically over the pass table and at runtime over every emit path.",
+      "description": "The verdict table, one route per finding and separate coverage and unevaluated counts.",
       "tags": [
         "kernel"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ]
         },
         "wikilink": [
-          "wiki/fixers.md",
-          "wiki/standard-library.md",
           "wiki/wikiwright-architecture.md"
         ]
       }
@@ -407,27 +460,26 @@
     {
       "path": "wiki/fixers.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "Fixers and routing",
-      "description": "The closed registry of fixers a finding's fix argv can name, the pure derivations from a finding's details to write ops, and the fix verb that applies, proves and lands them.",
+      "description": "The surviving mechanical fixes: folder-tag materialization and generated-artifact refresh.",
       "tags": [
         "kernel",
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/judge.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
@@ -436,41 +488,34 @@
           "wiki/repository-layout.md",
           "wiki/testing-guide.md"
         ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/findings-and-routing.md"
-        ]
       }
     },
     {
       "path": "wiki/freshness.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "Freshness and pins",
-      "description": "Every pin is measured against the origin its page names — the enclosing repository for origin dot, ls-remote or a blobless cache for a URL — into one of six states, with a covering diff deciding stale from unchanged, every repository path the page cites held to the pin, and a fast-forward that advances only clean pins through the Writer.",
+      "description": "Local Git pin measurement and evidence status shown by read and search.",
       "tags": [
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
         "wikilink": [
-          "wiki/git.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
@@ -478,7 +523,7 @@
       },
       "inbound": {
         "relation": {
-          "part_of": [
+          "part-of": [
             "wiki/git.md"
           ]
         },
@@ -490,31 +535,30 @@
     {
       "path": "wiki/generated-artifacts.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "Generated artifacts",
-      "description": "One generator per artifact: the graph, the manifest, the tag catalog and the writer's brief under generated/, byte-reproducible, landed by check --write, compared against a fresh rebuild by check and by the staged gate, and queried by graph edges.",
+      "description": "The brief, graph, manifest, tag catalog and queue rendered by check --write.",
       "tags": [
         "kernel",
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "decided_by": [
+          "decided-by": [
             "meta/D-001.md",
             "meta/D-005.md"
           ],
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
@@ -522,37 +566,30 @@
           "meta/D-001.md",
           "meta/D-005.md",
           "wiki/repository-layout.md",
-          "wiki/skills-and-brief.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
-        ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/deterministic-artifacts.md"
         ]
       }
     },
     {
       "path": "wiki/git.md",
       "type": "integration",
-      "archetype": "concept",
-      "chain": [
-        "integration",
-        "code/integration",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/integration"
       ],
       "title": "Git",
-      "description": "The one external system: git is spawned as plumbing for the index, HEAD, revisions, the enclosing repository, a trust grant's worktree scope, remote heads and blobless origin caches; never a library, never a prompt.",
+      "description": "Asynchronous file-backed Git transport for staged, revision and local-pin reads.",
       "tags": [
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/freshness.md",
             "wiki/writer-and-staged-gate.md"
           ]
@@ -562,38 +599,30 @@
           "wiki/repository-layout.md",
           "wiki/writer-and-staged-gate.md"
         ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/environment-variables.md",
-          "wiki/freshness.md",
-          "wiki/writer-and-staged-gate.md"
-        ]
       }
     },
     {
       "path": "wiki/judge.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "The judge and its passes",
-      "description": "One pure function turns a vault state and a law into a verdict: the per-page passes, the vault passes, the grammar arms, routing, exceptions, the gate rule, the coverage block and the cap.",
+      "description": "The one v2 judge over page shape, grammar, rules, transitions and law tests.",
       "tags": [
         "kernel"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
@@ -605,123 +634,136 @@
       },
       "inbound": {
         "relation": {
-          "part_of": [
+          "part-of": [
             "wiki/fields-and-shapes.md",
             "wiki/fixers.md"
           ]
         },
         "wikilink": [
           "wiki/fields-and-shapes.md",
-          "wiki/fixers.md",
-          "wiki/modules-and-trust.md",
-          "wiki/one-judge-five-states.md",
-          "wiki/section-grammars.md",
-          "wiki/trust-law.md"
+          "wiki/fixers.md"
         ]
       }
     },
     {
-      "path": "wiki/modules-and-trust.md",
-      "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "path": "wiki/loading-a-module.md",
+      "type": "code-concept",
+      "role": "concept",
+      "ancestry": [
+        "code/concept"
       ],
-      "title": "Modules, trust and the fixture",
-      "description": "The registration API every module goes through, the loader's ladder from the bundle's own node_modules to the judge, the machine-local content-hashed grant for one vault or for its path across a clone's linked worktrees, the purity scan and the determinism fixture proved at the grant.",
+      "title": "Loading a module",
+      "description": "Historical v1 executable module loading, removed from the v2 engine.",
+      "tags": [
+        "cli",
+        "kit"
+      ],
+      "status": "retired",
+      "outbound": {
+        "relation": {
+          "decided-by": [
+            "meta/D-002.md",
+            "meta/D-007.md"
+          ],
+          "part-of": [
+            "wiki/wikiwright-architecture.md"
+          ]
+        },
+        "wikilink": [
+          "meta/D-002.md",
+          "meta/D-007.md",
+          "wiki/wikiwright-architecture.md"
+        ]
+      }
+    },
+    {
+      "path": "wiki/modules.md",
+      "type": "subsystem",
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
+      ],
+      "title": "Modules, the loader and the fixture",
+      "description": "Historical v1 registration API and code modules, replaced by data libraries.",
       "tags": [
         "kernel",
         "cli"
       ],
+      "status": "retired",
       "outbound": {
         "relation": {
-          "decided_by": [
+          "decided-by": [
             "meta/D-002.md",
             "meta/D-003.md",
-            "meta/D-006.md"
+            "meta/D-007.md"
           ],
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
         "wikilink": [
           "meta/D-002.md",
           "meta/D-003.md",
-          "meta/D-006.md",
-          "wiki/judge.md",
+          "meta/D-007.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
-        ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/deterministic-artifacts.md",
-          "wiki/section-grammars.md",
-          "wiki/trust-law.md"
         ]
       }
     },
     {
       "path": "wiki/one-judge-five-states.md",
       "type": "code-concept",
-      "archetype": "concept",
-      "chain": [
-        "code-concept",
-        "code/concept",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/concept"
       ],
       "title": "One judge, five states",
-      "description": "Every write path — the working tree, the staged gate, a draft on stdin, a write, a replay of history — constructs a state and calls the one judge under the one law, so no verb can be told one thing at write time and another at the gate.",
+      "description": "Historical name for the v1 state map; the v2 judge receives four states.",
       "tags": [
         "kernel",
         "cli"
       ],
+      "status": "retired",
       "outbound": {
         "relation": {
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ]
         },
         "wikilink": [
-          "wiki/command-runtime.md",
-          "wiki/judge.md",
-          "wiki/wikiwright-architecture.md",
-          "wiki/writer-and-staged-gate.md"
+          "wiki/wikiwright-architecture.md"
         ]
       }
     },
     {
       "path": "wiki/parser-and-names.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "The parser and the names it binds",
-      "description": "Bytes become one ParsedDoc through the mdast and yaml seams; identity is one normalization; the name index resolves basenames and aliases; the path law says what a vault path may spell.",
+      "description": "Markdown and YAML parsing, Unicode page identity and name resolution.",
       "tags": [
         "kernel"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
@@ -729,50 +771,38 @@
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
-        ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/deterministic-artifacts.md"
         ]
       }
     },
     {
       "path": "wiki/registry-pipeline.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "Registry pipeline",
-      "description": "Loads, validates and flattens config/constitution.json and config/engine.json into the effective contracts every pass reads.",
+      "description": "Historical v1 JSON registry pipeline; the v2 loader composes type documents.",
       "tags": [
         "kernel",
         "cli"
       ],
+      "status": "retired",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
         "wikilink": [
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
-          "wiki/wikiwright-architecture.md"
-        ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/repository-layout.md",
           "wiki/wikiwright-architecture.md"
         ]
       }
@@ -780,35 +810,30 @@
     {
       "path": "wiki/repository-layout.md",
       "type": "source-map",
-      "archetype": "reference",
-      "chain": [
-        "source-map",
-        "code/source-map",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/source-map"
       ],
       "title": "Repository layout",
-      "description": "Directory-to-purpose lookup for the wikiwright repository.",
+      "description": "Current file-to-purpose map for the v2 engine repository.",
       "tags": [
         "repo"
       ],
-      "outbound": {
-        "wikilink": [
-          "wiki/registry-pipeline.md"
-        ]
-      },
+      "status": "active",
       "inbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/command-runtime.md",
             "wiki/envelope-and-exit-codes.md",
             "wiki/environment-variables.md",
+            "wiki/exports.md",
             "wiki/fields-and-shapes.md",
             "wiki/fixers.md",
             "wiki/freshness.md",
             "wiki/generated-artifacts.md",
             "wiki/git.md",
             "wiki/judge.md",
-            "wiki/modules-and-trust.md",
+            "wiki/modules.md",
             "wiki/parser-and-names.md",
             "wiki/registry-pipeline.md",
             "wiki/repository-scripts.md",
@@ -823,13 +848,14 @@
           "wiki/command-runtime.md",
           "wiki/envelope-and-exit-codes.md",
           "wiki/environment-variables.md",
+          "wiki/exports.md",
           "wiki/fields-and-shapes.md",
           "wiki/fixers.md",
           "wiki/freshness.md",
           "wiki/generated-artifacts.md",
           "wiki/git.md",
           "wiki/judge.md",
-          "wiki/modules-and-trust.md",
+          "wiki/modules.md",
           "wiki/parser-and-names.md",
           "wiki/registry-pipeline.md",
           "wiki/repository-scripts.md",
@@ -844,23 +870,22 @@
     {
       "path": "wiki/repository-scripts.md",
       "type": "ops-reference",
-      "archetype": "reference",
-      "chain": [
-        "ops-reference",
-        "code/ops-reference",
-        "reference"
+      "role": "reference",
+      "ancestry": [
+        "code/ops-reference"
       ],
       "title": "Repository scripts",
-      "description": "The package.json scripts, the development gate, the release matrix run by hand, the tools that generate what nothing hand-edits, and the CLI reference renderer.",
+      "description": "Build, gate, generator and release commands for this repository.",
       "tags": [
         "repo"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ]
         },
@@ -868,37 +893,31 @@
           "wiki/repository-layout.md",
           "wiki/wikiwright-architecture.md"
         ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/environment-variables.md"
-        ]
       }
     },
     {
       "path": "wiki/search.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "Search",
-      "description": "Deterministic lexical retrieval: an identity ladder fused with BM25 by reciprocal rank fusion, a CJK-capable tokenizer over explicit code-point ranges, a per-invocation index, and a coverage block on every answer.",
+      "description": "Deterministic page, record and file retrieval with per-result evidence status.",
       "tags": [
         "kernel",
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
@@ -907,38 +926,29 @@
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
         ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/deterministic-artifacts.md"
-        ]
       }
     },
     {
       "path": "wiki/section-grammars.md",
       "type": "code-concept",
-      "archetype": "concept",
-      "chain": [
-        "code-concept",
-        "code/concept",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/concept"
       ],
       "title": "Section grammars",
-      "description": "A section binds a heading at a depth to a grammar and its parameters; the kernel parses the section's top-level items through the grammar's dispatch chain and runs the arms the grammar's module declared, never knowing what a claim or a relation is.",
+      "description": "The kernel's fixed claims, relations and dated-entry record grammars.",
       "tags": [
         "kernel",
         "stdlib"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ]
         },
         "wikilink": [
-          "wiki/judge.md",
-          "wiki/modules-and-trust.md",
-          "wiki/standard-library.md",
           "wiki/wikiwright-architecture.md"
         ]
       }
@@ -946,66 +956,57 @@
     {
       "path": "wiki/skills-and-brief.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "Skills and the brief",
-      "description": "The two shipped skills copied into a vault under a stamp the engine can audit, the generated brief rendered from the verb registry and the loaded constitution, and the machine-local findings that say when either is behind the binary.",
+      "description": "Generated bundle brief and repository-held consume, write and maintain guidance.",
       "tags": [
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/command-runtime.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
         "wikilink": [
-          "meta/D-001.md",
           "wiki/command-runtime.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md"
-        ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/deterministic-artifacts.md",
-          "wiki/generated-artifacts.md"
         ]
       }
     },
     {
       "path": "wiki/standard-library.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "The standard library",
-      "description": "Three first-party modules — claims, relations, entries — registered through the same API a domain kit uses, composed by standardLibrary(), and never imported by the kernel.",
+      "description": "Historical v1 code standard library, replaced by kernel grammar and data libraries.",
       "tags": [
         "stdlib"
       ],
+      "status": "retired",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
@@ -1014,31 +1015,24 @@
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
         ]
-      },
-      "inbound": {
-        "wikilink": [
-          "wiki/findings-and-routing.md",
-          "wiki/section-grammars.md"
-        ]
       }
     },
     {
       "path": "wiki/testing-guide.md",
       "type": "testing-guide",
-      "archetype": "procedure",
-      "chain": [
-        "testing-guide",
-        "code/testing-guide",
-        "procedure"
+      "role": "procedure",
+      "ancestry": [
+        "code/testing-guide"
       ],
       "title": "Testing the engine",
-      "description": "Two runners over one suite, every test in a temporary copy under os.tmpdir(), a pinned clock, and the helpers that install and grant the code kit in a store the test owns.",
+      "description": "Bun gate, synthetic corpora, temporary fixtures and end-to-end CLI probes.",
       "tags": [
         "repo"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ]
         },
@@ -1048,14 +1042,15 @@
       },
       "inbound": {
         "relation": {
-          "verified_by": [
+          "verified-by": [
             "wiki/command-runtime.md",
+            "wiki/exports.md",
             "wiki/fields-and-shapes.md",
             "wiki/fixers.md",
             "wiki/freshness.md",
             "wiki/generated-artifacts.md",
             "wiki/judge.md",
-            "wiki/modules-and-trust.md",
+            "wiki/modules.md",
             "wiki/parser-and-names.md",
             "wiki/registry-pipeline.md",
             "wiki/search.md",
@@ -1067,12 +1062,13 @@
         },
         "wikilink": [
           "wiki/command-runtime.md",
+          "wiki/exports.md",
           "wiki/fields-and-shapes.md",
           "wiki/fixers.md",
           "wiki/freshness.md",
           "wiki/generated-artifacts.md",
           "wiki/judge.md",
-          "wiki/modules-and-trust.md",
+          "wiki/modules.md",
           "wiki/parser-and-names.md",
           "wiki/registry-pipeline.md",
           "wiki/search.md",
@@ -1084,73 +1080,36 @@
       }
     },
     {
-      "path": "wiki/trust-law.md",
-      "type": "code-concept",
-      "archetype": "concept",
-      "chain": [
-        "code-concept",
-        "code/concept",
-        "concept"
-      ],
-      "title": "The trust law",
-      "description": "Module code runs inside the judge, so a module is admitted by a machine-local grant pinned to the sha256 over every file of the installed package, for one vault or for its path in every linked worktree of one clone, taken only after a purity scan and a determinism fixture, and revoked by any edit; a stranger's bug is one attributed finding, never a crash.",
-      "tags": [
-        "cli",
-        "kit"
-      ],
-      "outbound": {
-        "relation": {
-          "decided_by": [
-            "meta/D-002.md",
-            "meta/D-006.md"
-          ],
-          "part_of": [
-            "wiki/wikiwright-architecture.md"
-          ]
-        },
-        "wikilink": [
-          "meta/D-002.md",
-          "meta/D-004.md",
-          "meta/D-006.md",
-          "wiki/judge.md",
-          "wiki/modules-and-trust.md",
-          "wiki/wikiwright-architecture.md"
-        ]
-      }
-    },
-    {
       "path": "wiki/wikiwright-architecture.md",
       "type": "architecture-overview",
-      "archetype": "concept",
-      "chain": [
-        "architecture-overview",
-        "code/architecture-overview",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/architecture-overview"
       ],
       "title": "wikiwright architecture",
-      "description": "The four-layer shape of the engine and how a page's obligations flow through it.",
+      "description": "Kernel, data-library and bundle layers and the four adapters that reach one judge.",
       "tags": [
         "kernel",
         "stdlib",
         "cli",
         "kit"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "decided_by": [
+          "decided-by": [
             "meta/D-004.md"
           ],
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md",
             "wiki/wikiwright-quickstart.md"
           ]
         },
         "wikilink": [
           "meta/D-004.md",
-          "wiki/registry-pipeline.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-quickstart.md"
@@ -1158,14 +1117,16 @@
       },
       "inbound": {
         "relation": {
-          "part_of": [
+          "part-of": [
             "wiki/command-runtime.md",
             "wiki/deterministic-artifacts.md",
+            "wiki/exports.md",
             "wiki/findings-and-routing.md",
             "wiki/freshness.md",
             "wiki/generated-artifacts.md",
             "wiki/judge.md",
-            "wiki/modules-and-trust.md",
+            "wiki/loading-a-module.md",
+            "wiki/modules.md",
             "wiki/one-judge-five-states.md",
             "wiki/parser-and-names.md",
             "wiki/registry-pipeline.md",
@@ -1174,7 +1135,6 @@
             "wiki/section-grammars.md",
             "wiki/standard-library.md",
             "wiki/testing-guide.md",
-            "wiki/trust-law.md",
             "wiki/wikiwright-quickstart.md",
             "wiki/writer-and-staged-gate.md"
           ]
@@ -1182,11 +1142,13 @@
         "wikilink": [
           "wiki/command-runtime.md",
           "wiki/deterministic-artifacts.md",
+          "wiki/exports.md",
           "wiki/findings-and-routing.md",
           "wiki/freshness.md",
           "wiki/generated-artifacts.md",
           "wiki/judge.md",
-          "wiki/modules-and-trust.md",
+          "wiki/loading-a-module.md",
+          "wiki/modules.md",
           "wiki/one-judge-five-states.md",
           "wiki/parser-and-names.md",
           "wiki/registry-pipeline.md",
@@ -1195,7 +1157,6 @@
           "wiki/section-grammars.md",
           "wiki/standard-library.md",
           "wiki/testing-guide.md",
-          "wiki/trust-law.md",
           "wiki/wikiwright-quickstart.md",
           "wiki/writer-and-staged-gate.md"
         ]
@@ -1204,36 +1165,35 @@
     {
       "path": "wiki/wikiwright-quickstart.md",
       "type": "quickstart",
-      "archetype": "procedure",
-      "chain": [
-        "quickstart",
-        "code/quickstart",
-        "procedure"
+      "role": "procedure",
+      "ancestry": [
+        "code/quickstart"
       ],
       "title": "wikiwright quickstart",
-      "description": "Install, build, and verify the engine from a fresh clone in minutes.",
+      "description": "From-zero Bun setup and the first typed bundle check.",
       "tags": [
         "repo"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "decided_by": [
+          "decided-by": [
             "meta/D-003.md",
-            "meta/D-006.md"
+            "meta/D-007.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ]
         },
         "wikilink": [
           "meta/D-003.md",
-          "meta/D-006.md",
+          "meta/D-007.md",
           "wiki/wikiwright-architecture.md"
         ]
       },
       "inbound": {
         "relation": {
-          "verified_by": [
+          "verified-by": [
             "wiki/wikiwright-architecture.md"
           ]
         },
@@ -1245,32 +1205,30 @@
     {
       "path": "wiki/writer-and-staged-gate.md",
       "type": "subsystem",
-      "archetype": "concept",
-      "chain": [
-        "subsystem",
-        "code/subsystem",
-        "concept"
+      "role": "concept",
+      "ancestry": [
+        "code/subsystem"
       ],
       "title": "The Writer and the staged gate",
-      "description": "The splice-only Writer in core, the shell that proves a splice with a second judge and lands it temp-then-rename, the four state constructors, and the staged gate the hooks run.",
+      "description": "The judged draft writer and staged Git acceptance boundary.",
       "tags": [
         "kernel",
         "cli"
       ],
+      "status": "active",
       "outbound": {
         "relation": {
-          "mapped_in": [
+          "mapped-in": [
             "wiki/repository-layout.md"
           ],
-          "part_of": [
+          "part-of": [
             "wiki/wikiwright-architecture.md"
           ],
-          "verified_by": [
+          "verified-by": [
             "wiki/testing-guide.md"
           ]
         },
         "wikilink": [
-          "wiki/git.md",
           "wiki/repository-layout.md",
           "wiki/testing-guide.md",
           "wiki/wikiwright-architecture.md"
@@ -1278,13 +1236,12 @@
       },
       "inbound": {
         "relation": {
-          "part_of": [
+          "part-of": [
             "wiki/git.md"
           ]
         },
         "wikilink": [
-          "wiki/git.md",
-          "wiki/one-judge-five-states.md"
+          "wiki/git.md"
         ]
       }
     }

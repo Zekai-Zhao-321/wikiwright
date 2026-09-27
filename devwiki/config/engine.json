@@ -1,13 +1,15 @@
 {
+  "schema": "wikiwright/engine",
+  "schema_version": 4,
+  "label": "devwiki",
   "content_roots": [
     "wiki",
     "raw",
     "meta"
   ],
-  "modules": [
+  "libraries": [
     {
-      "package": "@wikiwright/kit-code",
-      "version": "^0.1.0"
+      "path": "libraries/kit-code"
     }
   ]
 }

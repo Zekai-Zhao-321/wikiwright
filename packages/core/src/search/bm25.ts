@@ -90,20 +90,45 @@ function boostedText(page: NamedPage): string {
   return parts.join("\n");
 }
 
+/** One document the index is built over: a key, its text, and text that counts FIELD_BOOST times. */
+interface IndexEntry {
+  key: string;
+  text: string;
+  boosted?: string;
+}
+
 /**
  * Build the inverted index over the walked pages. Rebuilt per invocation: no
  * cache file, no daemon (docs/concepts.md §Generated artifacts; a persisted postings file is
  * admitted only above a measured latency tripwire).
  */
 export function buildLexicalIndex(pages: readonly NamedPage[]): LexicalIndex {
+  return indexOf(
+    pages.map((page) => ({ key: page.path, text: page.doc.source, boosted: boostedText(page) })),
+  );
+}
+
+/**
+ * The same index over arbitrary texts, keyed by the caller: what `search
+ * --items` ranks a grammar item's line and its rationale with. One tokenizer
+ * and one BM25, so an item and a page are scored by the same law; a text has
+ * no boosted fields.
+ */
+export function buildTextIndex(texts: readonly { key: string; text: string }[]): LexicalIndex {
+  return indexOf(texts);
+}
+
+function indexOf(entries: readonly IndexEntry[]): LexicalIndex {
   const docs: LexicalDoc[] = [];
   const df = new Map<string, number>();
   let total = 0;
-  for (const page of pages) {
+  for (const entry of entries) {
     const tf = new Map<string, number>();
-    for (const term of tokenize(page.doc.source)) tf.set(term, (tf.get(term) ?? 0) + 1);
-    for (const term of tokenize(boostedText(page))) {
-      tf.set(term, (tf.get(term) ?? 0) + FIELD_BOOST);
+    for (const term of tokenize(entry.text)) tf.set(term, (tf.get(term) ?? 0) + 1);
+    if (entry.boosted !== undefined) {
+      for (const term of tokenize(entry.boosted)) {
+        tf.set(term, (tf.get(term) ?? 0) + FIELD_BOOST);
+      }
     }
     let length = 0;
     for (const [term, count] of tf) {
@@ -112,10 +137,10 @@ export function buildLexicalIndex(pages: readonly NamedPage[]): LexicalIndex {
     }
     total += length;
     docs.push({
-      path: page.path,
+      path: entry.key,
       tf,
       length,
-      normalizedSource: normalizeIdentity(page.doc.source),
+      normalizedSource: normalizeIdentity(entry.text),
     });
   }
   docs.sort((a, b) => codeUnitCompare(a.path, b.path));
@@ -140,11 +165,24 @@ export function rankLexical(
   query: string,
   kept: readonly NamedPage[],
 ): LexicalHit[] {
+  return rankKeys(
+    index,
+    query,
+    kept.map((page) => page.path),
+  );
+}
+
+/** `rankLexical` over the keys of an index built by `buildTextIndex`; a hit's `path` is its key. */
+export function rankKeys(
+  index: LexicalIndex,
+  query: string,
+  keys: readonly string[],
+): LexicalHit[] {
   const terms = [...new Set(tokenize(query))].sort(codeUnitCompare);
   if (terms.length === 0 || index.corpusSize === 0) return [];
   const hits: LexicalHit[] = [];
-  for (const page of kept) {
-    const doc = index.byPath.get(page.path);
+  for (const key of keys) {
+    const doc = index.byPath.get(key);
     if (doc === undefined) continue;
     let score = 0;
     for (const term of terms) {
@@ -158,7 +196,7 @@ export function rankLexical(
         index.averageLength === 0 ? 1 : 1 - BM25_B + (BM25_B * doc.length) / index.averageLength;
       score += (idf * (tf * (BM25_K1 + 1))) / (tf + BM25_K1 * norm);
     }
-    if (score > 0) hits.push({ path: page.path, score });
+    if (score > 0) hits.push({ path: key, score });
   }
   hits.sort((a, b) => (a.score === b.score ? codeUnitCompare(a.path, b.path) : b.score - a.score));
   return hits;

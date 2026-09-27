@@ -1,36 +1,32 @@
-// docs/roadmap.md: check reads each content page once per invocation; the
-// artifacts, brief and judge use that snapshot. Count reads, not wall time.
+// docs/roadmap.md, v2 contracts §11: check reads the working tree as one
+// state, each content page read twice — the capture and the capture that
+// confirms nothing moved between — and the judge, the generated artifacts
+// and the envelope's bundle block all take that one state's bytes. A third
+// read is the verb reading the tree again. Count reads, not wall time.
+
+import { describe, it } from "bun:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { documentOf } from "../../core/test/helpers/constitution.ts";
+import { notePage, writeAt, writeNoteBundle } from "./fixtures/note-bundle.ts";
+import { runCli } from "./fixtures/runtime.ts";
 
 const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
 
-describe("check shares its content snapshot (docs/roadmap.md)", () => {
-  it("reads each page once for check and check --write, preserving the original bytes", () => {
+describe("check reads the tree as one state (docs/roadmap.md)", () => {
+  it("reads each page twice, once to capture and once to confirm, preserving the original bytes", () => {
     const root = realpathSync(mkdtempSync(join(tmpdir(), "ww-check-reads-")));
     try {
-      mkdirSync(join(root, "config"));
-      mkdirSync(join(root, "wiki"));
-      writeFileSync(
-        join(root, "config/constitution.json"),
-        JSON.stringify(
-          documentOf({ types: { note: { extends: "concept", description: "A note." } } }),
-        ),
-      );
-      writeFileSync(join(root, "config/engine.json"), JSON.stringify({ content_roots: ["wiki"] }));
+      writeNoteBundle(root);
       const page = (title: string, target: string): string =>
-        `---\ntype: note\ntitle: ${title}\ndescription: A note.\ntags: []\n---\n\n# ${title}\n\nSee [[${target}]].\n`;
+        notePage(title, `\nSee [[${target}]].\n`);
       const source = new Map([
         [join(root, "wiki/Alpha.md"), page("Alpha", "热重启")],
-        [join(root, "wiki/热重启.md"), `\uFEFF${page("热重启", "Alpha").replaceAll("\n", "\r\n")}`],
+        [join(root, "wiki/热重启.md"), `﻿${page("热重启", "Alpha").replaceAll("\n", "\r\n")}`],
       ]);
-      for (const [path, text] of source) writeFileSync(path, text);
+      for (const [path, text] of source) writeAt(root, path.slice(root.length + 1), text);
       const log = join(root, "reads.json");
       const preload = join(root, "count-reads.cjs");
       writeFileSync(
@@ -49,14 +45,13 @@ process.on("exit", () => fs.writeFileSync(${JSON.stringify(log)}, JSON.stringify
 `,
       );
       for (const flags of [["--write"], []]) {
-        const result = spawnSync(
-          process.execPath,
+        const result = runCli(
           ["--require", preload, CLI, "check", ...flags, "--root", root, "--all"],
           { encoding: "utf8" },
         );
         assert.equal(result.status, 0, result.stdout + result.stderr);
         const counts: unknown = JSON.parse(readFileSync(log, "utf8"));
-        assert.deepEqual(counts, Object.fromEntries([...source.keys()].map((path) => [path, 1])));
+        assert.deepEqual(counts, Object.fromEntries([...source.keys()].map((path) => [path, 2])));
         for (const [path, text] of source) assert.equal(readFileSync(path, "utf8"), text);
       }
     } finally {

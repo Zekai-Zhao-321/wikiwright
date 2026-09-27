@@ -1,103 +1,146 @@
 // docs/architecture.md §The invariants (every shipped fixture's EXACT finding set
-// is asserted — both fixtures carry deliberate defects, and a deliberate defect
-// nothing checks is indistinguishable from rot) · docs/constitution.md §Sections (the planted
-// `### Timeline` is `section-depth`'s first measurement: 1 firing across 40
-// pages).
-import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { describe, it } from "node:test";
-import { fileURLToPath } from "node:url";
+// is asserted — two fixtures carry deliberate defects, and a deliberate defect
+// nothing checks is indistinguishable from rot; the handbooks carry none, so a
+// finding of any severity there is rot) · docs/constitution.md §Sections (the
+// planted `### Timeline` is `section-depth`'s first measurement: 1 firing
+// across 40 pages).
 
-const CLI = fileURLToPath(new URL("../dist/main.js", import.meta.url));
-const FIXTURES = fileURLToPath(new URL("../../../fixtures/", import.meta.url));
+import { afterAll, describe, expect, it } from "bun:test";
+import { join } from "node:path";
+import { corpusCopy, REPO, removeCopies } from "./fixtures/corpora.ts";
+import { cli, type Envelope, git } from "./fixtures/garden-cli.ts";
 
-interface Finding {
-  ruleId: string;
-  severity: string;
-  path: string;
+// v2 contracts §12 step 5: the corpora migrated onto the v2 law, judged by
+// the v2 `check` where they stand and by the v2 `gate` over a copy whose
+// every file is staged. A corpus's verdict is the exact set of its
+// deliberate defects; `unevaluated` (info, no route) is the transition
+// rules a working tree cannot evaluate.
+
+afterAll(removeCopies);
+
+/** A shallow checkout's history may not reach a pin, which is then not measured. */
+const SHALLOW = git(REPO, "rev-parse", "--is-shallow-repository").trim() === "true";
+
+type Row = [rule: string, severity: string, path: string];
+
+function rows(envelope: Envelope, severities: readonly string[]): Row[] {
+  return (envelope.data?.findings ?? [])
+    .filter((f) => severities.includes(f.severity))
+    .map((f): Row => [f.rule, f.severity, f.path])
+    .sort((a, b) => (a.join("\0") < b.join("\0") ? -1 : 1));
 }
 
-interface Verdict {
-  status: number;
-  findings: Finding[];
-  summary: Record<string, unknown>;
+interface Expected {
+  pages: number;
+  /** Every error and warning finding, sorted, but those of `live`. */
+  findings: Row[];
+  /** Every rule `unevaluated` names, and how many pages it names it on. */
+  unevaluated: Record<string, number>;
+  /**
+   * Warnings measured live against the repository the corpus sits in (a
+   * stale pin and the pages that link one): they change with every commit
+   * that touches a covered path, so their rules are held, not their count.
+   * `pin-unknown` and `citation-unresolved` are not among them: each
+   * depends only on a page's bytes and its pin's commit, so each is held
+   * at the count `findings` gives it.
+   */
+  live?: string[];
+  /**
+   * How many pins the corpus carries, every one measured unless the
+   * checkout is a shallow clone whose history does not reach it.
+   */
+  pins?: number;
 }
 
-function lint(fixture: string): Verdict {
-  const r = spawnSync(process.execPath, [CLI, "lint", "--root", `${FIXTURES}${fixture}`], {
-    encoding: "utf8",
-  });
-  const envelope = JSON.parse(r.stdout) as {
-    data?: { findings?: Finding[]; summary?: Record<string, unknown> };
-  };
-  return {
-    status: r.status ?? -1,
-    findings: envelope.data?.findings ?? [],
-    summary: envelope.data?.summary ?? {},
-  };
-}
+const V2_VERDICTS: Record<string, Expected> = {
+  // The engine's own bundle carries no defect or stale pin after the v2
+  // documentation re-read. Every pin is on HEAD's history and every citation
+  // stands at its pin. A changed covered path must make this case fail.
+  devwiki: {
+    pages: 36,
+    findings: [],
+    unevaluated: { "body-append-only": 8, "entry-edited": 27, "relation-removed": 27 },
+    pins: 27,
+  },
+  // A handbook carries no defect: a finding of any severity is rot. Its
+  // `source-host-allowed` rule holds the page that names a source.
+  "fixtures/handbooks/orchard": { pages: 3, findings: [], unevaluated: {} },
+  // Its `history-dated` rule holds the History of the page that has one;
+  // History is append-only, which a working tree cannot evaluate.
+  "fixtures/handbooks/allotment": { pages: 3, findings: [], unevaluated: { "entry-edited": 2 } },
+  // The native library rule judges each recorded source's nominal type.
+  "fixtures/source-policy": { pages: 5, findings: [], unevaluated: { "claims-transition": 1 } },
+  // The planted `### Timeline` under `## Notes` is still `section-depth`'s
+  // one firing. The migration respelled 98 relations and 52 entries and
+  // left nine items no rewrite keeps whole — six undated lines of one
+  // day's Timeline, a History line with no date of its own, the relation
+  // with no link and the fact with no category planted for the v1 census —
+  // and one `status: draft`, which v1 admitted and the reserved `status`
+  // (active or retired) does not.
+  "fixtures/memory-synth": {
+    pages: 41,
+    findings: [
+      ["item-unparsed", "error", "journal/daily/2031-08-14.md"],
+      ["item-unparsed", "error", "journal/daily/2031-08-14.md"],
+      ["item-unparsed", "error", "journal/daily/2031-08-14.md"],
+      ["item-unparsed", "error", "journal/daily/2031-08-14.md"],
+      ["item-unparsed", "error", "journal/daily/2031-08-14.md"],
+      ["item-unparsed", "error", "journal/daily/2031-08-14.md"],
+      ["item-unparsed", "error", "wiki/Craft/Isle Cadence.md"],
+      ["item-unparsed", "error", "wiki/Folk/Guild/Maelis Ostrander.md"],
+      ["item-unparsed", "error", "wiki/Folk/Kin/鄢霈珉.md"],
+      ["page-shape-invalid", "error", "wiki/Craft/Kiln Jasper.md"],
+      ["section-depth", "error", "wiki/Craft/Isle Cadence.md"],
+    ],
+    unevaluated: { "body-append-only": 6, "claims-transition": 35, "relation-removed": 35 },
+  },
+  // The one broken case keeps its three defects under the v2 names: an
+  // undeclared key, a missing section, a tag the vocabulary does not hold.
+  "fixtures/minimal-vault": {
+    pages: 3,
+    findings: [
+      ["page-shape-invalid", "error", "wiki/test-execution/broken-case.md"],
+      ["section-count", "error", "wiki/test-execution/broken-case.md"],
+      ["vocabulary-unknown", "error", "wiki/test-execution/broken-case.md"],
+    ],
+    unevaluated: { "body-append-only": 3 },
+  },
+};
 
-describe("the shipped fixtures lint to the verdict the spec records (docs/architecture.md §The invariants)", () => {
-  it("memory-synth: 41 pages, one planted section-depth, and the grammar census", () => {
-    const v = lint("memory-synth");
-    // One synthetic review page was added, so `body-append-only` has a corpus
-    // rather than only a test — the arm's declaring type had zero pages before.
-    assert.equal(v.summary["pages"], 41, "the fixture is 41 pages");
-    assert.deepEqual(
-      v.findings.filter((f) => f.severity === "error").map((f) => [f.ruleId, f.path]),
-      [["section-depth", "wiki/Craft/Isle Cadence.md"]],
-      "docs/constitution.md §Sections' first measurement: one `### Timeline` nested under `## Notes`",
-    );
-    // docs/concepts.md §Section grammar, the fixture's registry declares the memory genre's
-    // grammars in report mode, so its verdict IS the dialect census. Every
-    // number here is the fixture's own census, reproduced by the engine's parser
-    // rather than by a script:
-    //   hearsay 3 = the `stated by` bucket · marker-like 4 = the
-    //   keyword-opened-but-not-complete bucket · provenance-weak 71 = the
-    //   shorthand `inferred` refs (the fixture plants no legacy/recorded)
-    //   journal-only-category 4 = journal-only claims standing in Facts
-    //   grammar-unparsed 3 = 2 non-[category] Facts bullets + the 1 of 122
-    //   off-grammar Relations lines · unknown-category 0 (29 declared, 22 used,
-    //   0 undeclared) · relation-target-unresolved 0 (every target canonical)
-    //   sourced-inferred 18 = claims whose trailing parenthetical was eaten by
-    //   the ISO-date arm alone, the fixture declaring no `sources`.
-    //   That row makes a defect visible: 18 of 339 fixture claims had their
-    //   identity set by a punctuation habit with no census row, against 4
-    //   `marker-like` — the uncertain population was under-reported more than
-    //   fourfold.
-    assert.deepEqual(v.summary["by_rule"], {
-      // The dialect census — 45 lines whose marker or separator is the
-      // corpus's rather than the engine's. `info`, and the only row whose fixer
-      // rewrites a dialect, which is why it is opt-in by rule.
-      "canonical-form": 45,
-      "grammar-unparsed": 3,
-      hearsay: 3,
-      "journal-only-category": 4,
-      "marker-like": 4,
-      "provenance-weak": 71,
-      "section-depth": 1,
-      "sourced-inferred": 18,
-    });
-    assert.equal(v.summary["errors"], 1, "report mode's promise: the error delta is 0");
-    assert.equal(v.summary["warnings"], 7);
-    assert.equal(v.summary["infos"], 141, "96 + the 45 canonical-form census rows");
-    assert.equal(v.status, 5, "a page finding exits 5 (docs/cli.md §The envelope)");
-  });
-
-  it("minimal-vault: the three defects of its one broken case, and no others", () => {
-    const v = lint("minimal-vault");
-    assert.equal(v.summary["pages"], 3);
-    assert.deepEqual(
-      v.findings.map((f) => f.ruleId),
-      ["sections", "unknown-tag", "unknown-frontmatter-key"],
-    );
-    for (const finding of v.findings) {
-      assert.equal(
-        finding.path,
-        "wiki/test-execution/broken-case.md",
-        "every defect is the deliberate one; the rest of the fixture is clean",
+describe("the corpora on the v2 law judge to the verdict recorded here (contracts §12 step 5)", () => {
+  for (const [corpus, expected] of Object.entries(V2_VERDICTS)) {
+    it(`${corpus}: check --all where it stands`, () => {
+      const r = cli(["check", "--all"], join(REPO, corpus));
+      expect(r.envelope.data?.summary).toMatchObject({ pages: expected.pages });
+      const live = new Set(expected.live ?? []);
+      const judged = rows(r.envelope, ["error", "warning"]);
+      expect(judged.filter(([rule]) => !live.has(rule))).toEqual(expected.findings);
+      expect(judged.filter(([rule, severity]) => live.has(rule) && severity !== "warning")).toEqual(
+        [],
       );
-    }
-    assert.equal(v.status, 5);
-  });
+      const unevaluated = r.envelope.data?.["unevaluated"] as Record<string, { count: number }>;
+      expect(
+        Object.fromEntries(Object.entries(unevaluated).map(([rule, u]) => [rule, u.count])),
+      ).toEqual(expected.unevaluated);
+      if (expected.pins !== undefined) {
+        const pins = r.envelope.data?.["pins"] as
+          | { entries: unknown[]; counts: Record<string, number> }
+          | undefined;
+        expect(pins?.entries.length).toBe(expected.pins);
+        if (!SHALLOW) expect(pins?.counts["unmeasured"]).toBe(0);
+      }
+      const errors = expected.findings.filter(([, severity]) => severity === "error").length;
+      expect(r.status).toBe(errors > 0 ? 5 : 0);
+    });
+
+    it(`${corpus}: gate over a copy with every file staged gives the same errors`, () => {
+      const { root, top } = corpusCopy(corpus);
+      git(top, "add", "-A");
+      const r = cli(["gate"], root);
+      expect(rows(r.envelope, ["error"])).toEqual(
+        expected.findings.filter(([, severity]) => severity === "error"),
+      );
+      expect(r.status).toBe(expected.findings.some(([, s]) => s === "error") ? 5 : 0);
+    });
+  }
 });

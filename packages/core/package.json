@@ -16,13 +16,17 @@
     "dist"
   ],
   "engines": {
-    "node": ">=22.12.0"
+    "bun": "1.3.11"
   },
   "dependencies": {
+    "@bufbuild/cel": "0.6.1",
+    "@bufbuild/cel-spec": "0.6.1",
+    "@bufbuild/protobuf": "2.15.0",
+    "@bufbuild/re2": "0.6.1",
+    "ajv": "8.20.0",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-frontmatter": "^2.0.1",
     "micromark-extension-frontmatter": "^2.0.0",
-    "yaml": "^2.9.0",
-    "zod": "^4.0.0"
+    "yaml": "^2.9.0"
   }
 }

@@ -2,7 +2,7 @@
 // never load-bearing) · the closed exit taxonomy, JSON-only v1
 // docs/concepts.md §Findings and routing (the verdict envelope and the cap flags every judging verb
 // prints — docs/architecture.md §Directories keeps the envelope helpers here rather than beside a verb).
-import type { JudgeOptions, Verdict } from "@wikiwright/core";
+import type { TypeLawJudgeOptions } from "@wikiwright/core";
 import type { CommandArgs } from "./spec.ts";
 
 export const EXIT = {
@@ -16,16 +16,36 @@ export const EXIT = {
   not_found: 3,
   conflict: 4,
   findings: 5,
-  confirm_required: 10,
 } as const;
 
 export type ErrorType = Exclude<keyof typeof EXIT, "ok">;
 
 export const ENGINE_VERSION = "0.1.0";
 
+/**
+ * docs/cli.md §The envelope: which bundle a verb read, beside its answer.
+ * Declared here rather than beside `typeLawIdentity` so the envelope, which
+ * every verb imports, reaches no module that reads a bundle.
+ */
+export interface BundleIdentity {
+  /** engine.json's `label`: a name for a reader, never an identity. */
+  label: string;
+  /** The root's real path. */
+  root: string;
+  /** The commit HEAD names in the enclosing repository, or null when git names none. */
+  head: string | null;
+  /** Whether `git status` lists any change under the root, or null when no repository answers. */
+  dirty: boolean | null;
+  /** The §7 law digest of the law the verb loaded. */
+  law: string;
+  /** The §7 content digest of the pages the verb read. */
+  content: string;
+}
+
 export interface Metadata {
   command: string;
   engine: string;
+  bundle?: BundleIdentity;
 }
 
 export interface OkEnvelope {
@@ -53,6 +73,10 @@ export type Envelope = OkEnvelope | ErrEnvelope;
 export interface CommandResult {
   envelope: Envelope;
   exit: number;
+  /** Selected-state output ownership boundaries; internal, never serialized. */
+  outputProtected?: readonly string[];
+  /** False when selected law imports could not be determined from its engine document. */
+  outputProtectionComplete?: boolean;
   /** docs/cli.md §The envelope: UX on stderr, through one slot main.ts writes. */
   stderr?: string;
 }
@@ -83,25 +107,52 @@ export function fail(
   return { envelope, exit: EXIT[type] };
 }
 
-/** The envelope every judging verb prints (docs/concepts.md §Findings and routing). */
-export function verdictEnvelope(verdict: Verdict): Record<string, unknown> {
+/** v2 contracts §9: the most bytes one envelope may put on stdout. */
+export const ENVELOPE_MAX_BYTES = 1_048_576;
+
+/**
+ * v2 contracts §9: an envelope over the bound, refused. The refusal keeps the
+ * metadata (the verb, the bundle it read) and drops the data: a caller that
+ * wants the whole answer asks again with `--out`.
+ */
+export function envelopeTooLarge(result: CommandResult, bytes: number): CommandResult {
+  const refusal = fail(
+    result.envelope.metadata.command,
+    "usage",
+    "envelope-too-large",
+    `the envelope is ${bytes} bytes, and stdout carries at most ${ENVELOPE_MAX_BYTES}`,
+    {
+      details: { bytes, limit: ENVELOPE_MAX_BYTES, exit_code: result.exit },
+      hint: "run the same command with --out <file>: the file receives the whole envelope, and stdout a pointer to it",
+    },
+  );
   return {
-    findings: verdict.findings,
-    summary: verdict.summary,
-    coverage: verdict.coverage,
-    // The blind spot named — which pass, how many, why — beside the
-    // scalar `summary.unevaluated` every reader sums.
-    unevaluated: verdict.unevaluated,
-    caps: verdict.caps,
-    dispositions: verdict.dispositions,
+    ...refusal,
+    envelope: { ...refusal.envelope, metadata: result.envelope.metadata },
   };
+}
+
+/**
+ * v2 contracts §9: what stdout carries when `--out` took the envelope — two
+ * lines that are one JSON object: whether the envelope is ok, its exit code
+ * and size, and where it is. A reader that parses stdout as JSON reads the
+ * pointer; one that reads lines reads the file's name on the second.
+ */
+export function outPointer(result: CommandResult, out: string, bytes: number): string {
+  const head = JSON.stringify({
+    ok: result.envelope.ok,
+    command: result.envelope.metadata.command,
+    exit_code: result.exit,
+    bytes,
+  });
+  return `${head.slice(0, -1)},\n${JSON.stringify({ out }).slice(1)}\n`;
 }
 
 /** docs/concepts.md §Findings and routing: `--limit`, `--rule`, `--path`, `--all`, read once. */
 export function capOptions(
   args: CommandArgs,
-): Pick<JudgeOptions, "limit" | "all" | "rule" | "path"> {
-  const out: Pick<JudgeOptions, "limit" | "all" | "rule" | "path"> = {};
+): Pick<TypeLawJudgeOptions, "limit" | "all" | "rule" | "path"> {
+  const out: Pick<TypeLawJudgeOptions, "limit" | "all" | "rule" | "path"> = {};
   const limit = args.flags["limit"];
   if (typeof limit === "string") {
     const parsed = Number.parseInt(limit, 10);

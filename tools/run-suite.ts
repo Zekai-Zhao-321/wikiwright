@@ -2,25 +2,37 @@
 // machine has cores. `bun test` runs its files one after another in a single
 // process, and most of this suite's time is spent waiting on the CLI processes
 // its tests spawn, so the files run side by side instead. They are independent:
-// every test writes under os.tmpdir(), and the node runner already runs the
-// same files in parallel. `bun run check` and `bun run test` run the suite
-// through this; `bun test ./<file>` still runs one file.
+// every test writes under os.tmpdir(). `bun run check` and `bun run test` run
+// the suite through this; `bun test ./<file>` still runs one file. It is the
+// bridge until `bun test --parallel` is proven on this suite, and is deleted
+// that day.
 //
 //   bun tools/run-suite.ts [file ...]
 //
 // With no file, the files are `packages/core/test/*.test.ts` and
-// `packages/cli/test/*.test.ts`, the set `bun run test:node` runs. The largest
-// start first, so the long files are not the last to begin. A file passes when
-// its process exits 0 and reports at least one test; the run exits 1 when any
+// `packages/cli/test/*.test.ts` and `test/*.test.ts`. The largest parallel
+// files start first; the episode follows those workers alone. Its baseline
+// hook and replay test each have a 30-second limit. A file passes when its
+// process exits 0 and reports at least one test; the run exits 1 when any
 // file does not, and prints that file's whole output.
+//
+// Everything runs under Bun, the one runtime the engine runs on: the test
+// files, and the CLI the tests spawn, whose stdout a test reads from a file
+// (packages/cli/test/fixtures/runtime.ts).
 import { spawn } from "node:child_process";
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync, realpathSync, statSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
-const TEST_DIRS = ["packages/core/test", "packages/cli/test"];
+const TEST_DIRS = ["packages/core/test", "packages/cli/test", "test"];
+const EPISODE = realpathSync(join(ROOT, "test/episode.test.ts"));
+
+/** The episode file runs after all parallel file workers. */
+function serialEpisode(file: string): boolean {
+  return realpathSync(isAbsolute(file) ? file : join(ROOT, file)) === EPISODE;
+}
 
 interface Outcome {
   file: string;
@@ -66,9 +78,8 @@ function testsOf(output: string): number {
 // case written against the documented budget holds under both.
 const TIMEOUT_MS = 20_000;
 
-// Under Bun the runner's own binary runs each file; under anything else, the
-// `bun` on PATH does, so the runner's test can drive it from the node runner.
-const BUN = process.versions["bun"] === undefined ? "bun" : process.execPath;
+// The runner's own Bun runs each file.
+const BUN = process.execPath;
 
 function runFile(file: string): Promise<Outcome> {
   return new Promise((resolve) => {
@@ -112,24 +123,28 @@ async function main(): Promise<number> {
   const files = (given.length > 0 ? given : suiteFiles()).sort(
     (a, b) => bytesOf(b) - bytesOf(a) || (a < b ? -1 : a > b ? 1 : 0),
   );
-  const queue = [...files];
+  const queue = files.filter((file) => !serialEpisode(file));
+  const tail = files.filter(serialEpisode);
   const outcomes: Outcome[] = [];
-  const worker = async (): Promise<void> => {
-    for (let file = queue.shift(); file !== undefined; file = queue.shift()) {
-      const outcome = await runFile(file);
-      outcomes.push(outcome);
-      if (outcome.ok) {
-        process.stdout.write(
-          `ok    ${String(outcome.tests).padStart(4)}  ${seconds(outcome.ms)}  ${file}\n`,
-        );
-      } else {
-        const why = outcome.tests === 0 && outcome.fail === 0 ? "ran no test" : "failed";
-        process.stdout.write(`\nFAIL  ${file} (${why})\n${outcome.output}\n`);
-      }
+  const record = (outcome: Outcome): void => {
+    outcomes.push(outcome);
+    if (outcome.ok) {
+      process.stdout.write(
+        `ok    ${String(outcome.tests).padStart(4)}  ${seconds(outcome.ms)}  ${outcome.file}\n`,
+      );
+    } else {
+      const why = outcome.tests === 0 && outcome.fail === 0 ? "ran no test" : "failed";
+      process.stdout.write(`\nFAIL  ${outcome.file} (${why})\n${outcome.output}\n`);
     }
   };
-  const jobs = Math.max(1, Math.min(availableParallelism(), files.length));
+  const worker = async (): Promise<void> => {
+    for (let file = queue.shift(); file !== undefined; file = queue.shift()) {
+      record(await runFile(file));
+    }
+  };
+  const jobs = Math.max(1, Math.min(availableParallelism(), queue.length));
   await Promise.all(Array.from({ length: jobs }, worker));
+  for (const file of tail) record(await runFile(file));
   const failed = outcomes.filter((o) => !o.ok);
   const pass = outcomes.reduce((n, o) => n + o.pass, 0);
   const fail = outcomes.reduce((n, o) => n + o.fail, 0);

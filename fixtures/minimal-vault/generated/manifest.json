@@ -1,0 +1,52 @@
+{
+  "schema": "wikiwright/manifest",
+  "totals": {
+    "pages": 3,
+    "edges": 5
+  },
+  "by_kind": {
+    "tagged": 5
+  },
+  "by_label": {},
+  "pages": [
+    {
+      "path": "wiki/test-execution/broken-case.md",
+      "type": "test-case",
+      "role": "procedure",
+      "ancestry": [],
+      "title": "Broken case",
+      "description": "Deliberately violating fixture page.",
+      "tags": [
+        "mystery",
+        "test-execution"
+      ],
+      "status": "active"
+    },
+    {
+      "path": "wiki/test-execution/warm-reset.md",
+      "type": "test-case",
+      "role": "procedure",
+      "ancestry": [],
+      "title": "Warm reset under load",
+      "description": "Verifies warm reset recovery while IO is saturated.",
+      "tags": [
+        "reset",
+        "test-execution"
+      ],
+      "status": "active"
+    },
+    {
+      "path": "wiki/test-execution/热重启.md",
+      "type": "test-case",
+      "role": "procedure",
+      "ancestry": [],
+      "title": "热重启恢复",
+      "description": "验证系统在负载下热重启后能够恢复。",
+      "tags": [
+        "reset",
+        "test-execution"
+      ],
+      "status": "active"
+    }
+  ]
+}

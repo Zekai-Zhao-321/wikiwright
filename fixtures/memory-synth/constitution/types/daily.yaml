@@ -1,0 +1,15 @@
+type: daily
+role: reference
+description: One day of diary capture.
+fragments: [dated-log, append-only]
+fields:
+  type: object
+  properties:
+    sensitivity: {}
+    cjk_name: {}
+    sources: {}
+sections:
+  list:
+    - { heading: Notes }
+    - { heading: Captured }
+    - { heading: Timeline, max: 1, grammar: entries }

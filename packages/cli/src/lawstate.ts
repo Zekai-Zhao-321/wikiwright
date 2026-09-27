@@ -1,0 +1,712 @@
+// v2 contracts §10 (four state constructors) · §5 (`before` availability) ·
+// §11 (the snapshot: the index and a revision by object ids, the working tree
+// by digest before and after, one retry, then state-changed-during-read).
+//
+// Each constructor answers "which bytes, under which law, against which
+// base?" and hands the answer to core's `judgeTypeLaw`:
+//   fsState        the working tree; no base (`check`, `rule try`).
+//   overlayState   drafts over the working tree; the base is the disk (`write`).
+//   indexState     the index; the base is HEAD (`gate`).
+//   revisionState  a revision's tree; no base (`rule try --base`).
+// The law travels with the pages: each state reads `config/engine.json`, the
+// constitution and the libraries from the same place as its pages (the
+// adapters in lawfiles.ts), so the content roots it walks are the ones its
+// own law declares. They replaced the old constructors (state.ts), which
+// left with the old verbs.
+//
+// A symbolic link or a submodule at, under or above a content root is read
+// by none of the four: the index and a revision hold a link as the text of
+// its target and a submodule as a commit id, and the working tree would read
+// through either, so the one rule all four can keep is to read through
+// none. Each reports what it did not read (`skipped`), and the judge reports
+// each as `path-skipped`: the working tree walks with lstat and descends into
+// no link and no directory holding `.git`; the index and a revision list
+// modes 120000 and 160000.
+import { type Dirent, lstatSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import {
+  codeUnitCompare,
+  contentDigest,
+  contentRootsOf,
+  isContentPath,
+  isVaultPath,
+  type JudgeState,
+  type LawSnapshot,
+  type PageRename,
+  pageMap,
+  type SkippedPath,
+  type SourceFacts,
+  type StagedChange,
+  sourceRootsOf,
+  touchesContentRoot,
+} from "@wikiwright/core";
+import {
+  GitInconsistentRead,
+  gitHasHead,
+  gitIndexEntries,
+  gitReadBlobBytes,
+  gitStagedChanges,
+  type IndexEntry,
+  inArgumentOrder,
+} from "./git.ts";
+import {
+  type GitLawEntry,
+  lawSnapshotOfEntries,
+  repositoryPlace,
+  revisionEntries,
+  workingTreeLawSnapshot,
+} from "./lawfiles.ts";
+import { readPageBytes } from "./vaultfiles.ts";
+
+/** §11: the working tree changed between two reads, twice; nothing consistent was read. */
+export class StateChangedDuringRead extends Error {
+  readonly code = "state-changed-during-read";
+  constructor(root: string) {
+    super(
+      `the working tree under "${root}" changed while it was read, twice in a row; nothing was judged — read again when no editor or process is writing to it`,
+    );
+    this.name = "StateChangedDuringRead";
+  }
+}
+
+/**
+ * The root a verb names is not a directory: nothing to read, which is no
+ * bundle rather than a tree that moved while it was read.
+ */
+export class RootNotFound extends Error {
+  readonly code = "bundle-not-found";
+  constructor(root: string) {
+    super(`there is no directory at "${root}", so there is no bundle to read`);
+    this.name = "RootNotFound";
+  }
+}
+
+/** A bundle-relative path from a repository-relative one, or undefined outside the bundle. */
+function inBundle(bundle: string, path: string): string | undefined {
+  if (bundle === "") return path;
+  return path.startsWith(`${bundle}/`) ? path.slice(bundle.length + 1) : undefined;
+}
+
+interface Capture {
+  law: LawSnapshot;
+  pages: ReadonlyMap<string, Uint8Array>;
+  skipped: SkippedPath[];
+  sources: SourceFacts;
+}
+
+function bySkippedPath(skipped: SkippedPath[]): SkippedPath[] {
+  const unique = new Map(skipped.map((s) => [s.path, s] as const));
+  return [...unique.values()].sort((a, b) => codeUnitCompare(a.path, b.path));
+}
+
+function sourceFactsOfEntries(
+  entries: readonly { path: string; mode: string }[],
+  bundle: string,
+  roots: readonly string[],
+): SourceFacts {
+  const files = new Set<string>();
+  const directories = new Set<string>();
+  const skipped: SkippedPath[] = [];
+  for (const entry of entries) {
+    const rel = inBundle(bundle, entry.path.normalize("NFC"));
+    if (rel === undefined || !touchesContentRoot(rel, roots)) continue;
+    const parts = rel.split("/");
+    for (let n = 1; n < parts.length; n += 1) directories.add(parts.slice(0, n).join("/"));
+    if (!regular(entry.mode)) {
+      skipped.push({ path: rel, kind: entry.mode === "120000" ? "symbolic-link" : "submodule" });
+      continue;
+    }
+    if (!roots.some((root) => rel.startsWith(`${root}/`))) continue;
+    files.add(rel);
+  }
+  return { files, directories, skipped: bySkippedPath(skipped) };
+}
+
+/** A metadata-only walk. No source file's bytes are opened or interpreted. */
+function walkSources(root: string, roots: readonly string[]): SourceFacts {
+  const files = new Set<string>();
+  const directories = new Set<string>();
+  const skipped: SkippedPath[] = [];
+  const walk = (disk: string, path: string): void => {
+    const entries = readdirSync(join(root, disk), { withFileTypes: true, encoding: "utf8" });
+    if (entries.some((entry) => entry.name === ".git")) {
+      skipped.push({ path, kind: "submodule" });
+      return;
+    }
+    directories.add(path);
+    for (const entry of entries) {
+      const childDisk = `${disk}/${entry.name}`;
+      const child = `${path}/${entry.name.normalize("NFC")}`;
+      if (entry.isSymbolicLink()) skipped.push({ path: child, kind: "symbolic-link" });
+      else if (entry.isDirectory()) walk(childDisk, child);
+      else if (entry.isFile()) files.add(child);
+    }
+  };
+  for (const sourceRoot of roots) {
+    const segments = sourceRoot.split("/");
+    let blocked = false;
+    for (let n = 1; n <= segments.length; n += 1) {
+      const prefix = segments.slice(0, n).join("/");
+      let stat: ReturnType<typeof lstatSync>;
+      try {
+        stat = lstatSync(join(root, prefix));
+      } catch {
+        blocked = true;
+        break;
+      }
+      if (stat.isSymbolicLink()) {
+        skipped.push({ path: prefix, kind: "symbolic-link" });
+        blocked = true;
+        break;
+      }
+      if (!stat.isDirectory()) {
+        blocked = true;
+        break;
+      }
+      const entries = readdirSync(join(root, prefix), { withFileTypes: true, encoding: "utf8" });
+      if (entries.some((entry) => entry.name === ".git")) {
+        skipped.push({ path: prefix, kind: "submodule" });
+        blocked = true;
+        break;
+      }
+      if (n < segments.length) directories.add(prefix);
+    }
+    if (!blocked) walk(sourceRoot, sourceRoot);
+  }
+  return { files, directories, skipped: bySkippedPath(skipped) };
+}
+
+/**
+ * The pages under the content roots and the links and submodules the walk
+ * does not enter, by lstat: a link is never followed, a directory holding
+ * `.git` never entered, and a content root is checked segment by segment,
+ * as git holds a link above one as a single entry. `disk` is the name as the
+ * directory lists it, `path` its NFC key.
+ */
+function walkContent(
+  root: string,
+  roots: readonly string[],
+): { pages: { path: string; disk: string }[]; skipped: SkippedPath[] } {
+  const pages: { path: string; disk: string }[] = [];
+  const skipped: SkippedPath[] = [];
+  const holdsGit = (entries: Dirent[]): boolean => entries.some((e) => e.name === ".git");
+  const walk = (disk: string, path: string): void => {
+    const entries = readdirSync(join(root, disk), { withFileTypes: true, encoding: "utf8" });
+    if (holdsGit(entries)) {
+      skipped.push({ path, kind: "submodule" });
+      return;
+    }
+    for (const entry of entries) {
+      const childDisk = `${disk}/${entry.name}`;
+      const child = `${path}/${entry.name.normalize("NFC")}`;
+      if (entry.isSymbolicLink()) {
+        if (isVaultPath(child)) skipped.push({ path: child, kind: "symbolic-link" });
+      } else if (entry.isDirectory()) walk(childDisk, child);
+      else if (entry.isFile() && isContentPath(child, roots))
+        pages.push({ path: child, disk: childDisk });
+    }
+  };
+  for (const contentRoot of roots) {
+    const segments = contentRoot.split("/");
+    let blocked = false;
+    for (let i = 1; i <= segments.length && !blocked; i += 1) {
+      const prefix = segments.slice(0, i).join("/");
+      let stat: ReturnType<typeof lstatSync> | undefined;
+      try {
+        stat = lstatSync(join(root, prefix));
+      } catch {
+        blocked = true; // No such directory: the root holds no page.
+        continue;
+      }
+      if (stat.isSymbolicLink()) {
+        skipped.push({ path: prefix, kind: "symbolic-link" });
+        blocked = true;
+      } else if (!stat.isDirectory()) blocked = true;
+      else if (i < segments.length) {
+        const entries = readdirSync(join(root, prefix), { withFileTypes: true, encoding: "utf8" });
+        if (holdsGit(entries)) {
+          skipped.push({ path: prefix, kind: "submodule" });
+          blocked = true;
+        }
+      }
+    }
+    if (!blocked) walk(contentRoot, contentRoot);
+  }
+  pages.sort((a, b) => codeUnitCompare(a.path, b.path));
+  return { pages, skipped: bySkippedPath(skipped) };
+}
+
+async function captureWorkingTree(root: string): Promise<Capture> {
+  const law = await workingTreeLawSnapshot(root);
+  const walked = walkContent(root, contentRootsOf(law));
+  const sources = walkSources(root, sourceRootsOf(law));
+  const pages: [string, Uint8Array][] = walked.pages.map((p) => [
+    p.path,
+    new Uint8Array(readPageBytes(root, p.disk)),
+  ]);
+  return { law, pages: pageMap(pages), skipped: walked.skipped, sources };
+}
+
+/** One digest over everything a capture read: the law's files, the pages and what it skipped. */
+function captureDigest(capture: Pick<JudgeState, "law" | "pages" | "skipped" | "sources">): string {
+  return contentDigest([
+    ...[...capture.law.files].map(([path, file]) => ({
+      path: `${file.link === true ? "link" : "law"}:${path}`,
+      bytes: file.bytes,
+    })),
+    ...[...capture.law.directories].map((path) => ({
+      path: `directory:${path}`,
+      bytes: new Uint8Array(),
+    })),
+    ...[...capture.pages].map(([path, bytes]) => ({ path: `page:${path}`, bytes })),
+    ...(capture.skipped ?? []).map((s) => ({
+      path: `${s.kind}:${s.path}`,
+      bytes: new Uint8Array(),
+    })),
+    ...[...(capture.sources?.files ?? [])].map((path) => ({
+      path: `source-file:${path}`,
+      bytes: new Uint8Array(),
+    })),
+    ...[...(capture.sources?.directories ?? [])].map((path) => ({
+      path: `source-directory:${path}`,
+      bytes: new Uint8Array(),
+    })),
+    ...(capture.sources?.skipped ?? []).map((s) => ({
+      path: `source-${s.kind}:${s.path}`,
+      bytes: new Uint8Array(),
+    })),
+    ...(capture.sources === undefined
+      ? [{ path: "source-unmeasured", bytes: new Uint8Array() }]
+      : []),
+  ]);
+}
+
+/** The accepted working tree, optionally excluding only this writer's staged temps. */
+export function workingTreeDigest(
+  state: JudgeState,
+  staged?: { paths: ReadonlySet<string>; before: SourceFacts | undefined },
+): string {
+  if (staged === undefined || state.sources === undefined) return captureDigest(state);
+  const files = new Set(state.sources.files);
+  for (const path of staged.paths) files.delete(path);
+  const directories = new Set(state.sources.directories);
+  for (const dir of directories) {
+    if (staged.before?.directories.has(dir)) continue;
+    if (![...staged.paths].some((path) => path.startsWith(`${dir}/`))) continue;
+    if ([...files].some((path) => path.startsWith(`${dir}/`))) continue;
+    if (state.sources.skipped.some((entry) => entry.path.startsWith(`${dir}/`))) continue;
+    directories.delete(dir);
+  }
+  return captureDigest({ ...state, sources: { ...state.sources, files, directories } });
+}
+
+/** A file or directory that left, or a link that came back on itself, between the listing and the read. */
+function vanished(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP";
+}
+
+async function tryCapture(root: string): Promise<Capture | undefined> {
+  try {
+    return await captureWorkingTree(root);
+  } catch (error) {
+    if (vanished(error)) return undefined;
+    throw error;
+  }
+}
+
+export interface CaptureOptions {
+  /**
+   * Runs between the two reads of each attempt. The seam a test changes the
+   * tree through while it is being read; nothing else passes it.
+   */
+  betweenReads?: (attempt: number) => void | Promise<void>;
+}
+
+/**
+ * §11: the working tree read twice and compared by digest; on a difference,
+ * once more; on a second difference, `state-changed-during-read`.
+ */
+async function consistentCapture(root: string, options: CaptureOptions): Promise<Capture> {
+  let isDirectory = false;
+  try {
+    isDirectory = statSync(root).isDirectory();
+  } catch {
+    // Absent, or unreadable as a path: refused below as no directory.
+  }
+  if (!isDirectory) throw new RootNotFound(root);
+  for (const attempt of [1, 2]) {
+    // A path that vanishes mid-read is a tree that changed: read again.
+    const first = await tryCapture(root);
+    await options.betweenReads?.(attempt);
+    const second = await tryCapture(root);
+    if (
+      first !== undefined &&
+      second !== undefined &&
+      captureDigest(first) === captureDigest(second)
+    )
+      return second;
+  }
+  throw new StateChangedDuringRead(root);
+}
+
+/** The working tree as it stands: its law and its pages, no base. */
+export async function fsState(root: string, options: CaptureOptions = {}): Promise<JudgeState> {
+  const { law, pages, skipped, sources } = await consistentCapture(root, options);
+  return { kind: "working-tree", law, pages, skipped, sources };
+}
+
+/** A draft page: a bundle-relative path and the bytes proposed for it. */
+export interface Draft {
+  path: string;
+  bytes: Uint8Array;
+}
+
+/** A page a batch moves: the disk's page at `from`, laid at `to`. */
+export interface Move {
+  from: string;
+  to: string;
+}
+
+/**
+ * Drafts over the working tree, judged together: the pages are the disk's
+ * with every draft in its place, and the base is the disk — a page's bytes on
+ * disk, `null` for a draft the disk does not hold. A move (`write`'s ops.json)
+ * takes the page away from `from`; the draft at `to` has the disk's bytes at
+ * `from` as its base, and the move is the state's rename. A draft outside the
+ * content roots is refused: it would be judged as a page nothing reads; so is
+ * a draft at or under a link or a submodule, which no state reads through.
+ */
+export function overlayFromState(
+  disk: JudgeState,
+  drafts: readonly Draft[],
+  moves: readonly Move[] = [],
+): JudgeState {
+  const roots = contentRootsOf(disk.law);
+  const pages = new Map(disk.pages);
+  const movedFrom = new Map<string, string>();
+  for (const move of moves) {
+    const from = move.from.normalize("NFC");
+    const to = move.to.normalize("NFC");
+    pages.delete(from);
+    movedFrom.set(to, from);
+  }
+  for (const draft of drafts) {
+    const path = draft.path.normalize("NFC");
+    if (!isContentPath(path, roots)) {
+      throw new Error(
+        `the draft "${draft.path}" is not a page under the content roots (${roots.join(", ")})`,
+      );
+    }
+    const behind = (disk.skipped ?? []).find(
+      (s) => path === s.path || path.startsWith(`${s.path}/`),
+    );
+    if (behind !== undefined) {
+      throw new Error(
+        `the draft "${draft.path}" is at or under ${behind.path}, a ${behind.kind === "symbolic-link" ? "symbolic link" : "submodule"} no state reads through`,
+      );
+    }
+    pages.set(path, draft.bytes);
+  }
+  const sourceRoots = sourceRootsOf(disk.law);
+  const sourceFiles = new Set(disk.sources?.files ?? []);
+  const sourceDirectories = new Set(disk.sources?.directories ?? []);
+  for (const move of moves) sourceFiles.delete(move.from.normalize("NFC"));
+  for (const path of pages.keys()) {
+    if (!sourceRoots.some((root) => path.startsWith(`${root}/`))) continue;
+    sourceFiles.add(path);
+    const parts = path.split("/");
+    for (let n = 1; n < parts.length; n += 1) sourceDirectories.add(parts.slice(0, n).join("/"));
+  }
+  const base = new Map<string, Uint8Array | null>();
+  for (const path of pages.keys()) {
+    const from = movedFrom.get(path);
+    base.set(path, disk.pages.get(from ?? path) ?? null);
+  }
+  const renames: PageRename[] = [...movedFrom]
+    .map(([to, from]) => ({ from, to }))
+    .sort((a, b) => codeUnitCompare(a.to, b.to));
+  const state: JudgeState = {
+    kind: "overlay",
+    law: disk.law,
+    pages: pageMap(pages),
+    base,
+    skipped: disk.skipped ?? [],
+    ...(disk.sources === undefined
+      ? {}
+      : {
+          sources: {
+            files: sourceFiles,
+            directories: sourceDirectories,
+            skipped: disk.sources.skipped,
+          },
+        }),
+  };
+  if (renames.length > 0) state.renames = renames;
+  return state;
+}
+
+/** Capture disk once, then lay drafts over exactly the law and pages it returned. */
+export async function overlayState(
+  root: string,
+  drafts: readonly Draft[],
+  options: CaptureOptions & { moves?: readonly Move[] } = {},
+): Promise<JudgeState> {
+  return overlayFromState(await fsState(root, options), drafts, options.moves ?? []);
+}
+
+/** A tree entry that is a page: a regular file, not a link (120000) or a submodule (160000). */
+function regular(mode: string): boolean {
+  return mode !== "120000" && mode !== "160000";
+}
+
+/** The links and submodules a listing holds at, under or above a content root. */
+function skippedEntries(
+  entries: readonly { path: string; mode: string }[],
+  bundle: string,
+  roots: readonly string[],
+): SkippedPath[] {
+  const out: SkippedPath[] = [];
+  for (const entry of entries) {
+    if (regular(entry.mode)) continue;
+    const rel = inBundle(bundle, entry.path.normalize("NFC"));
+    if (rel === undefined || !isVaultPath(rel) || !touchesContentRoot(rel, roots)) continue;
+    out.push({ path: rel, kind: entry.mode === "120000" ? "symbolic-link" : "submodule" });
+  }
+  return bySkippedPath(out);
+}
+
+/** The staged-diff statuses that name a page at another path, or none, in HEAD. */
+function headPathOf(change: {
+  status: string;
+  path: string;
+  oldPath?: string;
+}): string | undefined {
+  if (change.status === "A" || change.status === "C") return undefined;
+  if (change.status === "R") return change.oldPath;
+  return change.path;
+}
+
+/**
+ * One read of the index, and what the gate reads beside its state: the
+ * repository's top level and the bundle's place in it, the listing, the
+ * staged diff and whether HEAD exists. The gate's law diff, change-scoping
+ * and generated files read these rather than asking git again.
+ */
+export interface IndexRead {
+  state: JudgeState;
+  top: string;
+  bundle: string;
+  entries: readonly IndexEntry[];
+  headEntries: readonly GitLawEntry[];
+  changes: readonly StagedChange[];
+  hasHead: boolean;
+}
+
+/**
+ * The index, with HEAD as its base (§5): the pages and the law as they would
+ * be committed, one listing and one batch read by blob id. A page the commit
+ * does not change has its own bytes as its base; a changed page has HEAD's
+ * bytes at its path, or at the path it was renamed from, or `null` when new.
+ * With no HEAD the base is empty: every page is new.
+ */
+export async function indexState(root: string): Promise<JudgeState> {
+  return (await readIndex(root)).state;
+}
+
+/** `indexState`, with the reads it was made from. */
+export async function readIndex(root: string): Promise<IndexRead> {
+  let isDirectory = false;
+  try {
+    isDirectory = statSync(root).isDirectory();
+  } catch {
+    // An absent or unreadable path is no bundle, before any git child runs.
+  }
+  if (!isDirectory) throw new RootNotFound(root);
+  const { top, bundle } = await repositoryPlace(root);
+  const [listed, hasHead] = await inArgumentOrder([gitIndexEntries(top), gitHasHead(top)]);
+  const unmerged = listed.find((e) => e.stage !== 0);
+  if (unmerged !== undefined) {
+    throw new Error(`the index holds an unmerged path, "${unmerged.path}"; resolve it first`);
+  }
+  const entries: GitLawEntry[] = listed.map((e) => ({
+    path: e.path.normalize("NFC"),
+    object: e.blob,
+    mode: e.mode,
+  }));
+  const law = await lawSnapshotOfEntries(top, bundle, entries);
+  const roots = contentRootsOf(law);
+  const sourceRoots = sourceRootsOf(law);
+  const content = entries.filter((e) => {
+    const rel = inBundle(bundle, e.path);
+    return rel !== undefined && regular(e.mode) && isContentPath(rel, roots);
+  });
+  // `diff --cached` also names every staged path before the first commit.
+  // Read it then so a well-formed but shortened index listing is refused.
+  const changes = await gitStagedChanges(top);
+  const headEntries = hasHead ? await revisionEntries(top, "HEAD") : [];
+  const headByPath = new Map(headEntries.map((e) => [e.path.normalize("NFC"), e] as const));
+  // The two answers describe one index. A path the staged diff says is in it
+  // — added, modified, retyped, or the new name of a rename or copy — that
+  // the listing does not hold means one of them is not whole, and a listing
+  // cut at a record boundary is well formed: judged, it would be fewer pages.
+  const listedPaths = new Set(entries.map((e) => e.path));
+  for (const change of changes) {
+    if (!IN_INDEX.has(change.status)) continue;
+    const path = change.path.normalize("NFC");
+    if (!listedPaths.has(path)) {
+      throw new GitInconsistentRead(
+        ["diff --cached --name-status -z -M --relative", "ls-files -s -z"],
+        `the staged diff names "${path}" (${change.status}) and the index listing does not hold it`,
+      );
+    }
+  }
+  for (const change of changes) {
+    const prior = headPathOf(change);
+    if (prior !== undefined && !headByPath.has(prior.normalize("NFC"))) {
+      throw new GitInconsistentRead(
+        ["diff --cached --name-status -z -M --relative", "ls-tree -r -z --full-tree HEAD"],
+        `the staged diff names "${prior}" as a base (${change.status}) and HEAD's listing does not hold it`,
+      );
+    }
+  }
+  // The reverse check catches a diff cut at a complete status/path boundary:
+  // its answer still ends in NUL and every path it does name is in the
+  // index, but an omitted changed page would be scoped out of the gate.
+  const indexByPath = new Map(entries.map((e) => [e.path, e] as const));
+  const diffPaths = new Set(
+    changes
+      .flatMap((change) =>
+        [change.path, change.oldPath].filter((p): p is string => p !== undefined),
+      )
+      .map((path) => path.normalize("NFC")),
+  );
+  for (const path of new Set([...indexByPath.keys(), ...headByPath.keys()])) {
+    const indexed = indexByPath.get(path);
+    const head = headByPath.get(path);
+    if (indexed?.object === head?.object && indexed?.mode === head?.mode) continue;
+    if (!diffPaths.has(path)) {
+      throw new GitInconsistentRead(
+        [
+          "ls-files -s -z",
+          "ls-tree -r -z --full-tree HEAD",
+          "diff --cached --name-status -z -M --relative",
+        ],
+        `"${path}" differs between HEAD and the index but the staged diff does not name it`,
+      );
+    }
+  }
+  const changeOf = new Map(changes.map((c) => [c.path.normalize("NFC"), c] as const));
+  // A page the commit deletes: its HEAD bytes, so the base's names hold it.
+  const deleted: [string, string][] = [];
+  for (const change of changes) {
+    if (change.status !== "D") continue;
+    const path = change.path.normalize("NFC");
+    const rel = inBundle(bundle, path);
+    if (rel === undefined || !isContentPath(rel, roots)) continue;
+    deleted.push([rel, path]);
+  }
+  const headObject = (path: string): string | undefined => {
+    const entry = headByPath.get(path.normalize("NFC"));
+    return entry !== undefined && regular(entry.mode) ? entry.object : undefined;
+  };
+  const blobs = await gitReadBlobBytes(top, [
+    ...content.map((e) => e.object),
+    ...content
+      .map((e) => changeOf.get(e.path))
+      .map((change) => (change === undefined ? undefined : headPathOf(change)))
+      .map((path) => (path === undefined ? undefined : headObject(path)))
+      .filter((blob): blob is string => blob !== undefined),
+    ...deleted
+      .map(([, path]) => headObject(path))
+      .filter((blob): blob is string => blob !== undefined),
+  ]);
+  const bytesOf = (blob: string, path: string): Uint8Array => {
+    const bytes = blobs.get(blob);
+    if (bytes === undefined) throw new Error(`git did not return blob ${blob} for "${path}"`);
+    return new Uint8Array(bytes);
+  };
+  const pages: [string, Uint8Array][] = [];
+  const base = new Map<string, Uint8Array | null>();
+  for (const entry of content) {
+    const rel = inBundle(bundle, entry.path) ?? entry.path;
+    const bytes = bytesOf(entry.object, entry.path);
+    pages.push([rel, bytes]);
+    if (!hasHead) {
+      base.set(rel, null);
+      continue;
+    }
+    const change = changeOf.get(entry.path);
+    if (change === undefined) {
+      base.set(rel, bytes);
+      continue;
+    }
+    const head = headPathOf(change);
+    if (head === undefined) {
+      base.set(rel, null);
+    } else {
+      const blob = headObject(head);
+      base.set(rel, blob === undefined ? null : bytesOf(blob, head));
+    }
+  }
+  const renames: PageRename[] = changes
+    .filter((c) => c.status === "R" && c.oldPath !== undefined)
+    .map((c) => ({
+      from: inBundle(bundle, (c.oldPath ?? "").normalize("NFC")),
+      to: inBundle(bundle, c.path.normalize("NFC")),
+    }))
+    .filter((r): r is PageRename => r.from !== undefined && r.to !== undefined)
+    .filter((r) => isContentPath(r.to, roots))
+    .sort((a, b) => codeUnitCompare(a.to, b.to));
+  const skipped = skippedEntries(entries, bundle, roots);
+  const state: JudgeState = {
+    kind: "index",
+    law,
+    pages: pageMap(pages),
+    base,
+    renames,
+    skipped,
+    sources: sourceFactsOfEntries(entries, bundle, sourceRoots),
+    baseSources: sourceFactsOfEntries(headEntries, bundle, sourceRoots),
+  };
+  const removed = new Map<string, Uint8Array>();
+  for (const [rel, path] of deleted) {
+    const blob = headObject(path);
+    if (blob !== undefined) removed.set(rel, bytesOf(blob, path));
+  }
+  if (removed.size > 0) state.removed = pageMap(removed);
+  return { state, top, bundle, entries: listed, headEntries, changes, hasHead };
+}
+
+/** The staged-diff statuses whose path the index holds. */
+const IN_INDEX: ReadonlySet<string> = new Set(["A", "M", "T", "R", "C"]);
+
+/** A revision's tree, its law and its pages, with no base (§10: `rule try --base`). */
+export async function revisionState(root: string, rev: string): Promise<JudgeState> {
+  const { top, bundle } = await repositoryPlace(root);
+  const listing = await revisionEntries(top, rev);
+  const law = await lawSnapshotOfEntries(top, bundle, listing);
+  const roots = contentRootsOf(law);
+  const sourceRoots = sourceRootsOf(law);
+  const content = listing.filter((e) => {
+    const rel = inBundle(bundle, e.path);
+    return rel !== undefined && regular(e.mode) && isContentPath(rel, roots);
+  });
+  const blobs = await gitReadBlobBytes(
+    top,
+    content.map((e) => e.object),
+  );
+  const pages: [string, Uint8Array][] = content.map((e) => {
+    const bytes = blobs.get(e.object);
+    if (bytes === undefined) throw new Error(`git did not return blob ${e.object} for "${e.path}"`);
+    return [inBundle(bundle, e.path) ?? e.path, new Uint8Array(bytes)];
+  });
+  const skipped = skippedEntries(listing, bundle, roots);
+  return {
+    kind: "revision",
+    law,
+    pages: pageMap(pages),
+    skipped,
+    sources: sourceFactsOfEntries(listing, bundle, sourceRoots),
+  };
+}

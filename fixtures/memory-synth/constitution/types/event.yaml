@@ -1,0 +1,14 @@
+type: event
+extends: entity
+description: A bounded happening with dates.
+sections:
+  list:
+    - heading: Facts
+      grammar: claims
+      vocabulary: categories
+      provenance: optional
+      closed: refused
+    - { heading: Relations, min: 1, grammar: relations }
+    - { heading: Timeline, max: 1, grammar: entries }
+    - { heading: Notes, max: 1 }
+    - { heading: History, max: 1, grammar: entries }

@@ -1,0 +1,12 @@
+type: entity
+role: concept
+description: Abstract base for every page standing for one thing in the owner's life.
+use_when: "Never directly; author a concrete descendant."
+avoid_when: Diary entries and pointer records.
+fragments: [claim-classes]
+fields:
+  type: object
+  properties:
+    sensitivity: {}
+    cjk_name: {}
+    sources: {}
