@@ -4,7 +4,7 @@ title: "Testing the engine"
 description: "Bun gate, synthetic corpora, temporary fixtures and end-to-end CLI probes."
 tags: [repo]
 pin:
-  commit: 2b26747f64025e102df6da62bf22b57ac34cb14d
+  commit: f1dc7deae8b129b74e9db2eb37da44b927ae22f6
   origin: .
   covers: ["tools/run-suite.ts", "packages/cli/test/fixtures/garden-cli.ts", "packages/cli/test/fixture-verdicts.test.ts", "packages/cli/test/source-policy.test.ts", "test/episode.test.ts", "scripts/release-matrix.sh"]
 ---
@@ -13,7 +13,7 @@ pin:
 
 ## Running tests
 
-Bun run check runs Biome, the build, test-project typecheck and the whole suite. The runner starts one Bun test process per file, runs parallel file workers, then runs the complete two-run episode alone under its unchanged 30-second test limit.
+Bun run check runs Biome, the build, test-project typecheck and the whole suite. The runner starts one Bun test process per file, runs parallel file workers, then runs the complete two-run episode alone. Its baseline hook and replay test each have a 30-second limit, allowing up to 60 seconds across both complete workflows.
 
 Current source at this pin: `tools/run-suite.ts`, `packages/cli/test/fixtures/garden-cli.ts`, `packages/cli/test/fixture-verdicts.test.ts`, `packages/cli/test/source-policy.test.ts`, `test/episode.test.ts`, `scripts/release-matrix.sh`.
 

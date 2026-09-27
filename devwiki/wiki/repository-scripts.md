@@ -4,7 +4,7 @@ title: "Repository scripts"
 description: "Build, gate, generator and release commands for this repository."
 tags: [repo]
 pin:
-  commit: 2b26747f64025e102df6da62bf22b57ac34cb14d
+  commit: f1dc7deae8b129b74e9db2eb37da44b927ae22f6
   origin: .
   covers: ["package.json", "tools/run-suite.ts", "tools/write-build-info.ts", "tools/render-playbook.ts", "docs/render-cli.ts", "scripts/release-matrix.sh"]
 ---
