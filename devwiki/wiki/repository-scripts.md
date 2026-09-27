@@ -4,7 +4,7 @@ title: "Repository scripts"
 description: "Build, gate, generator and release commands for this repository."
 tags: [repo]
 pin:
-  commit: 179fb9f6edc0eec03b113c33bd5c2c0648231ff2
+  commit: 2b26747f64025e102df6da62bf22b57ac34cb14d
   origin: .
   covers: ["package.json", "tools/run-suite.ts", "tools/write-build-info.ts", "tools/render-playbook.ts", "docs/render-cli.ts", "scripts/release-matrix.sh"]
 ---
@@ -13,7 +13,7 @@ pin:
 
 ## Reference
 
-Bun run check executes formatting, build, test typecheck and the whole suite. The run-suite tool starts one Bun test process per file and reports exact pass, fail and file counts.
+Bun run check executes formatting, build, test typecheck and the whole suite. The run-suite tool starts one Bun test process per file, runs the complete episode after parallel workers, and reports exact pass, fail and file counts.
 
 Current source at this pin: `package.json`, `tools/run-suite.ts`, `tools/write-build-info.ts`, `tools/render-playbook.ts`, `docs/render-cli.ts`, `scripts/release-matrix.sh`.
 
