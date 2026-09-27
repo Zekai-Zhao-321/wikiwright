@@ -11,10 +11,10 @@
 //
 // With no file, the files are `packages/core/test/*.test.ts` and
 // `packages/cli/test/*.test.ts` and `test/*.test.ts`. The largest parallel
-// files start first; the complete two-run episode follows those workers alone
-// so its unchanged test budget measures that episode. A file passes when its process exits 0 and
-// reports at least one test; the run exits 1 when any file does not, and
-// prints that file's whole output.
+// files start first; the episode follows those workers alone. Its baseline
+// hook and replay test each have a 30-second limit. A file passes when its
+// process exits 0 and reports at least one test; the run exits 1 when any
+// file does not, and prints that file's whole output.
 //
 // Everything runs under Bun, the one runtime the engine runs on: the test
 // files, and the CLI the tests spawn, whose stdout a test reads from a file
@@ -29,7 +29,7 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const TEST_DIRS = ["packages/core/test", "packages/cli/test", "test"];
 const EPISODE = realpathSync(join(ROOT, "test/episode.test.ts"));
 
-/** The complete two-run correction episode keeps its own wall-clock budget. */
+/** The episode file runs after all parallel file workers. */
 function serialEpisode(file: string): boolean {
   return realpathSync(isAbsolute(file) ? file : join(ROOT, file)) === EPISODE;
 }

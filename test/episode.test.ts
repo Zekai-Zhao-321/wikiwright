@@ -1,6 +1,6 @@
 // v2 contracts §12 step 7: a synthetic gardening episode through the built
 // CLI and a real git pre-commit hook. Every file the test writes is temporary.
-import { describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -271,7 +271,12 @@ function episode(): Record<string, unknown> {
 }
 
 describe("the first v2 delivery episode", () => {
+  let baseline: ReturnType<typeof episode>;
+  beforeAll(() => {
+    baseline = episode();
+  }, 30_000);
+
   it("refuses recurrence, exposes changed evidence, and is byte-reproducible twice", () => {
-    expect(episode()).toEqual(episode());
+    expect(episode()).toEqual(baseline);
   }, 30_000);
 });
