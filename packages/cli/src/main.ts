@@ -1,8 +1,10 @@
 #!/usr/bin/env bun
 // docs/cli.md §The envelope (stdout = one envelope; stderr = UX; parseArgs
 // strict under the command registry; generated help) · JSON-only v1.
+import { createHash } from "node:crypto";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
+import { setSha256Provider } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { ReplacementTargetRefused, replaceFile } from "./atomicwrite.ts";
 import { COMMANDS } from "./commands.ts";
@@ -23,6 +25,11 @@ import {
 } from "./git.ts";
 import { LinkedOutsideVault } from "./paths.ts";
 import { type CommandSpec, commandSchema, flagsOf, GLOBAL_FLAGS, usageOf } from "./spec.ts";
+
+// The kernel hashes with whatever the shell installs; node:crypto's sha256 is
+// the same function as the vendored one (core's hash test is the oracle) and
+// runs native. Installed before any verb runs, so every digest goes through it.
+setSha256Provider((bytes) => createHash("sha256").update(bytes).digest("hex"));
 
 /** Where an envelope goes: stdout, or the file `--out` names. */
 interface Sink {

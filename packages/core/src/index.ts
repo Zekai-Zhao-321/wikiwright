@@ -15,6 +15,8 @@ export {
   parseCatFileBatchCheck,
   parseNameStatusZ,
 } from "./gitplan/index.ts";
+export type { Sha256Provider } from "./hash/index.ts";
+export { setSha256Provider, sha256HexOfBytes, sha256HexOfBytesVendored } from "./hash/index.ts";
 export { codeUnitCompare, foldCase, normalizeIdentity } from "./identity/index.ts";
 export * from "./law/index.ts";
 export { basenameOf } from "./names/basename.ts";
