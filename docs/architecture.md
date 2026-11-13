@@ -44,6 +44,7 @@ packages/cli/src/
   lawstate.ts  v2: the four states judgeTypeLaw is handed (working tree, drafts over the disk, the index over HEAD, a revision)
   writer.ts    landBatch: stage every page, then rename and remove moved-from paths
   atomicwrite.ts   the one staged replace every non-page write lands through
+  pagecache.ts   page reads kept between runs under the user's cache directory, keyed on bytes, law and build, never inside a vault
   verbs/<name>.ts   one CommandSpec per verb of the command table, over the type-document law
   typelaw.ts   v2: the law a state carries loaded or refused, the engine range, the bundle block
   generated.ts v2: generated/ — the brief and the kernel's four files, rendered, compared and written

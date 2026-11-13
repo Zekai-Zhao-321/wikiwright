@@ -19,9 +19,15 @@
 // Everything runs under Bun, the one runtime the engine runs on: the test
 // files, and the CLI the tests spawn, whose stdout a test reads from a file
 // (packages/cli/test/fixtures/runtime.ts).
+//
+// The CLI keeps page reads across invocations (packages/cli/src/pagecache.ts).
+// The runner gives every file one fresh cache directory, removed at the end,
+// so the suite runs with the cache on, shared by files side by side, and
+// leaves nothing in the user's cache directory. A caller's own
+// `WIKIWRIGHT_CACHE_DIR` or `WIKIWRIGHT_NO_CACHE` is kept.
 import { spawn } from "node:child_process";
-import { readdirSync, realpathSync, statSync } from "node:fs";
-import { availableParallelism } from "node:os";
+import { mkdtempSync, readdirSync, realpathSync, rmSync, statSync } from "node:fs";
+import { availableParallelism, tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -81,6 +87,13 @@ const TIMEOUT_MS = 20_000;
 // The runner's own Bun runs each file.
 const BUN = process.execPath;
 
+const OWN_CACHE =
+  process.env["WIKIWRIGHT_CACHE_DIR"] === undefined
+    ? mkdtempSync(join(tmpdir(), "wikiwright-suite-cache-"))
+    : undefined;
+const ENV: NodeJS.ProcessEnv =
+  OWN_CACHE === undefined ? process.env : { ...process.env, WIKIWRIGHT_CACHE_DIR: OWN_CACHE };
+
 function runFile(file: string): Promise<Outcome> {
   return new Promise((resolve) => {
     const start = performance.now();
@@ -89,7 +102,7 @@ function runFile(file: string): Promise<Outcome> {
     const target = isAbsolute(file) ? file : `./${file}`;
     const child = spawn(BUN, ["test", "--timeout", String(TIMEOUT_MS), target], {
       cwd: ROOT,
-      env: process.env,
+      env: ENV,
       stdio: ["ignore", "pipe", "pipe"],
     });
     const chunks: Buffer[] = [];
@@ -162,4 +175,8 @@ async function main(): Promise<number> {
   return 0;
 }
 
-process.exitCode = await main();
+try {
+  process.exitCode = await main();
+} finally {
+  if (OWN_CACHE !== undefined) rmSync(OWN_CACHE, { recursive: true, force: true });
+}

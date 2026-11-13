@@ -4,9 +4,10 @@
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
-import { setSha256Provider } from "@wikiwright/core";
+import { setPageReadCache, setSha256Provider } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { ReplacementTargetRefused, replaceFile } from "./atomicwrite.ts";
+import { readBuildInfo } from "./buildinfo.ts";
 import { COMMANDS } from "./commands.ts";
 import {
   type CommandResult,
@@ -23,6 +24,7 @@ import {
   GitTimedOut,
   gitTimeoutSetting,
 } from "./git.ts";
+import { openPageStore, type PageStore } from "./pagecache.ts";
 import { LinkedOutsideVault } from "./paths.ts";
 import { type CommandSpec, commandSchema, flagsOf, GLOBAL_FLAGS, usageOf } from "./spec.ts";
 
@@ -372,6 +374,31 @@ function rootOf(rest: readonly string[]): string {
   return ".";
 }
 
+/**
+ * The store of earlier page reads for the bundle the invocation names
+ * (`packages/cli/src/pagecache.ts`), installed for the verb. A store that
+ * cannot be opened is no store: the verb reads every page, as it would.
+ */
+function pageStore(root: string): PageStore | undefined {
+  try {
+    const store = openPageStore(bundleHolding(root) ?? realPathOf(root), readBuildInfo()?.code);
+    setPageReadCache(store);
+    return store;
+  } catch {
+    return undefined;
+  }
+}
+
+/** After the envelope is out: what the verb read anew is kept; a failure to keep it changes nothing. */
+function keepPageReads(store: PageStore | undefined): void {
+  setPageReadCache(undefined);
+  try {
+    store?.flush();
+  } catch {
+    // The cache is derived; the next invocation reads again.
+  }
+}
+
 const argv = process.argv.slice(2);
 const commandName = argv[0];
 if (commandName === undefined || commandName === "help" || commandName === "--help") {
@@ -408,6 +435,10 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
       );
     } else if (sink.wantsHelp && sink.wantsJson) emit(ok(spec.name, commandSchema(spec)), sink);
     else if (sink.wantsHelp) emit(commandHelp(spec), sink);
-    else emit(await runCommand(spec, rest, COMMANDS), sink);
+    else {
+      const store = pageStore(invocationRoot);
+      emit(await runCommand(spec, rest, COMMANDS), sink);
+      keepPageReads(store);
+    }
   }
 }

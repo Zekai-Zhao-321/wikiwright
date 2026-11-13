@@ -641,6 +641,8 @@ const DIRECT_WRITERS: Readonly<Record<string, string>> = {
     "`check --write`: the generated files under generated/, through the staged replace — one generator, byte-reproducible (v2 contracts §9.1)",
   "main.ts":
     "the file `--out` names, which receives the whole envelope through the staged replace: a destination the caller chose, never a page (v2 contracts §9)",
+  "pagecache.ts":
+    "the kept page reads: a pack file under the user's cache directory, temp-then-rename, never a vault path (docs/roadmap.md)",
   "stdoutfile.ts":
     "the file a git child writes its stdout to: created exclusively under os.tmpdir(), removed once read, never a vault path (docs/roadmap.md)",
   "writer.ts": "THE Writer: every content page, temp-then-rename",

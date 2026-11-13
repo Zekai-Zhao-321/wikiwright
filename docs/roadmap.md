@@ -149,14 +149,23 @@ replaces each generated file atomically but can leave a mix across files.
 The next generation converges artifacts; a partially landed write batch
 requires review. A transaction across verbs is not implemented.
 
-### Each run reads its corpus again
+### Each run reads its corpus again, and parses only what changed
 
-There is no persistent parse cache or daemon. `check`, `gate` and `read`
-reuse a parsed page within one invocation, but a new invocation reads
-again. `read` by name may parse every page to resolve it. This keeps Git
-and disk as the only durable state and costs more as a corpus grows.
-A caller that needs a warm parse can hold the pure core in its own
-long-lived process; a cache inside this binary is not planned.
+Every invocation reads and hashes every page it judges; there is no
+daemon, and Git and disk remain the only state a verdict comes from. What
+an invocation keeps is the parse: a page read is a function of its path,
+its bytes, the law and the engine, and the CLI keeps those reads in a
+local pack keyed on all four (`packages/cli/src/pagecache.ts`), so a page
+whose bytes did not change is not parsed again. Relation targets are
+resolved against the current tree on every run. The pack is derived: it
+lives outside the bundle, under `WIKIWRIGHT_CACHE_DIR` or the user's cache
+directory, is replaced whole, reads as empty when it does not verify, and
+can be deleted at any time. `WIKIWRIGHT_NO_CACHE=1` turns it off.
+
+Reading still costs one pass over the tree (two when the tree must be
+proved still between reads), and a law change or a new engine build parses
+every page once again. Keeping page bytes themselves across runs, so that
+an unchanged page is not even opened, is not implemented.
 
 The static CEL bound counts comprehension iterations, not the linear
 work of `in`, `join`, `contains`, or `matches` inside one iteration.
