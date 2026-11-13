@@ -1,12 +1,23 @@
 // docs/roadmap.md §Each run reads its corpus again, and parses only what
-// changed: the kept page reads (packages/cli/src/pagecache.ts) may never
-// change a verdict, so every envelope here is compared whole with the one an
-// invocation that keeps nothing returns.
+// changed: the kept page reads (packages/cli/src/pagecache.ts) and the second
+// read of a capture that takes a settled page's bytes from the first
+// (lawstate.ts). Neither may change a verdict: every envelope here is compared
+// whole with the one an invocation that keeps nothing returns.
 import { afterAll, describe, expect, it } from "bun:test";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  lstatSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fsState } from "../src/lawstate.ts";
 import { cacheRoot } from "../src/pagecache.ts";
+import { stampOf } from "../src/vaultfiles.ts";
 import { cleanBundles, cli, gardenBundle } from "./fixtures/garden-cli.ts";
 
 const made: string[] = [];
@@ -102,5 +113,39 @@ describe("kept page reads never change a verdict", () => {
     expect(packs(cache)).toEqual([]);
     expect(cacheRoot({ WIKIWRIGHT_CACHE_DIR: cache, WIKIWRIGHT_NO_CACHE: "1" })).toBeUndefined();
     expect(cacheRoot({ WIKIWRIGHT_CACHE_DIR: cache, WIKIWRIGHT_NO_CACHE: "0" })).toBe(cache);
+  }, 240_000);
+});
+
+describe("the second read of a capture", () => {
+  const HOUR_AGO = new Date(Date.now() - 3_600_000);
+
+  it("a file changed within the settle window has no stamp, so it is always read again", () => {
+    const dir = gardenBundle();
+    const page = join(dir, "wiki", "Basil.md");
+    const now = BigInt(Date.now()) * 1_000_000n;
+    expect(stampOf(lstatSync(page, { bigint: true }), now)).toBeUndefined();
+    utimesSync(page, HOUR_AGO, HOUR_AGO);
+    expect(stampOf(lstatSync(page, { bigint: true }), now + 3_000_000_000n)).toMatch(/^\d+:/u);
+  });
+
+  it("a settled page rewritten to the same size and time between the reads is read again", async () => {
+    const dir = gardenBundle();
+    const page = join(dir, "wiki", "Basil.md");
+    const before = readFileSync(page, "utf8");
+    const after = before.replace("thirty degrees", "eighty degrees");
+    utimesSync(page, HOUR_AGO, HOUR_AGO);
+    // Let the change time the backdating set fall outside the settle window.
+    await new Promise((done) => setTimeout(done, 2_100));
+    let rewrites = 0;
+    const state = await fsState(dir, {
+      betweenReads: (attempt) => {
+        if (attempt !== 1) return;
+        writeFileSync(page, after);
+        utimesSync(page, HOUR_AGO, HOUR_AGO);
+        rewrites += 1;
+      },
+    });
+    expect(rewrites).toBe(1);
+    expect(new TextDecoder().decode(state.pages.get("wiki/Basil.md"))).toBe(after);
   }, 240_000);
 });

@@ -162,10 +162,12 @@ lives outside the bundle, under `WIKIWRIGHT_CACHE_DIR` or the user's cache
 directory, is replaced whole, reads as empty when it does not verify, and
 can be deleted at any time. `WIKIWRIGHT_NO_CACHE=1` turns it off.
 
-Reading still costs one pass over the tree (two when the tree must be
-proved still between reads), and a law change or a new engine build parses
-every page once again. Keeping page bytes themselves across runs, so that
-an unchanged page is not even opened, is not implemented.
+Reading still costs one pass over the tree. The working tree is proved
+still by a second pass, which reopens only a page whose size, times or file
+identity moved, or that changed in the last two seconds. A law change or a
+new engine build parses every page once again. Keeping page bytes
+themselves across runs, so that an unchanged page is not even opened, is
+not implemented.
 
 The static CEL bound counts comprehension iterations, not the linear
 work of `in`, `join`, `contains`, or `matches` inside one iteration.

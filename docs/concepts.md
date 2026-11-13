@@ -133,7 +133,9 @@ The same `judgeTypeLaw(state, law)` judges:
 The law comes from the same state as its pages. A staged page is judged
 under staged type and library documents, not under whatever happens to be
 on disk. A working-tree capture reads twice and refuses a changing tree
-after one retry. Symbolic links and submodules are reported as skipped
+after one retry. The second read keeps a page's first bytes only when its
+size, times, and file identity have not moved and it was last changed more
+than two seconds earlier. Symbolic links and submodules are reported as skipped
 rather than followed into content or law.
 
 **Findings** carry a rule id, severity, path, location, message, details,
