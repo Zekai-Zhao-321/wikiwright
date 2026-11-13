@@ -4,10 +4,10 @@ title: Repository layout
 description: "Current file-to-purpose map for the v2 engine repository."
 tags: [repo]
 pin:
-  commit: f1dc7deae8b129b74e9db2eb37da44b927ae22f6
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
-  covers: ["packages/core/src/index.ts", "packages/core/src/verdict/sourcepaths.ts", "packages/cli/src/main.ts", "libraries/kit-code/types/subsystem.yaml", "libraries/source-kit/types/observation.yaml", "devwiki/config/engine.json", "fixtures/handbooks/orchard/config/engine.json", "fixtures/source-policy/config/engine.json", "tools/run-suite.ts", "test/episode.test.ts", "docs/architecture.md", "AGENTS.md"]
-updated: 2026-09-26
+  covers: ["packages/core/src/index.ts", "packages/core/src/verdict/sourcepaths.ts", "packages/cli/src/main.ts", "packages/cli/src/pagecache.ts", "libraries/kit-code/types/subsystem.yaml", "libraries/source-kit/types/observation.yaml", "devwiki/config/engine.json", "fixtures/handbooks/orchard/config/engine.json", "fixtures/source-policy/config/engine.json", "tools/run-suite.ts", "test/episode.test.ts", "docs/architecture.md", "AGENTS.md"]
+updated: 2026-11-13
 ---
 
 # Repository layout
@@ -24,6 +24,7 @@ states.
 | packages/core/src/index.ts | Pure kernel export surface |
 | packages/core/src/verdict/sourcepaths.ts | Selected-state source-path existence judgment |
 | packages/cli/src/main.ts | CLI dispatch and envelope writing |
+| packages/cli/src/pagecache.ts | Derived store of earlier page reads, outside any bundle |
 | libraries/kit-code/types/subsystem.yaml | Example data library type |
 | libraries/source-kit/types/observation.yaml | Synthetic source-type policy |
 | devwiki/config/engine.json | This repository's own bundle law |
@@ -34,4 +35,4 @@ states.
 | docs/architecture.md | Package and invariant map |
 | AGENTS.md | Repository operating rules |
 
-Current source at this pin: `packages/core/src/index.ts`, `packages/core/src/verdict/sourcepaths.ts`, `packages/cli/src/main.ts`, `libraries/kit-code/types/subsystem.yaml`, `libraries/source-kit/types/observation.yaml`, `devwiki/config/engine.json`, `fixtures/handbooks/orchard/config/engine.json`, `fixtures/source-policy/config/engine.json`, `tools/run-suite.ts`, `test/episode.test.ts`, `docs/architecture.md`, `AGENTS.md`.
+Current source at this pin: `packages/core/src/index.ts`, `packages/core/src/verdict/sourcepaths.ts`, `packages/cli/src/main.ts`, `packages/cli/src/pagecache.ts`, `libraries/kit-code/types/subsystem.yaml`, `libraries/source-kit/types/observation.yaml`, `devwiki/config/engine.json`, `fixtures/handbooks/orchard/config/engine.json`, `fixtures/source-policy/config/engine.json`, `tools/run-suite.ts`, `test/episode.test.ts`, `docs/architecture.md`, `AGENTS.md`.

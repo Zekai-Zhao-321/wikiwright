@@ -4,7 +4,7 @@ title: "Git"
 description: "Asynchronous file-backed Git transport for staged, revision and local-pin reads."
 tags: [cli]
 pin:
-  commit: b1cade9a4d0d0a868340dbba7c4a02775f4c7b9f
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["packages/cli/src/git.ts", "packages/cli/src/stdoutfile.ts", "packages/cli/src/lawstate.ts", "packages/cli/src/lawfiles.ts"]
 ---

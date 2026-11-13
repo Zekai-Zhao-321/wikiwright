@@ -4,7 +4,7 @@ title: "The Writer and the staged gate"
 description: "The judged draft writer and staged Git acceptance boundary."
 tags: [kernel, cli]
 pin:
-  commit: 5e9abce0e1f7ae60507b3ec1c6ef22663f72d245
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["packages/cli/src/verbs/write.ts", "packages/cli/src/verbs/gate.ts", "packages/cli/src/lawstate.ts", "packages/cli/src/writer.ts", "packages/cli/src/ops.ts"]
 updated: 2026-09-26

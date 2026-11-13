@@ -4,7 +4,7 @@ title: "Section grammars"
 description: "The kernel's fixed claims, relations and dated-entry record grammars."
 tags: [kernel, stdlib]
 pin:
-  commit: 61cf635d842b8f465a66b0b666b163b39127f909
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["packages/core/src/records/index.ts", "packages/core/src/records/schemas.ts", "packages/core/src/interface/index.ts", "packages/core/src/verdict/grammar.ts"]
 updated: 2026-09-27
