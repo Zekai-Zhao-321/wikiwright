@@ -4,10 +4,10 @@ title: "The command runtime"
 description: "The eight-verb command table, argument parser, JSON envelope and bundle identity of the v2 CLI."
 tags: [cli]
 pin:
-  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
-  covers: ["packages/cli/src/main.ts", "packages/cli/src/commands.ts", "packages/cli/src/argv.ts", "packages/cli/src/envelope.ts", "packages/cli/src/spec.ts", "packages/cli/src/typelaw.ts"]
-updated: 2026-09-27
+  covers: ["packages/cli/src/main.ts", "packages/cli/src/commands.ts", "packages/cli/src/argv.ts", "packages/cli/src/envelope.ts", "packages/cli/src/spec.ts", "packages/cli/src/typelaw.ts", "packages/cli/src/pagecache.ts"]
+updated: 2026-11-13
 ---
 
 # The command runtime
@@ -18,11 +18,11 @@ The CLI dispatches exactly eight verbs from one command table. Help, JSON help, 
 
 ## Entry points
 
-Current source at this pin: `packages/cli/src/main.ts`, `packages/cli/src/commands.ts`, `packages/cli/src/argv.ts`, `packages/cli/src/envelope.ts`, `packages/cli/src/spec.ts`, `packages/cli/src/typelaw.ts`.
+Current source at this pin: `packages/cli/src/main.ts`, `packages/cli/src/commands.ts`, `packages/cli/src/argv.ts`, `packages/cli/src/envelope.ts`, `packages/cli/src/spec.ts`, `packages/cli/src/typelaw.ts`, `packages/cli/src/pagecache.ts`.
 
 ## State
 
-An invocation reads its root and flags, then builds a working-tree, draft, index or revision state as the verb requires. It keeps no daemon or persistent parse cache; version answers about the build without loading a bundle.
+An invocation reads its root and flags, then builds a working-tree, draft, index or revision state as the verb requires. It keeps no daemon; version answers about the build without loading a bundle. Before a verb runs, the shell installs the native sha256 and the store of earlier page reads for the selected bundle. That store lives outside the bundle, is keyed on page path, bytes, law and emitted engine code, and is written back after the envelope is out. Relation targets resolve against the current state on every run, and a store that cannot be opened or kept changes no answer.
 
 ## Invariants
 

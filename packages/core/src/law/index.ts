@@ -13,6 +13,7 @@ export type {
   Occurrence,
   PageLimit,
   PageRead,
+  PageReadCache,
   ParsedPage,
   UnparsedItem,
 } from "../interface/index.ts";
@@ -28,6 +29,7 @@ export {
   parsePage,
   resolvedClaim,
   resolvedRelation,
+  setPageReadCache,
 } from "../interface/index.ts";
 export type {
   ClaimRecord,

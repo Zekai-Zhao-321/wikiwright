@@ -4,10 +4,10 @@ title: wikiwright architecture
 description: "Kernel, data-library and bundle layers and the four adapters that reach one judge."
 tags: [kernel, stdlib, cli, kit]
 pin:
-  commit: 61cf635d842b8f465a66b0b666b163b39127f909
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["packages/core/src/index.ts", "packages/cli/src/main.ts", "packages/cli/src/lawstate.ts", "docs/architecture.md"]
-updated: 2026-09-27
+updated: 2026-11-13
 ---
 
 # wikiwright architecture
@@ -32,7 +32,7 @@ The CLI builds working-tree, draft, index or revision states and loads each stat
 
 A type system is held at both acceptance boundaries: write judges one captured law and page state, preflights every destination and moved-from parent, then rechecks the state after staging, before the first rename; gate judges what a commit would contain. The engine checks conformance, not truth.
 
-A direct editor change is judged when staged for the gate, not at the moment the host lands it. There is no daemon, executable library hook or mechanical session role bound.
+A direct editor change is judged when staged for the gate, not at the moment the host lands it. There is no daemon, executable library hook or mechanical session role bound. The CLI keeps earlier page reads in a derived store outside the bundle, keyed on page bytes, law and emitted code; it saves parsing work and never changes a verdict.
 
 The detailed v1 descriptions remain in Git history at 35f5c01; these pages describe the v2 binary and do not present removed code as current.
 

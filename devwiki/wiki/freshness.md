@@ -4,7 +4,7 @@ title: "Freshness and pins"
 description: "Local Git pin measurement and evidence status shown by read and search."
 tags: [cli]
 pin:
-  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["packages/cli/src/pins.ts", "packages/cli/src/verbs/check.ts", "packages/cli/src/verbs/read.ts", "packages/cli/src/verbs/search.ts"]
 updated: 2026-09-27

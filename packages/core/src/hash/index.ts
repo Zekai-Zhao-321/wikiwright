@@ -42,7 +42,26 @@ function utf8Bytes(text: string): number[] {
 
 const rotr = (x: number, n: number): number => ((x >>> n) | (x << (32 - n))) >>> 0;
 
+/**
+ * A native sha256 the host may install (the CLI installs `node:crypto`'s at
+ * startup). Core cannot import it: the type wall keeps `node:` out of the
+ * kernel, so the kernel receives the function instead. Same bytes in, same
+ * hex out, so the vendored implementation below is the oracle for whatever
+ * is installed here, and the fallback when nothing is.
+ */
+export type Sha256Provider = (bytes: Uint8Array) => string;
+let provider: Sha256Provider | undefined;
+
+export function setSha256Provider(next: Sha256Provider | undefined): void {
+  provider = next;
+}
+
+/** UTF-8 via the platform encoder (declared, not imported: the type wall). */
+declare const TextEncoder: new () => { encode(text: string): Uint8Array };
+const ENCODER = new TextEncoder();
+
 export function sha256Hex(text: string): string {
+  if (provider !== undefined) return provider(ENCODER.encode(text));
   return sha256HexOfBytes(utf8Bytes(text));
 }
 
@@ -51,6 +70,14 @@ export function sha256Hex(text: string): string {
  * a law file's bytes), with no decoding between the file and the digest.
  */
 export function sha256HexOfBytes(bytes: ArrayLike<number>): string {
+  if (provider !== undefined) {
+    return provider(bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes));
+  }
+  return sha256HexOfBytesVendored(bytes);
+}
+
+/** FIPS 180-4 SHA-256 in integer arithmetic; the oracle and the fallback. */
+export function sha256HexOfBytesVendored(bytes: ArrayLike<number>): string {
   const bitLength = bytes.length * 8;
   const blocks = Math.ceil((bytes.length + 9) / 64);
   const padded: number[] = new Array<number>(blocks * 64).fill(0);

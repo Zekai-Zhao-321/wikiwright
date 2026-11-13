@@ -4,7 +4,7 @@ title: "Testing the engine"
 description: "Bun gate, synthetic corpora, temporary fixtures and end-to-end CLI probes."
 tags: [repo]
 pin:
-  commit: f1dc7deae8b129b74e9db2eb37da44b927ae22f6
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["tools/run-suite.ts", "packages/cli/test/fixtures/garden-cli.ts", "packages/cli/test/fixture-verdicts.test.ts", "packages/cli/test/source-policy.test.ts", "test/episode.test.ts", "scripts/release-matrix.sh"]
 ---
@@ -17,7 +17,7 @@ Bun run check runs Biome, the build, test-project typecheck and the whole suite.
 
 Current source at this pin: `tools/run-suite.ts`, `packages/cli/test/fixtures/garden-cli.ts`, `packages/cli/test/fixture-verdicts.test.ts`, `packages/cli/test/source-policy.test.ts`, `test/episode.test.ts`, `scripts/release-matrix.sh`.
 
-The CLI tests use temporary gardening bundles and read the spawned CLI envelope from a file. Fixture-verdicts judges the six checked-in corpora; the episode runs the correction loop twice. The source-policy fixture tests Unicode page names, source-only retyping, staged disagreement, deletion and moves.
+The CLI tests use temporary gardening bundles and read the spawned CLI envelope from a file. The runner points the CLI's page-read cache at one temporary directory for the whole run, so the suite runs with the cache on and leaves nothing in the user's cache directory. Fixture-verdicts judges the six checked-in corpora; the episode runs the correction loop twice. The source-policy fixture tests Unicode page names, source-only retyping, staged disagreement, deletion and moves.
 
 ## Writing tests
 

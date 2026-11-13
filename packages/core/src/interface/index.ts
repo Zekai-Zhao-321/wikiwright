@@ -177,15 +177,46 @@ function linesOf(text: string): Line[] {
 const LIST_ITEM = /^(?:[-*+]|\d{1,9}[.)])(?:[ \t]|$)/u;
 
 /**
+ * Earlier reads, kept by the shell. A read is a function of the path, the
+ * bytes, the law and the engine, so a store keyed on all four answers what
+ * `parsePage` would. `get` hands back a read no other caller holds (relation
+ * targets are resolved in place afterwards); `put` keeps the read as it is
+ * when called, before any caller changes it. The kernel never touches a file:
+ * the shell installs the store, as it installs the hash.
+ */
+export interface PageReadCache {
+  get(path: string, bytes: Uint8Array, law: TypeLaw): PageRead | undefined;
+  put(path: string, bytes: Uint8Array, law: TypeLaw, read: PageRead): void;
+}
+
+let readCache: PageReadCache | undefined;
+
+/** Install (or, with `undefined`, remove) the store `parsePage` consults. */
+export function setPageReadCache(next: PageReadCache | undefined): void {
+  readCache = next;
+}
+
+const RESOLVES_NOTHING: ResolveTarget = () => undefined;
+
+/**
  * Read a page. `law` supplies the type, its sections and the source roots;
  * `resolve` finds a relation's target in the vault (absent: nothing resolves).
+ * Only a read that resolves nothing is kept in, or taken from, the store.
  */
 export function parsePage(
   path: string,
   bytes: Uint8Array,
   law: TypeLaw,
-  resolve: ResolveTarget = () => undefined,
+  given?: ResolveTarget,
 ): PageRead {
+  if (given === undefined && readCache !== undefined) {
+    const kept = readCache.get(path, bytes, law);
+    if (kept !== undefined) return kept;
+    const read = parsePage(path, bytes, law, RESOLVES_NOTHING);
+    readCache.put(path, bytes, law, read);
+    return read;
+  }
+  const resolve = given ?? RESOLVES_NOTHING;
   if (bytes.length > PAGE_BYTES_MAX) {
     return tooLarge(
       "bytes",

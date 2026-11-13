@@ -163,7 +163,8 @@ async function prepare(args: CommandArgs): Promise<Preparation> {
   const diskRead = readPages(read0, law);
   const fixes = args.flags["fix"] === true ? folderFixes(read0, law, diskRead) : [];
   const state = withFixes(read0, fixes);
-  const read = readPages(state, law);
+  // No fix changed a byte: the state is the disk's, already read.
+  const read = state === read0 ? diskRead : readPages(state, law);
   const collected = collectTypeLaw(state, law, { read });
   if (fixes.length > 0) {
     const before = new Set(

@@ -1,10 +1,13 @@
 #!/usr/bin/env bun
 // docs/cli.md §The envelope (stdout = one envelope; stderr = UX; parseArgs
 // strict under the command registry; generated help) · JSON-only v1.
+import { createHash } from "node:crypto";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
+import { setPageReadCache, setSha256Provider } from "@wikiwright/core";
 import { parseInvocation, scanInvocation } from "./argv.ts";
 import { ReplacementTargetRefused, replaceFile } from "./atomicwrite.ts";
+import { readBuildInfo } from "./buildinfo.ts";
 import { COMMANDS } from "./commands.ts";
 import {
   type CommandResult,
@@ -21,8 +24,14 @@ import {
   GitTimedOut,
   gitTimeoutSetting,
 } from "./git.ts";
+import { openPageStore, type PageStore } from "./pagecache.ts";
 import { LinkedOutsideVault } from "./paths.ts";
 import { type CommandSpec, commandSchema, flagsOf, GLOBAL_FLAGS, usageOf } from "./spec.ts";
+
+// The kernel hashes with whatever the shell installs; node:crypto's sha256 is
+// the same function as the vendored one (core's hash test is the oracle) and
+// runs native. Installed before any verb runs, so every digest goes through it.
+setSha256Provider((bytes) => createHash("sha256").update(bytes).digest("hex"));
 
 /** Where an envelope goes: stdout, or the file `--out` names. */
 interface Sink {
@@ -365,6 +374,31 @@ function rootOf(rest: readonly string[]): string {
   return ".";
 }
 
+/**
+ * The store of earlier page reads for the bundle the invocation names
+ * (`packages/cli/src/pagecache.ts`), installed for the verb. A store that
+ * cannot be opened is no store: the verb reads every page, as it would.
+ */
+function pageStore(root: string): PageStore | undefined {
+  try {
+    const store = openPageStore(bundleHolding(root) ?? realPathOf(root), readBuildInfo()?.code);
+    setPageReadCache(store);
+    return store;
+  } catch {
+    return undefined;
+  }
+}
+
+/** After the envelope is out: what the verb read anew is kept; a failure to keep it changes nothing. */
+function keepPageReads(store: PageStore | undefined): void {
+  setPageReadCache(undefined);
+  try {
+    store?.flush();
+  } catch {
+    // The cache is derived; the next invocation reads again.
+  }
+}
+
 const argv = process.argv.slice(2);
 const commandName = argv[0];
 if (commandName === undefined || commandName === "help" || commandName === "--help") {
@@ -401,6 +435,10 @@ if (commandName === undefined || commandName === "help" || commandName === "--he
       );
     } else if (sink.wantsHelp && sink.wantsJson) emit(ok(spec.name, commandSchema(spec)), sink);
     else if (sink.wantsHelp) emit(commandHelp(spec), sink);
-    else emit(await runCommand(spec, rest, COMMANDS), sink);
+    else {
+      const store = pageStore(invocationRoot);
+      emit(await runCommand(spec, rest, COMMANDS), sink);
+      keepPageReads(store);
+    }
   }
 }

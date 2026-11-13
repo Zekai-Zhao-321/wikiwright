@@ -349,7 +349,7 @@
         "code/ops-reference"
       ],
       "title": "Environment variables",
-      "description": "The two environment inputs the v2 CLI reads: the write date and Git-child timeout.",
+      "description": "The environment inputs the v2 CLI reads: the write date, the Git-child timeout and the page-read cache location.",
       "tags": [
         "cli"
       ],

@@ -5,7 +5,7 @@ description: "Historical v1 export copies; the v2 binary has no export planner o
 tags: [cli]
 status: retired
 pin:
-  commit: f1dc7deae8b129b74e9db2eb37da44b927ae22f6
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["CHANGELOG.md", "docs/roadmap.md"]
 updated: 2026-09-26

@@ -49,6 +49,8 @@ export async function checkoutIdentity(): Promise<Identity> {
 export interface BuildInfo {
   commit: string | null;
   dirty: boolean | null;
+  /** sha256 over the emitted code, when the stamp carries it (keys the parse store). */
+  code: string | null;
 }
 
 /** The stamp compiled into a binary by `bun build --define`; undeclared everywhere else. */
@@ -59,7 +61,9 @@ function parseBuildInfo(text: string): BuildInfo | undefined {
     const parsed = JSON.parse(text) as BuildInfo;
     const commit = typeof parsed.commit === "string" ? parsed.commit : null;
     const dirty = typeof parsed.dirty === "boolean" ? parsed.dirty : null;
-    return { commit, dirty };
+    const code =
+      typeof parsed.code === "string" && /^[0-9a-f]{64}$/u.test(parsed.code) ? parsed.code : null;
+    return { commit, dirty, code };
   } catch {
     return undefined;
   }

@@ -4,7 +4,7 @@ title: "The envelope and exit codes"
 description: "The CLI JSON envelope, output bound and closed exit-code taxonomy."
 tags: [cli]
 pin:
-  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["packages/cli/src/envelope.ts", "packages/cli/src/main.ts", "packages/cli/src/commands.ts"]
 ---

@@ -4,7 +4,7 @@ title: "Generated artifacts"
 description: "The brief, graph, manifest, tag catalog and queue rendered by check --write."
 tags: [kernel, cli]
 pin:
-  commit: 1a1a90c11329d82c9b2c6e92c6fa8e16160c0613
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["packages/core/src/artifacts/index.ts", "packages/cli/src/generated.ts", "packages/cli/src/verbs/check.ts"]
 updated: 2026-09-26

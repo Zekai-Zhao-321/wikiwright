@@ -72,7 +72,8 @@ describe("the build stamps the artifact it produced (docs/cli.md §version)", ()
       assert.equal(existsSync(stamp), true, "the writer wrote dist/build-info.json");
       const first = readFileSync(stamp, "utf8");
       const info = JSON.parse(first) as Record<string, unknown>;
-      assert.deepEqual(Object.keys(info).sort(), ["commit", "dirty"]);
+      assert.deepEqual(Object.keys(info).sort(), ["code", "commit", "dirty"]);
+      assert.match(String(info["code"]), /^[0-9a-f]{64}$/u);
       assert.equal(info["commit"], git("rev-parse", "--short", "HEAD").trim());
       assert.equal(info["dirty"], false);
       // A build artifact that changes when nothing changed is not
@@ -199,7 +200,11 @@ describe("version answers with the build, and names its own provenance (docs/cli
       checkout_dirty: true,
     });
     assert.deepEqual(
-      versionData({ commit: "3274041", dirty: false }, { commit: "f09f060", dirty: true }, "0.1.0"),
+      versionData(
+        { commit: "3274041", dirty: false, code: null },
+        { commit: "f09f060", dirty: true },
+        "0.1.0",
+      ),
       {
         engine: "0.1.0",
         commit: "3274041",

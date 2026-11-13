@@ -183,6 +183,8 @@ exit code. `check` plans nothing without `--write` or `--fix`.
 |---|---|---|
 | `WIKIWRIGHT_TODAY` | `write`, read once per process | the date the verb stamps, `YYYY-MM-DD`; the wall clock otherwise. A malformed value refuses before anything moves |
 | `WIKIWRIGHT_GIT_TIMEOUT_MS` | the shell, before parsing; every git child | how long one git child may run, a whole number of milliseconds from 1 to 2147483647; 60000 when unset or empty. A child still running then is killed and the verb refused as `git-timeout` (exit 1); any other value is `git-timeout-invalid` (exit 2) before any verb runs |
+| `WIKIWRIGHT_CACHE_DIR` | the shell, before the verb | the directory that holds kept page reads, one subdirectory per bundle; the platform's user cache directory (`%LOCALAPPDATA%`, `~/Library/Caches`, `$XDG_CACHE_HOME` or `~/.cache`, then `wikiwright`) when unset or empty. The pack is derived and can be deleted at any time; no envelope depends on it |
+| `WIKIWRIGHT_NO_CACHE` | the shell, before the verb | any value but empty or `0` reads and parses every page as if nothing were kept, and keeps nothing |
 
 ## The command table
 

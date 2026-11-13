@@ -4,10 +4,10 @@ title: "The parser and the names it binds"
 description: "Markdown and YAML parsing, Unicode page identity and name resolution."
 tags: [kernel]
 pin:
-  commit: 61cf635d842b8f465a66b0b666b163b39127f909
+  commit: 48bf96b7f5a8774a05b63e3280bf81768b227c32
   origin: .
   covers: ["packages/core/src/parse/index.ts", "packages/core/src/names/index.ts", "packages/core/src/identity/index.ts", "packages/core/src/interface/index.ts"]
-updated: 2026-09-27
+updated: 2026-11-13
 ---
 
 # The parser and the names it binds
@@ -30,6 +30,9 @@ Relation records also keep the authored target name, heading and alias.
 The CEL page interface projects target resolution, path and type from the
 current name index, or from the base name index in `before`; a shared parsed
 page therefore cannot leak current target metadata into a historical rule.
+A shell may install a page-read cache: a page read is a function of path,
+bytes and law, so a kept read is reused only for the same three, and
+relation targets are still resolved against the current names on every run.
 
 ## Invariants
 

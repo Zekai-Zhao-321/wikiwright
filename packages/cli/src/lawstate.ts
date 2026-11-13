@@ -56,7 +56,7 @@ import {
   revisionEntries,
   workingTreeLawSnapshot,
 } from "./lawfiles.ts";
-import { readPageBytes } from "./vaultfiles.ts";
+import { readStampedPage, stampAt } from "./vaultfiles.ts";
 
 /** §11: the working tree changed between two reads, twice; nothing consistent was read. */
 export class StateChangedDuringRead extends Error {
@@ -92,6 +92,13 @@ interface Capture {
   pages: ReadonlyMap<string, Uint8Array>;
   skipped: SkippedPath[];
   sources: SourceFacts;
+  /** Each settled page's stamp and the bytes read under it (`vaultfiles.ts` `stampOf`). */
+  stamps: ReadonlyMap<string, Stamped>;
+}
+
+interface Stamped {
+  stamp: string;
+  bytes: Uint8Array;
 }
 
 function bySkippedPath(skipped: SkippedPath[]): SkippedPath[] {
@@ -236,15 +243,31 @@ function walkContent(
   return { pages, skipped: bySkippedPath(skipped) };
 }
 
-async function captureWorkingTree(root: string): Promise<Capture> {
+/**
+ * One read of the working tree. With `earlier` (the first read of the same
+ * attempt), a page the walk lists again with the stamp it was read under is
+ * not opened again: equal stamps on a settled file name the bytes already
+ * read. Every other page is read; the walk, the law and the sources are
+ * always read again.
+ */
+async function captureWorkingTree(root: string, earlier?: Capture): Promise<Capture> {
+  const nowNs = BigInt(Date.now()) * 1_000_000n;
   const law = await workingTreeLawSnapshot(root);
   const walked = walkContent(root, contentRootsOf(law));
   const sources = walkSources(root, sourceRootsOf(law));
-  const pages: [string, Uint8Array][] = walked.pages.map((p) => [
-    p.path,
-    new Uint8Array(readPageBytes(root, p.disk)),
-  ]);
-  return { law, pages: pageMap(pages), skipped: walked.skipped, sources };
+  const stamps = new Map<string, Stamped>();
+  const pages: [string, Uint8Array][] = walked.pages.map((p) => {
+    const before = earlier?.stamps.get(p.path);
+    if (before !== undefined && stampAt(join(root, p.disk), nowNs) === before.stamp) {
+      stamps.set(p.path, before);
+      return [p.path, before.bytes];
+    }
+    const read = readStampedPage(root, p.disk, nowNs);
+    const bytes = new Uint8Array(read.bytes);
+    if (read.stamp !== undefined) stamps.set(p.path, { stamp: read.stamp, bytes });
+    return [p.path, bytes];
+  });
+  return { law, pages: pageMap(pages), skipped: walked.skipped, sources, stamps };
 }
 
 /** One digest over everything a capture read: the law's files, the pages and what it skipped. */
@@ -306,9 +329,9 @@ function vanished(error: unknown): boolean {
   return code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP";
 }
 
-async function tryCapture(root: string): Promise<Capture | undefined> {
+async function tryCapture(root: string, earlier?: Capture): Promise<Capture | undefined> {
   try {
-    return await captureWorkingTree(root);
+    return await captureWorkingTree(root, earlier);
   } catch (error) {
     if (vanished(error)) return undefined;
     throw error;
@@ -325,7 +348,9 @@ export interface CaptureOptions {
 
 /**
  * §11: the working tree read twice and compared by digest; on a difference,
- * once more; on a second difference, `state-changed-during-read`.
+ * once more; on a second difference, `state-changed-during-read`. The second
+ * read of an attempt takes a settled page whose stamp has not moved from the
+ * first (`captureWorkingTree`); a retry reads everything afresh.
  */
 async function consistentCapture(root: string, options: CaptureOptions): Promise<Capture> {
   let isDirectory = false;
@@ -339,7 +364,7 @@ async function consistentCapture(root: string, options: CaptureOptions): Promise
     // A path that vanishes mid-read is a tree that changed: read again.
     const first = await tryCapture(root);
     await options.betweenReads?.(attempt);
-    const second = await tryCapture(root);
+    const second = await tryCapture(root, first);
     if (
       first !== undefined &&
       second !== undefined &&
